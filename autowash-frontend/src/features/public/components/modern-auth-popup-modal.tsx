@@ -11,6 +11,7 @@ import {
   Loader2,
   LockKeyhole,
   Mail,
+  KeyRound,
   ShieldCheck,
   Sparkles,
   Star,
@@ -24,12 +25,21 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type ClipboardEvent,
   type KeyboardEvent,
   type ReactNode,
 } from "react";
 import { Button } from "@/shared/ui/ui/button";
-import { useCustomerLogin, useCustomerRegister, useSendCustomerOtp, useVerifyCustomerOtp } from "@/features/auth/hooks/use-auth";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import {
+  useCustomerLogin,
+  useCustomerRegister,
+  useForgotPasswordRequest,
+  useForgotPasswordReset,
+  useSendCustomerOtp,
+  useVerifyCustomerOtp,
+  useVerifyForgotPasswordOtp,
+} from "@/features/auth/hooks/use-auth";
+import { getDisplayErrorMessage, getFieldErrorMessage } from "@/shared/lib/api-errors";
 import { getAuthRedirectPath } from "@/features/auth/lib/auth-session";
 import { getLoginIdentifierValidationMessage, normalizeLoginIdentifier } from "@/features/auth/lib/login-identifier";
 import { getPasswordVisibilityState } from "@/features/auth/lib/password-visibility";
@@ -37,8 +47,9 @@ import { cn } from "@/shared/lib/utils";
 import { emailPattern, otpPattern, passwordPattern } from "@/shared/lib/validators";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 
-type AuthMode = "login" | "register" | "otp";
+type AuthMode = "login" | "register" | "otp" | "forgot-password";
 type AuthLanguage = "vi" | "en";
+type ForgotPasswordStep = "email" | "verify" | "reset" | "done";
 
 type ModernAuthPopupModalProps = {
   mode: AuthMode;
@@ -187,6 +198,57 @@ const AUTH_COPY = {
   },
 } satisfies Record<AuthLanguage, Record<string, string>>;
 
+const FORGOT_COPY = {
+  vi: {
+    forgotTitle: "Khởi tạo lại mật khẩu",
+    forgotEmailLabel: "Email tài khoản",
+    forgotEmailPlaceholder: "you@gmail.com",
+    forgotEmailButton: "Gửi OTP cấp lại",
+    forgotEmailSending: "Đang gửi OTP...",
+    forgotOtpTitle: "Xác minh OTP quên mật khẩu",
+    forgotOtpDescription: "Nhập mã 6 số đã gửi đến",
+    forgotOtpButton: "Xác minh OTP",
+    forgotOtpVerifying: "Đang xác minh...",
+    forgotOtpResend: "Gửi lại OTP",
+    forgotOtpCanResend: "Bạn có thể gửi lại mã.",
+    forgotResetTitle: "Tạo mật khẩu mới",
+    forgotResetDescription: "OTP đã xác minh thành công. Hồ sơ của bạn có thể dùng mật khẩu mới ngay bây giờ.",
+    forgotNewPasswordLabel: "Mật khẩu mới",
+    forgotNewPasswordPlaceholder: "Nhập mật khẩu mới",
+    forgotConfirmPasswordLabel: "Xác nhận mật khẩu mới",
+    forgotResetButton: "Lưu mật khẩu mới",
+    forgotResetting: "Đang lưu...",
+    forgotSuccessTitle: "Đổi mật khẩu thành công",
+    forgotSuccessDescription: "Mật khẩu của bạn đã được cập nhật. Bạn có thể đăng nhập lại ngay.",
+    backToSignIn: "Quay lại đăng nhập",
+    forgotBackToLogin: "Quay lại đăng nhập",
+  },
+  en: {
+    forgotTitle: "Reset password",
+    forgotEmailLabel: "Account email",
+    forgotEmailPlaceholder: "you@gmail.com",
+    forgotEmailButton: "Send reset OTP",
+    forgotEmailSending: "Sending OTP...",
+    forgotOtpTitle: "Verify reset OTP",
+    forgotOtpDescription: "Enter the 6-digit code sent to",
+    forgotOtpButton: "Verify OTP",
+    forgotOtpVerifying: "Verifying...",
+    forgotOtpResend: "Resend OTP",
+    forgotOtpCanResend: "You can resend the code.",
+    forgotResetTitle: "Create a new password",
+    forgotResetDescription: "The OTP has been verified. You can now set a new password immediately.",
+    forgotNewPasswordLabel: "New password",
+    forgotNewPasswordPlaceholder: "Enter a new password",
+    forgotConfirmPasswordLabel: "Confirm new password",
+    forgotResetButton: "Save new password",
+    forgotResetting: "Saving...",
+    forgotSuccessTitle: "Password changed",
+    forgotSuccessDescription: "Your password has been updated successfully. You can sign in again now.",
+    backToSignIn: "Back to sign in",
+    forgotBackToLogin: "Back to sign in",
+  },
+} satisfies Record<AuthLanguage, Record<string, string>>;
+
 export function ModernAuthPopupModal({
   mode,
   otpEmail,
@@ -199,7 +261,7 @@ export function ModernAuthPopupModal({
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const accessToken = useAuthStore((state) => state.accessToken);
-  const copy = AUTH_COPY[language];
+  const copy = { ...AUTH_COPY[language], ...FORGOT_COPY[language] };
 
   useEffect(() => {
     if (accessToken && user) {
@@ -255,6 +317,46 @@ export function ModernAuthPopupModal({
   const readyVerify = otpPattern.test(otpValue) && emailPattern.test(otpEmail) && secondsLeft > 0;
   const otpVerifyError = verifyOtpMutation.error ? getDisplayErrorMessage(verifyOtpMutation.error) : null;
 
+  const forgotRequestMutation = useForgotPasswordRequest();
+  const forgotVerifyMutation = useVerifyForgotPasswordOtp();
+  const forgotResetMutation = useForgotPasswordReset();
+  const [forgotStep, setForgotStep] = useState<ForgotPasswordStep>("email");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotMaskedEmail, setForgotMaskedEmail] = useState("");
+  const [forgotOtpDigits, setForgotOtpDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
+  const [forgotSecondsLeft, setForgotSecondsLeft] = useState(0);
+  const [forgotLastOtpExpiry, setForgotLastOtpExpiry] = useState<number | null>(null);
+  const [forgotNewPassword, setForgotNewPassword] = useState("");
+  const [forgotNewPasswordConfirm, setForgotNewPasswordConfirm] = useState("");
+  const [forgotSuccessMessage, setForgotSuccessMessage] = useState("");
+  const forgotOtpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const forgotOtpValue = forgotOtpDigits.join("");
+  const normalizedForgotEmail = forgotEmail.trim().toLowerCase();
+  const forgotRequestErrorMessage = forgotRequestMutation.error ? getDisplayErrorMessage(forgotRequestMutation.error) : null;
+  const forgotVerifyErrorMessage = forgotVerifyMutation.error ? getDisplayErrorMessage(forgotVerifyMutation.error) : null;
+  const forgotResetErrorMessage = forgotResetMutation.error ? getDisplayErrorMessage(forgotResetMutation.error) : null;
+  const forgotFieldErrors = forgotResetMutation.error?.fieldErrors;
+  const forgotEmailError =
+    forgotEmail.length > 0 && !emailPattern.test(normalizedForgotEmail) ? "Email khong hop le." : null;
+  const forgotOtpError =
+    forgotOtpValue.length > 0 && !otpPattern.test(forgotOtpValue)
+      ? "OTP phai gom dung 6 chu so."
+      : getFieldErrorMessage(forgotVerifyMutation.error?.fieldErrors, "otp");
+  const forgotPasswordError =
+    forgotNewPassword.length > 0 && !passwordPattern.test(forgotNewPassword)
+      ? "Mat khau toi thieu 8 ky tu, bao gom chu hoa, chu thuong, so va ky tu dac biet."
+      : getFieldErrorMessage(forgotFieldErrors, "newPassword");
+  const forgotConfirmError =
+    forgotNewPasswordConfirm.length > 0 && forgotNewPasswordConfirm !== forgotNewPassword
+      ? "Mat khau xac nhan khong khop."
+      : getFieldErrorMessage(forgotFieldErrors, "newPasswordConfirm");
+  const canRequestForgotOtp = emailPattern.test(normalizedForgotEmail) && !forgotRequestMutation.isPending;
+  const canVerifyForgotOtp = otpPattern.test(forgotOtpValue) && forgotSecondsLeft > 0 && !forgotVerifyMutation.isPending;
+  const canResetForgotPassword =
+    passwordPattern.test(forgotNewPassword) &&
+    forgotNewPasswordConfirm === forgotNewPassword &&
+    !forgotResetMutation.isPending;
+
   useEffect(() => {
     if (!lastOtpExpiry) return;
     const timer = setInterval(() => {
@@ -262,6 +364,18 @@ export function ModernAuthPopupModal({
     }, 1000);
     return () => clearInterval(timer);
   }, [lastOtpExpiry]);
+
+  useEffect(() => {
+    if (!forgotLastOtpExpiry) {
+      setForgotSecondsLeft(0);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setForgotSecondsLeft(Math.max(0, Math.ceil((forgotLastOtpExpiry - Date.now()) / 1000)));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [forgotLastOtpExpiry]);
 
   const handleSendOtp = useCallback(async () => {
     if (!emailPattern.test(otpEmail)) return;
@@ -275,6 +389,26 @@ export function ModernAuthPopupModal({
     if (mode !== "otp" || hasAutoSentRef.current || !emailPattern.test(otpEmail)) return;
     hasAutoSentRef.current = true;
   }, [mode, otpEmail]);
+
+  const resetForgotPasswordState = useCallback(() => {
+    setForgotStep("email");
+    setForgotEmail("");
+    setForgotMaskedEmail("");
+    setForgotOtpDigits(Array(OTP_LENGTH).fill(""));
+    setForgotSecondsLeft(0);
+    setForgotLastOtpExpiry(null);
+    setForgotNewPassword("");
+    setForgotNewPasswordConfirm("");
+    setForgotSuccessMessage("");
+    forgotRequestMutation.reset();
+    forgotVerifyMutation.reset();
+    forgotResetMutation.reset();
+  }, [forgotRequestMutation, forgotResetMutation, forgotVerifyMutation]);
+
+  const openForgotPasswordMode = useCallback(() => {
+    resetForgotPasswordState();
+    setMode("forgot-password");
+  }, [resetForgotPasswordState, setMode]);
 
   const handleLoginSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -305,6 +439,77 @@ export function ModernAuthPopupModal({
         },
       },
     );
+  };
+
+  const handleForgotRequestSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!canRequestForgotOtp) return;
+    const response = await forgotRequestMutation.mutateAsync({ email: normalizedForgotEmail });
+    setForgotMaskedEmail(response.maskedEmail ?? response.email);
+    setForgotLastOtpExpiry(Date.now() + response.otpExpiresIn * 1000);
+    setForgotOtpDigits(Array(OTP_LENGTH).fill(""));
+    setForgotStep("verify");
+    forgotOtpRefs.current[0]?.focus();
+  };
+
+  const handleForgotVerify = async () => {
+    if (!canVerifyForgotOtp) return;
+    await forgotVerifyMutation.mutateAsync({ email: normalizedForgotEmail, otp: forgotOtpValue });
+    setForgotStep("reset");
+  };
+
+  const handleForgotResetSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!canResetForgotPassword) return;
+    await forgotResetMutation.mutateAsync({
+      email: normalizedForgotEmail,
+      otp: forgotOtpValue,
+      newPassword: forgotNewPassword,
+      newPasswordConfirm: forgotNewPasswordConfirm,
+    });
+    setForgotSuccessMessage("Your password has been changed. You can sign in with the new password now.");
+    setForgotStep("done");
+  };
+
+  const handleForgotResendOtp = async () => {
+    if (!canRequestForgotOtp) return;
+    const response = await forgotRequestMutation.mutateAsync({ email: normalizedForgotEmail });
+    setForgotMaskedEmail(response.maskedEmail ?? response.email);
+    setForgotLastOtpExpiry(Date.now() + response.otpExpiresIn * 1000);
+    setForgotOtpDigits(Array(OTP_LENGTH).fill(""));
+    setForgotStep("verify");
+    forgotOtpRefs.current[0]?.focus();
+  };
+
+  const handleForgotDigitChange = (index: number, value: string) => {
+    const nextDigit = value.replace(/\D/g, "").slice(-1);
+    setForgotOtpDigits((previous) => {
+      const next = [...previous];
+      next[index] = nextDigit;
+      return next;
+    });
+    if (nextDigit && index < OTP_LENGTH - 1) {
+      forgotOtpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleForgotOtpKeyDown = (index: number, event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Backspace" && !forgotOtpDigits[index] && index > 0) {
+      forgotOtpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleForgotOtpPaste = (event: ClipboardEvent<HTMLInputElement>) => {
+    const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
+    if (!pasted) return;
+
+    event.preventDefault();
+    const next = Array(OTP_LENGTH).fill("");
+    for (let index = 0; index < pasted.length; index += 1) {
+      next[index] = pasted[index];
+    }
+    setForgotOtpDigits(next);
+    forgotOtpRefs.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
   };
 
   const handleContinueWithGoogle = () => {
@@ -365,8 +570,13 @@ export function ModernAuthPopupModal({
       <div
         className="relative flex w-full overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-500 ease-out"
         style={{
-          maxWidth: mode === "register" ? "1040px" : "940px",
-          minHeight: mode === "register" ? "660px" : mode === "otp" ? "580px" : "600px",
+          maxWidth: mode === "register" || mode === "forgot-password" ? "1040px" : "940px",
+          minHeight:
+            mode === "register" || mode === "forgot-password"
+              ? "660px"
+              : mode === "otp"
+                ? "580px"
+                : "600px",
           borderRadius: "2rem",
           border: "0",
           boxShadow: "0 34px 100px rgba(15,23,42,0.30)",
@@ -379,7 +589,12 @@ export function ModernAuthPopupModal({
         <section
           className="relative flex flex-1 flex-col justify-center"
           style={{
-            padding: mode === "register" ? "2rem 3rem" : mode === "otp" ? "2.4rem 3rem" : "2.35rem 3rem",
+            padding:
+              mode === "register" || mode === "forgot-password"
+                ? "2rem 3rem"
+                : mode === "otp"
+                  ? "2.4rem 3rem"
+                  : "2.35rem 3rem",
             background: "linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,247,255,0.94))",
             backdropFilter: "blur(28px) saturate(1.9)",
             borderLeft: "1px solid rgba(255,255,255,0.75)",
@@ -432,9 +647,13 @@ export function ModernAuthPopupModal({
                   label={copy.passwordLabel}
                   error={loginPassError}
                   action={
-                    <Link href="/forgot-password" onClick={onClose} className="text-xs font-bold text-blue-600 transition-colors hover:text-blue-700">
+                    <button
+                      type="button"
+                      onClick={openForgotPasswordMode}
+                      className="text-xs font-bold text-blue-600 transition-colors hover:text-blue-700"
+                    >
                       {copy.forgotPassword}
-                    </Link>
+                    </button>
                   }
                 >
                   <input
@@ -569,6 +788,213 @@ export function ModernAuthPopupModal({
                   {copy.backToLogin}
                 </button>
               </div>
+            </div>
+          ) : null}
+
+          {mode === "forgot-password" ? (
+            <div key={`${language}-forgot-password`} className="mx-auto flex w-full max-w-[560px] flex-col gap-4 pt-8 animate-in fade-in slide-in-from-right-4 duration-500 ease-out">
+              <AuthHeader
+                eyebrow={copy.eyebrowLogin}
+                icon={LockKeyhole}
+                title={copy.forgotTitle}
+              />
+
+              {forgotStep === "email" ? (
+                <form onSubmit={handleForgotRequestSubmit} className="space-y-4">
+                  <Field label={copy.forgotEmailLabel} error={forgotEmailError}>
+                    <input
+                      value={forgotEmail}
+                      onChange={(event) => setForgotEmail(event.target.value.replace(/\s/g, ""))}
+                      placeholder={copy.forgotEmailPlaceholder}
+                      className={inputCls}
+                      inputMode="email"
+                      autoComplete="email"
+                    />
+                    <Mail className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  </Field>
+
+                  {forgotRequestErrorMessage ? <ErrorBox message={forgotRequestErrorMessage} /> : null}
+
+                  <button type="submit" disabled={!canRequestForgotOtp} className={primaryBtn}>
+                    {forgotRequestMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
+                        {copy.forgotEmailSending}
+                      </>
+                    ) : (
+                      copy.forgotEmailButton
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetForgotPasswordState();
+                      setMode("login");
+                    }}
+                    className="text-sm font-bold text-blue-600 transition-colors hover:text-blue-700 hover:underline"
+                  >
+                    {copy.forgotBackToLogin}
+                  </button>
+                </form>
+              ) : null}
+
+              {forgotStep === "verify" ? (
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm leading-6 text-slate-600">
+                    {copy.forgotOtpDescription}{" "}
+                    <strong className="text-slate-900">{forgotMaskedEmail || normalizedForgotEmail}</strong>.
+                    {forgotSecondsLeft > 0 ? (
+                      <span className="ml-1">
+                        {copy.otpExpires} <strong className="text-slate-900">{forgotSecondsLeft}s</strong>.
+                      </span>
+                    ) : (
+                      <span className="ml-1 font-semibold text-rose-600">{copy.forgotOtpCanResend}</span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className={labelCls}>{copy.forgotOtpTitle}</label>
+                    <div className="flex justify-center gap-2">
+                      {forgotOtpDigits.map((digit, index) => (
+                        <input
+                          key={index}
+                          ref={(element) => {
+                            forgotOtpRefs.current[index] = element;
+                          }}
+                          value={digit}
+                          onChange={(event) => handleForgotDigitChange(index, event.target.value)}
+                          onKeyDown={(event) => handleForgotOtpKeyDown(index, event)}
+                          onPaste={handleForgotOtpPaste}
+                          inputMode="numeric"
+                          maxLength={1}
+                          className={cn(
+                            "h-14 w-12 rounded-2xl border text-center text-lg font-black shadow-sm transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-400/20",
+                            digit
+                              ? "border-blue-400 bg-blue-50 text-blue-600 shadow-[0_0_0_3px_rgba(59,130,246,0.10)]"
+                              : "border-sky-200/70 bg-white/90 text-slate-700",
+                          )}
+                        />
+                      ))}
+                    </div>
+                    {forgotOtpError ? <p className={errorCls}>{forgotOtpError}</p> : null}
+                  </div>
+
+                  {forgotRequestErrorMessage ? <ErrorBox message={forgotRequestErrorMessage} /> : null}
+                  {forgotVerifyErrorMessage ? <ErrorBox message={forgotVerifyErrorMessage} /> : null}
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-12 rounded-2xl text-sm font-bold transition-all hover:scale-[1.01]"
+                      style={{ borderColor: "rgba(186,230,255,0.8)", background: "rgba(240,249,255,0.8)", color: "#475569" }}
+                      onClick={() => setForgotStep("email")}
+                    >
+                      <ArrowLeft className="mr-1 h-4 w-4" />
+                      {copy.otpBackBtn}
+                    </Button>
+                    <button type="button" disabled={!canVerifyForgotOtp} onClick={() => void handleForgotVerify()} className={primaryBtn}>
+                      {forgotVerifyMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
+                          {copy.forgotOtpVerifying}
+                        </>
+                      ) : (
+                        copy.forgotOtpButton
+                      )}
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => void handleForgotResendOtp()}
+                    disabled={forgotRequestMutation.isPending || !emailPattern.test(normalizedForgotEmail)}
+                    className="text-sm font-bold text-blue-600 transition-colors hover:text-blue-700 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {forgotRequestMutation.isPending ? copy.otpSending : copy.forgotOtpResend}
+                  </button>
+                </div>
+              ) : null}
+
+              {forgotStep === "reset" ? (
+                <form onSubmit={handleForgotResetSubmit} className="space-y-4">
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-800">
+                    {copy.forgotResetDescription} <strong>{forgotMaskedEmail || normalizedForgotEmail}</strong>.
+                  </div>
+
+                  <Field label={copy.forgotNewPasswordLabel} error={forgotPasswordError}>
+                    <input
+                      type="password"
+                      value={forgotNewPassword}
+                      onChange={(event) => setForgotNewPassword(event.target.value)}
+                      placeholder={copy.forgotNewPasswordPlaceholder}
+                      className={inputCls}
+                      autoComplete="new-password"
+                    />
+                    <LockKeyhole className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  </Field>
+
+                  <Field label={copy.forgotConfirmPasswordLabel} error={forgotConfirmError}>
+                    <input
+                      type="password"
+                      value={forgotNewPasswordConfirm}
+                      onChange={(event) => setForgotNewPasswordConfirm(event.target.value)}
+                      placeholder={copy.forgotNewPasswordPlaceholder}
+                      className={inputCls}
+                      autoComplete="new-password"
+                    />
+                    <KeyRound className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  </Field>
+
+                  {forgotResetErrorMessage ? <ErrorBox message={forgotResetErrorMessage} /> : null}
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-12 rounded-2xl text-sm font-bold transition-all hover:scale-[1.01]"
+                      style={{ borderColor: "rgba(186,230,255,0.8)", background: "rgba(240,249,255,0.8)", color: "#475569" }}
+                      onClick={() => setForgotStep("verify")}
+                    >
+                      <ArrowLeft className="mr-1 h-4 w-4" />
+                      {copy.otpBackBtn}
+                    </Button>
+                    <button type="submit" disabled={!canResetForgotPassword} className={primaryBtn}>
+                      {forgotResetMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
+                          {copy.forgotResetting}
+                        </>
+                      ) : (
+                        copy.forgotResetButton
+                      )}
+                    </button>
+                  </div>
+                </form>
+              ) : null}
+
+              {forgotStep === "done" ? (
+                <div className="space-y-5 text-center">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-emerald-200 bg-emerald-50 shadow-[0_14px_32px_rgba(16,185,129,0.14)]">
+                    <ShieldCheck className="h-8 w-8 text-emerald-600" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-3xl font-black tracking-tight text-slate-950">{copy.forgotSuccessTitle}</h3>
+                    <p className="text-sm font-medium leading-6 text-slate-500">{forgotSuccessMessage || copy.forgotSuccessDescription}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetForgotPasswordState();
+                      setMode("login");
+                    }}
+                    className={primaryBtn}
+                  >
+                    {copy.backToSignIn}
+                  </button>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -754,7 +1180,7 @@ function AuthHeader({
   eyebrow: string;
   icon: typeof ShieldCheck;
   title: string;
-  description: string;
+  description?: string;
 }) {
   return (
     <div className="space-y-2">
@@ -763,7 +1189,7 @@ function AuthHeader({
         {eyebrow}
       </div>
       <h3 className="text-4xl font-black tracking-tight text-slate-950">{title}</h3>
-      <p className="text-sm font-medium leading-6 text-slate-500">{description}</p>
+      {description ? <p className="text-sm font-medium leading-6 text-slate-500">{description}</p> : null}
     </div>
   );
 }

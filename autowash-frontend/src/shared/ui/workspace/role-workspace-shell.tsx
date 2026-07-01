@@ -21,7 +21,6 @@ import {
   ShieldCheck,
   Sun,
   UserCog,
-  UserRound,
   Wrench,
   X,
 } from "lucide-react";
@@ -46,11 +45,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/shared/ui/ui/popover";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/ui/avatar";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { useQuery } from "@tanstack/react-query";
 import { MarqueeTicker } from "@/shared/ui/marquee-ticker";
 import { getEligibleSessionBookings, getOperationsQueue } from "@/features/operations/lib/operations-service";
 import { useCustomerNotifications, useMarkCustomerNotificationAsRead } from "@/features/notifications/hooks/use-customer-notifications";
+import { getCustomerTierMetalStyle } from "@/shared/ui/customer/customer-experience";
 
 type RoleWorkspaceShellProps = {
   requiredRole: UserRole;
@@ -256,38 +257,41 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     : "/admin/dashboard";
 
   const quickActions = getProfileQuickActions(requiredRole);
+  const customerTierMetal = requiredRole === "CUSTOMER" ? getCustomerTierMetalStyle(user.tier) : null;
 
   return (
     <div className="flex flex-col min-h-screen">
       {requiredRole === "CUSTOMER" && <MarqueeTicker />}
-      <div className={cn("flex flex-1 text-foreground relative", requiredRole === "CUSTOMER" ? "bg-[#fdf7ff]" : "bg-background")}>
+      <div className={cn("flex flex-1 text-foreground relative", requiredRole === "CUSTOMER" ? "bg-[#f7fcff]" : "bg-background")}>
         <div 
           className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--card))_55%,hsl(var(--muted))_100%)]" 
-          style={requiredRole === "CUSTOMER" ? { background: "radial-gradient(circle at top left, #f5efff, #fdf7ff 70%)" } : undefined}
+          style={requiredRole === "CUSTOMER" ? { background: "radial-gradient(circle at top left, rgba(0,184,217,0.12), #f7fcff 68%)" } : undefined}
         />
 
       {/* ── Sidebar ── */}
       <aside
         className={cn(
           "sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-border/70 bg-card/85 backdrop-blur-xl transition-all duration-300 lg:flex",
-          requiredRole === "CUSTOMER" ? "w-64 bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.02)]" : (sidebarCollapsed ? "w-[5.25rem]" : "w-72"),
+          requiredRole === "CUSTOMER"
+            ? (sidebarCollapsed ? "w-[5.25rem] bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.02)]" : "w-64 bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.02)]")
+            : (sidebarCollapsed ? "w-[5.25rem]" : "w-72"),
         )}
       >
         <SidebarBrand
-          collapsed={requiredRole === "CUSTOMER" ? false : sidebarCollapsed}
+          collapsed={sidebarCollapsed}
           theme={workspaceTheme}
           language={language}
           onToggle={() => setSidebarCollapsed((v) => !v)}
         />
 
-        <nav className={cn("min-h-0 flex-1 overflow-y-auto", (requiredRole === "CUSTOMER" || !sidebarCollapsed) ? "px-3 py-4" : "px-2 py-4")}>
-          <ul className={cn((requiredRole === "CUSTOMER" || !sidebarCollapsed) ? "space-y-1" : "space-y-3")}>
+        <nav className={cn("min-h-0 flex-1 overflow-y-auto", !sidebarCollapsed ? "px-3 py-4" : "px-2 py-4")}>
+          <ul className={cn(!sidebarCollapsed ? "space-y-1" : "space-y-3")}>
             {navItems.map((item) => (
               <SidebarNavLink
                 key={item.href}
                 item={item}
                 pathname={pathname}
-                collapsed={requiredRole === "CUSTOMER" ? false : sidebarCollapsed}
+                collapsed={sidebarCollapsed}
                 activeClassName={workspaceTheme.activeNav}
                 language={language}
               />
@@ -299,9 +303,14 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           {requiredRole === "CUSTOMER" && (
             <Link
               href="/customer/bookings/new"
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0566D9] text-white px-4 py-3 text-sm font-bold shadow-[0_12px_24px_rgba(5,102,217,0.22)] transition hover:bg-[#0455B6] hover:-translate-y-0.5"
+              title={sidebarCollapsed ? t("Đặt lịch mới", "Book New Service") : undefined}
+              className={cn(
+                "flex w-full items-center justify-center gap-2 rounded-xl bg-[#0566D9] text-white text-sm font-bold shadow-[0_12px_24px_rgba(5,102,217,0.22)] transition hover:-translate-y-0.5 hover:bg-[#0455B6]",
+                sidebarCollapsed ? "h-11 px-0" : "px-4 py-3",
+              )}
             >
-              {t("Đặt lịch mới", "Book New Service")}
+              <ClipboardList className={cn("h-4 w-4", !sidebarCollapsed && "hidden")} />
+              {!sidebarCollapsed && t("Đặt lịch mới", "Book New Service")}
             </Link>
           )}
 
@@ -328,7 +337,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-border/70 bg-background/80 px-3 py-2.5 text-sm font-semibold transition hover:bg-accent"
           >
             <LogOut className="h-4 w-4" />
-            {(requiredRole === "CUSTOMER" || !sidebarCollapsed) && (
+            {!sidebarCollapsed && (
               <span>
                 {logoutMutation.isPending
                   ? t("Đang đăng xuất...", "Signing out...")
@@ -601,19 +610,39 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className="group flex max-w-[12rem] items-center gap-2 rounded-xl border border-border/70 bg-card/90 px-2 py-1.5 text-left transition hover:border-primary/30 hover:bg-card sm:max-w-none sm:px-3"
+                    className={cn(
+                      "group flex h-10 max-w-[9.75rem] items-center gap-1.5 rounded-xl border px-2 py-1.5 text-left transition sm:w-[11.75rem] sm:max-w-[11.75rem] sm:px-2",
+                      customerTierMetal
+                        ? "relative overflow-hidden border-[#c28a56]/70 bg-[#d5aa7b] shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_0_0_1px_rgba(255,238,210,0.34),0_8px_20px_rgba(163,107,66,0.20)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_0_0_1px_rgba(255,238,210,0.46),0_10px_24px_rgba(163,107,66,0.24)] [&>*]:relative [&>*]:z-10"
+                        : "border-border/70 bg-card/90 hover:border-primary/30 hover:bg-card",
+                    )}
                     aria-label={t("Mở menu hồ sơ", "Open profile menu")}
                   >
-                    <div className={cn("flex h-9 w-9 items-center justify-center rounded-full border", workspaceTheme.accentSoft)}>
-                      <UserRound className="h-4 w-4" />
-                    </div>
+                    {customerTierMetal ? (
+                      <span className={cn("absolute inset-0 rounded-xl opacity-100", customerTierMetal.surface)} />
+                    ) : null}
+                    {customerTierMetal ? (
+                      <>
+                        <span className="absolute inset-0 rounded-xl bg-[linear-gradient(135deg,rgba(255,255,255,0.40)_0%,rgba(255,255,255,0.10)_42%,rgba(67,40,23,0.12)_100%)]" />
+                        <span className="absolute inset-x-3 top-px h-px bg-white/70" />
+                        <span className="absolute left-8 top-1.5 h-1 w-1 rounded-full bg-white/50 shadow-[0_0_8px_rgba(255,255,255,0.52)]" />
+                        <span className="absolute right-6 top-2 h-1 w-1 rounded-full bg-[#fff3d6]/55 shadow-[0_0_10px_rgba(255,232,186,0.58)]" />
+                        <span className="absolute bottom-2 right-12 h-0.5 w-0.5 rounded-full bg-white/50 shadow-[0_0_7px_rgba(255,255,255,0.50)]" />
+                      </>
+                    ) : null}
+                    <Avatar className={cn("h-7 w-7 border bg-[#fcf9f5]/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_3px_8px_rgba(67,40,23,0.15)]", customerTierMetal ? ["ring-2", customerTierMetal.ring, customerTierMetal.border] : workspaceTheme.accentSoft)}>
+                      <AvatarImage src={user.avatarUrl ?? undefined} alt={user.fullName} className="object-cover" />
+                      <AvatarFallback className={cn("text-[10px] font-black", customerTierMetal ? ["bg-[#fcf9f5]/80", customerTierMetal.text] : workspaceTheme.accentSoft)}>
+                        {getUserInitials(user.fullName)}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="hidden min-w-0 sm:block">
-                      <div className="truncate text-sm font-bold">{user.fullName}</div>
-                      <div className="truncate text-[11px] font-semibold text-muted-foreground">
+                      <div className={cn("truncate text-[13px] font-black leading-tight", customerTierMetal?.text)}>{user.fullName}</div>
+                      <div className={cn("truncate text-[10px] font-black uppercase tracking-wide", customerTierMetal ? customerTierMetal.softText : "text-muted-foreground")}>
                         {requiredRole === "CUSTOMER" ? (user.tier ?? (t("THÀNH VIÊN", "MEMBER"))) : user.role}
                       </div>
                     </div>
-                    <ChevronDown className="hidden h-4 w-4 text-muted-foreground transition group-data-[state=open]:rotate-180 sm:block" />
+                    <ChevronDown className={cn("hidden h-3.5 w-3.5 transition group-data-[state=open]:rotate-180 sm:block", customerTierMetal ? customerTierMetal.softText : "text-muted-foreground")} />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -623,9 +652,12 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 >
                   <div className="px-2 py-2">
                     <div className="flex items-center gap-3">
-                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-full border", workspaceTheme.accentSoft)}>
-                        <UserRound className="h-4 w-4" />
-                      </div>
+                      <Avatar className={cn("h-10 w-10 border", workspaceTheme.accentSoft)}>
+                        <AvatarImage src={user.avatarUrl ?? undefined} alt={user.fullName} className="object-cover" />
+                        <AvatarFallback className={cn("text-xs font-semibold", workspaceTheme.accentSoft)}>
+                          {getUserInitials(user.fullName)}
+                        </AvatarFallback>
+                      </Avatar>
                       <div className="min-w-0">
                         <div className="truncate text-sm font-extrabold">{user.fullName}</div>
                         <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -966,4 +998,15 @@ function isNavActive(pathname: string, item: WorkspaceNavItem) {
   const itemPath = item.href.split("?")[0];
   if (item.exact) return pathname === itemPath;
   return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+}
+
+function getUserInitials(fullName: string) {
+  const initials = fullName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+
+  return initials || "U";
 }

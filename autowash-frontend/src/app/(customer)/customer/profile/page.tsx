@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
-import { Loader2, RefreshCcw, Save, ShieldCheck, UserRound } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { Camera, Loader2, RefreshCcw, Save, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import {
@@ -11,13 +11,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/ui/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/ui/avatar";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import { validateProfileForm } from "@/features/profile/lib/profile-form-validation";
 import { buildUpdateUserProfileRequest } from "@/features/profile/lib/profile-update-payload";
 import {
   useCustomerProfile,
+  useUploadCustomerAvatar,
   useUpdateCustomerProfile,
 } from "@/features/profile/hooks/use-customer-profile";
+import type { CreateAvatarUploadUrlRequest } from "@/entities/users";
 
 type ProfileFormState = {
   fullName: string;
@@ -31,11 +34,21 @@ const EMPTY_FORM: ProfileFormState = {
   phone: "",
 };
 
+const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024;
+
+const ALLOWED_AVATAR_TYPES: Record<string, CreateAvatarUploadUrlRequest["contentType"]> = {
+  "image/jpeg": "image/jpeg",
+  "image/png": "image/png",
+  "image/webp": "image/webp",
+};
+
 export default function CustomerProfilePage() {
   const profileQuery = useCustomerProfile();
   const updateProfileMutation = useUpdateCustomerProfile();
+  const uploadAvatarMutation = useUploadCustomerAvatar();
   const [form, setForm] = useState<ProfileFormState>(EMPTY_FORM);
   const [showValidation, setShowValidation] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!profileQuery.data) {
@@ -49,6 +62,7 @@ export default function CustomerProfilePage() {
     });
     setShowValidation(false);
     updateProfileMutation.reset();
+    uploadAvatarMutation.reset();
   }, [profileQuery.data?.userId]);
 
   useEffect(() => {
@@ -95,6 +109,33 @@ export default function CustomerProfilePage() {
       setShowValidation(false);
     } catch {
       toast.error("Unable to update profile.");
+    }
+  };
+
+  const handleAvatarSelect = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    const contentType = ALLOWED_AVATAR_TYPES[file.type];
+    if (!contentType) {
+      toast.error("Avatar must be a JPG, PNG, or WEBP image.");
+      return;
+    }
+
+    if (file.size > MAX_AVATAR_SIZE_BYTES) {
+      toast.error("Avatar must be 5MB or smaller.");
+      return;
+    }
+
+    try {
+      await uploadAvatarMutation.mutateAsync({ file, contentType });
+      toast.success("Avatar updated successfully.");
+    } catch (error) {
+      toast.error(getDisplayErrorMessage(error));
     }
   };
 
@@ -145,9 +186,12 @@ export default function CustomerProfilePage() {
             </div>
 
             <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
-                <UserRound className="h-5 w-5" />
-              </div>
+              <Avatar className="h-11 w-11 rounded-2xl border border-slate-200">
+                <AvatarImage src={profile.avatarUrl ?? undefined} alt={profile.fullName} className="object-cover" />
+                <AvatarFallback className="rounded-2xl bg-slate-900 text-white">
+                  {getAvatarFallback(profile.fullName)}
+                </AvatarFallback>
+              </Avatar>
               <div>
                 <div className="text-sm font-semibold text-slate-900">{profile.fullName}</div>
                 <div className="text-xs text-slate-500">
@@ -167,6 +211,54 @@ export default function CustomerProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 p-6">
+              <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50/80 p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-20 w-20 border border-slate-200 shadow-sm">
+                      <AvatarImage src={profile.avatarUrl ?? undefined} alt={profile.fullName} className="object-cover" />
+                      <AvatarFallback className="bg-slate-900 text-lg font-semibold text-white">
+                        {getAvatarFallback(profile.fullName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">Profile avatar</div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-start gap-2">
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handleAvatarSelect}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-xl"
+                      disabled={uploadAvatarMutation.isPending}
+                      onClick={() => avatarInputRef.current?.click()}
+                    >
+                      {uploadAvatarMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="mr-2 h-4 w-4" />
+                          Change avatar
+                        </>
+                      )}
+                    </Button>
+                    {uploadAvatarMutation.isError ? (
+                      <p className="text-sm text-rose-700">
+                        {getDisplayErrorMessage(uploadAvatarMutation.error)}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
               <InfoRow label="Full name" value={profile.fullName} />
               <InfoRow label="Phone" value={profile.phone ?? "Not provided"} />
               <InfoRow label="Email" value={profile.email ?? "Not provided"} />
@@ -390,4 +482,15 @@ function formatDateTime(value: string) {
     month: "2-digit",
     day: "2-digit",
   });
+}
+
+function getAvatarFallback(fullName: string) {
+  const initials = fullName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+
+  return initials || "U";
 }

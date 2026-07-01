@@ -13,6 +13,8 @@ public interface OtpVerificationRepository extends JpaRepository<OtpVerification
 
     Optional<OtpVerification> findFirstByUserAndPurposeAndVerifiedAtIsNullOrderByCreatedAtDesc(User user, OtpPurpose purpose);
 
+    Optional<OtpVerification> findFirstByUserAndPurposeOrderByCreatedAtDesc(User user, OtpPurpose purpose);
+
     List<OtpVerification> findByUserAndPurposeAndVerifiedAtIsNull(User user, OtpPurpose purpose);
 
     long countByUserAndPurposeAndCreatedAtAfter(User user, OtpPurpose purpose, Instant createdAt);

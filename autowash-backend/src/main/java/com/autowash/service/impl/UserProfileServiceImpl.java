@@ -1,16 +1,21 @@
 package com.autowash.service.impl;
 
+import com.autowash.dto.CreateAvatarUploadUrlRequest;
+import com.autowash.dto.CreateAvatarUploadUrlResponse;
 import com.autowash.entity.User;
 import com.autowash.entity.UserPreference;
 import com.autowash.repository.UserOAuthAccountRepository;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.UserPreferenceRepository;
+import com.autowash.service.AvatarStorageService;
 import com.autowash.service.CurrentUserService;
 import com.autowash.service.CustomerLoyaltyService;
 import com.autowash.service.LoyaltyService;
 import com.autowash.service.UserProfileService;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.dto.UpdateUserProfileRequest;
+import com.autowash.dto.UpdateUserAvatarRequest;
+import com.autowash.dto.UpdateUserAvatarResponse;
 import com.autowash.dto.UpdateUserProfileResponse;
 import com.autowash.dto.UpdateUserPreferencesRequest;
 import com.autowash.dto.UpdateUserPreferencesResponse;
@@ -29,6 +34,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final UserPreferenceRepository userPreferenceRepository;
     private final CustomerLoyaltyService customerLoyaltyService;
     private final LoyaltyService loyaltyService;
+    private final AvatarStorageService avatarStorageService;
 
     public UserProfileServiceImpl(
             CurrentUserService currentUserService,
@@ -36,7 +42,8 @@ public class UserProfileServiceImpl implements UserProfileService {
             UserOAuthAccountRepository userOAuthAccountRepository,
             UserPreferenceRepository userPreferenceRepository,
             CustomerLoyaltyService customerLoyaltyService,
-            LoyaltyService loyaltyService
+            LoyaltyService loyaltyService,
+            AvatarStorageService avatarStorageService
     ) {
         this.currentUserService = currentUserService;
         this.UserRepository = UserRepository;
@@ -44,6 +51,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         this.userPreferenceRepository = userPreferenceRepository;
         this.customerLoyaltyService = customerLoyaltyService;
         this.loyaltyService = loyaltyService;
+        this.avatarStorageService = avatarStorageService;
     }
 
     @Override
@@ -55,6 +63,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         return new UserProfileResponse(
                 user.getId().toString(),
                 user.getFullName(),
+                user.getAvatarUrl(),
                 user.getPhone(),
                 user.getEmail(),
                 user.getStatus().name(),
@@ -71,6 +80,32 @@ public class UserProfileServiceImpl implements UserProfileService {
                         preference.isEmailNotifications(),
                         preference.isSmsNotifications()
                 )
+        );
+    }
+
+    @Override
+    @Transactional
+    public CreateAvatarUploadUrlResponse createAvatarUploadUrl(CreateAvatarUploadUrlRequest request) {
+        User user = currentUserService.getCurrentUser();
+        AvatarStorageService.AvatarUploadTarget uploadTarget =
+                avatarStorageService.createAvatarUpload(user.getId(), request.fileName(), request.contentType());
+        return new CreateAvatarUploadUrlResponse(
+                uploadTarget.objectKey(),
+                uploadTarget.uploadUrl(),
+                uploadTarget.publicUrl()
+        );
+    }
+
+    @Override
+    @Transactional
+    public UpdateUserAvatarResponse updateAvatar(UpdateUserAvatarRequest request) {
+        User user = currentUserService.getCurrentUser();
+        String avatarUrl = avatarStorageService.resolveAvatarUrl(user.getId(), request.objectKey());
+        user.setAvatarUrl(avatarUrl);
+        return new UpdateUserAvatarResponse(
+                user.getId().toString(),
+                user.getAvatarUrl(),
+                user.getUpdatedAt()
         );
     }
 

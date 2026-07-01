@@ -59,6 +59,7 @@ export type ResetPasswordRequest = {
 export type AuthResponseData = {
   userId: string;
   fullName: string;
+  avatarUrl?: string | null;
   phone: string | null;
   email?: string;
   role: UserRole;
@@ -81,6 +82,7 @@ export type LogoutRequest = {
 export type AuthUser = {
   userId: string;
   fullName: string;
+  avatarUrl: string | null;
   phone: string;
   email: string | null;
   role: UserRole;

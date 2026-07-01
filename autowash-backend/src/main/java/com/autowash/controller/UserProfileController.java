@@ -1,7 +1,11 @@
 package com.autowash.controller;
 
 import com.autowash.shared.dto.ApiResponse;
+import com.autowash.dto.CreateAvatarUploadUrlRequest;
+import com.autowash.dto.CreateAvatarUploadUrlResponse;
 import com.autowash.dto.UpdateUserProfileRequest;
+import com.autowash.dto.UpdateUserAvatarRequest;
+import com.autowash.dto.UpdateUserAvatarResponse;
 import com.autowash.dto.UpdateUserProfileResponse;
 import com.autowash.dto.UpdateUserPreferencesRequest;
 import com.autowash.dto.UpdateUserPreferencesResponse;
@@ -13,6 +17,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +39,22 @@ public class UserProfileController {
     @Operation(summary = "Get authenticated user's profile")
     public ApiResponse<UserProfileResponse> getProfile() {
         return ApiResponse.ok("Profile retrieved", userProfileService.getCurrentUserProfile());
+    }
+
+    @PostMapping("/profile/avatar/upload-url")
+    @Operation(summary = "Create a signed avatar upload URL for the authenticated user")
+    public ApiResponse<CreateAvatarUploadUrlResponse> createAvatarUploadUrl(
+            @Valid @RequestBody CreateAvatarUploadUrlRequest request
+    ) {
+        return ApiResponse.ok("Avatar upload URL created", userProfileService.createAvatarUploadUrl(request));
+    }
+
+    @PutMapping("/profile/avatar")
+    @Operation(summary = "Persist the uploaded avatar for the authenticated user")
+    public ApiResponse<UpdateUserAvatarResponse> updateAvatar(
+            @Valid @RequestBody UpdateUserAvatarRequest request
+    ) {
+        return ApiResponse.ok("Avatar updated successfully", userProfileService.updateAvatar(request));
     }
 
     @PutMapping("/profile")

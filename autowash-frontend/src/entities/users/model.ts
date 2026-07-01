@@ -15,6 +15,7 @@ export type UserPreferences = {
 export type UserProfile = {
   userId: string;
   fullName: string;
+  avatarUrl: string | null;
   phone: string | null;
   email: string | null;
   status: UserStatus;
@@ -38,5 +39,26 @@ export type UpdateUserProfileResponse = {
   fullName: string;
   phone: string | null;
   email: string | null;
+  updatedAt: string;
+};
+
+export type CreateAvatarUploadUrlRequest = {
+  fileName: string;
+  contentType: "image/jpeg" | "image/png" | "image/webp";
+};
+
+export type CreateAvatarUploadUrlResponse = {
+  objectKey: string;
+  uploadUrl: string;
+  publicUrl: string;
+};
+
+export type UpdateUserAvatarRequest = {
+  objectKey: string;
+};
+
+export type UpdateUserAvatarResponse = {
+  userId: string;
+  avatarUrl: string;
   updatedAt: string;
 };

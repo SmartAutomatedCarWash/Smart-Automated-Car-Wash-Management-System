@@ -57,7 +57,8 @@ class AdminReportingControllerIntegrationTest {
 
     @Test
     void adminBookingListSupportsFiltersAndPagination() throws Exception {
-        Booking matching = createConfirmedBooking("ADMIN_BK_001", "0901777401", "30H-774401", LocalDate.now().plusDays(1), 270000);
+        LocalDate matchingDate = LocalDate.of(2026, 6, 15);
+        Booking matching = createConfirmedBooking("ADMIN_BK_001", "0901777401", "30H-774401", matchingDate, 270000);
         createConfirmedBooking("ADMIN_BK_002", "0901777402", "30H-774402", LocalDate.of(2026, 7, 10), 150000);
 
         mockMvc.perform(get("/api/v1/admin/bookings")

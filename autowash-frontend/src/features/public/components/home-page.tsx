@@ -177,7 +177,7 @@ const navigationItems = [
 ];
 
 export function HomePageView() {
-  const [authMode, setAuthMode] = useState<"login" | "register" | "otp" | null>(null);
+  const [authMode, setAuthMode] = useState<"login" | "register" | "otp" | "forgot-password" | null>(null);
   const [otpEmail, setOtpEmail] = useState("");
   const { language, setLanguage } = useLanguageStore();
   const copy = HOME_COPY[language];
@@ -196,6 +196,10 @@ export function HomePageView() {
       const auth = params.get("auth");
       if (auth === "login" || auth === "register") {
         setAuthMode(auth);
+      } else if (auth === "forgot-password") {
+        setAuthMode("forgot-password");
+      }
+      if (auth === "login" || auth === "register" || auth === "forgot-password") {
         // Clear query parameter from the URL bar without reloading
         const newUrl = window.location.pathname + window.location.hash;
         window.history.replaceState({}, "", newUrl);

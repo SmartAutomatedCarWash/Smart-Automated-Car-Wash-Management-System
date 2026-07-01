@@ -103,6 +103,67 @@
     }
   }
 
+  @keyframes customerShimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes tierBorderTrace {
+    0% {
+      background-position: 220% 50%;
+    }
+    100% {
+      background-position: -120% 50%;
+    }
+  }
+
+  @keyframes tierSubtleSparkle {
+    0%, 100% {
+      opacity: 0.22;
+      transform: translate3d(-6%, 4%, 0);
+    }
+    50% {
+      opacity: 0.58;
+      transform: translate3d(6%, -4%, 0);
+    }
+  }
+
+  .tier-metal-surface {
+    background-size: 100% 100%;
+  }
+
+  .tier-metal-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--tier-glow, rgba(20, 184, 166, 0.45)) 72%, transparent) 18%, rgba(255, 248, 225, 0.98) 36%, var(--tier-glow, rgba(20, 184, 166, 0.45)) 52%, transparent 72%);
+    background-size: 240% 100%;
+    animation: tierBorderTrace 3.8s ease-in-out infinite;
+    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--tier-glow, rgba(20, 184, 166, 0.45)) 52%, transparent));
+  }
+
+  .tier-metal-sparkle::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(circle at 16% 28%, rgba(255,255,255,0.76) 0 1px, transparent 2px),
+      radial-gradient(circle at 68% 18%, rgba(255,246,214,0.78) 0 1px, transparent 2px),
+      radial-gradient(circle at 82% 72%, rgba(255,255,255,0.56) 0 1px, transparent 2px),
+      linear-gradient(110deg, transparent 22%, rgba(255,255,255,0.24) 44%, transparent 62%);
+    mix-blend-mode: screen;
+    opacity: 0.48;
+    animation: tierSubtleSparkle 5.6s ease-in-out infinite;
+  }
+
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;

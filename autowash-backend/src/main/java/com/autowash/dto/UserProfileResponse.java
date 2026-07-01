@@ -5,6 +5,7 @@ import java.time.Instant;
 public record UserProfileResponse(
         String userId,
         String fullName,
+        String avatarUrl,
         String phone,
         String email,
         String status,

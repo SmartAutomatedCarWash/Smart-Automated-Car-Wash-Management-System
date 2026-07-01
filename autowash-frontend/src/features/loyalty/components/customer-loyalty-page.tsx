@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import type { ComponentType, FormEvent } from "react";
+import type { ComponentType, CSSProperties, FormEvent } from "react";
 import {
   CheckCircle2,
   Crown,
@@ -41,6 +41,7 @@ import {
 import { cn } from "@/shared/lib/utils";
 import type { RedeemPointsResponse, TierVoucherOffer } from "@/entities/loyalty";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
+import { getCustomerTierMetalStyle } from "@/shared/ui/customer/customer-experience";
 
 type VoucherOfferState = TierVoucherOffer & {
   eligible: boolean;
@@ -157,6 +158,7 @@ export function CustomerLoyaltyPageContent() {
   }
 
   const currentTierIndex = TIER_ORDER.indexOf(summary.tier);
+  const tierMetal = getCustomerTierMetalStyle(summary.tier);
   const selectedRemainingPoints = selectedOffer
     ? Math.max(summary.availablePoints - selectedOffer.pointsCost, 0)
     : summary.availablePoints;
@@ -193,34 +195,47 @@ export function CustomerLoyaltyPageContent() {
               <MetricTile icon={ShieldCheck} label={translate(language, "Lần rửa xe hoàn thành", "Completed washes")} value={String(summary.completedWashCount)} />
             </div>
 
-            <div className="mt-7 rounded-3xl border border-slate-100 bg-slate-50 p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div
+              className={cn(
+                "tier-metal-border relative mt-7 overflow-hidden rounded-3xl p-[1px]",
+                tierMetal.glow,
+              )}
+              style={{ "--tier-glow": tierMetal.glowVar } as CSSProperties}
+            >
+              <div className={cn("tier-metal-surface tier-metal-sparkle relative z-10 overflow-hidden rounded-3xl border p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]", tierMetal.surface, tierMetal.border)}>
+                <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.44)_0%,rgba(255,255,255,0.12)_42%,rgba(67,40,23,0.12)_100%)]" />
+                <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-white/80" />
+                <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                  <div className={cn("text-xs font-black uppercase tracking-[0.24em]", tierMetal.softText)}>
                     {translate(language, "Tiến trình nâng hạng", "Lifetime tier progress")}
                   </div>
-                  <div className="mt-2 text-lg font-black text-slate-950">{summary.progress.progressPercent}% {translate(language, "hoàn thành", "complete")}</div>
+                  <div className={cn("mt-2 text-2xl font-black tracking-tight", tierMetal.text)}>{summary.progress.progressPercent}% {translate(language, "hoàn thành", "complete")}</div>
                   {summary.progress.nextTier ? (
-                    <div className="mt-1 text-sm text-slate-600">
+                    <div className={cn("mt-1 text-sm font-semibold", tierMetal.softText)}>
                       {`${summary.lifetimePoints.toLocaleString(locale)} / ${(summary.lifetimePoints + summary.progress.pointsToNextTier).toLocaleString(locale)} lifetime pts`}
                     </div>
                   ) : (
-                    <div className="mt-1 text-sm text-slate-600">{translate(language, "Đạt hạng cao nhất", "At the highest tier")}</div>
+                    <div className={cn("mt-1 text-sm font-semibold", tierMetal.softText)}>{translate(language, "Đạt hạng cao nhất", "At the highest tier")}</div>
                   )}
                 </div>
-                <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600 shadow-sm">
+                <div className={cn("rounded-full border bg-white/58 px-3 py-1 text-xs font-black uppercase tracking-wide shadow-sm backdrop-blur", tierMetal.border, tierMetal.text)}>
                   {summary.progress.nextTier
                     ? `${formatTierLabel(summary.progress.nextTier)} ${translate(language, "tiếp theo", "next")}`
                     : translate(language, "Hạng tối đa", "Max tier")}
                 </div>
               </div>
 
-              <div className="mt-4 relative h-10 overflow-hidden rounded-full bg-slate-100">
+              <div className="relative z-10 mt-5 flex h-14 items-center overflow-hidden rounded-full bg-[#fcf9f5] p-1 shadow-[inset_0_2px_10px_rgba(84,61,43,0.12),0_1px_0_rgba(255,255,255,0.82)]">
                 <div
-                  className={cn("absolute inset-y-0 left-0 rounded-full transition-all duration-300", tierProgressClass(summary.tier))}
+                  className={cn("relative h-full overflow-hidden rounded-full shadow-[2px_0_10px_rgba(163,128,89,0.30)] transition-all duration-1000 ease-out", tierMetal.progress)}
                   style={{ width: `${summary.progress.progressPercent}%` }}
-                />
-                <div className="relative flex h-full items-center justify-center text-sm font-semibold text-slate-950">
+                >
+                  <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.42),transparent_54%,rgba(0,0,0,0.08))]" />
+                  <span className="absolute inset-0 -translate-x-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.30),transparent)] animate-[customerShimmer_3s_infinite_ease-in-out]" />
+                  <span className="absolute bottom-0 right-0 top-0 w-2 rounded-full bg-white/40 blur-[2px]" />
+                </div>
+                <div className={cn("pointer-events-none absolute inset-0 flex items-center justify-center text-sm font-semibold tracking-tight", tierMetal.text)}>
                   {summary.progress.nextTier ? (
                     <span>
                       {summary.lifetimePoints.toLocaleString(locale)} / {(summary.lifetimePoints + summary.progress.pointsToNextTier).toLocaleString(locale)} lifetime pts
@@ -229,6 +244,7 @@ export function CustomerLoyaltyPageContent() {
                     <span>{translate(language, "Đạt hạng cao nhất", "At the highest tier")}</span>
                   )}
                 </div>
+              </div>
               </div>
             </div>
           </div>

@@ -28,6 +28,7 @@ export function buildAuthSession(data: AuthResponseData): AuthSession {
     user: {
       userId: data.userId,
       fullName: data.fullName,
+      avatarUrl: data.avatarUrl ?? null,
       phone: data.phone ?? "",
       email: data.email ?? null,
       role: data.role,
@@ -44,6 +45,7 @@ export function applyProfileToAuthUser(user: AuthUser, profile: UserProfile): Au
     ...user,
     userId: profile.userId,
     fullName: profile.fullName,
+    avatarUrl: profile.avatarUrl,
     phone: profile.phone ?? "",
     email: profile.email,
     role: profile.role,
@@ -58,6 +60,7 @@ export function isAuthUserInSyncWithProfile(user: AuthUser, profile: UserProfile
   return (
     user.userId === profile.userId &&
     user.fullName === profile.fullName &&
+    user.avatarUrl === profile.avatarUrl &&
     user.phone === (profile.phone ?? "") &&
     user.email === profile.email &&
     user.role === profile.role &&

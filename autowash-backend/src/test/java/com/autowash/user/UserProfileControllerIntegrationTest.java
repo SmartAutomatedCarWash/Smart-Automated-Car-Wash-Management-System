@@ -3,6 +3,7 @@ package com.autowash.user;
 import com.autowash.entity.User;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.UserRepository;
+import com.autowash.service.AvatarStorageService;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -13,9 +14,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.hamcrest.Matchers.nullValue;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -34,6 +37,9 @@ class UserProfileControllerIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @MockBean
+    private AvatarStorageService avatarStorageService;
+
     @Test
     void getProfileReturnsAuthenticatedCustomerProfile() throws Exception {
         String accessToken = registerActivateAndLogin("customer4680");
@@ -41,6 +47,7 @@ class UserProfileControllerIntegrationTest {
         mockMvc.perform(get("/api/v1/users/profile")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.avatarUrl").value(nullValue()))
                 .andExpect(jsonPath("$.data.phone").value(nullValue()))
                 .andExpect(jsonPath("$.data.hasGoogleAuth").value(false))
                 .andExpect(jsonPath("$.data.role").value("CUSTOMER"))
@@ -74,6 +81,56 @@ class UserProfileControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.fullName").value("Nguyen Van Updated"))
                 .andExpect(jsonPath("$.data.email").value("updated@example.com"))
                 .andExpect(jsonPath("$.data.phone").value("0901234699"));
+    }
+
+    @Test
+    void createAvatarUploadUrlReturnsSignedUploadTarget() throws Exception {
+        String accessToken = registerActivateAndLogin("customer4688");
+        Mockito.when(avatarStorageService.createAvatarUpload(Mockito.any(), Mockito.anyString(), Mockito.anyString()))
+                .thenReturn(new AvatarStorageService.AvatarUploadTarget(
+                        "avatars/customer/avatar-1.png",
+                        "https://storage.example.com/upload/avatar-1",
+                        "https://cdn.example.com/avatars/customer/avatar-1.png"
+                ));
+
+        mockMvc.perform(post("/api/v1/users/profile/avatar/upload-url")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "fileName": "avatar.png",
+                                  "contentType": "image/png"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.objectKey").value("avatars/customer/avatar-1.png"))
+                .andExpect(jsonPath("$.data.uploadUrl").value("https://storage.example.com/upload/avatar-1"))
+                .andExpect(jsonPath("$.data.publicUrl").value("https://cdn.example.com/avatars/customer/avatar-1.png"));
+    }
+
+    @Test
+    void updateAvatarPersistsAvatarUrlForCurrentUser() throws Exception {
+        String accessToken = registerActivateAndLogin("customer4689");
+        User user = userRepository.findByEmailIgnoreCase("customer4689@example.com").orElseThrow();
+
+        Mockito.when(avatarStorageService.resolveAvatarUrl(user.getId(), "avatars/%s/avatar-2.png".formatted(user.getId())))
+                .thenReturn("https://cdn.example.com/avatars/%s/avatar-2.png".formatted(user.getId()));
+
+        mockMvc.perform(put("/api/v1/users/profile/avatar")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "objectKey": "avatars/%s/avatar-2.png"
+                                }
+                                """.formatted(user.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.avatarUrl").value("https://cdn.example.com/avatars/%s/avatar-2.png".formatted(user.getId())));
+
+        mockMvc.perform(get("/api/v1/users/profile")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.avatarUrl").value("https://cdn.example.com/avatars/%s/avatar-2.png".formatted(user.getId())));
     }
 
     @Test
@@ -188,13 +245,16 @@ class UserProfileControllerIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.UpdateUserProfileRequest.properties.fullName.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.UpdateUserProfileRequest.properties.email.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.UpdateUserProfileRequest.properties.phone.type").value("string"))
+                .andExpect(jsonPath("$.components.schemas.UserProfileResponse.properties.avatarUrl.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.language.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.theme.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.notificationsEnabled.type").value("boolean"))
                 .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.updatedAt.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.userId").doesNotExist())
                 .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.emailNotifications").doesNotExist())
-                .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.smsNotifications").doesNotExist());
+                .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.smsNotifications").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/users/profile/avatar/upload-url']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/users/profile/avatar']").exists());
     }
 
     private String registerActivateAndLogin(String emailLocalPart) throws Exception {

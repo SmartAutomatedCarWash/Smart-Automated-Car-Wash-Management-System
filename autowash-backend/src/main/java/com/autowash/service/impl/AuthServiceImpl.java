@@ -377,7 +377,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void verifyOtpForPurpose(User user, OtpPurpose purpose, String otp) {
-        OtpVerification OtpVerification = OtpVerificationRepository.findFirstByUserAndPurposeAndVerifiedAtIsNullOrderByCreatedAtDesc(user, purpose)
+        OtpVerification OtpVerification = OtpVerificationRepository.findFirstByUserAndPurposeOrderByCreatedAtDesc(user, purpose)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", "INVALID_OTP"));
 
         if (OtpVerification.getExpiresAt().isBefore(Instant.now())) {
@@ -396,7 +396,9 @@ public class AuthServiceImpl implements AuthService {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", "INVALID_OTP");
         }
 
-        OtpVerification.markVerified();
+        if (!OtpVerification.isVerified()) {
+            OtpVerification.markVerified();
+        }
     }
 
     private void ensureDefaultCustomerRecords(User user) {

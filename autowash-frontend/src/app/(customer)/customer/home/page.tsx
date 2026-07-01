@@ -293,8 +293,8 @@ export default function CustomerHomePage() {
     <div className="relative min-h-screen px-4 py-8 sm:px-6 lg:px-8 bg-background">
       {/* Background decoration */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -right-24 top-10 h-96 w-96 rounded-full bg-primary/5 blur-[100px]" />
-        <div className="absolute bottom-10 -left-10 h-[28rem] w-[28rem] rounded-full bg-amber-500/5 blur-[100px]" />
+        <div className="absolute -right-24 top-10 h-96 w-96 rounded-full bg-[#00B8D9]/10 blur-[100px]" />
+        <div className="absolute bottom-10 -left-10 h-[28rem] w-[28rem] rounded-full bg-[#2F80ED]/8 blur-[100px]" />
       </div>
 
       <div className="relative mx-auto flex max-w-7xl flex-col gap-8">
@@ -302,9 +302,9 @@ export default function CustomerHomePage() {
         <CustomerExperienceStyles />
 
         {/* Promo Timer Banner */}
-        <div className="flex flex-wrap items-center justify-between gap-y-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-5 py-3 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-y-2 rounded-xl border border-[#BDEEFF] bg-[#F5FBFF] px-5 py-3 shadow-sm">
           <div className="flex items-center gap-2.5 text-[13px] font-bold text-foreground">
-            <span className="grid h-6 w-6 place-items-center rounded-full bg-amber-500 text-white">
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-[#00B8D9] text-white">
               <Sparkles className="h-3.5 w-3.5" />
             </span>
             {t(mockPromo.text.vi, mockPromo.text.en)}
@@ -314,7 +314,7 @@ export default function CustomerHomePage() {
             {[timeLeft.hh, timeLeft.mm, timeLeft.ss].map((num, i) => (
               <span
                 key={i}
-                className="grid h-7 min-w-[28px] place-items-center rounded-md bg-primary px-1.5 font-mono text-[13px] font-black text-white"
+                className="grid h-7 min-w-[28px] place-items-center rounded-md bg-[#0566D9] px-1.5 font-mono text-[13px] font-black text-white"
               >
                 {String(num).padStart(2, "0")}
               </span>
@@ -326,8 +326,8 @@ export default function CustomerHomePage() {
         <section className="overflow-hidden rounded-3xl border border-border/50 bg-card p-6 shadow-sm sm:p-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3.5 py-1 text-xs font-bold uppercase tracking-[0.15em] text-primary">
-                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+              <div className="inline-flex items-center gap-2 rounded-full bg-[#EAF6FD] px-3.5 py-1 text-xs font-bold uppercase tracking-[0.15em] text-[#0566D9]">
+                <Sparkles className="h-3.5 w-3.5 text-[#00B8D9]" />
                 Aura Community Feed
               </div>
               <h1 className="text-3xl font-black tracking-tight text-foreground sm:text-4xl">
@@ -339,16 +339,16 @@ export default function CustomerHomePage() {
             </div>
 
             {/* Loyalty Perks Card */}
-            <div className="flex items-center gap-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 shadow-sm min-w-[240px]">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
-                <Gift className="h-6 w-6 text-amber-500" />
+            <div className="flex min-w-[240px] items-center gap-4 rounded-2xl border border-[#BDEEFF] bg-[#F5FBFF] p-4 shadow-sm">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#0566D9] text-white shadow-md shadow-[#0566D9]/20">
+                <Gift className="h-6 w-6 text-white" />
               </div>
               <div>
                 <div className="text-[10px] font-black uppercase tracking-wider text-primary/80">
                   {t("Hạng của bạn", "Your Tier")}
                 </div>
                 <div className="text-lg font-black text-foreground flex items-center gap-1.5 mt-0.5">
-                  <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+                  <Star className="h-4 w-4 fill-[#00B8D9] text-[#00B8D9]" />
                   {user?.tier || "Diamond Member"}
                 </div>
                 <div className="text-xs text-primary font-bold mt-0.5">
@@ -371,36 +371,36 @@ export default function CustomerHomePage() {
         ) : null}
 
         {/* Hero Slider & Info */}
-        <section className="relative mt-2 overflow-hidden rounded-3xl border border-border/50 bg-primary shadow-xl">
+        <section className="relative mt-2 overflow-hidden rounded-3xl border border-[#BDEEFF] bg-[#F5FBFF] shadow-[0_18px_48px_rgba(47,128,237,0.12)]">
           {heroSlides.map((src, i) => (
             <img
               key={src}
               src={src}
               alt="Luxury car wash & detailing"
               className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ease-out ${
-                i === heroIndex ? "opacity-35" : "opacity-0"
+                i === heroIndex ? "opacity-28" : "opacity-0"
               }`}
             />
           ))}
           <div className="relative min-h-[360px] w-full flex flex-col justify-center px-8 py-10 sm:px-12">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/70 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#F7FCFF]/95 via-[#DFF7FF]/84 to-[#EAF6FD]/40" />
             
             <div className="relative z-10 max-w-xl space-y-4">
-              <span className="inline-block bg-amber-500 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-amber-950">
+              <span className="inline-block rounded-full border border-[#BDEEFF] bg-white/85 px-3.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#0566D9] shadow-sm">
                 Aura Detailing Elite
               </span>
-              <h2 className="font-bold text-3xl sm:text-4xl text-white leading-tight tracking-tight">
+              <h2 className="font-bold text-3xl sm:text-4xl text-[#102A43] leading-tight tracking-tight">
                 {t("Chuyên Nghiệp – Đẳng Cấp Spa Cho Xế Yêu", "Professional – Luxury Car Care & Detailing")}
               </h2>
-              <p className="text-slate-200 text-sm leading-relaxed max-w-lg">
+              <p className="max-w-lg text-sm leading-relaxed text-[#52677A]">
                 {t("Trải nghiệm dịch vụ chăm sóc xe hơi đẳng cấp với quy trình chuyên nghiệp, hệ thống không chạm hiện đại và đội ngũ kỹ thuật viên tận tâm – mang lại vẻ đẹp hoàn hảo cho chiếc xe của bạn.", "Experience luxury car care with a professional process, modern touchless technology, and a dedicated technician team – restoring perfect shine to your car.")}
               </p>
               <div className="pt-2 flex flex-wrap items-center gap-3">
-                <Button asChild className="rounded-xl bg-amber-500 text-amber-950 hover:bg-amber-500/90 font-bold text-xs px-5 py-2.5 shadow-lg shadow-black/25">
+                <Button asChild className="rounded-xl bg-[#00A3B8] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#00B8D9]/20 hover:bg-[#008FA3]">
                   <Link href="/customer/booking">{t("Đặt lịch ngay", "Book Detailing Now")}</Link>
                 </Button>
-                <div className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white backdrop-blur">
-                  <ShieldCheck className="h-4 w-4 text-amber-500" />
+                <div className="inline-flex items-center gap-1.5 rounded-xl border border-[#BDEEFF] bg-white/75 px-4 py-2 text-xs font-semibold text-[#102A43] backdrop-blur">
+                  <ShieldCheck className="h-4 w-4 text-[#00B8D9]" />
                   {t("Cam kết hài lòng 100%", "Satisfaction Guaranteed")}
                 </div>
               </div>
@@ -413,7 +413,7 @@ export default function CustomerHomePage() {
                   key={i}
                   onClick={() => setHeroIndex(i)}
                   className={`h-1.5 rounded-full transition-all ${
-                    i === heroIndex ? "w-6 bg-amber-500" : "w-1.5 bg-white/40"
+                    i === heroIndex ? "w-6 bg-[#00B8D9]" : "w-1.5 bg-[#BFD7EA]"
                   }`}
                   aria-label={`Slide ${i + 1}`}
                 />

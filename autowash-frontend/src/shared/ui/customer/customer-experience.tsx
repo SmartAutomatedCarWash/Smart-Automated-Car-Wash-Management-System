@@ -64,6 +64,87 @@ const tierStyles: Record<Tier, { label: string; ring: string; gradient: string; 
   },
 };
 
+type TierMetalStyle = {
+  label: string;
+  surface: string;
+  progress: string;
+  text: string;
+  softText: string;
+  border: string;
+  ring: string;
+  glow: string;
+  glowVar: string;
+};
+
+const tierMetalStyles: Record<Tier, TierMetalStyle> = {
+  BRONZE: {
+    label: "Bronze",
+    surface: "bg-[linear-gradient(135deg,#f7eadb_0%,#d5aa7b_42%,#a9784c_76%,#fff2df_100%)]",
+    progress: "bg-[linear-gradient(90deg,#8f6139_0%,#c3905b_42%,#e4bf8d_62%,#9b6b42_100%)]",
+    text: "text-[#432817]",
+    softText: "text-[#704927]",
+    border: "border-[#c28a56]/70",
+    ring: "ring-[#e8bb86]/65",
+    glow: "shadow-[0_18px_48px_rgba(163,107,66,0.32)]",
+    glowVar: "rgba(194,138,86,0.72)",
+  },
+  MEMBER: {
+    label: "Bronze",
+    surface: "bg-[linear-gradient(135deg,#f7eadb_0%,#d5aa7b_42%,#a9784c_76%,#fff2df_100%)]",
+    progress: "bg-[linear-gradient(90deg,#8f6139_0%,#c3905b_42%,#e4bf8d_62%,#9b6b42_100%)]",
+    text: "text-[#432817]",
+    softText: "text-[#704927]",
+    border: "border-[#c28a56]/70",
+    ring: "ring-[#e8bb86]/65",
+    glow: "shadow-[0_18px_48px_rgba(163,107,66,0.32)]",
+    glowVar: "rgba(194,138,86,0.72)",
+  },
+  SILVER: {
+    label: "Silver",
+    surface: "bg-[linear-gradient(135deg,#f8fbff_0%,#dfe8f2_38%,#b5c1cf_68%,#ffffff_100%)]",
+    progress: "bg-[linear-gradient(90deg,#6f7d8d_0%,#dce5ee_40%,#ffffff_58%,#8997a7_100%)]",
+    text: "text-[#273445]",
+    softText: "text-[#607086]",
+    border: "border-[#c7d4e3]/80",
+    ring: "ring-[#dbe6f2]/80",
+    glow: "shadow-[0_18px_48px_rgba(113,128,150,0.24)]",
+    glowVar: "rgba(148,163,184,0.7)",
+  },
+  GOLD: {
+    label: "Gold",
+    surface: "bg-[linear-gradient(135deg,#fff9df_0%,#f3d47a_38%,#c99718_68%,#fff2b8_100%)]",
+    progress: "bg-[linear-gradient(90deg,#9a6507_0%,#dca91a_40%,#fff0a8_60%,#b77a05_100%)]",
+    text: "text-[#3f2a04]",
+    softText: "text-[#7c5608]",
+    border: "border-[#e5bf45]/70",
+    ring: "ring-[#f7d96d]/65",
+    glow: "shadow-[0_18px_52px_rgba(216,164,20,0.28)]",
+    glowVar: "rgba(216,164,20,0.68)",
+  },
+  DIAMOND: {
+    label: "Diamond",
+    surface: "bg-[linear-gradient(135deg,#eefcff_0%,#a9f3ff_36%,#7db9ff_68%,#ffffff_100%)]",
+    progress: "bg-[linear-gradient(90deg,#0891b2_0%,#67e8f9_38%,#ffffff_58%,#60a5fa_100%)]",
+    text: "text-[#07314a]",
+    softText: "text-[#0e7490]",
+    border: "border-[#8eeaff]/70",
+    ring: "ring-[#a5f3fc]/70",
+    glow: "shadow-[0_18px_52px_rgba(34,211,238,0.24)]",
+    glowVar: "rgba(34,211,238,0.65)",
+  },
+  PLATINUM: {
+    label: "Platinum",
+    surface: "bg-[linear-gradient(135deg,#fbfbff_0%,#e6ebf3_36%,#d9c7f6_68%,#ffffff_100%)]",
+    progress: "bg-[linear-gradient(90deg,#737373_0%,#e9eef5_38%,#fff7fb_58%,#d8b4fe_100%)]",
+    text: "text-[#31283d]",
+    softText: "text-[#6d5d80]",
+    border: "border-[#d8b4fe]/70",
+    ring: "ring-[#ede9fe]/80",
+    glow: "shadow-[0_18px_52px_rgba(168,85,247,0.20)]",
+    glowVar: "rgba(168,85,247,0.48)",
+  },
+};
+
 const liveSessionSteps: LiveSessionStep[] = ["PENDING", "SCHEDULED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED"];
 
 const liveSessionOffsets: Record<LiveSessionStep, number> = {
@@ -134,6 +215,11 @@ function formatCountdown(milliseconds: number, language: Language) {
 export function getCustomerTierStyle(tier?: string | null) {
   const normalized = (tier ?? "MEMBER").toUpperCase() as Tier;
   return tierStyles[normalized] ?? tierStyles.MEMBER;
+}
+
+export function getCustomerTierMetalStyle(tier?: string | null) {
+  const normalized = (tier ?? "MEMBER").toUpperCase() as Tier;
+  return tierMetalStyles[normalized] ?? tierMetalStyles.MEMBER;
 }
 
 export function CustomerAvatarBadge({
