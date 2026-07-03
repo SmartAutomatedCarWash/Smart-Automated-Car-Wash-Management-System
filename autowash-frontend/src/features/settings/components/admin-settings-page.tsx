@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings2, Loader2, Save, Clock, Calendar, Coins, Trophy, ChevronDown, ChevronRight } from "lucide-react";
+import { Settings2, Loader2, Save, Clock, Calendar, Coins, Trophy, ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Button } from "@/shared/ui/ui/button";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useSystemSettings, useUpdateSystemSettings } from "@/features/settings/hooks/use-admin-settings";
-import { useTierConfigs, useUpdateTierConfig } from "@/features/settings/hooks/use-admin-tiers";
+import { useCreateTierConfig, useTierConfigs, useUpdateTierConfig } from "@/features/settings/hooks/use-admin-tiers";
 import type { SystemSettings } from "@/features/settings/lib/admin-settings-service";
 import type { TierConfig } from "@/features/settings/lib/admin-tiers-service";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
@@ -30,6 +30,7 @@ const ADMIN_SETTINGS_COPY = {
       desc: "Quy định về thời gian đặt trước tối đa và chính sách vắng mặt.",
       maxAdvance: "Đặt trước tối đa (ngày)",
       noShowGrace: "Thời gian chờ vắng mặt (phút)",
+      maxPerSlot: "Số booking tối đa mỗi khung 1 giờ",
     },
     currencyPoints: {
       title: "Tiền tệ & Điểm",
@@ -51,6 +52,11 @@ const ADMIN_SETTINGS_COPY = {
       threshold: "Mốc điểm (điểm)",
       multiplier: "Hệ số nhân điểm",
       priorityScore: "Mức độ ưu tiên",
+      name: "Tên hạng",
+      code: "Mã hạng",
+      rank: "Cấp bậc",
+      active: "Hoạt động",
+      create: "Tạo hạng",
       priorityLevels: {
         30: "Cao",
         20: "Trung bình",
@@ -76,6 +82,7 @@ const ADMIN_SETTINGS_COPY = {
       desc: "Rules governing how far in advance customers can book and no-show policies.",
       maxAdvance: "Max advance booking (days)",
       noShowGrace: "No-show grace (minutes)",
+      maxPerSlot: "Max bookings per 1-hour slot",
     },
     currencyPoints: {
       title: "Currency & Points",
@@ -97,6 +104,11 @@ const ADMIN_SETTINGS_COPY = {
       threshold: "Threshold (points)",
       multiplier: "Point multiplier",
       priorityScore: "Priority level",
+      name: "Tier name",
+      code: "Tier code",
+      rank: "Rank",
+      active: "Active",
+      create: "Create tier",
       priorityLevels: {
         30: "High",
         20: "Medium",
@@ -116,6 +128,7 @@ function toForm(data: SystemSettings): SettingsForm {
     operatingEndTime: data.operatingEndTime,
     maxAdvanceBookingDays: data.maxAdvanceBookingDays,
     noShowGraceMinutes: data.noShowGraceMinutes,
+    maxBookingsPerSlot: data.maxBookingsPerSlot ?? 3,
     currency: data.currency,
     earnPointsUnitAmount: data.earnPointsUnitAmount,
     vndPerPoint: data.vndPerPoint,
@@ -190,9 +203,10 @@ export function AdminSettingsPage() {
 
               {/* Booking Rules */}
               <SettingsSection icon={Calendar} title={copy.bookingRules.title} description={copy.bookingRules.desc}>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-3">
                   <FieldNumber label={copy.bookingRules.maxAdvance} value={form.maxAdvanceBookingDays} onChange={(v) => updateField("maxAdvanceBookingDays", v)} />
                   <FieldNumber label={copy.bookingRules.noShowGrace} value={form.noShowGraceMinutes} onChange={(v) => updateField("noShowGraceMinutes", v)} />
+                  <FieldNumber label={copy.bookingRules.maxPerSlot} value={form.maxBookingsPerSlot} onChange={(v) => updateField("maxBookingsPerSlot", v)} />
                 </div>
               </SettingsSection>
 
@@ -324,6 +338,26 @@ function FieldSelect({ label, value, options, onChange, disabled }: { label: str
 
 function LoyaltyTiersSection({ copy }: { copy: any }) {
   const tiersQuery = useTierConfigs();
+  const createMutation = useCreateTierConfig();
+  const [newTier, setNewTier] = useState({
+    code: "",
+    name: "",
+    minPoints: 0,
+    pointMultiplier: 1,
+    priorityScore: 0,
+    rankOrder: 5,
+    active: true,
+  });
+
+  async function handleCreateTier() {
+    try {
+      await createMutation.mutateAsync(newTier);
+      setNewTier({ code: "", name: "", minPoints: 0, pointMultiplier: 1, priorityScore: 0, rankOrder: 5, active: true });
+      toast.success(copy.successMsg);
+    } catch (error) {
+      toast.error(getDisplayErrorMessage(error));
+    }
+  }
 
   return (
     <SettingsSection icon={Trophy} title={copy.loyaltyTiers.title} description={copy.loyaltyTiers.desc}>
@@ -336,10 +370,38 @@ function LoyaltyTiersSection({ copy }: { copy: any }) {
           {getDisplayErrorMessage(tiersQuery.error)}
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {tiersQuery.data?.map((tier) => (
-            <TierCard key={tier.tier} copy={copy} initialConfig={tier} />
-          ))}
+        <div className="space-y-4">
+          <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+              <FieldInput label={copy.loyaltyTiers.code} value={newTier.code} onChange={(v) => setNewTier((current) => ({ ...current, code: v }))} />
+              <FieldInput label={copy.loyaltyTiers.name} value={newTier.name} onChange={(v) => setNewTier((current) => ({ ...current, name: v }))} />
+              <FieldNumber label={copy.loyaltyTiers.threshold} value={newTier.minPoints} onChange={(v) => setNewTier((current) => ({ ...current, minPoints: v }))} />
+              <FieldNumber label={copy.loyaltyTiers.multiplier} value={newTier.pointMultiplier} onChange={(v) => setNewTier((current) => ({ ...current, pointMultiplier: v }))} />
+              <FieldNumber label={copy.loyaltyTiers.rank} value={newTier.rankOrder} onChange={(v) => setNewTier((current) => ({ ...current, rankOrder: v }))} />
+              <FieldSelect
+                label={copy.loyaltyTiers.priorityScore}
+                value={newTier.priorityScore}
+                options={[
+                  { label: copy.loyaltyTiers.priorityLevels[30], value: 30 },
+                  { label: copy.loyaltyTiers.priorityLevels[20], value: 20 },
+                  { label: copy.loyaltyTiers.priorityLevels[10], value: 10 },
+                  { label: copy.loyaltyTiers.priorityLevels[0], value: 0 },
+                ]}
+                onChange={(v) => setNewTier((current) => ({ ...current, priorityScore: v }))}
+              />
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button type="button" size="sm" disabled={createMutation.isPending} onClick={handleCreateTier}>
+                {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                {copy.loyaltyTiers.create}
+              </Button>
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {tiersQuery.data?.map((tier) => (
+              <TierCard key={tier.tier} copy={copy} initialConfig={tier} />
+            ))}
+          </div>
         </div>
       )}
     </SettingsSection>
@@ -348,17 +410,26 @@ function LoyaltyTiersSection({ copy }: { copy: any }) {
 
 function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfig }) {
   const updateMutation = useUpdateTierConfig();
+  const [name, setName] = useState(initialConfig.name || initialConfig.tier);
   const [threshold, setThreshold] = useState(initialConfig.minPoints);
   const [multiplier, setMultiplier] = useState(initialConfig.pointMultiplier);
   const [priorityScore, setPriorityScore] = useState(initialConfig.priorityScore);
+  const [rankOrder, setRankOrder] = useState(initialConfig.rankOrder);
+  const [active, setActive] = useState(initialConfig.active);
 
-  const isChanged = threshold !== initialConfig.minPoints || multiplier !== initialConfig.pointMultiplier || priorityScore !== initialConfig.priorityScore;
+  const isChanged =
+    name !== (initialConfig.name || initialConfig.tier) ||
+    threshold !== initialConfig.minPoints ||
+    multiplier !== initialConfig.pointMultiplier ||
+    priorityScore !== initialConfig.priorityScore ||
+    rankOrder !== initialConfig.rankOrder ||
+    active !== initialConfig.active;
 
   async function handleSave() {
     try {
       await updateMutation.mutateAsync({
         tier: initialConfig.tier,
-        request: { minPoints: threshold, pointMultiplier: multiplier, priorityScore: priorityScore },
+        request: { name, minPoints: threshold, pointMultiplier: multiplier, priorityScore, rankOrder, active },
       });
       toast.success(copy.successMsg);
     } catch (error) {
@@ -387,10 +458,11 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
   return (
     <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4 relative group hover:border-primary/30 transition-colors">
       <div className="flex items-center justify-between">
-        <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold border ${colorMap[initialConfig.tier]}`}>
-          {nameMap[initialConfig.tier] || initialConfig.tier}
+        <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold border ${colorMap[initialConfig.tier] || "bg-teal-50 text-teal-700 border-teal-200"}`}>
+          {nameMap[initialConfig.tier] || name || initialConfig.tier}
         </span>
       </div>
+      <FieldInput label={copy.loyaltyTiers.name} value={name} onChange={setName} />
       <FieldNumber 
         label={copy.loyaltyTiers.threshold} 
         value={threshold} 
@@ -401,6 +473,11 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
         label={copy.loyaltyTiers.multiplier} 
         value={multiplier} 
         onChange={setMultiplier} 
+      />
+      <FieldNumber
+        label={copy.loyaltyTiers.rank}
+        value={rankOrder}
+        onChange={setRankOrder}
       />
       <FieldSelect 
         label={copy.loyaltyTiers.priorityScore} 
@@ -413,6 +490,10 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
         ]}
         onChange={setPriorityScore} 
       />
+      <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+        <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
+        {copy.loyaltyTiers.active}
+      </label>
       {updateMutation.isError && (
         <div className="text-[10px] text-rose-600 font-medium">
           {getDisplayErrorMessage(updateMutation.error)}

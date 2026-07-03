@@ -1,9 +1,9 @@
 package com.autowash.service.impl;
 
+import com.autowash.dto.TierConfigCreateRequest;
 import com.autowash.dto.TierConfigRequest;
 import com.autowash.dto.TierConfigResponse;
 import com.autowash.entity.TierConfig;
-import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.repository.TierConfigRepository;
 import com.autowash.service.TierConfigService;
 import com.autowash.shared.exception.ApiException;
@@ -26,8 +26,8 @@ public class TierConfigServiceImpl implements TierConfigService {
 
     @Override
     @Transactional(readOnly = true)
-    public TierConfigResponse getConfig(LoyaltyTier tier) {
-        TierConfig config = tierConfigRepository.findById(tier)
+    public TierConfigResponse getConfig(String tier) {
+        TierConfig config = tierConfigRepository.findById(normalizeTier(tier))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tier config not found", "RESOURCE_NOT_FOUND"));
         return toResponse(config);
     }
@@ -35,26 +35,68 @@ public class TierConfigServiceImpl implements TierConfigService {
     @Override
     @Transactional(readOnly = true)
     public List<TierConfigResponse> getAllConfigs() {
-        return tierConfigRepository.findAll().stream()
-                .sorted(Comparator.comparingInt(TierConfig::getMinPoints))
+        return tierConfigRepository.findAllByOrderByRankOrderAsc().stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     @Override
     @Transactional
-    public TierConfigResponse updateConfig(LoyaltyTier tier, TierConfigRequest request) {
-        TierConfig config = tierConfigRepository.findById(tier)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tier config not found", "RESOURCE_NOT_FOUND"));
-
-        if (tier == LoyaltyTier.BRONZE && request.minPoints() != 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "BRONZE tier min points must be 0", "VALIDATION_ERROR");
+    public TierConfigResponse createConfig(TierConfigCreateRequest request) {
+        String code = normalizeTier(request.code());
+        if (code.isBlank()) {
+            throw validationError("code", "Tier code is required");
         }
-
-        config.update(
+        if (tierConfigRepository.existsById(code)) {
+            throw new ApiException(HttpStatus.CONFLICT, "Tier config already exists", "DUPLICATE_RESOURCE");
+        }
+        int rankOrder = request.rankOrder();
+        if (tierConfigRepository.existsByRankOrder(rankOrder)) {
+            shiftRanksAtOrAbove(rankOrder);
+        }
+        TierConfig config = new TierConfig(
+                code,
+                request.name().trim(),
                 request.minPoints(),
                 BigDecimal.valueOf(request.pointMultiplier()),
-                request.priorityScore()
+                request.priorityScore(),
+                rankOrder,
+                false,
+                request.active() == null || request.active()
+        );
+        validateTierConfig(config.getTier(), config.getMinPoints(), config.getPointMultiplier(), config.getRankOrder());
+        return toResponse(tierConfigRepository.save(config));
+    }
+
+    @Override
+    @Transactional
+    public TierConfigResponse updateConfig(String tier, TierConfigRequest request) {
+        String code = normalizeTier(tier);
+        TierConfig config = tierConfigRepository.findById(code)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tier config not found", "RESOURCE_NOT_FOUND"));
+
+        String name = request.name() == null || request.name().isBlank()
+                ? config.getDisplayName()
+                : request.name().trim();
+        int minPoints = request.minPoints() == null ? config.getMinPoints() : request.minPoints();
+        BigDecimal pointMultiplier = request.pointMultiplier() == null
+                ? config.getPointMultiplier()
+                : BigDecimal.valueOf(request.pointMultiplier());
+        int priorityScore = request.priorityScore() == null ? config.getPriorityScore() : request.priorityScore();
+        int rankOrder = request.rankOrder() == null ? config.getRankOrder() : request.rankOrder();
+        boolean active = request.active() == null ? config.isActive() : request.active();
+
+        if (rankOrder != config.getRankOrder() && tierConfigRepository.existsByRankOrder(rankOrder)) {
+            shiftRanksAtOrAbove(rankOrder);
+        }
+        validateTierConfig(code, minPoints, pointMultiplier, rankOrder);
+        config.update(
+                name,
+                minPoints,
+                pointMultiplier,
+                priorityScore,
+                rankOrder,
+                active
         );
 
         return toResponse(tierConfigRepository.save(config));
@@ -62,43 +104,106 @@ public class TierConfigServiceImpl implements TierConfigService {
 
     @Override
     @Transactional(readOnly = true)
-    public double getPointMultiplier(LoyaltyTier tier) {
-        return tierConfigRepository.findById(tier)
+    public double getPointMultiplier(String tier) {
+        return tierConfigRepository.findById(normalizeTier(tier))
                 .map(config -> config.getPointMultiplier().doubleValue())
                 .orElse(1.0);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public LoyaltyTier calculateTierForPoints(int totalEarnedPoints) {
-        return tierConfigRepository.findAll().stream()
+    public String calculateTierForPoints(int totalEarnedPoints) {
+        return tierConfigRepository.findByActiveTrueOrderByRankOrderAsc().stream()
                 .filter(config -> totalEarnedPoints >= config.getMinPoints())
                 .max(Comparator.comparingInt(TierConfig::getMinPoints))
                 .map(TierConfig::getTier)
-                .orElse(LoyaltyTier.BRONZE);
+                .orElse(BRONZE);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public int getTierRank(LoyaltyTier tier) {
-        List<TierConfig> configs = tierConfigRepository.findAll().stream()
-                .sorted(Comparator.comparingInt(TierConfig::getMinPoints))
-                .toList();
+    public int getTierRank(String tier) {
+        String code = normalizeTier(tier);
+        List<TierConfig> configs = tierConfigRepository.findAllByOrderByRankOrderAsc();
         for (int i = 0; i < configs.size(); i++) {
-            if (configs.get(i).getTier() == tier) {
+            if (configs.get(i).getTier().equals(code)) {
                 return i;
             }
         }
         return 0; // fallback
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> eligibleTierCodesFor(String tier) {
+        int rank = getTierRank(tier);
+        return tierConfigRepository.findByActiveTrueOrderByRankOrderAsc().stream()
+                .filter(config -> config.getRankOrder() <= rank)
+                .map(TierConfig::getTier)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> activeTierCodes() {
+        return tierConfigRepository.findByActiveTrueOrderByRankOrderAsc().stream()
+                .map(TierConfig::getTier)
+                .toList();
+    }
+
     private TierConfigResponse toResponse(TierConfig config) {
         return new TierConfigResponse(
-                config.getTier().name(),
+                config.getTier(),
+                config.getDisplayName(),
                 config.getMinPoints(),
                 config.getPointMultiplier().doubleValue(),
                 config.getPriorityScore(),
+                config.getRankOrder(),
+                config.isSystemTier(),
+                config.isActive(),
                 config.getUpdatedAt()
+        );
+    }
+
+    private String normalizeTier(String tier) {
+        return TierConfig.normalizeTier(tier);
+    }
+
+    private void validateTierConfig(String tier, int minPoints, BigDecimal pointMultiplier, int rankOrder) {
+        if (BRONZE.equals(tier) && minPoints != 0) {
+            throw validationError("minPoints", "BRONZE tier min points must be 0");
+        }
+        if (pointMultiplier.compareTo(BigDecimal.ONE) < 0) {
+            throw validationError("pointMultiplier", "Point multiplier must be at least 1.0");
+        }
+        if (rankOrder < 0) {
+            throw validationError("rankOrder", "Rank order cannot be negative");
+        }
+    }
+
+    private void shiftRanksAtOrAbove(int rankOrder) {
+        List<TierConfig> tiers = tierConfigRepository.findAllByOrderByRankOrderAsc().stream()
+                .filter(tier -> tier.getRankOrder() >= rankOrder)
+                .sorted(Comparator.comparingInt(TierConfig::getRankOrder).reversed())
+                .toList();
+        for (TierConfig tier : tiers) {
+            tier.update(
+                    tier.getDisplayName(),
+                    tier.getMinPoints(),
+                    tier.getPointMultiplier(),
+                    tier.getPriorityScore(),
+                    tier.getRankOrder() + 1,
+                    tier.isActive()
+            );
+        }
+    }
+
+    private ApiException validationError(String field, String message) {
+        return new ApiException(
+                HttpStatus.BAD_REQUEST,
+                "Validation failed",
+                "VALIDATION_ERROR",
+                java.util.Map.of("field", field, "message", message)
         );
     }
 }

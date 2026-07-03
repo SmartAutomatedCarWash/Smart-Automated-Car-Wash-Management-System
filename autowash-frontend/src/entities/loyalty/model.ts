@@ -1,4 +1,4 @@
-export type LoyaltyTier = "BRONZE" | "SILVER" | "GOLD" | "PLATINUM" | "DIAMOND";
+export type LoyaltyTier = string;
 
 export type LoyaltyAccount = {
   customerId: string;

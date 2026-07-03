@@ -3,9 +3,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import {
+  createTierConfig,
   getTierConfigs,
   updateTierConfig,
   type TierConfig,
+  type TierConfigCreateRequest,
   type TierConfigRequest,
 } from "@/features/settings/lib/admin-tiers-service";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
@@ -41,6 +43,18 @@ export function useUpdateTierConfig() {
     { tier: string; request: TierConfigRequest }
   >({
     mutationFn: ({ tier, request }) => updateTierConfig(tier, request),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: tiersScope(userId) });
+    },
+  });
+}
+
+export function useCreateTierConfig() {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminTiersContext();
+
+  return useMutation<TierConfig, ApiErrorResponse, TierConfigCreateRequest>({
+    mutationFn: createTierConfig,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: tiersScope(userId) });
     },

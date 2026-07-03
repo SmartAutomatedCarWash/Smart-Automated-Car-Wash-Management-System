@@ -142,6 +142,18 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("select count(booking) from Booking booking where booking.customer = :customer")
     long countByCustomer(@Param("customer") User customer);
 
+    @Query("""
+            select count(booking) from Booking booking
+            where booking.scheduledAt >= :slotStart
+              and booking.scheduledAt < :slotEnd
+              and booking.status not in :excludedStatuses
+            """)
+    long countByScheduledAtSlot(
+            @Param("slotStart") Instant slotStart,
+            @Param("slotEnd") Instant slotEnd,
+            @Param("excludedStatuses") Collection<BookingStatus> excludedStatuses
+    );
+
     boolean existsByCustomerAndVoucherId(User customer, UUID voucherId);
 
     @Query("select count(booking) from Booking booking where booking.customer = :customer and booking.status = :status")

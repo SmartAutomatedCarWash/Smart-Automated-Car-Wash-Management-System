@@ -747,7 +747,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         String tier = "BRONZE";
         if (user.getRole() == UserRole.CUSTOMER) {
             tier = loyaltyAccountRepository.findByCustomerId(user.getId())
-                    .map(a -> a.getTier().name())
+                    .map(a -> a.getTier())
                     .orElse("BRONZE");
         }
         return new AdminAccountResponse(

@@ -70,6 +70,8 @@ export function useBookings() {
       customerId: booking.customerId,
       customerName: booking.customerName,
       customerPhone: booking.customerPhone,
+      customerTier: booking.customerTier,
+      customerPriorityScore: booking.customerPriorityScore,
       vehiclePlate: booking.vehiclePlate,
       vehicleName: booking.vehicleName,
       vehicleType: booking.vehicleType,

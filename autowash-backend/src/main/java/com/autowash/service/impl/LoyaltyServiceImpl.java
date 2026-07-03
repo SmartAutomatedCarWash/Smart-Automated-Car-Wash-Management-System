@@ -94,7 +94,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         WashSession session = requireSession(sessionId);
         LoyaltyAccount account = loyaltyAccountRepository.findByCustomerId(session.getBooking().getCustomer().getId())
                 .orElse(null);
-        LoyaltyTier tier = account == null ? LoyaltyTier.BRONZE : account.getTier();
+        String tier = account == null ? TierConfigService.BRONZE : account.getTier();
         long finalAmount = session.getBooking().getFinalAmount();
         com.autowash.entity.SystemSettings settings = systemSettingsRepository.findById(1).orElseThrow();
         long basePoints = finalAmount / settings.getEarnPointsUnitAmount();
@@ -274,12 +274,12 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     }
 
     void evaluateTierUpgrade(LoyaltyAccount account) {
-        LoyaltyTier targetTier = tierConfigService.calculateTierForPoints(account.getTotalEarnedPoints());
-        if (targetTier.ordinal() <= account.getTier().ordinal()) {
+        String targetTier = tierConfigService.calculateTierForPoints(account.getTotalEarnedPoints());
+        if (tierConfigService.getTierRank(targetTier) <= tierConfigService.getTierRank(account.getTier())) {
             return;
         }
 
-        LoyaltyTier oldTier = account.getTier();
+        String oldTier = account.getTier();
         account.updateTier(targetTier);
         tierHistoryRepository.save(new TierHistory(account, oldTier, targetTier, account.getTotalEarnedPoints()));
         pointTransactionRepository.save(new PointTransaction(
@@ -298,14 +298,14 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     public void updateCustomerTierByAdmin(UUID customerId, LoyaltyTier newTier) {
         User customer = requireCustomer(customerId);
         LoyaltyAccount account = getOrCreateAccountForUpdate(customer);
-        LoyaltyTier oldTier = account.getTier();
+        String oldTier = account.getTier();
         
-        if (oldTier == newTier) {
+        if (oldTier.equals(newTier.name())) {
             return;
         }
         
         account.updateTier(newTier);
-        tierHistoryRepository.save(new TierHistory(account, oldTier, newTier, account.getTotalEarnedPoints()));
+        tierHistoryRepository.save(new TierHistory(account, oldTier, newTier.name(), account.getTotalEarnedPoints()));
         pointTransactionRepository.save(new PointTransaction(
                 account,
                 null,
@@ -393,7 +393,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     private LoyaltyAccountResponse toAccountResponse(LoyaltyAccount account) {
         return new LoyaltyAccountResponse(
                 account.getCustomer().getId().toString(),
-                account.getTier().name(),
+                account.getTier(),
                 account.getCurrentPoints(),
                 account.getTotalEarnedPoints(),
                 (int) washSessionRepository.countByBookingCustomerAndStatus(account.getCustomer(), WashSessionStatus.COMPLETED),
@@ -425,7 +425,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 transaction.getId(),
                 transaction.getPoints(),
                 transaction.getBalanceAfter(),
-                account.getTier().name()
+                account.getTier()
         );
     }
 
