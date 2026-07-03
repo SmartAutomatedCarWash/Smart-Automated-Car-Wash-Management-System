@@ -3,16 +3,17 @@ package com.autowash.service.impl;
 import com.autowash.dto.AdminVoucherRequest;
 import com.autowash.dto.AdminVoucherRedemptionResponse;
 import com.autowash.dto.AdminVoucherResponse;
+import com.autowash.entity.TierConfig;
 import com.autowash.entity.Voucher;
 import com.autowash.entity.VoucherTier;
 import com.autowash.entity.enums.ActiveStatus;
-import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.repository.VoucherRepository;
 import com.autowash.repository.VoucherTierRepository;
 import com.autowash.entity.PointTransaction;
 import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.repository.PointTransactionRepository;
 import com.autowash.service.AdminVoucherService;
+import com.autowash.service.TierConfigService;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import java.time.Instant;
@@ -32,15 +33,18 @@ public class AdminVoucherServiceImpl implements AdminVoucherService {
     private final VoucherRepository voucherRepository;
     private final VoucherTierRepository voucherTierRepository;
     private final PointTransactionRepository pointTransactionRepository;
+    private final TierConfigService tierConfigService;
 
     public AdminVoucherServiceImpl(
             VoucherRepository voucherRepository,
             VoucherTierRepository voucherTierRepository,
-            PointTransactionRepository pointTransactionRepository
+            PointTransactionRepository pointTransactionRepository,
+            TierConfigService tierConfigService
     ) {
         this.voucherRepository = voucherRepository;
         this.voucherTierRepository = voucherTierRepository;
         this.pointTransactionRepository = pointTransactionRepository;
+        this.tierConfigService = tierConfigService;
     }
 
     @Transactional(readOnly = true)
@@ -153,7 +157,6 @@ public class AdminVoucherServiceImpl implements AdminVoucherService {
                 voucher.isNewCustomerOnly(),
                 voucherTierRepository.findByVoucherId(voucher.getId()).stream()
                         .map(VoucherTier::getTier)
-                        .map(Enum::name)
                         .toList()
         );
     }
@@ -163,13 +166,15 @@ public class AdminVoucherServiceImpl implements AdminVoucherService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Voucher not found", "RESOURCE_NOT_FOUND"));
     }
 
-    private void replaceVoucherTiers(UUID voucherId, List<LoyaltyTier> tiers) {
+    private void replaceVoucherTiers(UUID voucherId, List<String> tiers) {
         voucherTierRepository.deleteByVoucherId(voucherId);
         if (tiers == null || tiers.isEmpty()) {
             return;
         }
         voucherTierRepository.saveAll(tiers.stream()
+                .map(TierConfig::normalizeTier)
                 .distinct()
+                .peek(tierConfigService::getConfig)
                 .map(tier -> new VoucherTier(voucherId, tier))
                 .toList());
     }

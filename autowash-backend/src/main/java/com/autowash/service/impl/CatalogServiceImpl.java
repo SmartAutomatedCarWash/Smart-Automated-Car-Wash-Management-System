@@ -7,7 +7,6 @@ import com.autowash.dto.ServiceResponse;
 import com.autowash.dto.ValidateVoucherResponse;
 import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.enums.ActiveStatus;
-import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.Combo;
 import com.autowash.entity.ComboService;
 import com.autowash.entity.LoyaltyAccount;
@@ -27,6 +26,7 @@ import com.autowash.repository.VoucherRepository;
 import com.autowash.repository.VoucherTierRepository;
 import com.autowash.service.CatalogService;
 import com.autowash.service.CurrentUserService;
+import com.autowash.service.TierConfigService;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import java.time.Instant;
@@ -58,6 +58,7 @@ public class CatalogServiceImpl implements CatalogService {
     private final LoyaltyAccountRepository loyaltyAccountRepository;
     private final BookingRepository bookingRepository;
     private final CurrentUserService currentUserService;
+    private final TierConfigService tierConfigService;
 
     public CatalogServiceImpl(
             PackageRepository PackageRepository,
@@ -69,7 +70,8 @@ public class CatalogServiceImpl implements CatalogService {
             VoucherTierRepository voucherTierRepository,
             LoyaltyAccountRepository loyaltyAccountRepository,
             BookingRepository bookingRepository,
-            CurrentUserService currentUserService
+            CurrentUserService currentUserService,
+            TierConfigService tierConfigService
     ) {
         this.PackageRepository = PackageRepository;
         this.serviceRepository = serviceRepository;
@@ -81,6 +83,7 @@ public class CatalogServiceImpl implements CatalogService {
         this.loyaltyAccountRepository = loyaltyAccountRepository;
         this.bookingRepository = bookingRepository;
         this.currentUserService = currentUserService;
+        this.tierConfigService = tierConfigService;
     }
 
     @Transactional(readOnly = true)
@@ -248,7 +251,8 @@ public class CatalogServiceImpl implements CatalogService {
             throw businessRule("VOUCHER_ALREADY_USED", "You have already used this voucher", "USE_DIFFERENT_VOUCHER");
         }
         List<VoucherTier> tiers = voucherTierRepository.findByVoucherId(voucher.getId());
-        if (!tiers.isEmpty() && tiers.stream().noneMatch(tier -> tier.getTier() == currentCustomerTier())) {
+        List<String> eligibleTiers = currentCustomerEligibleTiers();
+        if (!tiers.isEmpty() && tiers.stream().noneMatch(tier -> eligibleTiers.contains(tier.getTier()))) {
             throw businessRule("TIER_NOT_ELIGIBLE", "This voucher is not available for your loyalty tier", "USE_DIFFERENT_VOUCHER");
         }
     }
@@ -263,10 +267,11 @@ public ComboResponse getComboById(String comboId) {
     return toComboResponse(requireActiveCombo(comboId));
 }
 
-    private LoyaltyTier currentCustomerTier() {
+    private List<String> currentCustomerEligibleTiers() {
         return loyaltyAccountRepository.findByCustomerId(currentUserService.getCurrentUser().getId())
                 .map(LoyaltyAccount::getTier)
-                .orElse(LoyaltyTier.BRONZE);
+                .map(tierConfigService::eligibleTierCodesFor)
+                .orElseGet(() -> tierConfigService.eligibleTierCodesFor(TierConfigService.BRONZE));
     }
 
     private ApiException businessRule(String code, String message, String action) {

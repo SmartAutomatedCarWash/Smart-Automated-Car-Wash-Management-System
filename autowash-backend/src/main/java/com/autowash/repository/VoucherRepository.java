@@ -2,6 +2,7 @@ package com.autowash.repository;
 
 import com.autowash.entity.Voucher;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,14 +31,14 @@ public interface VoucherRepository extends JpaRepository<Voucher, UUID> {
                   or exists (
                       select 1 from VoucherTier vt
                       where vt.voucherId = v.id
-                        and vt.tier = :tier
+                        and vt.tier in :tiers
                   )
               )
             order by v.endAt asc
             """)
     org.springframework.data.domain.Page<Voucher> findActiveForTier(
             @org.springframework.data.repository.query.Param("now") Instant now,
-            @org.springframework.data.repository.query.Param("tier") com.autowash.entity.enums.LoyaltyTier tier,
+            @org.springframework.data.repository.query.Param("tiers") Collection<String> tiers,
             @org.springframework.data.repository.query.Param("status") com.autowash.entity.enums.ActiveStatus status,
             org.springframework.data.domain.Pageable pageable
     );

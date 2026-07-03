@@ -2,7 +2,6 @@ package com.autowash.dto;
 
 import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.DiscountType;
-import com.autowash.entity.enums.LoyaltyTier;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -28,6 +27,6 @@ public record AdminVoucherRequest(
         @NotNull Instant startAt,
         @NotNull Instant endAt,
         ActiveStatus status,
-        List<LoyaltyTier> targetTiers
+        List<String> targetTiers
 ) {
 }

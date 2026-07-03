@@ -3,8 +3,6 @@ package com.autowash.entity;
 import com.autowash.entity.enums.LoyaltyTier;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
@@ -27,9 +25,30 @@ public class TierVoucherOffer {
     @Column(nullable = false, length = 100)
     private String title;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "min_tier", nullable = false, length = 20)
-    private LoyaltyTier minTier;
+    @Column(name = "min_tier", nullable = false, length = 50)
+    private String minTier;
+
+    public TierVoucherOffer(
+            String id,
+            String title,
+            LoyaltyTier minTier,
+            int pointsCost,
+            int voucherValue,
+            String accent,
+            String badge,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        this.id = id;
+        this.title = title;
+        this.minTier = minTier.name();
+        this.pointsCost = pointsCost;
+        this.voucherValue = voucherValue;
+        this.accent = accent;
+        this.badge = badge;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
 
     @Column(name = "points_cost", nullable = false)
     private int pointsCost;

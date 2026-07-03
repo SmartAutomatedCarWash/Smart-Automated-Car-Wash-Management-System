@@ -6,12 +6,12 @@ import com.autowash.entity.User;
 import com.autowash.entity.Voucher;
 import com.autowash.entity.VoucherTier;
 import com.autowash.entity.enums.ActiveStatus;
-import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.VoucherRepository;
 import com.autowash.repository.VoucherTierRepository;
 import com.autowash.service.CurrentUserService;
 import com.autowash.service.CustomerVoucherService;
+import com.autowash.service.TierConfigService;
 import com.autowash.shared.dto.PaginationMeta;
 import java.time.Instant;
 import java.util.List;
@@ -27,17 +27,20 @@ public class CustomerVoucherServiceImpl implements CustomerVoucherService {
     private final VoucherTierRepository voucherTierRepository;
     private final LoyaltyAccountRepository loyaltyAccountRepository;
     private final CurrentUserService currentUserService;
+    private final TierConfigService tierConfigService;
 
     public CustomerVoucherServiceImpl(
             VoucherRepository voucherRepository,
             VoucherTierRepository voucherTierRepository,
             LoyaltyAccountRepository loyaltyAccountRepository,
-            CurrentUserService currentUserService
+            CurrentUserService currentUserService,
+            TierConfigService tierConfigService
     ) {
         this.voucherRepository = voucherRepository;
         this.voucherTierRepository = voucherTierRepository;
         this.loyaltyAccountRepository = loyaltyAccountRepository;
         this.currentUserService = currentUserService;
+        this.tierConfigService = tierConfigService;
     }
 
     @Transactional(readOnly = true)
@@ -45,7 +48,7 @@ public class CustomerVoucherServiceImpl implements CustomerVoucherService {
         User user = currentUserService.getCurrentUser();
         Page<Voucher> vouchers = voucherRepository.findActiveForTier(
                 Instant.now(),
-                tierFor(user),
+                eligibleTiersFor(user),
                 ActiveStatus.ACTIVE,
                 PageRequest.of(Math.max(page - 1, 0), limit)
         );
@@ -65,16 +68,16 @@ public class CustomerVoucherServiceImpl implements CustomerVoucherService {
         return new VoucherPage(items, pagination);
     }
 
-    private LoyaltyTier tierFor(User user) {
+    private List<String> eligibleTiersFor(User user) {
         return loyaltyAccountRepository.findByCustomerId(user.getId())
                 .map(LoyaltyAccount::getTier)
-                .orElse(LoyaltyTier.BRONZE);
+                .map(tierConfigService::eligibleTierCodesFor)
+                .orElseGet(() -> tierConfigService.eligibleTierCodesFor(TierConfigService.BRONZE));
     }
 
     private CustomerVoucherResponse toResponse(Voucher voucher) {
         List<String> targetTiers = voucherTierRepository.findByVoucherId(voucher.getId()).stream()
                 .map(VoucherTier::getTier)
-                .map(Enum::name)
                 .toList();
 
         return new CustomerVoucherResponse(

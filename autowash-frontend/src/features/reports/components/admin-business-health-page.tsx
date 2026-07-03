@@ -7,6 +7,7 @@ import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import { useAdminBusinessHealthReport } from "@/features/reports/hooks/use-admin-business-health-report";
 import { useAdminVoucherRedemptions } from "@/features/vouchers/hooks/use-admin-vouchers";
 import { useLanguageStore } from "@/shared/store/language.store";
+import { Button } from "@/shared/ui/ui/button";
 import { Input } from "@/shared/ui/ui/input";
 
 const STATIC_TRANSLATIONS: Record<string, { vi: string; en: string }> = {

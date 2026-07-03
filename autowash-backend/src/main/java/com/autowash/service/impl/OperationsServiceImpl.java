@@ -424,7 +424,7 @@ public class OperationsServiceImpl implements OperationsService {
     private EligibleSessionBookingResponse toEligibleBooking(Booking booking) {
         User assignedStaff = booking.getAssignedStaff();
         String customerTier = loyaltyService.getAccount(booking.getCustomer().getId()).tier();
-        int customerPriorityScore = tierConfigService.getConfig(com.autowash.entity.enums.LoyaltyTier.valueOf(customerTier)).priorityScore();
+        int customerPriorityScore = tierConfigService.getConfig(customerTier).priorityScore();
         return new EligibleSessionBookingResponse(
                 booking.getId().toString(),
                 booking.getCustomer().getFullName(),

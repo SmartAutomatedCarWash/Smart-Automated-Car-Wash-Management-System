@@ -6,6 +6,7 @@ import type {
   RedeemPointsRequest,
   RedeemPointsResponse,
   LoyaltyTransaction,
+  TierVoucherOffer,
   WashHistoryItem,
 } from "@/entities/loyalty";
 import type { Promotion } from "@/entities/promotions";

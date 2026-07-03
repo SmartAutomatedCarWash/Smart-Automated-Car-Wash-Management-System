@@ -54,7 +54,7 @@ type VoucherOfferState = TierVoucherOffer & {
   affordable: boolean;
 };
 
-const TIER_ORDER = ["BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND"] as const;
+const TIER_ORDER: readonly string[] = ["BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND"];
 
 
 export function CustomerLoyaltyPageContent() {

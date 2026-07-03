@@ -15,7 +15,7 @@ export function formatTierLabel(tier: LoyaltyTier) {
 }
 
 export function canRedeemTierOffer(currentTier: LoyaltyTier, offer: TierVoucherOffer, configs: TierConfig[]) {
-  const sorted = [...configs].sort((a, b) => a.minPoints - b.minPoints);
+  const sorted = [...configs].sort((a, b) => a.rankOrder - b.rankOrder);
   const currentRank = sorted.findIndex(c => c.tier === currentTier);
   const offerRank = sorted.findIndex(c => c.tier === offer.minTier);
   return currentRank >= offerRank;
@@ -57,7 +57,7 @@ export function formatPromotionType(type: PromotionType) {
 }
 
 export function getTierProgress(tier: LoyaltyTier, currentPoints: number, configs: TierConfig[]) {
-  const sorted = [...configs].sort((a, b) => a.minPoints - b.minPoints);
+  const sorted = [...configs].sort((a, b) => a.rankOrder - b.rankOrder);
   const currentIndex = sorted.findIndex(c => c.tier === tier);
   
   const currentConfig = sorted[currentIndex];
@@ -90,7 +90,7 @@ export function getTierProgress(tier: LoyaltyTier, currentPoints: number, config
   };
 }
 
-export function buildLoyaltySummary(account: LoyaltyAccount, configs: TierConfig[], offers: TierVoucherOffer[]) {
+export function buildLoyaltySummary(account: LoyaltyAccount, configs: TierConfig[], offers: TierVoucherOffer[] = []) {
   const availablePoints = account.availablePoints ?? account.currentPoints;
   const lifetimePoints = account.lifetimePoints ?? account.totalEarnedPoints;
 

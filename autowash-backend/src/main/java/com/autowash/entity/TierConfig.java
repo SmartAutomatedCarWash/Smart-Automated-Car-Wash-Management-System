@@ -1,14 +1,12 @@
 package com.autowash.entity;
 
-import com.autowash.entity.enums.LoyaltyTier;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Locale;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,8 +18,11 @@ import lombok.NoArgsConstructor;
 public class TierConfig {
 
     @Id
-    @Enumerated(EnumType.STRING)
-    private LoyaltyTier tier;
+    @Column(length = 50)
+    private String tier;
+
+    @Column(name = "display_name", nullable = false, length = 100)
+    private String displayName;
 
     @Column(name = "min_points", nullable = false)
     private int minPoints;
@@ -32,13 +33,48 @@ public class TierConfig {
     @Column(name = "priority_score", nullable = false)
     private int priorityScore;
 
+    @Column(name = "rank_order", nullable = false)
+    private int rankOrder;
+
+    @Column(name = "system_tier", nullable = false)
+    private boolean systemTier;
+
+    @Column(nullable = false)
+    private boolean active = true;
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public void update(int minPoints, BigDecimal pointMultiplier, int priorityScore) {
+    public TierConfig(String tier, String displayName, int minPoints, BigDecimal pointMultiplier, int priorityScore, int rankOrder, boolean systemTier, boolean active) {
+        this.tier = normalizeTier(tier);
+        this.displayName = displayName;
         this.minPoints = minPoints;
         this.pointMultiplier = pointMultiplier;
         this.priorityScore = priorityScore;
+        this.rankOrder = rankOrder;
+        this.systemTier = systemTier;
+        this.active = active;
         this.updatedAt = Instant.now();
+    }
+
+    public void update(String displayName, int minPoints, BigDecimal pointMultiplier, int priorityScore, int rankOrder, boolean active) {
+        this.displayName = displayName;
+        this.minPoints = minPoints;
+        this.pointMultiplier = pointMultiplier;
+        this.priorityScore = priorityScore;
+        this.rankOrder = rankOrder;
+        this.active = active;
+        this.updatedAt = Instant.now();
+    }
+
+    public void update(int minPoints, BigDecimal pointMultiplier, int priorityScore) {
+        update(displayName, minPoints, pointMultiplier, priorityScore, rankOrder, active);
+    }
+
+    public static String normalizeTier(String tier) {
+        if (tier == null) {
+            return "";
+        }
+        return tier.trim().replace(' ', '_').toUpperCase(Locale.ROOT);
     }
 }

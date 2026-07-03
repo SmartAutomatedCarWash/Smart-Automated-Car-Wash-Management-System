@@ -30,7 +30,7 @@ public class PublicLoyaltyController {
                 .map(offer -> new TierVoucherOfferResponse(
                         offer.getId(),
                         offer.getTitle(),
-                        offer.getMinTier().name(),
+                        offer.getMinTier(),
                         offer.getPointsCost(),
                         offer.getVoucherValue(),
                         offer.getAccent(),

@@ -3,8 +3,6 @@ package com.autowash.entity;
 import com.autowash.entity.enums.LoyaltyTier;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -34,9 +32,8 @@ public class LoyaltyAccount {
     @Column(name = "total_earned_points", nullable = false)
     private int totalEarnedPoints;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private LoyaltyTier tier;
+    @Column(nullable = false, length = 50)
+    private String tier;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -50,7 +47,7 @@ public class LoyaltyAccount {
         this.customer = customer;
         this.currentPoints = 0;
         this.totalEarnedPoints = 0;
-        this.tier = LoyaltyTier.BRONZE;
+        this.tier = LoyaltyTier.BRONZE.name();
         this.createdAt = now;
         this.updatedAt = now;
     }
@@ -67,6 +64,10 @@ public class LoyaltyAccount {
     }
 
     public void updateTier(LoyaltyTier tier) {
+        updateTier(tier.name());
+    }
+
+    public void updateTier(String tier) {
         this.tier = tier;
         this.updatedAt = Instant.now();
     }
