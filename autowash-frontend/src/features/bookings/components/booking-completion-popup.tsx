@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Star, Award, Sparkles, MessageSquare, CheckCircle2, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { Star, Award, Sparkles, MessageSquare, CheckCircle2, Loader2, ImageUp } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/ui/ui/dialog";
 import { Button } from "@/shared/ui/ui/button";
 import { toast } from "sonner";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
+import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { uploadReviewImage } from "@/features/bookings/lib/review-service";
 
 interface BookingCompletionPopupProps {
   bookingId: string;
@@ -14,7 +16,7 @@ interface BookingCompletionPopupProps {
   oldTier?: string | null;
   isOpen: boolean;
   onClose: () => void;
-  onSubmitReview: (stars: number, comment: string) => Promise<void>;
+  onSubmitReview: (stars: number, comment: string, images: { beforeImageUrl?: string | null; afterImageUrl?: string | null }) => Promise<void>;
 }
 
 export function BookingCompletionPopup({
@@ -30,6 +32,8 @@ export function BookingCompletionPopup({
   const [stars, setStars] = useState(5);
   const [hoverStars, setHoverStars] = useState<number | null>(null);
   const [comment, setComment] = useState("");
+  const [beforeImageUrl, setBeforeImageUrl] = useState("");
+  const [afterImageUrl, setAfterImageUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -120,7 +124,10 @@ export function BookingCompletionPopup({
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      await onSubmitReview(stars, comment);
+      await onSubmitReview(stars, comment, {
+        beforeImageUrl: beforeImageUrl || null,
+        afterImageUrl: afterImageUrl || null,
+      });
       toast.success(translate(language, "Cảm ơn bạn đã gửi đánh giá!", "Thank you for your feedback!"));
       onClose();
     } catch (err) {
@@ -234,6 +241,19 @@ export function BookingCompletionPopup({
               />
             </div>
 
+            <div className="grid gap-3 text-left sm:grid-cols-2">
+              <ReviewImageUploadField
+                label={translate(language, "Ảnh trước khi rửa", "Before image")}
+                value={beforeImageUrl}
+                onChange={setBeforeImageUrl}
+              />
+              <ReviewImageUploadField
+                label={translate(language, "Ảnh sau khi rửa", "After image")}
+                value={afterImageUrl}
+                onChange={setAfterImageUrl}
+              />
+            </div>
+
             {/* Action buttons */}
             <div className="flex gap-3 pt-2">
               <Button
@@ -260,5 +280,38 @@ export function BookingCompletionPopup({
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function ReviewImageUploadField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const uploaded = await uploadReviewImage(file);
+      onChange(uploaded.url);
+      toast.success("Image uploaded.");
+    } catch (error) {
+      toast.error(getDisplayErrorMessage(error));
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
+  }
+
+  return (
+    <div className="grid gap-2">
+      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
+      {value ? <img src={value} alt={label} className="h-24 w-full rounded-2xl border border-border/50 object-cover" /> : null}
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleChange} />
+      <Button type="button" variant="outline" disabled={uploading} onClick={() => inputRef.current?.click()} className="rounded-xl">
+        {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageUp className="mr-2 h-4 w-4" />}
+        {label}
+      </Button>
+    </div>
   );
 }

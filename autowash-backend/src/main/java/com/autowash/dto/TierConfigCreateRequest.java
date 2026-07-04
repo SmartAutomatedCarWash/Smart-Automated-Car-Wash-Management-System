@@ -28,6 +28,9 @@ public record TierConfigCreateRequest(
         @Min(value = 0, message = "Rank order cannot be negative")
         int rankOrder,
 
+        @Size(max = 500)
+        String imageUrl,
+
         Boolean active
 ) {
 }

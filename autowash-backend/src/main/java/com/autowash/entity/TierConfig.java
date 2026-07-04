@@ -39,6 +39,9 @@ public class TierConfig {
     @Column(name = "system_tier", nullable = false)
     private boolean systemTier;
 
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -46,6 +49,10 @@ public class TierConfig {
     private Instant updatedAt;
 
     public TierConfig(String tier, String displayName, int minPoints, BigDecimal pointMultiplier, int priorityScore, int rankOrder, boolean systemTier, boolean active) {
+        this(tier, displayName, minPoints, pointMultiplier, priorityScore, rankOrder, systemTier, active, null);
+    }
+
+    public TierConfig(String tier, String displayName, int minPoints, BigDecimal pointMultiplier, int priorityScore, int rankOrder, boolean systemTier, boolean active, String imageUrl) {
         this.tier = normalizeTier(tier);
         this.displayName = displayName;
         this.minPoints = minPoints;
@@ -54,16 +61,22 @@ public class TierConfig {
         this.rankOrder = rankOrder;
         this.systemTier = systemTier;
         this.active = active;
+        this.imageUrl = imageUrl;
         this.updatedAt = Instant.now();
     }
 
     public void update(String displayName, int minPoints, BigDecimal pointMultiplier, int priorityScore, int rankOrder, boolean active) {
+        update(displayName, minPoints, pointMultiplier, priorityScore, rankOrder, active, imageUrl);
+    }
+
+    public void update(String displayName, int minPoints, BigDecimal pointMultiplier, int priorityScore, int rankOrder, boolean active, String imageUrl) {
         this.displayName = displayName;
         this.minPoints = minPoints;
         this.pointMultiplier = pointMultiplier;
         this.priorityScore = priorityScore;
         this.rankOrder = rankOrder;
         this.active = active;
+        this.imageUrl = imageUrl;
         this.updatedAt = Instant.now();
     }
 

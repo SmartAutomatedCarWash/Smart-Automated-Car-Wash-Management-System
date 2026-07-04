@@ -10,6 +10,7 @@ public record TierConfigResponse(
         int priorityScore,
         int rankOrder,
         boolean systemTier,
+        String imageUrl,
         boolean active,
         Instant updatedAt
 ) {

@@ -7,6 +7,7 @@ import com.autowash.entity.TierConfig;
 import com.autowash.repository.TierConfigRepository;
 import com.autowash.service.TierConfigService;
 import com.autowash.shared.exception.ApiException;
+import jakarta.persistence.EntityManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,9 +20,11 @@ import java.util.List;
 public class TierConfigServiceImpl implements TierConfigService {
 
     private final TierConfigRepository tierConfigRepository;
+    private final EntityManager entityManager;
 
-    public TierConfigServiceImpl(TierConfigRepository tierConfigRepository) {
+    public TierConfigServiceImpl(TierConfigRepository tierConfigRepository, EntityManager entityManager) {
         this.tierConfigRepository = tierConfigRepository;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -62,7 +65,8 @@ public class TierConfigServiceImpl implements TierConfigService {
                 request.priorityScore(),
                 rankOrder,
                 false,
-                request.active() == null || request.active()
+                request.active() == null || request.active(),
+                normalizeUrl(request.imageUrl())
         );
         validateTierConfig(config.getTier(), config.getMinPoints(), config.getPointMultiplier(), config.getRankOrder());
         return toResponse(tierConfigRepository.save(config));
@@ -85,6 +89,7 @@ public class TierConfigServiceImpl implements TierConfigService {
         int priorityScore = request.priorityScore() == null ? config.getPriorityScore() : request.priorityScore();
         int rankOrder = request.rankOrder() == null ? config.getRankOrder() : request.rankOrder();
         boolean active = request.active() == null ? config.isActive() : request.active();
+        String imageUrl = request.imageUrl() == null ? config.getImageUrl() : normalizeUrl(request.imageUrl());
 
         if (rankOrder != config.getRankOrder() && tierConfigRepository.existsByRankOrder(rankOrder)) {
             shiftRanksAtOrAbove(rankOrder);
@@ -96,10 +101,29 @@ public class TierConfigServiceImpl implements TierConfigService {
                 pointMultiplier,
                 priorityScore,
                 rankOrder,
-                active
+                active,
+                imageUrl
         );
 
         return toResponse(tierConfigRepository.save(config));
+    }
+
+    @Override
+    @Transactional
+    public void deleteConfig(String tier) {
+        String code = normalizeTier(tier);
+        TierConfig config = tierConfigRepository.findById(code)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tier config not found", "RESOURCE_NOT_FOUND"));
+        if (config.isSystemTier()) {
+            throw validationError("tier", "System tiers cannot be deleted");
+        }
+        long references = countReferences(code);
+        if (references > 0) {
+            throw new ApiException(HttpStatus.CONFLICT, "Tier is currently in use", "RESOURCE_IN_USE");
+        }
+        int deletedRank = config.getRankOrder();
+        tierConfigRepository.delete(config);
+        closeRankGap(deletedRank);
     }
 
     @Override
@@ -160,6 +184,7 @@ public class TierConfigServiceImpl implements TierConfigService {
                 config.getPriorityScore(),
                 config.getRankOrder(),
                 config.isSystemTier(),
+                config.getImageUrl(),
                 config.isActive(),
                 config.getUpdatedAt()
         );
@@ -167,6 +192,13 @@ public class TierConfigServiceImpl implements TierConfigService {
 
     private String normalizeTier(String tier) {
         return TierConfig.normalizeTier(tier);
+    }
+
+    private String normalizeUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return null;
+        }
+        return imageUrl.trim();
     }
 
     private void validateTierConfig(String tier, int minPoints, BigDecimal pointMultiplier, int rankOrder) {
@@ -196,6 +228,37 @@ public class TierConfigServiceImpl implements TierConfigService {
                     tier.isActive()
             );
         }
+    }
+
+    private void closeRankGap(int deletedRank) {
+        List<TierConfig> tiers = tierConfigRepository.findAllByOrderByRankOrderAsc().stream()
+                .filter(tier -> tier.getRankOrder() > deletedRank)
+                .toList();
+        for (TierConfig tier : tiers) {
+            tier.update(
+                    tier.getDisplayName(),
+                    tier.getMinPoints(),
+                    tier.getPointMultiplier(),
+                    tier.getPriorityScore(),
+                    tier.getRankOrder() - 1,
+                    tier.isActive(),
+                    tier.getImageUrl()
+            );
+        }
+    }
+
+    private long countReferences(String tier) {
+        return count("select count(account) from LoyaltyAccount account where account.tier = :tier", tier)
+                + count("select count(history) from TierHistory history where history.oldTier = :tier or history.newTier = :tier", tier)
+                + count("select count(promotionTier) from PromotionTier promotionTier where promotionTier.tier = :tier", tier)
+                + count("select count(voucherTier) from VoucherTier voucherTier where voucherTier.tier = :tier", tier)
+                + count("select count(offer) from TierVoucherOffer offer where offer.minTier = :tier", tier);
+    }
+
+    private long count(String query, String tier) {
+        return entityManager.createQuery(query, Long.class)
+                .setParameter("tier", tier)
+                .getSingleResult();
     }
 
     private ApiException validationError(String field, String message) {

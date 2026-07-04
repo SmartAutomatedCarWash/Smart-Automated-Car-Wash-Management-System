@@ -17,7 +17,7 @@ public interface LoyaltyService {
 
     TransactionPage getTransactionHistory(UUID customerId, String type, Instant dateFrom, Instant dateTo, int page, int limit);
 
-    void updateCustomerTierByAdmin(UUID customerId, com.autowash.entity.enums.LoyaltyTier newTier);
+    void updateCustomerTierByAdmin(UUID customerId, String newTier);
 
     record TransactionPage(List<com.autowash.dto.PointTransactionResponse> items, PaginationMeta pagination) {}
 }

@@ -1,6 +1,6 @@
 export type UserRole = "CUSTOMER" | "STAFF" | "ADMIN";
 export type UserStatus = "ACTIVE" | "PENDING" | "PENDING_VERIFY" | "BLOCKED" | "SUSPENDED";
-export type LoyaltyTier = "MEMBER" | "SILVER" | "GOLD" | "PLATINUM";
+export type LoyaltyTier = string;
 
 export type RegisterRequest = {
   fullName: string;

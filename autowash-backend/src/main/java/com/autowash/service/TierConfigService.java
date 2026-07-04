@@ -25,6 +25,8 @@ public interface TierConfigService {
         return updateConfig(tier.name(), request);
     }
 
+    void deleteConfig(String tier);
+
     double getPointMultiplier(String tier);
 
     default double getPointMultiplier(LoyaltyTier tier) {

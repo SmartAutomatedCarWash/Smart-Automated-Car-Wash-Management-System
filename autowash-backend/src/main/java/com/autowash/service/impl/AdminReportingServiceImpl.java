@@ -535,16 +535,11 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     @Transactional
     public com.autowash.dto.UpdateAdminCustomerRoleResponse updateCustomerTier(UUID customerId, String tier) {
         requireCustomer(customerId);
-        com.autowash.entity.enums.LoyaltyTier newTier;
-        try {
-            newTier = com.autowash.entity.enums.LoyaltyTier.valueOf(tier.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid tier", "VALIDATION_ERROR");
-        }
+        String newTier = com.autowash.entity.TierConfig.normalizeTier(tier);
         loyaltyService.updateCustomerTierByAdmin(customerId, newTier);
         return new com.autowash.dto.UpdateAdminCustomerRoleResponse(
                 customerId,
-                newTier.name(),
+                newTier,
                 Instant.now()
         );
     }

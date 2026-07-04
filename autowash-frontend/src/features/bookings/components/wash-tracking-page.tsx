@@ -245,11 +245,13 @@ export function CustomerWashTrackingPage() {
           pointsEarned={activeSession.awardedLoyaltyPoints ?? 10}
           isOpen={showCompletion}
           onClose={() => setShowCompletion(false)}
-          onSubmitReview={async (stars, comment) => {
+          onSubmitReview={async (stars, comment, images) => {
             await submitBookingReview({
               bookingId: activeSession.bookingId,
               rating: stars,
               comment,
+              beforeImageUrl: images.beforeImageUrl,
+              afterImageUrl: images.afterImageUrl,
             });
           }}
         />

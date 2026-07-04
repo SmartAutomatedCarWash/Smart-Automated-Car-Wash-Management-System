@@ -16,21 +16,21 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/v1/admin/uploads")
-@Tag(name = "Admin Uploads")
+@RequestMapping("/api/v1/uploads")
+@Tag(name = "Uploads")
 @SecurityRequirement(name = "bearerAuth")
-@PreAuthorize("hasRole('ADMIN')")
-public class AdminImageUploadController {
+@PreAuthorize("isAuthenticated()")
+public class ImageUploadController {
 
     private final LocalImageUploadService imageUploadService;
 
-    public AdminImageUploadController(LocalImageUploadService imageUploadService) {
+    public ImageUploadController(LocalImageUploadService imageUploadService) {
         this.imageUploadService = imageUploadService;
     }
 
-    @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Upload catalog image")
-    public ApiResponse<ImageUploadResponse> uploadImage(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
-        return ApiResponse.ok("Image uploaded", imageUploadService.store(file, "catalog", request));
+    @PostMapping(value = "/review-images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload review before or after image")
+    public ApiResponse<ImageUploadResponse> uploadReviewImage(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
+        return ApiResponse.ok("Image uploaded", imageUploadService.store(file, "reviews", request));
     }
 }

@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Settings2, Loader2, Save, Clock, Calendar, Coins, Trophy, ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { useState, useEffect, useRef, type ChangeEvent } from "react";
+import { Settings2, Loader2, Save, Clock, Calendar, Coins, Trophy, ChevronDown, ChevronRight, Plus, ImageUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Button } from "@/shared/ui/ui/button";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useSystemSettings, useUpdateSystemSettings } from "@/features/settings/hooks/use-admin-settings";
-import { useCreateTierConfig, useTierConfigs, useUpdateTierConfig } from "@/features/settings/hooks/use-admin-tiers";
+import { useCreateTierConfig, useDeleteTierConfig, useTierConfigs, useUpdateTierConfig } from "@/features/settings/hooks/use-admin-tiers";
 import type { SystemSettings } from "@/features/settings/lib/admin-settings-service";
-import type { TierConfig } from "@/features/settings/lib/admin-tiers-service";
+import { uploadTierImage, type TierConfig } from "@/features/settings/lib/admin-tiers-service";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import { useLanguageStore } from "@/shared/store/language.store";
 
@@ -55,8 +55,10 @@ const ADMIN_SETTINGS_COPY = {
       name: "Tên hạng",
       code: "Mã hạng",
       rank: "Cấp bậc",
+      image: "Ảnh hạng",
       active: "Hoạt động",
       create: "Tạo hạng",
+      delete: "Xoá hạng",
       priorityLevels: {
         30: "Cao",
         20: "Trung bình",
@@ -107,8 +109,10 @@ const ADMIN_SETTINGS_COPY = {
       name: "Tier name",
       code: "Tier code",
       rank: "Rank",
+      image: "Tier image",
       active: "Active",
       create: "Create tier",
+      delete: "Delete tier",
       priorityLevels: {
         30: "High",
         20: "Medium",
@@ -346,13 +350,14 @@ function LoyaltyTiersSection({ copy }: { copy: any }) {
     pointMultiplier: 1,
     priorityScore: 0,
     rankOrder: 5,
+    imageUrl: "",
     active: true,
   });
 
   async function handleCreateTier() {
     try {
       await createMutation.mutateAsync(newTier);
-      setNewTier({ code: "", name: "", minPoints: 0, pointMultiplier: 1, priorityScore: 0, rankOrder: 5, active: true });
+      setNewTier({ code: "", name: "", minPoints: 0, pointMultiplier: 1, priorityScore: 0, rankOrder: 5, imageUrl: "", active: true });
       toast.success(copy.successMsg);
     } catch (error) {
       toast.error(getDisplayErrorMessage(error));
@@ -390,6 +395,13 @@ function LoyaltyTiersSection({ copy }: { copy: any }) {
                 onChange={(v) => setNewTier((current) => ({ ...current, priorityScore: v }))}
               />
             </div>
+            <div className="mt-4">
+              <TierImageUploadField
+                label={copy.loyaltyTiers.image}
+                value={newTier.imageUrl}
+                onChange={(value) => setNewTier((current) => ({ ...current, imageUrl: value }))}
+              />
+            </div>
             <div className="mt-4 flex justify-end">
               <Button type="button" size="sm" disabled={createMutation.isPending} onClick={handleCreateTier}>
                 {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
@@ -410,11 +422,13 @@ function LoyaltyTiersSection({ copy }: { copy: any }) {
 
 function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfig }) {
   const updateMutation = useUpdateTierConfig();
+  const deleteMutation = useDeleteTierConfig();
   const [name, setName] = useState(initialConfig.name || initialConfig.tier);
   const [threshold, setThreshold] = useState(initialConfig.minPoints);
   const [multiplier, setMultiplier] = useState(initialConfig.pointMultiplier);
   const [priorityScore, setPriorityScore] = useState(initialConfig.priorityScore);
   const [rankOrder, setRankOrder] = useState(initialConfig.rankOrder);
+  const [imageUrl, setImageUrl] = useState(initialConfig.imageUrl || "");
   const [active, setActive] = useState(initialConfig.active);
 
   const isChanged =
@@ -423,14 +437,24 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
     multiplier !== initialConfig.pointMultiplier ||
     priorityScore !== initialConfig.priorityScore ||
     rankOrder !== initialConfig.rankOrder ||
+    imageUrl !== (initialConfig.imageUrl || "") ||
     active !== initialConfig.active;
 
   async function handleSave() {
     try {
       await updateMutation.mutateAsync({
         tier: initialConfig.tier,
-        request: { name, minPoints: threshold, pointMultiplier: multiplier, priorityScore, rankOrder, active },
+        request: { name, minPoints: threshold, pointMultiplier: multiplier, priorityScore, rankOrder, imageUrl: imageUrl || null, active },
       });
+      toast.success(copy.successMsg);
+    } catch (error) {
+      toast.error(getDisplayErrorMessage(error));
+    }
+  }
+
+  async function handleDelete() {
+    try {
+      await deleteMutation.mutateAsync(initialConfig.tier);
       toast.success(copy.successMsg);
     } catch (error) {
       toast.error(getDisplayErrorMessage(error));
@@ -490,6 +514,7 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
         ]}
         onChange={setPriorityScore} 
       />
+      <TierImageUploadField label={copy.loyaltyTiers.image} value={imageUrl} onChange={setImageUrl} />
       <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
         <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
         {copy.loyaltyTiers.active}
@@ -510,6 +535,61 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
         {updateMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
         {copy.loyaltyTiers.save}
       </Button>
+      {!initialConfig.systemTier ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-8 w-full border-rose-200 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+          disabled={deleteMutation.isPending}
+          onClick={handleDelete}
+        >
+          {deleteMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Trash2 className="mr-1.5 h-3.5 w-3.5" />}
+          {copy.loyaltyTiers.delete}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+function TierImageUploadField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const uploaded = await uploadTierImage(file);
+      onChange(uploaded.url);
+      toast.success("Image uploaded.");
+    } catch (error) {
+      toast.error(getDisplayErrorMessage(error));
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
+  }
+
+  return (
+    <div className="grid gap-2">
+      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+      {value ? (
+        <img src={value} alt={label} className="h-24 w-full rounded-lg border border-border object-cover" />
+      ) : null}
+      <div className="flex gap-2">
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-10 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          placeholder="https://example.com/image.jpg"
+        />
+        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+        <Button type="button" size="icon" variant="outline" disabled={uploading} onClick={() => inputRef.current?.click()}>
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
+        </Button>
+      </div>
     </div>
   );
 }
