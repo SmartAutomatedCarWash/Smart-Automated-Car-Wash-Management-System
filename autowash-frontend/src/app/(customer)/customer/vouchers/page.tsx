@@ -1,12 +1,5 @@
-import { WorkspacePlaceholder } from "@/app/_components/workspace-placeholder";
+import { CustomerVouchersPageContent } from "@/features/vouchers/components/customer-vouchers-page";
 
 export default function CustomerVouchersPage() {
-  return (
-    <WorkspacePlaceholder
-      workspace="Customer"
-      title="Vouchers"
-      description="Customer voucher wallet shell."
-      endpoints={["GET /customers/vouchers"]}
-    />
-  );
+  return <CustomerVouchersPageContent />;
 }

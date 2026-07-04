@@ -275,3 +275,13 @@ export type UpdateAdminCustomerRoleResult = {
   updatedAt: string;
 };
 
+export type UpdateAdminCustomerTierPayload = {
+  tier: string;
+};
+
+export type UpdateAdminCustomerTierResult = {
+  customerId: string;
+  tier: string;
+  updatedAt: string;
+};
+

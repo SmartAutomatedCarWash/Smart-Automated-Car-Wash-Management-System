@@ -6,9 +6,11 @@ import type {
   RedeemPointsRequest,
   RedeemPointsResponse,
   LoyaltyTransaction,
+  TierVoucherOffer,
   WashHistoryItem,
 } from "@/entities/loyalty";
 import type { Promotion } from "@/entities/promotions";
+import type { TierConfig } from "@/features/settings/lib/admin-tiers-service";
 
 export async function getCustomerLoyaltyAccount() {
   const account = await apiRequest<Omit<LoyaltyAccount, "availablePoints" | "lifetimePoints">>({
@@ -71,4 +73,20 @@ export function listCustomerPromotions() {
         status: promotion.status,
       })),
     );
+}
+
+export async function getPublicTierConfigs(): Promise<TierConfig[]> {
+  const response = await apiRequest<TierConfig[]>({
+    url: "/tiers",
+    method: "GET",
+  });
+  return response;
+}
+
+export async function listPublicTierVoucherOffers(): Promise<TierVoucherOffer[]> {
+  const response = await apiRequest<TierVoucherOffer[]>({
+    url: "/public/loyalty/offers",
+    method: "GET",
+  });
+  return response;
 }

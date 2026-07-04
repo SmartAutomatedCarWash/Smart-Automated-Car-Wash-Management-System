@@ -1,9 +1,10 @@
 package com.autowash.entity.enums;
 
 public enum LoyaltyTier {
-    MEMBER,
+    BRONZE,
     SILVER,
     GOLD,
-    PLATINUM
+    PLATINUM,
+    DIAMOND
 }
 

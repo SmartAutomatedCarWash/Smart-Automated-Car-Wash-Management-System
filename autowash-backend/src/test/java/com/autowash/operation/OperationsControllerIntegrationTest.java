@@ -1,7 +1,6 @@
 package com.autowash.operation;
 
 import org.junit.jupiter.api.Disabled;
-import com.autowash.entity.enums.BookingStatus;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -27,7 +26,6 @@ import com.autowash.repository.VehicleRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;

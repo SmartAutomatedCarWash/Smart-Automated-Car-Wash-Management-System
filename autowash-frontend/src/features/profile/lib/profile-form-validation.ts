@@ -1,4 +1,4 @@
-import { emailPattern, phonePattern } from "@/shared/lib/validators.ts";
+import { emailPattern, phonePattern } from "../../../shared/lib/validators.ts";
 
 type ProfileValidationDraft = {
   fullName: string | null | undefined;

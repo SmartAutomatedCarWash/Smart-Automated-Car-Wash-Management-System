@@ -51,7 +51,7 @@ class UserProfileControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.phone").value(nullValue()))
                 .andExpect(jsonPath("$.data.hasGoogleAuth").value(false))
                 .andExpect(jsonPath("$.data.role").value("CUSTOMER"))
-                .andExpect(jsonPath("$.data.tier").value("MEMBER"))
+                .andExpect(jsonPath("$.data.tier").value("BRONZE"))
                 .andExpect(jsonPath("$.data.loyaltyBalance").value(0))
                 .andExpect(jsonPath("$.data.preferences.language").value("VI"))
                 .andExpect(jsonPath("$.data.preferences.theme").value("LIGHT"));

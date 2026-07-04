@@ -33,7 +33,8 @@ public interface AdminReportingService {
     BookingPage listBookings(String status, LocalDate dateFrom, LocalDate dateTo, UUID customerId, String searchQuery, int page, int limit);
     com.autowash.dto.BookingDetailResponse getBookingDetail(String bookingId);
     AdminCustomerDetailResponse getCustomerDetail(UUID customerId);
-    UpdateAdminCustomerRoleResponse updateCustomerRole(UUID customerId, String role);
+    com.autowash.dto.UpdateAdminCustomerRoleResponse updateCustomerRole(UUID customerId, String role);
+    com.autowash.dto.UpdateAdminCustomerRoleResponse updateCustomerTier(UUID customerId, String tier);
     WashHistoryPage getWashHistory(UUID customerId, Instant dateFrom, Instant dateTo, int page, int limit);
     LoyaltyService.TransactionPage getPointHistory(UUID customerId, String type, Instant dateFrom, Instant dateTo, int page, int limit);
     CustomerVehiclePage getCustomerVehicles(UUID customerId, int page, int limit);

@@ -1,4 +1,4 @@
-import { emailPattern } from "@/shared/lib/validators.ts";
+import { emailPattern } from "../../../shared/lib/validators.ts";
 
 export function normalizeLoginIdentifier(value: string) {
   return value.trim().replace(/\s/g, "");

@@ -204,6 +204,14 @@ export function updateAdminCustomerRole(
   });
 }
 
+export function updateAdminCustomerTier(customerId: string, payload: { tier: string }) {
+  return apiRequest<{ customerId: string; tier: string; updatedAt: string }, { tier: string }>({
+    method: "PUT",
+    url: `/admin/customers/${customerId}/tier`,
+    data: payload,
+  });
+}
+
 export function createAdminStaff(payload: CreateAdminStaffPayload) {
   return apiRequest<AdminAccount, CreateAdminStaffPayload>({
     method: "POST",

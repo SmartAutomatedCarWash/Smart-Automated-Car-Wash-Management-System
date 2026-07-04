@@ -13,6 +13,7 @@ import {
   useCustomerLoyaltyAccount,
   useCustomerLoyaltyTransactions,
   useCustomerWashHistory,
+  usePublicTierConfigs,
 } from "@/features/loyalty/hooks/use-customer-loyalty";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
@@ -24,6 +25,7 @@ export function CustomerHistoryPageContent() {
   const washHistoryQuery = useCustomerWashHistory(1, 50);
   const transactionsQuery = useCustomerLoyaltyTransactions(1, 50);
   const accountQuery = useCustomerLoyaltyAccount();
+  const tiersQuery = usePublicTierConfigs();
   const locale = language === "vi" ? "vi-VN" : "en-US";
 
   const handleRefresh = async () => {
@@ -40,7 +42,7 @@ export function CustomerHistoryPageContent() {
     }
   };
 
-  const summary = accountQuery.data ? buildLoyaltySummary(accountQuery.data) : null;
+  const summary = accountQuery.data && tiersQuery.data ? buildLoyaltySummary(accountQuery.data, tiersQuery.data) : null;
 
   return (
     <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_25%),linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">

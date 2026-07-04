@@ -65,10 +65,10 @@ class AdminVoucherControllerIntegrationTest {
 
     @Test
     void adminCanInspectVoucherRedemptionHistory() throws Exception {
-        String voucherCode = "ADMINVOUCHER50";
+        String voucherCode = "silver-100";
         User customer = createActiveCustomer("0901999001");
         User staff = createActiveStaff("Staff Voucher Admin");
-        Booking booking = createConfirmedBooking(customer, staff, "ADMIN_VOUCHER_BK_001", "30H-999001", LocalDate.of(2026, 6, 14), 600000);
+        Booking booking = createConfirmedBooking(customer, staff, "ADMIN_VOUCHER_BK_001", "30H-999001", LocalDate.of(2026, 6, 14), 1500000);
         completeSession(booking.getId(), staff);
 
         MvcResult redeemResult = mockMvc.perform(post("/api/v1/loyalty/redeem")
@@ -76,7 +76,7 @@ class AdminVoucherControllerIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "pointsToRedeem": 50,
+                                  "pointsToRedeem": 100,
                                   "referenceId": "%s"
                                 }
                                 """.formatted(voucherCode)))
@@ -93,8 +93,8 @@ class AdminVoucherControllerIntegrationTest {
                 .andExpect(jsonPath("$.data[0].customerId").value(customer.getId().toString()))
                 .andExpect(jsonPath("$.data[0].customerName").value("Nguyen Van A"))
                 .andExpect(jsonPath("$.data[0].voucherCode").value(issuedVoucherCode))
-                .andExpect(jsonPath("$.data[0].pointsRedeemed").value(50))
-                .andExpect(jsonPath("$.data[0].balanceAfter").value(10));
+                .andExpect(jsonPath("$.data[0].pointsRedeemed").value(100))
+                .andExpect(jsonPath("$.data[0].balanceAfter").value(50));
     }
 
     private String completeSession(UUID bookingId, User staff) throws Exception {

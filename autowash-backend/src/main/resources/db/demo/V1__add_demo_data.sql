@@ -43,7 +43,7 @@ BEGIN
 
     -- Loyalty Account
     INSERT INTO loyalty_accounts (id, customer_id, current_points, total_earned_points, tier)
-    VALUES (gen_random_uuid(), v_customer_id, 150, 150, 'MEMBER')
+    VALUES (gen_random_uuid(), v_customer_id, 150, 150, 'BRONZE')
     RETURNING id INTO v_loyalty_account_id;
 
     -- Vehicles

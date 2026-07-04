@@ -89,15 +89,14 @@ class LoyaltyServiceTest {
 
     @Test
     void redeemPointsReducesBalanceAndWritesNegativeTransaction() {
-        TestData data = createCompletedSession("0901888003", "LOY_SVC_003", 600000);
+        TestData data = createCompletedSession("0901888003", "LOY_SVC_003", 1500000);
         loyaltyService.postEarnTransaction(data.customer().getId(), data.session().getId());
+        RedeemPointsResponse response = loyaltyService.redeemPoints(data.customer().getId(), 100, "silver-100");
 
-        RedeemPointsResponse response = loyaltyService.redeemPoints(data.customer().getId(), 50, data.booking().getId().toString());
-
-        assertThat(response.pointsRedeemed()).isEqualTo(50);
-        assertThat(response.newBalance()).isEqualTo(10);
+        assertThat(response.pointsRedeemed()).isEqualTo(100);
+        assertThat(response.newBalance()).isEqualTo(50);
         assertThat(response.voucherCode()).startsWith("LOY-");
-        assertThat(response.voucherValue()).isEqualTo(50_000);
+        assertThat(response.voucherValue()).isEqualTo(100_000);
         assertThat(response.status()).isEqualTo("SUCCESS");
         assertThat(response.expiresAt()).isAfter(Instant.now());
         assertThat(voucherRepository.findByCode(response.voucherCode())).isPresent();
@@ -108,9 +107,9 @@ class LoyaltyServiceTest {
                 null,
                 org.springframework.data.domain.PageRequest.of(0, 20)
         ).getContent().getFirst();
-        assertThat(redemption.getPoints()).isEqualTo(-50);
+        assertThat(redemption.getPoints()).isEqualTo(-100);
         assertThat(redemption.getReason()).isEqualTo("Voucher redemption: " + response.voucherCode());
-        assertThat(loyaltyService.getAccount(data.customer().getId()).totalEarnedPoints()).isEqualTo(60);
+        assertThat(loyaltyService.getAccount(data.customer().getId()).totalEarnedPoints()).isEqualTo(150);
     }
 
     @Test
@@ -118,28 +117,28 @@ class LoyaltyServiceTest {
         TestData data = createCompletedSession("0901888004", "LOY_SVC_004", 270000);
         loyaltyService.getAccount(data.customer().getId());
 
-        assertThatThrownBy(() -> loyaltyService.redeemPoints(data.customer().getId(), 49, null))
+        assertThatThrownBy(() -> loyaltyService.redeemPoints(data.customer().getId(), 49, "silver-100"))
                 .isInstanceOf(ApiException.class)
                 .hasMessage("Minimum redemption is 50 points");
 
-        assertThatThrownBy(() -> loyaltyService.redeemPoints(data.customer().getId(), 201, null))
+        assertThatThrownBy(() -> loyaltyService.redeemPoints(data.customer().getId(), 201, "silver-100"))
                 .isInstanceOf(ApiException.class)
                 .hasMessage("Maximum redemption is 200 points");
 
-        assertThatThrownBy(() -> loyaltyService.redeemPoints(data.customer().getId(), 50, null))
+        assertThatThrownBy(() -> loyaltyService.redeemPoints(data.customer().getId(), 100, "silver-100"))
                 .isInstanceOf(ApiException.class)
-                .hasMessage("Insufficient points: have 0, need 50");
+                .hasMessage("Insufficient points: have 0, need 100");
     }
 
     @Test
     void earnEvaluatesTierUpgradeWithoutDowngradingOnRedeem() {
-        TestData data = createCompletedSession("0901888005", "LOY_SVC_005", 5_100_000);
+        TestData data = createCompletedSession("0901888005", "LOY_SVC_005", 5_000_000);
 
         EarnPointsResponse earnResponse = loyaltyService.postEarnTransaction(data.customer().getId(), data.session().getId());
-        assertThat(earnResponse.newBalance()).isEqualTo(510);
+        assertThat(earnResponse.newBalance()).isEqualTo(500);
         assertThat(earnResponse.tier()).isEqualTo("SILVER");
 
-        loyaltyService.redeemPoints(data.customer().getId(), 200, data.booking().getId().toString());
+        loyaltyService.redeemPoints(data.customer().getId(), 100, "silver-100");
         assertThat(loyaltyService.getAccount(data.customer().getId()).tier()).isEqualTo("SILVER");
     }
 

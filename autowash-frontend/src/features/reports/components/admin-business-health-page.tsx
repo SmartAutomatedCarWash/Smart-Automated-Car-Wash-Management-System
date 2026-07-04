@@ -1,11 +1,14 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
-import { AlertTriangle, ArrowUpRight, Award, BarChart3, CalendarDays, CircleDollarSign, HelpCircle, ReceiptText, Sparkles, TrendingDown, TrendingUp, Send, Bot, User, Loader2, RefreshCw } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, Award, BarChart3, CalendarDays, CircleDollarSign, HelpCircle, ReceiptText, Sparkles, TrendingDown, TrendingUp, Send, Bot, User, Loader2, RefreshCw, Search } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import { useAdminBusinessHealthReport } from "@/features/reports/hooks/use-admin-business-health-report";
+import { useAdminVoucherRedemptions } from "@/features/vouchers/hooks/use-admin-vouchers";
 import { useLanguageStore } from "@/shared/store/language.store";
+import { Button } from "@/shared/ui/ui/button";
+import { Input } from "@/shared/ui/ui/input";
 
 const STATIC_TRANSLATIONS: Record<string, { vi: string; en: string }> = {
   "Loading business health report...": {
@@ -1148,5 +1151,83 @@ function EmptyReportState({ message }: { message: string }) {
     <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center text-sm text-slate-500">
       {message}
     </div>
+  );
+}
+
+function ReportsVoucherRedemptions({ language }: { language: "vi" | "en" }) {
+  const [draftSearch, setDraftSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const redemptionsQuery = useAdminVoucherRedemptions(1, 20, searchQuery);
+
+  return (
+    <section className="space-y-3">
+      <SectionHeading title={language === "vi" ? "Lịch sử đổi điểm lấy voucher" : "Point-to-voucher redemption history"} />
+      <Card className="border-slate-200 bg-white shadow-sm">
+        <CardHeader className="gap-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <CardTitle className="text-sm font-semibold">{language === "vi" ? "Đổi điểm" : "Redemptions"}</CardTitle>
+            </div>
+            <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+              <div className="relative min-w-[240px]">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={draftSearch}
+                  onChange={(event) => setDraftSearch(event.target.value)}
+                  placeholder={language === "vi" ? "Tìm kiếm voucher, tên hoặc SĐT" : "Search voucher, name, or phone"}
+                  className="pl-9 h-9 text-sm"
+                />
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => setSearchQuery(draftSearch.trim())}>
+                {language === "vi" ? "Tìm kiếm" : "Search"}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {redemptionsQuery.isPending ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="h-10 animate-pulse rounded bg-slate-100" />
+              ))}
+            </div>
+          ) : redemptionsQuery.isError ? (
+            <EmptyReportState message={language === "vi" ? "Không thể tải lịch sử đổi voucher." : "Unable to load redemption history."} />
+          ) : !redemptionsQuery.data || redemptionsQuery.data.items.length === 0 ? (
+            <EmptyReportState message={language === "vi" ? "Chưa có lịch sử đổi voucher nào." : "No redemption history yet."} />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{language === "vi" ? "Khách hàng" : "Customer"}</TableHead>
+                  <TableHead>{language === "vi" ? "Voucher" : "Voucher"}</TableHead>
+                  <TableHead className="text-right">{language === "vi" ? "Điểm đã đổi" : "Points redeemed"}</TableHead>
+                  <TableHead className="text-right">{language === "vi" ? "Thời gian" : "Time"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {redemptionsQuery.data.items.map((item) => (
+                  <TableRow key={item.transactionId}>
+                    <TableCell>
+                      <div className="font-semibold text-slate-900">{item.customerName}</div>
+                      <div className="text-xs text-slate-500">{item.customerPhone}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{item.voucherCode}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-semibold">
+                      {item.pointsRedeemed.toLocaleString(language === "vi" ? "vi-VN" : "en-US")}
+                    </TableCell>
+                    <TableCell className="text-right text-sm text-slate-500">
+                      {new Date(item.redeemedAt).toLocaleString(language === "vi" ? "vi-VN" : "en-US")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </section>
   );
 }

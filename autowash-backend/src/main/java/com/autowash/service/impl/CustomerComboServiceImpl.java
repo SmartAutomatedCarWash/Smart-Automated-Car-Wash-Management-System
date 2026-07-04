@@ -1,6 +1,5 @@
 package com.autowash.service.impl;
 
-import com.autowash.entity.enums.PaymentMethod;
 
 import com.autowash.entity.User;
 import com.autowash.dto.CustomerComboResponse;

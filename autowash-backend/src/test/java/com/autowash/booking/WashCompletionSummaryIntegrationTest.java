@@ -1,11 +1,11 @@
 package com.autowash.booking;
 
 import com.autowash.entity.User;
-import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.WashSession;
+import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.WashSessionRepository;
-import com.autowash.repository.BookingRepository;
+
 import com.autowash.shared.security.UserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,7 +38,7 @@ class WashCompletionSummaryIntegrationTest {
     @Autowired private ObjectMapper objectMapper;
     @Autowired private UserRepository userRepository;
     @Autowired private WashSessionRepository washSessionRepository;
-    @Autowired private BookingRepository bookingRepository;
+
 
     @BeforeEach
     void ensureActiveStaffExists() {

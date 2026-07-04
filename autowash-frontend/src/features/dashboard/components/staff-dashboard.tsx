@@ -160,7 +160,7 @@ export function StaffDashboard() {
                       </tr>
                     )}
                     {filtered.map((booking) => (
-                      <tr key={booking.id} className="transition-colors hover:bg-primary/5">
+                      <tr key={booking.id} className="transition-colors hover:bg-primary/5 relative">
                         <td className="p-4 pl-6 font-mono font-bold text-muted-foreground">
                           #{booking.id}
                         </td>
@@ -170,8 +170,15 @@ export function StaffDashboard() {
                               <Car className="h-5 w-5 text-primary/70" />
                             </div>
                             <div>
-                              <div className="font-bold text-foreground">
-                                {booking.customerName ?? "Customer"}
+                              <div className="flex items-center gap-2">
+                                <div className="font-bold text-foreground">
+                                  {booking.customerName ?? "Customer"}
+                                </div>
+                                {booking.customerPriorityScore ? booking.customerPriorityScore > 0 && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 shadow-sm ring-1 ring-inset ring-amber-500/20">
+                                    ⭐ TIER {booking.customerTier} (Ưu tiên: {booking.customerPriorityScore === 30 ? "Cao" : booking.customerPriorityScore === 20 ? "Trung bình" : "Bình thường"})
+                                  </span>
+                                ) : null}
                               </div>
                               <div className="text-xs font-medium text-muted-foreground">
                                 {booking.vehicleName} / {booking.vehicleType}

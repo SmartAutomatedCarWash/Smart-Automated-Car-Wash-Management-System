@@ -61,6 +61,7 @@ import type {
   PromotionTargetingMode,
 } from "@/entities/promotions";
 import type { LoyaltyTier } from "@/entities/loyalty";
+import { useTierConfigs } from "@/features/settings/hooks/use-admin-tiers";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 type PromotionFormValues = {
@@ -79,7 +80,7 @@ type PromotionFormErrors = Partial<Record<keyof PromotionFormValues, string>>;
 
 const PAGE_LIMIT = 10;
 const FETCH_LIMIT = 100;
-const ALL_TIERS: LoyaltyTier[] = ["MEMBER", "SILVER", "GOLD", "PLATINUM"];
+const FALLBACK_TIERS: LoyaltyTier[] = ["BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND"];
 
 type PromotionFilters = {
   name: string;
@@ -111,10 +112,12 @@ export function AdminPromotionsPageContent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const promotionsQuery = useAdminPromotions(1, FETCH_LIMIT);
+  const tiersQuery = useTierConfigs();
   const promotionDetailQuery = useAdminPromotion(editingPromotionId);
   const createMutation = useCreateAdminPromotion();
   const updateMutation = useUpdateAdminPromotion();
   const deleteMutation = useDeleteAdminPromotion();
+  const tierOptions = tiersQuery.data?.map((tier) => tier.tier) ?? FALLBACK_TIERS;
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
   const activeMutationError = (createMutation.error ?? updateMutation.error) as ApiErrorResponse | null;
@@ -554,7 +557,7 @@ export function AdminPromotionsPageContent() {
                 {form.targetingMode === "SELECTED_TIERS" ? (
                   <FormField label={translate(language, "Các hạng được áp dụng", "Applicable tiers")} error={displayErrors.applicableTiers}>
                     <div className="grid grid-cols-2 gap-2">
-                      {ALL_TIERS.map((tier) => (
+                      {tierOptions.map((tier) => (
                         <label
                           key={tier}
                           className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-medium text-slate-700"

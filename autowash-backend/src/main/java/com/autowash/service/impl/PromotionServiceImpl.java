@@ -6,20 +6,20 @@ import com.autowash.dto.PromotionResponse;
 import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.Promotion;
 import com.autowash.entity.PromotionTier;
+import com.autowash.entity.TierConfig;
 import com.autowash.entity.User;
 import com.autowash.entity.enums.ActiveStatus;
-import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.enums.PromotionTargetingMode;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PromotionRepository;
 import com.autowash.repository.PromotionTierRepository;
 import com.autowash.service.CurrentUserService;
 import com.autowash.service.PromotionService;
+import com.autowash.service.TierConfigService;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -32,23 +32,24 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PromotionServiceImpl implements PromotionService {
 
-    private static final List<String> ALL_TIERS = Arrays.stream(LoyaltyTier.values()).map(Enum::name).toList();
-
     private final PromotionRepository promotionRepository;
     private final PromotionTierRepository promotionTierRepository;
     private final LoyaltyAccountRepository loyaltyAccountRepository;
     private final CurrentUserService currentUserService;
+    private final TierConfigService tierConfigService;
 
     public PromotionServiceImpl(
             PromotionRepository promotionRepository,
             PromotionTierRepository promotionTierRepository,
             LoyaltyAccountRepository loyaltyAccountRepository,
-            CurrentUserService currentUserService
+            CurrentUserService currentUserService,
+            TierConfigService tierConfigService
     ) {
         this.promotionRepository = promotionRepository;
         this.promotionTierRepository = promotionTierRepository;
         this.loyaltyAccountRepository = loyaltyAccountRepository;
         this.currentUserService = currentUserService;
+        this.tierConfigService = tierConfigService;
     }
 
     @Transactional
@@ -110,7 +111,7 @@ public class PromotionServiceImpl implements PromotionService {
         User user = currentUserService.getCurrentUser();
         Page<Promotion> promotions = promotionRepository.findActiveForTier(
                 Instant.now(),
-                tierFor(user),
+                eligibleTiersFor(user),
                 ActiveStatus.ACTIVE,
                 PromotionTargetingMode.ALL_TIERS,
                 pageRequest(page, limit)
@@ -122,7 +123,7 @@ public class PromotionServiceImpl implements PromotionService {
     public List<Promotion> listActiveForCustomer(User customer) {
         return promotionRepository.findActiveForTier(
                 Instant.now(),
-                tierFor(customer),
+                eligibleTiersFor(customer),
                 ActiveStatus.ACTIVE,
                 PromotionTargetingMode.ALL_TIERS,
                 pageRequest(1, 50)
@@ -152,7 +153,12 @@ public class PromotionServiceImpl implements PromotionService {
             if (request.applicableTiers() == null || request.applicableTiers().isEmpty()) {
                 throw validationError("applicableTiers", "At least one tier is required for SPECIFIC_TIERS");
             }
-            return new ValidatedPromotion(request.applicableTiers().stream().distinct().toList());
+            List<String> tiers = request.applicableTiers().stream()
+                    .map(TierConfig::normalizeTier)
+                    .distinct()
+                    .peek(tierConfigService::getConfig)
+                    .toList();
+            return new ValidatedPromotion(tiers);
         }
         return new ValidatedPromotion(List.of());
     }
@@ -214,14 +220,14 @@ public class PromotionServiceImpl implements PromotionService {
 
     private List<String> resolveApplicableTiers(Promotion promotion) {
         if (promotion.getTargetingMode() == PromotionTargetingMode.ALL_TIERS) {
-            return ALL_TIERS;
+            return tierConfigService.activeTierCodes();
         }
         return promotionTierRepository.findByPromotionId(promotion.getId()).stream()
-                .map(tier -> tier.getTier().name())
+                .map(PromotionTier::getTier)
                 .toList();
     }
 
-    private void replacePromotionTiers(UUID promotionId, List<LoyaltyTier> tiers) {
+    private void replacePromotionTiers(UUID promotionId, List<String> tiers) {
         promotionTierRepository.deleteByPromotionId(promotionId);
         if (!tiers.isEmpty()) {
             promotionTierRepository.saveAll(tiers.stream()
@@ -242,12 +248,13 @@ public class PromotionServiceImpl implements PromotionService {
         return status == null ? ActiveStatus.ACTIVE : status;
     }
 
-    private LoyaltyTier tierFor(User user) {
+    private List<String> eligibleTiersFor(User user) {
         return loyaltyAccountRepository.findByCustomerId(user.getId())
                 .map(LoyaltyAccount::getTier)
-                .orElse(LoyaltyTier.MEMBER);
+                .map(tierConfigService::eligibleTierCodesFor)
+                .orElseGet(() -> tierConfigService.eligibleTierCodesFor(TierConfigService.BRONZE));
     }
 
-    private record ValidatedPromotion(List<LoyaltyTier> tiers) {
+    private record ValidatedPromotion(List<String> tiers) {
     }
 }

@@ -6,7 +6,7 @@ import {
   type CustomerVehicleFormValues,
   type CustomerVehicleListItem,
   type UpdateCustomerVehicleRequest,
-} from "@/entities/vehicles";
+} from "../../../entities/vehicles/index.ts";
 
 export const customerVehiclePlatePattern = /^[0-9]{2}[A-Z]-[0-9]{6}$/;
 

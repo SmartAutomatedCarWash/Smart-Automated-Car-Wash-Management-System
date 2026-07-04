@@ -55,6 +55,7 @@ public class OperationsServiceImpl implements OperationsService {
     private final LoyaltyService loyaltyService;
     private final CurrentUserService currentUserService;
     private final StaffAssignmentService staffAssignmentService;
+    private final TierConfigService tierConfigService;
     private final String currency;
 
     public OperationsServiceImpl(
@@ -64,6 +65,7 @@ public class OperationsServiceImpl implements OperationsService {
             LoyaltyService loyaltyService,
             CurrentUserService currentUserService,
             StaffAssignmentService staffAssignmentService,
+            TierConfigService tierConfigService,
             @Value("${autowash.currency}") String currency
     ) {
         this.bookingService = bookingService;
@@ -72,6 +74,7 @@ public class OperationsServiceImpl implements OperationsService {
         this.loyaltyService = loyaltyService;
         this.currentUserService = currentUserService;
         this.staffAssignmentService = staffAssignmentService;
+        this.tierConfigService = tierConfigService;
         this.currency = currency;
     }
 
@@ -420,6 +423,8 @@ public class OperationsServiceImpl implements OperationsService {
 
     private EligibleSessionBookingResponse toEligibleBooking(Booking booking) {
         User assignedStaff = booking.getAssignedStaff();
+        String customerTier = loyaltyService.getAccount(booking.getCustomer().getId()).tier();
+        int customerPriorityScore = tierConfigService.getConfig(customerTier).priorityScore();
         return new EligibleSessionBookingResponse(
                 booking.getId().toString(),
                 booking.getCustomer().getFullName(),
@@ -432,7 +437,9 @@ public class OperationsServiceImpl implements OperationsService {
                 booking.getFinalAmount(),
                 booking.getEstimatedDurationMinutes(),
                 assignedStaff == null ? null : assignedStaff.getId().toString(),
-                assignedStaff == null ? null : assignedStaff.getFullName()
+                assignedStaff == null ? null : assignedStaff.getFullName(),
+                customerTier,
+                customerPriorityScore
         );
     }
 

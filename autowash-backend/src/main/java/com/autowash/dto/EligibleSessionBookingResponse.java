@@ -15,6 +15,8 @@ public record EligibleSessionBookingResponse(
         long finalAmount,
         int estimatedDurationMinutes,
         String assignedStaffId,
-        String assignedStaffName
+        String assignedStaffName,
+        String customerTier,
+        int customerPriorityScore
 ) {
 }

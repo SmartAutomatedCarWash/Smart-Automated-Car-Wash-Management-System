@@ -34,7 +34,9 @@ import {
   useAdminCustomerWashHistory,
   useUpdateAdminCustomerRole,
   useUpdateAdminCustomerStatus,
+  useUpdateAdminCustomerTier,
 } from "@/features/reports/hooks/use-admin-reporting";
+import { useTierConfigs } from "@/features/settings/hooks/use-admin-tiers";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 type AdminCustomerDetailPageContentProps = {
@@ -108,6 +110,8 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
   const [statusFeedback, setStatusFeedback] = useState<string | null>(null);
   const [roleDraft, setRoleDraft] = useState<AdminEditableAccountRole>("CUSTOMER");
   const [roleFeedback, setRoleFeedback] = useState<string | null>(null);
+  const [tierDraft, setTierDraft] = useState<string>("BRONZE");
+  const [tierFeedback, setTierFeedback] = useState<string | null>(null);
 
   const [washDateDraft, setWashDateDraft] = useState<DateRangeDraft>({ dateFrom: "", dateTo: "" });
   const [washDateRange, setWashDateRange] = useState<DateRangeDraft>({ dateFrom: "", dateTo: "" });
@@ -160,7 +164,10 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
   );
   const updateStatusMutation = useUpdateAdminCustomerStatus(customerId);
   const updateRoleMutation = useUpdateAdminCustomerRole(customerId);
+  const updateTierMutation = useUpdateAdminCustomerTier(customerId);
+  const tiersQuery = useTierConfigs();
   const profile = detailQuery.data?.profile;
+  const loyalty = detailQuery.data?.loyalty;
 
   useEffect(() => {
     if (!detailQuery.data?.profile.status) {
@@ -185,6 +192,13 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
     }
   }, [detailQuery.data?.profile.role]);
 
+  useEffect(() => {
+    if (!detailQuery.data?.loyalty.tier) {
+      return;
+    }
+    setTierDraft(detailQuery.data.loyalty.tier);
+  }, [detailQuery.data?.loyalty.tier]);
+
   const customerTabs = [
     { id: "overview" as CustomerTab, label: translate(language, "Tổng quan", "Overview") },
     { id: "vehicles" as CustomerTab, label: translate(language, "Danh sách xe", "Vehicles") },
@@ -197,28 +211,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {translate(language, "Admin / Tài khoản / Khách hàng", "Admin / Accounts / Customer")}
-            </p>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-              {profile?.fullName ?? translate(language, "Chi tiết khách hàng", "Customer detail")}
-            </h1>
-          </div>
-          <div className="flex gap-2">
-            <Button asChild variant="outline" className="h-9 gap-2">
-              <Link href="/admin/accounts">
-                <ArrowLeft className="h-4 w-4" />
-                {translate(language, "Quay lại danh sách", "Back to list")}
-              </Link>
-            </Button>
-            <Button type="button" variant="outline" className="h-9 gap-2" onClick={() => void refreshActiveTab(activeTab)}>
-              <RefreshCcw className="h-4 w-4" />
-              {translate(language, "Làm mới", "Refresh")}
-            </Button>
-          </div>
-        </div>
+
 
         <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
           <CustomerProfilePanel
@@ -260,6 +253,21 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
             }}
             isUpdatingRole={updateRoleMutation.isPending}
             roleFeedback={roleFeedback}
+            tierDraft={tierDraft}
+            onTierDraftChange={setTierDraft}
+            onSubmitTier={async () => {
+              setTierFeedback(null);
+              try {
+                await updateTierMutation.mutateAsync({ tier: tierDraft });
+                setTierFeedback(translate(language, "Cập nhật hạng thành viên thành công.", "Tier updated."));
+                await detailQuery.refetch();
+              } catch (error) {
+                setTierFeedback(getDisplayErrorMessage(error));
+              }
+            }}
+            isUpdatingTier={updateTierMutation.isPending}
+            tierFeedback={tierFeedback}
+            tierOptions={tiersQuery.data ?? []}
             language={language as "vi" | "en"}
           />
 
@@ -387,6 +395,12 @@ function CustomerProfilePanel({
   onSubmitRole,
   isUpdatingRole,
   roleFeedback,
+  tierDraft,
+  onTierDraftChange,
+  onSubmitTier,
+  isUpdatingTier,
+  tierFeedback,
+  tierOptions,
   language,
 }: {
   query: ReturnType<typeof useAdminCustomerDetail>;
@@ -402,6 +416,12 @@ function CustomerProfilePanel({
   onSubmitRole: () => Promise<void>;
   isUpdatingRole: boolean;
   roleFeedback: string | null;
+  tierDraft: string;
+  onTierDraftChange: (value: string) => void;
+  onSubmitTier: () => Promise<void>;
+  isUpdatingTier: boolean;
+  tierFeedback: string | null;
+  tierOptions: Array<{ tier: string; name?: string | null; active?: boolean }>;
   language: "vi" | "en";
 }) {
   if (query.isPending) {
@@ -437,10 +457,15 @@ function CustomerProfilePanel({
   const { profile, loyalty, summary } = query.data;
 
   return (
-    <Card className="rounded-md border-slate-200 bg-white shadow-sm">
+    <Card className="rounded-md border-slate-200 bg-white shadow-sm relative">
+      <Button asChild variant="ghost" size="icon" className="absolute top-3 left-3 text-slate-400 hover:text-slate-700 hover:bg-slate-100 h-8 w-8">
+        <Link href="/admin/accounts">
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+      </Button>
       <CardContent className="space-y-5 p-5">
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-500 mt-1">
             <UserCircle2 className="h-9 w-9" />
           </div>
           <h2 className="mt-3 text-lg font-semibold text-slate-950">{profile.fullName}</h2>
@@ -508,6 +533,33 @@ function CustomerProfilePanel({
             {isUpdatingRole ? translate(language, "Đang cập nhật...", "Updating...") : translate(language, "Cập nhật vai trò", "Update role")}
           </Button>
           {roleFeedback ? <p className="text-xs text-slate-600">{roleFeedback}</p> : null}
+        </div>
+
+        <div className="space-y-3 border-t border-slate-200 pt-4">
+          <label className="space-y-1.5">
+            <span className="text-xs font-medium text-slate-500">{translate(language, "Hạng thành viên", "Loyalty tier")}</span>
+            <select
+              className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
+              value={tierDraft}
+              onChange={(event) => onTierDraftChange(event.target.value)}
+            >
+              {(tierOptions.length ? tierOptions.filter((tier) => tier.active !== false) : [
+                { tier: "BRONZE", name: translateEnumLabel("BRONZE", language) },
+                { tier: "SILVER", name: translateEnumLabel("SILVER", language) },
+                { tier: "GOLD", name: translateEnumLabel("GOLD", language) },
+                { tier: "PLATINUM", name: translateEnumLabel("PLATINUM", language) },
+                { tier: "DIAMOND", name: translateEnumLabel("DIAMOND", language) },
+              ]).map((tier) => (
+                <option key={tier.tier} value={tier.tier}>
+                  {tier.name || translateEnumLabel(tier.tier, language)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button type="button" className="w-full" variant="outline" onClick={() => void onSubmitTier()} disabled={isUpdatingTier}>
+            {isUpdatingTier ? translate(language, "Đang cập nhật...", "Updating...") : translate(language, "Cập nhật hạng", "Update tier")}
+          </Button>
+          {tierFeedback ? <p className="text-xs text-slate-600">{tierFeedback}</p> : null}
         </div>
       </CardContent>
     </Card>

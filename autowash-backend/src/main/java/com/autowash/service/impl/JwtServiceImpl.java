@@ -35,7 +35,6 @@ public class JwtServiceImpl implements JwtService {
                 .claim("userId", user.getId().toString())
                 .claim("phone", user.getPhone())
                 .claim("role", user.getRole().name())
-                .claim("tier", "MEMBER")
                 .claim("status", user.getStatus().name())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(accessTokenExpirationSeconds)))

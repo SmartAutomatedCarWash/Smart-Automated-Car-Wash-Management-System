@@ -2,7 +2,6 @@ package com.autowash.dto;
 
 import com.autowash.entity.enums.BlogArticleStatus;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record BlogArticleRequest(

@@ -17,7 +17,7 @@ import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.OtpVerificationRepository;
 import com.autowash.repository.UserPreferenceRepository;
-import java.time.Instant;
+
 import java.util.Base64;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -204,7 +204,7 @@ class AuthControllerIntegrationTest {
                                 """.formatted(otp)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.role").value("CUSTOMER"))
-                .andExpect(jsonPath("$.data.tier").value("MEMBER"))
+                .andExpect(jsonPath("$.data.tier").value("BRONZE"))
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.accessToken").isString())
                 .andExpect(jsonPath("$.data.refreshToken").isString());

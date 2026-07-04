@@ -12,14 +12,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 public class UserPrincipal implements UserDetails {
 
     private final UUID userId;
-    private final String phone;
     private final String passwordHash;
     private final UserStatus status;
     private final List<GrantedAuthority> authorities;
 
     public UserPrincipal(User user) {
         this.userId = user.getId();
-        this.phone = user.getPhone();
         this.passwordHash = user.getPasswordHash();
         this.status = user.getStatus();
         this.authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));

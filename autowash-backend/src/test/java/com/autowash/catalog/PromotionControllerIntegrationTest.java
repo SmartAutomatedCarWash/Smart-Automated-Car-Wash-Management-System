@@ -1,7 +1,6 @@
 package com.autowash.catalog;
 
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -139,7 +138,7 @@ class PromotionControllerIntegrationTest {
 
     @Test
     void customerPromotionsReturnOnlyActiveEligibleCampaigns() throws Exception {
-        User member = createActiveCustomer("0901777301", LoyaltyTier.MEMBER);
+        User member = createActiveCustomer("0901777301", LoyaltyTier.BRONZE);
         mockMvc.perform(get("/api/v1/promotions")
                         .with(authenticatedCustomer(member)))
                 .andExpect(status().isOk())

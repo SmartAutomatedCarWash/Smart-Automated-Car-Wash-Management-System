@@ -11,7 +11,6 @@ import com.autowash.dto.CreateAdminStaffRequest;
 import com.autowash.dto.UpdateAdminStaffRequest;
 import com.autowash.dto.AdminTierHistoryResponse;
 import com.autowash.dto.AdminWashHistoryResponse;
-import com.autowash.dto.UpdateUserStatusRequest;
 import com.autowash.dto.UpdateAdminCustomerRoleResponse;
 import com.autowash.entity.User;
 import com.autowash.entity.enums.UserRole;
@@ -26,9 +25,9 @@ import com.autowash.repository.ComboRepository;
 import com.autowash.repository.PackageRepository;
 import com.autowash.repository.PaymentRepository;
 import com.autowash.dto.LoyaltyAccountResponse;
-import com.autowash.dto.PointTransactionResponse;
 import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.entity.PointTransaction;
+import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PointTransactionRepository;
 import com.autowash.service.LoyaltyService;
 import com.autowash.service.AdminReportingService;
@@ -85,6 +84,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     private final VehicleRepository VehicleRepository;
     private final PasswordEncoder passwordEncoder;
     private final PaymentRepository paymentRepository;
+    private final LoyaltyAccountRepository loyaltyAccountRepository;
 
     public AdminReportingServiceImpl(
             BookingRepository bookingRepository,
@@ -96,7 +96,8 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             PointTransactionRepository pointTransactionRepository,
             VehicleRepository VehicleRepository,
             PasswordEncoder passwordEncoder,
-            PaymentRepository paymentRepository
+            PaymentRepository paymentRepository,
+            LoyaltyAccountRepository loyaltyAccountRepository
     ) {
         this.bookingRepository = bookingRepository;
         this.washSessionRepository = washSessionRepository;
@@ -108,6 +109,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         this.VehicleRepository = VehicleRepository;
         this.passwordEncoder = passwordEncoder;
         this.paymentRepository = paymentRepository;
+        this.loyaltyAccountRepository = loyaltyAccountRepository;
     }
 
     @Transactional
@@ -495,7 +497,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 customer.getEmail(),
                 customer.getRole().name(),
                 customer.getStatus().name(),
-                "STANDARD",
+                loyalty.tier(),
                 customer.getCreatedAt()
         );
         AdminCustomerDetailResponse.CustomerLoyalty loyaltySummary = new AdminCustomerDetailResponse.CustomerLoyalty(
@@ -527,6 +529,18 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 savedCustomer.getId(),
                 savedCustomer.getRole().name(),
                 savedCustomer.getUpdatedAt()
+        );
+    }
+
+    @Transactional
+    public com.autowash.dto.UpdateAdminCustomerRoleResponse updateCustomerTier(UUID customerId, String tier) {
+        requireCustomer(customerId);
+        String newTier = com.autowash.entity.TierConfig.normalizeTier(tier);
+        loyaltyService.updateCustomerTierByAdmin(customerId, newTier);
+        return new com.autowash.dto.UpdateAdminCustomerRoleResponse(
+                customerId,
+                newTier,
+                Instant.now()
         );
     }
 
@@ -725,6 +739,12 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     }
 
     private AdminAccountResponse toAccountResponse(User user) {
+        String tier = "BRONZE";
+        if (user.getRole() == UserRole.CUSTOMER) {
+            tier = loyaltyAccountRepository.findByCustomerId(user.getId())
+                    .map(a -> a.getTier())
+                    .orElse("BRONZE");
+        }
         return new AdminAccountResponse(
                 user.getId(),
                 user.getFullName(),
@@ -732,7 +752,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 user.getEmail(),
                 user.getRole().name(),
                 user.getStatus().name(),
-                "STANDARD",
+                tier,
                 user.getCreatedAt(),
                 user.getUpdatedAt()
         );
@@ -775,7 +795,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     }
 
     private AdminTierHistoryResponse toTierHistoryResponse(User customer, PointTransaction transaction) {
-        TierChange tierChange = parseTierChange(transaction.getReason(), "STANDARD");
+        TierChange tierChange = parseTierChange(transaction.getReason(), "BRONZE");
         return new AdminTierHistoryResponse(
                 transaction.getId(),
                 tierChange.fromTier(),

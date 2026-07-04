@@ -1,11 +1,11 @@
 package com.autowash.dto;
 
-import jakarta.validation.constraints.DecimalMin;
+
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import java.math.BigDecimal;
+
 
 public record SystemSettingsRequest(
         @NotBlank(message = "Operating start time is required")
@@ -22,6 +22,9 @@ public record SystemSettingsRequest(
         @NotNull @Min(value = 0, message = "Cannot be negative")
         Integer noShowGraceMinutes,
 
+        @NotNull @Min(value = 1, message = "Must be at least 1 booking")
+        Integer maxBookingsPerTimeSlot,
+
         @NotBlank(message = "Currency is required")
         String currency,
 
@@ -35,24 +38,6 @@ public record SystemSettingsRequest(
         Integer minRedemptionPoints,
 
         @NotNull @Min(value = 1, message = "Must be at least 1")
-        Integer maxRedemptionPoints,
-
-        @NotNull @Min(value = 1, message = "Must be at least 1")
-        Integer silverThreshold,
-
-        @NotNull @Min(value = 1, message = "Must be at least 1")
-        Integer goldThreshold,
-
-        @NotNull @Min(value = 1, message = "Must be at least 1")
-        Integer platinumThreshold,
-
-        @NotNull @DecimalMin(value = "1.0", message = "Must be at least 1.0")
-        BigDecimal silverMultiplier,
-
-        @NotNull @DecimalMin(value = "1.0", message = "Must be at least 1.0")
-        BigDecimal goldMultiplier,
-
-        @NotNull @DecimalMin(value = "1.0", message = "Must be at least 1.0")
-        BigDecimal platinumMultiplier
+        Integer maxRedemptionPoints
 ) {
 }

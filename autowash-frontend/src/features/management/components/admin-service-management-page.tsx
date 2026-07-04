@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import Link from "next/link";
-import { AlertTriangle, ChevronDown, Droplets, Layers3, Loader2, Package, Plus, RefreshCcw, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
+import { AlertTriangle, ChevronDown, Droplets, ImageUp, Layers3, Loader2, Package, Plus, RefreshCcw, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
@@ -21,6 +21,7 @@ import {
   useDeleteAdminPackage,
 } from "@/features/management/hooks/use-admin-service-management";
 import type { AdminCatalogService, AdminComboForm, AdminServiceForm, AdminPackageForm } from "@/entities/management";
+import { uploadCatalogImage } from "@/features/management/lib/admin-service-management-service";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 const EMPTY_COMBO_FORM: AdminComboForm = {
@@ -126,7 +127,7 @@ function LiveServicesPanel() {
             <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
           </div>
           <FormField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
-          <FormField label={translate(language, "Đường dẫn ảnh dịch vụ", "Service Image URL")} value={form.imageUrl || ""} onChange={(value) => setForm((current) => ({ ...current, imageUrl: value }))} placeholder="https://example.com/image.jpg" />
+          <ImageUploadField label={translate(language, "Ảnh dịch vụ", "Service image")} value={form.imageUrl || ""} onChange={(value) => setForm((current) => ({ ...current, imageUrl: value }))} language={language as "vi" | "en"} />
           <label className="grid gap-2">
             <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
             <select
@@ -302,7 +303,7 @@ function LivePackagesPanel() {
           <FormField label={translate(language, "Danh mục (ví dụ: Tiêu chuẩn, Cao cấp)", "Category (e.g. Basic, Premium)")} value={form.category} onChange={(value) => setForm((current) => ({ ...current, category: value }))} onBlur={() => touchField("category")} error={visibleErrors.category} />
           <FormField label={translate(language, "Tính năng nổi bật (cách nhau bởi dấu phẩy)", "Features (comma separated)")} value={form.features} onChange={(value) => setForm((current) => ({ ...current, features: value }))} placeholder={translate(language, "Hút bụi, Rửa tay, Làm bóng lốp", "Vacuuming, Hand wash, Tire shine")} />
           <FormField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
-          <FormField label={translate(language, "Đường dẫn ảnh gói dịch vụ", "Package Image URL")} value={form.imageUrl || ""} onChange={(value) => setForm((current) => ({ ...current, imageUrl: value }))} placeholder="https://example.com/image.jpg" />
+          <ImageUploadField label={translate(language, "Ảnh gói dịch vụ", "Package image")} value={form.imageUrl || ""} onChange={(value) => setForm((current) => ({ ...current, imageUrl: value }))} language={language as "vi" | "en"} />
 
           {/* Services multi-select dropdown */}
           <ServiceMultiSelect
@@ -502,11 +503,7 @@ function LiveCombosPanel() {
             value={form.description}
             onChange={(value) => setForm((current) => ({ ...current, description: value }))}
           />
-          <FormField
-            label={translate(language, "Đường dẫn hình ảnh (URL)", "Image URL")}
-            value={form.imageUrl}
-            onChange={(value) => setForm((current) => ({ ...current, imageUrl: value }))}
-          />
+          <ImageUploadField label={translate(language, "Ảnh Combo", "Combo image")} value={form.imageUrl} onChange={(value) => setForm((current) => ({ ...current, imageUrl: value }))} language={language as "vi" | "en"} />
           <label className="grid gap-2">
             <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
             <select
@@ -855,6 +852,59 @@ function FormField({
       />
       {error ? <span className="text-sm text-rose-600">{error}</span> : null}
     </label>
+  );
+}
+
+function ImageUploadField({
+  label,
+  value,
+  onChange,
+  language,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  language: "vi" | "en";
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      setIsUploading(true);
+      const uploaded = await uploadCatalogImage(file);
+      onChange(uploaded.url);
+      toast.success(translate(language, "Tải ảnh lên thành công.", "Image uploaded."));
+    } catch (error) {
+      toast.error(getDisplayErrorMessage(error));
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  return (
+    <div className="grid gap-2">
+      <span className="text-sm font-semibold text-slate-800">{label}</span>
+      <div className="flex gap-2">
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="https://example.com/image.jpg"
+          className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
+        />
+        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+        <Button type="button" variant="outline" disabled={isUploading} onClick={() => inputRef.current?.click()}>
+          {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageUp className="mr-2 h-4 w-4" />}
+          {translate(language, "Tải lên", "Upload")}
+        </Button>
+      </div>
+      {value ? (
+        <img src={value} alt="" className="h-24 w-24 rounded-xl border border-slate-200 object-cover" />
+      ) : null}
+    </div>
   );
 }
 

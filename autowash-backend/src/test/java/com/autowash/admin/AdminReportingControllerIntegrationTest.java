@@ -57,7 +57,7 @@ class AdminReportingControllerIntegrationTest {
 
     @Test
     void adminBookingListSupportsFiltersAndPagination() throws Exception {
-        LocalDate matchingDate = LocalDate.of(2026, 6, 15);
+        LocalDate matchingDate = LocalDate.now().minusDays(2);
         Booking matching = createConfirmedBooking("ADMIN_BK_001", "0901777401", "30H-774401", matchingDate, 270000);
         createConfirmedBooking("ADMIN_BK_002", "0901777402", "30H-774402", LocalDate.of(2026, 7, 10), 150000);
 
@@ -65,8 +65,8 @@ class AdminReportingControllerIntegrationTest {
                         .with(user("admin").roles("ADMIN"))
                         .param("status", "CONFIRMED")
                         .param("customerId", matching.getCustomer().getId().toString())
-                        .param("dateFrom", "2026-06-01")
-                        .param("dateTo", "2026-06-30")
+                        .param("dateFrom", LocalDate.now().minusDays(10).toString())
+                        .param("dateTo", LocalDate.now().plusDays(10).toString())
                         .param("searchQuery", "774401")
                         .param("page", "1")
                         .param("limit", "10"))

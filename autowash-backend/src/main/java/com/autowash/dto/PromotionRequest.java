@@ -1,7 +1,5 @@
 package com.autowash.dto;
 
-import com.autowash.entity.*;
-import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.PromotionTargetingMode;
 import jakarta.validation.constraints.Min;
@@ -25,7 +23,7 @@ public record PromotionRequest(
         @NotNull Instant startDate,
         @NotNull Instant endDate,
         @NotNull PromotionTargetingMode targetingMode,
-        List<LoyaltyTier> applicableTiers,
+        List<String> applicableTiers,
         @Min(1) Integer maxUsagePerCustomer,
         ActiveStatus status
 ) {

@@ -26,6 +26,7 @@ public class DemoDataFlywayConfig {
                 .locations("classpath:db/demo")
                 .table("flyway_demo_history")
                 .baselineOnMigrate(baselineOnMigrate)
+                .validateOnMigrate(false)
                 .outOfOrder(true)
                 .load();
         

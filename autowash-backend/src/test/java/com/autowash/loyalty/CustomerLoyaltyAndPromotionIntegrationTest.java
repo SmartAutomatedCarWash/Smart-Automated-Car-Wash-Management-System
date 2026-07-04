@@ -15,12 +15,12 @@ import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.UserRepository;
 import com.autowash.entity.Booking;
+import com.autowash.entity.Promotion;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PromotionRepository;
 import com.autowash.repository.PromotionTierRepository;
-import com.autowash.entity.Promotion;
 import com.autowash.entity.PromotionTier;
 import com.autowash.entity.enums.PromotionTargetingMode;
 import com.autowash.entity.enums.ActiveStatus;
@@ -29,7 +29,6 @@ import com.autowash.shared.security.UserPrincipal;
 import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleType;
 import com.autowash.repository.VehicleRepository;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,13 +70,13 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
     void loyaltyAccountAndTransactionsReflectCompletedWashPoints() throws Exception {
         String phone = "0901777101";
         Booking booking = createConfirmedBooking("LOYALTY_BK_001", phone, 270000);
-        String sessionId = createCompletedSession(booking.getId());
+        createCompletedSession(booking.getId());
         User customer = UserRepository.findByPhone(phone).orElseThrow();
 
         mockMvc.perform(get("/api/v1/loyalty/account")
                         .with(authenticatedCustomer(customer)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.tier").value("MEMBER"))
+                .andExpect(jsonPath("$.data.tier").value("BRONZE"))
                 .andExpect(jsonPath("$.data.currentPoints").value(27))
                 .andExpect(jsonPath("$.data.completedWashCount").value(1))
                 .andExpect(jsonPath("$.data.totalEarnedPoints").value(27));
@@ -95,7 +94,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
     void washHistoryReturnsCompletedSessionsWithAwardedPoints() throws Exception {
         String phone = "0901777102";
         Booking booking = createConfirmedBooking("LOYALTY_BK_002", phone, 150000);
-        String sessionId = createCompletedSession(booking.getId());
+        createCompletedSession(booking.getId());
         String vehiclePlate = "30H-" + phone.substring(phone.length() - 6);
         User customer = UserRepository.findByPhone(phone).orElseThrow();
 
@@ -112,7 +111,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
     @Test
     void redeemUpdatesAccountBalanceAndTransactionHistory() throws Exception {
         String phone = "0901777105";
-        Booking booking = createConfirmedBooking("LOYALTY_BK_003", phone, 600000);
+        Booking booking = createConfirmedBooking("LOYALTY_BK_003", phone, 1500000);
         User customer = UserRepository.findByPhone(phone).orElseThrow();
         createCompletedSession(booking.getId());
 
@@ -121,33 +120,33 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "pointsToRedeem": 50,
-                                  "referenceId": "%s"
+                                  "pointsToRedeem": 100,
+                                  "referenceId": "silver-100"
                                 }
-                                """.formatted(booking.getId().toString())))
+                                """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.pointsRedeemed").value(50))
-                .andExpect(jsonPath("$.data.newBalance").value(10))
+                .andExpect(jsonPath("$.data.pointsRedeemed").value(100))
+                .andExpect(jsonPath("$.data.newBalance").value(50))
                 .andExpect(jsonPath("$.data.voucherCode").isString())
-                .andExpect(jsonPath("$.data.voucherValue").value(50000))
+                .andExpect(jsonPath("$.data.voucherValue").value(100000))
                 .andExpect(jsonPath("$.data.expiresAt").exists())
                 .andExpect(jsonPath("$.data.status").value("SUCCESS"));
 
         mockMvc.perform(get("/api/v1/loyalty/account")
                         .with(authenticatedCustomer(customer)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.currentPoints").value(10))
-                .andExpect(jsonPath("$.data.totalEarnedPoints").value(60));
+                .andExpect(jsonPath("$.data.currentPoints").value(50))
+                .andExpect(jsonPath("$.data.totalEarnedPoints").value(150));
 
         mockMvc.perform(get("/api/v1/loyalty/transactions")
                         .with(authenticatedCustomer(customer)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].type").value("REDEEM"))
-                .andExpect(jsonPath("$.data[0].points").value(-50))
+                .andExpect(jsonPath("$.data[0].points").value(-100))
                 .andExpect(jsonPath("$.data[0].description").value(org.hamcrest.Matchers.startsWith("Voucher redemption:")))
                 .andExpect(jsonPath("$.data[1].type").value("EARN"))
-                .andExpect(jsonPath("$.data[1].points").value(60));
+                .andExpect(jsonPath("$.data[1].points").value(150));
     }
 
     @Test

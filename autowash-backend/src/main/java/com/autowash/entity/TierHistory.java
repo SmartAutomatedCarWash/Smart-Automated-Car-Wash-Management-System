@@ -3,8 +3,6 @@ package com.autowash.entity;
 import com.autowash.entity.enums.LoyaltyTier;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,13 +27,11 @@ public class TierHistory {
     @JoinColumn(name = "loyalty_account_id", nullable = false)
     private LoyaltyAccount loyaltyAccount;
 
-    @Column(name = "old_tier", length = 20)
-    @Enumerated(EnumType.STRING)
-    private LoyaltyTier oldTier;
+    @Column(name = "old_tier", length = 50)
+    private String oldTier;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "new_tier", nullable = false)
-    private LoyaltyTier newTier;
+    @Column(name = "new_tier", nullable = false, length = 50)
+    private String newTier;
 
     @Column(name = "total_points_at_change", nullable = false)
     private int totalPointsAtChange;
@@ -44,6 +40,10 @@ public class TierHistory {
     private Instant changedAt;
 
     public TierHistory(LoyaltyAccount loyaltyAccount, LoyaltyTier oldTier, LoyaltyTier newTier, int totalPointsAtChange) {
+        this(loyaltyAccount, oldTier == null ? null : oldTier.name(), newTier.name(), totalPointsAtChange);
+    }
+
+    public TierHistory(LoyaltyAccount loyaltyAccount, String oldTier, String newTier, int totalPointsAtChange) {
         this.loyaltyAccount = loyaltyAccount;
         this.oldTier = oldTier;
         this.newTier = newTier;

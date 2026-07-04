@@ -117,3 +117,20 @@ export function deleteAdminCombo(comboId: string) {
     url: `/admin/combos/${comboId}`,
   });
 }
+
+export type ImageUploadResponse = {
+  url: string;
+  fileName: string;
+  size: number;
+};
+
+export function uploadCatalogImage(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiRequest<ImageUploadResponse, FormData>({
+    method: "POST",
+    url: "/admin/uploads/images",
+    data: formData,
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+}

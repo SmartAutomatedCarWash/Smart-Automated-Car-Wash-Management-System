@@ -2,8 +2,8 @@ package com.autowash.service.impl;
 
 import com.autowash.dto.BookingStatusHistoryItem;
 import com.autowash.entity.User;
-import com.autowash.dto.ApplyPointsRequest;
-import com.autowash.dto.ApplyPointsResponse;
+
+
 import com.autowash.dto.BookingOptionResponse;
 import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.BookingListItemResponse;
@@ -27,14 +27,16 @@ import com.autowash.repository.BookingStatusHistoryRepository;
 import com.autowash.repository.PaymentRepository;
 import com.autowash.entity.Combo;
 import com.autowash.entity.Package;
+import com.autowash.entity.SystemSettings;
 import com.autowash.entity.Voucher;
 import com.autowash.repository.ComboRepository;
 import com.autowash.repository.PackageRepository;
+import com.autowash.repository.SystemSettingsRepository;
 import com.autowash.service.BookingService;
 import com.autowash.service.CatalogService;
 import com.autowash.dto.RedeemPointsResponse;
 import com.autowash.service.CustomerComboService;
-import com.autowash.service.LoyaltyRules;
+
 import com.autowash.service.LoyaltyService;
 import com.autowash.service.PromotionService;
 import com.autowash.shared.dto.PaginationMeta;
@@ -52,7 +54,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -93,9 +94,7 @@ public class BookingServiceImpl implements BookingService {
     private final BookingStatusHistoryRepository bookingStatusHistoryRepository;
     private final BookingEmailDeliveryService bookingEmailDeliveryService;
     private final PromotionService promotionService;
-    private final LocalTime operatingStartTime;
-    private final LocalTime operatingEndTime;
-    private final int maxAdvanceDays;
+    private final SystemSettingsRepository systemSettingsRepository;
 
     public BookingServiceImpl(
             CurrentUserService currentUserService,
@@ -113,9 +112,7 @@ public class BookingServiceImpl implements BookingService {
             BookingStatusHistoryRepository bookingStatusHistoryRepository,
             BookingEmailDeliveryService bookingEmailDeliveryService,
             PromotionService promotionService,
-            @Value("${autowash.booking.operating-hours.start:08:00}") String operatingStartTime,
-            @Value("${autowash.booking.operating-hours.end:20:00}") String operatingEndTime,
-            @Value("${autowash.booking.max-advance-days:30}") int maxAdvanceDays
+            SystemSettingsRepository systemSettingsRepository
     ) {
         this.currentUserService = currentUserService;
         this.VehicleRepository = VehicleRepository;
@@ -132,16 +129,16 @@ public class BookingServiceImpl implements BookingService {
         this.bookingStatusHistoryRepository = bookingStatusHistoryRepository;
         this.bookingEmailDeliveryService = bookingEmailDeliveryService;
         this.promotionService = promotionService;
-        this.operatingStartTime = LocalTime.parse(operatingStartTime);
-        this.operatingEndTime = LocalTime.parse(operatingEndTime);
-        this.maxAdvanceDays = maxAdvanceDays;
+        this.systemSettingsRepository = systemSettingsRepository;
     }
 
     @Transactional
     public CreateBookingResponse createBooking(CreateBookingRequest request, Object metadata) {
         User user = currentUserService.getCurrentUser();
         LocalTime requestedBookingTime = LocalTime.parse(request.bookingTime());
-        validateBookingTime(request.bookingDate(), requestedBookingTime);
+        SystemSettings settings = loadSettings();
+        validateBookingTime(request.bookingDate(), requestedBookingTime, settings);
+        validateSlotCapacity(request.bookingDate().atTime(requestedBookingTime), settings.getMaxBookingsPerTimeSlot());
         if (BookingRepository.countByCustomerAndStatusIn(user, ACTIVE_BOOKING_STATUSES) >= 3) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Maximum active bookings exceeded", "MAX_ACTIVE_BOOKINGS_EXCEEDED");
         }
@@ -330,43 +327,7 @@ public class BookingServiceImpl implements BookingService {
         );
     }
 
-    @Transactional
-    public ApplyPointsResponse applyPoints(String bookingId, ApplyPointsRequest request) {
-        User user = currentUserService.getCurrentUser();
-        Booking booking = findOwnedBooking(bookingId);
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
-            throw new ApiException(
-                    HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Points can only be applied before check-in",
-                    "BUSINESS_RULE_VIOLATION"
-            );
-        }
-        if (booking.getPointsRedeemed() > 0) {
-            throw new ApiException(HttpStatus.CONFLICT, "Points already applied to this booking", "POINTS_ALREADY_APPLIED");
-        }
 
-        int pointsToApply = request.pointsToApply();
-        long discountAmount = (long) pointsToApply * LoyaltyRules.VND_PER_POINT;
-        if (discountAmount > booking.getFinalAmount()) {
-            throw new ApiException(
-                    HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Points discount exceeds booking amount",
-                    "BUSINESS_RULE_VIOLATION"
-            );
-        }
-
-        RedeemPointsResponse redemption = loyaltyService.applyPointsToBooking(user.getId(), pointsToApply, booking);
-        booking.applyPoints(pointsToApply, discountAmount);
-        paymentRepository.findByBooking(booking).ifPresent(payment -> payment.updateAmount(booking.getFinalAmount()));
-        return new ApplyPointsResponse(
-                booking.getId().toString(),
-                pointsToApply,
-                discountAmount,
-                booking.getFinalAmount(),
-                redemption.newBalance(),
-                "VND"
-        );
-    }
 
     @Transactional
     public PayBookingResponse payBooking(String bookingId, String transactionRef) {
@@ -412,7 +373,9 @@ public class BookingServiceImpl implements BookingService {
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), null);
     }
 
-    private void validateBookingTime(LocalDate bookingDate, LocalTime bookingTime) {
+    private void validateBookingTime(LocalDate bookingDate, LocalTime bookingTime, SystemSettings settings) {
+        LocalTime operatingStartTime = LocalTime.parse(settings.getOperatingStartTime());
+        LocalTime operatingEndTime = LocalTime.parse(settings.getOperatingEndTime());
         if (bookingTime.isBefore(operatingStartTime) || !bookingTime.isBefore(operatingEndTime)) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
@@ -421,7 +384,7 @@ public class BookingServiceImpl implements BookingService {
             );
         }
         LocalDate today = LocalDate.now();
-        if (bookingDate.isAfter(today.plusDays(maxAdvanceDays))) {
+        if (bookingDate.isAfter(today.plusDays(settings.getMaxAdvanceBookingDays()))) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Booking date exceeds maximum advance booking window",
@@ -435,6 +398,24 @@ public class BookingServiceImpl implements BookingService {
                     "BUSINESS_RULE_VIOLATION"
             );
         }
+    }
+
+    private void validateSlotCapacity(LocalDateTime scheduledAt, int maxBookingsPerTimeSlot) {
+        LocalDateTime slotStart = scheduledAt.withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime slotEnd = slotStart.plusHours(1);
+        long existingBookings = BookingRepository.countByScheduledAtSlot(
+                slotStart.toInstant(java.time.ZoneOffset.UTC),
+                slotEnd.toInstant(java.time.ZoneOffset.UTC),
+                Set.of(BookingStatus.CANCELLED, BookingStatus.NO_SHOW)
+        );
+        if (existingBookings >= maxBookingsPerTimeSlot) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking slot is full", "BOOKING_SLOT_FULL");
+        }
+    }
+
+    private SystemSettings loadSettings() {
+        return systemSettingsRepository.findById(1)
+                .orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "System settings not found", "SYSTEM_ERROR"));
     }
 
     private Booking findOwnedBooking(String bookingId) {
@@ -643,9 +624,6 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private String generateBookingId() {
-        return "BK_" + System.currentTimeMillis();
-    }
 
     private record PaymentInfo(
             PaymentMethod method,

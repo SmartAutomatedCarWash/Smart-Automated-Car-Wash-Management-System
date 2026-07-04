@@ -34,6 +34,7 @@ import { Button } from "@/shared/ui/ui/button";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
+import { TierBadge, getCustomerTierStyle } from "@/shared/ui/customer/customer-experience";
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
 import { useCustomerBookings } from "@/features/bookings/hooks/use-bookings";
 import { useBookingPackages, useBookingCombos } from "@/features/bookings/hooks/use-bookings";
@@ -137,6 +138,9 @@ export default function CustomerHomePage() {
   const bookingsQuery = useCustomerBookings();
   const packagesQuery = useBookingPackages();
   const combosQuery = useBookingCombos();
+
+  const tierStyle = getCustomerTierStyle(user?.tier);
+
   const activeBooking = bookingsQuery.data?.items?.find((booking) =>
     ["PENDING", "SCHEDULED", "CHECKED_IN", "IN_PROGRESS", "CONFIRMED"].includes(booking.status),
   );
@@ -344,14 +348,14 @@ export default function CustomerHomePage() {
                 <Gift className="h-6 w-6 text-white" />
               </div>
               <div>
-                <div className="text-[10px] font-black uppercase tracking-wider text-primary/80">
+                <div className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
                   {t("Hạng của bạn", "Your Tier")}
                 </div>
                 <div className="text-lg font-black text-foreground flex items-center gap-1.5 mt-0.5">
                   <Star className="h-4 w-4 fill-[#00B8D9] text-[#00B8D9]" />
-                  {user?.tier || "Diamond Member"}
+                  {user?.tier || "BRONZE"}
                 </div>
-                <div className="text-xs text-primary font-bold mt-0.5">
+                <div className="text-xs font-bold mt-0.5 text-[#0566D9]">
                   {profileQuery.isLoading ? "..." : `${profileQuery.data?.loyaltyBalance ?? 0} Points`}
                 </div>
               </div>

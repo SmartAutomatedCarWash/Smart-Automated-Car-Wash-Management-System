@@ -1,4 +1,4 @@
-export type LoyaltyTier = "MEMBER" | "SILVER" | "GOLD" | "PLATINUM";
+export type LoyaltyTier = string;
 
 export type LoyaltyAccount = {
   customerId: string;
@@ -50,7 +50,7 @@ export type TierVoucherOffer = {
   minTier: LoyaltyTier;
   pointsCost: number;
   voucherValue: number;
-  accent: "sky" | "violet" | "amber" | "rose";
+  accent: "sky" | "violet" | "amber" | "rose" | "fuchsia";
   badge: string;
 };
 

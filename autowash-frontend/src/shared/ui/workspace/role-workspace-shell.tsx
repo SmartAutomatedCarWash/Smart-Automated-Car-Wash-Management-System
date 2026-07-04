@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { TierBadge, getCustomerTierStyle } from "@/shared/ui/customer/customer-experience";
 import {
   ArrowRightFromLine,
   Bell,
@@ -121,6 +122,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
   const isStaff = requiredRole === "STAFF";
   const isCustomer = requiredRole === "CUSTOMER";
+  const tierStyle = isCustomer && user ? getCustomerTierStyle(user.tier) : null;
 
   const eligibleQuery = useQuery({
     queryKey: ["staff-notifications", "eligible"],
@@ -294,6 +296,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 collapsed={sidebarCollapsed}
                 activeClassName={workspaceTheme.activeNav}
                 language={language}
+                tierStyle={isCustomer ? tierStyle : null}
               />
             ))}
           </ul>
@@ -661,8 +664,14 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                       <div className="min-w-0">
                         <div className="truncate text-sm font-extrabold">{user.fullName}</div>
                         <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                          {requiredRole === "CUSTOMER" ? (user.tier ?? t("THÀNH VIÊN", "MEMBER")) : user.role}
+                          {requiredRole === "CUSTOMER" ? (
+                            <TierBadge tier={user.tier || "MEMBER"} />
+                          ) : (
+                            <>
+                              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                              {user.role}
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -788,6 +797,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                     collapsed={false}
                     activeClassName={workspaceTheme.activeNav}
                     language={language}
+                    tierStyle={isCustomer ? tierStyle : null}
                     onNavigate={() => setMobileMenuOpen(false)}
                   />
                 ))}
@@ -930,15 +940,9 @@ function SidebarBrand({
             <div className="font-black tracking-[-0.02em] text-lg text-slate-900">
               {isCustomer ? "AURA CAR CARE" : "AURA CAR CARE"}
             </div>
-            {isCustomer ? (
-              <span className="inline-flex items-center rounded-full bg-[#0566D9]/10 px-2 py-0.5 text-[9px] font-bold text-[#0566D9] shadow-[0_0_15px_rgba(5,102,217,0.15)] mt-0.5">
-                Diamond Member
-              </span>
-            ) : (
-              <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {description}
-              </div>
-            )}
+            <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {description}
+            </div>
           </div>
         </div>
         <button
@@ -962,6 +966,7 @@ function SidebarNavLink({
   collapsed,
   activeClassName,
   language,
+  tierStyle,
   onNavigate,
 }: {
   item: WorkspaceNavItem;
@@ -969,11 +974,13 @@ function SidebarNavLink({
   collapsed: boolean;
   activeClassName: string;
   language: "vi" | "en";
+  tierStyle?: ReturnType<typeof getCustomerTierStyle> | null;
   onNavigate?: () => void;
 }) {
   const active = isNavActive(pathname, item);
   const Icon = item.icon;
   const displayLabel = language === "vi" && item.labelVi ? item.labelVi : item.label;
+  const isLoyaltyItem = item.href === "/customer/loyalty";
 
   return (
     <li>
@@ -987,7 +994,12 @@ function SidebarNavLink({
           active ? activeClassName : "text-muted-foreground hover:bg-accent hover:text-foreground",
         )}
       >
-        <Icon className="h-4 w-4 shrink-0" />
+        <Icon 
+          className={cn(
+            "h-4 w-4 shrink-0",
+            isLoyaltyItem && tierStyle && !active ? tierStyle.accent : ""
+          )} 
+        />
         {!collapsed && <span>{displayLabel}</span>}
       </Link>
     </li>
@@ -1010,3 +1022,4 @@ function getUserInitials(fullName: string) {
 
   return initials || "U";
 }
+

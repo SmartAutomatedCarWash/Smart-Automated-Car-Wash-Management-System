@@ -31,6 +31,9 @@ public class SystemSettings {
     @Column(name = "no_show_grace_minutes", nullable = false)
     private int noShowGraceMinutes = 15;
 
+    @Column(name = "max_bookings_per_time_slot", nullable = false)
+    private int maxBookingsPerTimeSlot = 3;
+
     @Column(nullable = false, length = 10)
     private String currency = "VND";
 
@@ -46,23 +49,6 @@ public class SystemSettings {
     @Column(name = "max_redemption_points", nullable = false)
     private int maxRedemptionPoints = 200;
 
-    @Column(name = "silver_threshold", nullable = false)
-    private int silverThreshold = 500;
-
-    @Column(name = "gold_threshold", nullable = false)
-    private int goldThreshold = 1_500;
-
-    @Column(name = "platinum_threshold", nullable = false)
-    private int platinumThreshold = 4_000;
-
-    @Column(name = "silver_multiplier", nullable = false)
-    private BigDecimal silverMultiplier = new BigDecimal("1.2");
-
-    @Column(name = "gold_multiplier", nullable = false)
-    private BigDecimal goldMultiplier = new BigDecimal("1.5");
-
-    @Column(name = "platinum_multiplier", nullable = false)
-    private BigDecimal platinumMultiplier = new BigDecimal("2.0");
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
@@ -72,33 +58,23 @@ public class SystemSettings {
             String operatingEndTime,
             int maxAdvanceBookingDays,
             int noShowGraceMinutes,
+            int maxBookingsPerTimeSlot,
             String currency,
             int earnPointsUnitAmount,
             int vndPerPoint,
             int minRedemptionPoints,
-            int maxRedemptionPoints,
-            int silverThreshold,
-            int goldThreshold,
-            int platinumThreshold,
-            BigDecimal silverMultiplier,
-            BigDecimal goldMultiplier,
-            BigDecimal platinumMultiplier
+            int maxRedemptionPoints
     ) {
         this.operatingStartTime = operatingStartTime;
         this.operatingEndTime = operatingEndTime;
         this.maxAdvanceBookingDays = maxAdvanceBookingDays;
         this.noShowGraceMinutes = noShowGraceMinutes;
+        this.maxBookingsPerTimeSlot = maxBookingsPerTimeSlot;
         this.currency = currency;
         this.earnPointsUnitAmount = earnPointsUnitAmount;
         this.vndPerPoint = vndPerPoint;
         this.minRedemptionPoints = minRedemptionPoints;
         this.maxRedemptionPoints = maxRedemptionPoints;
-        this.silverThreshold = silverThreshold;
-        this.goldThreshold = goldThreshold;
-        this.platinumThreshold = platinumThreshold;
-        this.silverMultiplier = silverMultiplier;
-        this.goldMultiplier = goldMultiplier;
-        this.platinumMultiplier = platinumMultiplier;
         this.updatedAt = Instant.now();
     }
 }

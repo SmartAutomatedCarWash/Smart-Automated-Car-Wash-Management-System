@@ -102,9 +102,6 @@ public class CustomerLoyaltyServiceImpl implements CustomerLoyaltyService {
         return loyaltyService.getAccount(user.getId()).currentPoints();
     }
 
-    private List<WashSession> loadCompletedSessions(User user) {
-        return washSessionRepository.findByBookingCustomerAndStatusOrderByCompletedAtDesc(user, WashSessionStatus.COMPLETED);
-    }
 
     private LoyaltyTransactionResponse toTransaction(PointTransactionResponse transaction) {
         Optional<WashSession> session = findReferencedSession(transaction.referenceId());

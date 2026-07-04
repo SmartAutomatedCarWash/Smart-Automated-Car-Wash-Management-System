@@ -45,7 +45,6 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
     private final PasswordEncoder passwordEncoder;
     private final long refreshTokenExpirationSeconds;
     private final long ticketTtlSeconds;
-    private final String frontendBaseUrl;
 
     public GoogleOAuthServiceImpl(
             GoogleOAuthClient googleOAuthClient,
@@ -58,8 +57,7 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
             JwtService jwtService,
             PasswordEncoder passwordEncoder,
             @Value("${autowash.auth.jwt.refresh-token-expiration-seconds}") long refreshTokenExpirationSeconds,
-            @Value("${autowash.auth.google.ticket-ttl-seconds:300}") long ticketTtlSeconds,
-            @Value("${autowash.auth.google.frontend-base-url:http://localhost:3000}") String frontendBaseUrl
+            @Value("${autowash.auth.google.ticket-ttl-seconds:300}") long ticketTtlSeconds
     ) {
         this.googleOAuthClient = googleOAuthClient;
         this.ticketRepository = ticketRepository;
@@ -72,7 +70,6 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenExpirationSeconds = refreshTokenExpirationSeconds;
         this.ticketTtlSeconds = ticketTtlSeconds;
-        this.frontendBaseUrl = frontendBaseUrl;
     }
 
     // -----------------------------------------------------------------------
@@ -288,7 +285,7 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
                 user.getEmail(),
                 user.getRole().name(),
                 user.getStatus().name(),
-                "MEMBER",
+                "BRONZE",
                 0,
                 isNew,
                 accessToken,

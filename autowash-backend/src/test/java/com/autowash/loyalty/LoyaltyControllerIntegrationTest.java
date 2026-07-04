@@ -20,7 +20,7 @@ import com.autowash.repository.VehicleRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
-import java.time.LocalDate;
+
 import java.time.LocalTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,14 +58,14 @@ class LoyaltyControllerIntegrationTest {
         String phone = "0901888010";
         String accessToken = registerActivateAndLogin(phone);
         User customer = UserRepository.findByEmailIgnoreCase(phone + "@example.com").orElseThrow();
-        WashSession session = createCompletedSession(customer, "LOY_CTL_001", 600000);
+        WashSession session = createCompletedSession(customer, "LOY_CTL_001", 1500000);
 
         mockMvc.perform(get("/api/v1/loyalty/account")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.customerId").value(customer.getId().toString()))
                 .andExpect(jsonPath("$.data.currentPoints").value(0))
-                .andExpect(jsonPath("$.data.tier").value("MEMBER"));
+                .andExpect(jsonPath("$.data.tier").value("BRONZE"));
 
         mockMvc.perform(post("/api/v1/loyalty/earn")
                         .with(user("admin").roles("ADMIN"))
@@ -77,8 +77,8 @@ class LoyaltyControllerIntegrationTest {
                                 }
                                 """.formatted(customer.getId(), session.getId())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.pointsAwarded").value(60))
-                .andExpect(jsonPath("$.data.newBalance").value(60));
+                  .andExpect(jsonPath("$.data.pointsAwarded").value(150))
+                  .andExpect(jsonPath("$.data.newBalance").value(150));
 
         mockMvc.perform(get("/api/v1/loyalty/history")
                         .header("Authorization", "Bearer " + accessToken)
@@ -92,21 +92,21 @@ class LoyaltyControllerIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType("application/json")
                         .content("""
-                                { "pointsToRedeem": 50, "referenceId": "LOY_CTL_001" }
+                                { "pointsToRedeem": 100, "referenceId": "silver-100" }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.pointsRedeemed").value(50))
-                .andExpect(jsonPath("$.data.newBalance").value(10))
+                .andExpect(jsonPath("$.data.pointsRedeemed").value(100))
+                .andExpect(jsonPath("$.data.newBalance").value(50))
                 .andExpect(jsonPath("$.data.voucherCode").isString())
-                .andExpect(jsonPath("$.data.voucherValue").value(50000))
+                .andExpect(jsonPath("$.data.voucherValue").value(100000))
                 .andExpect(jsonPath("$.data.expiresAt").exists())
                 .andExpect(jsonPath("$.data.status").value("SUCCESS"));
 
         mockMvc.perform(get("/api/v1/loyalty/account")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.currentPoints").value(10))
-                .andExpect(jsonPath("$.data.totalEarnedPoints").value(60));
+                .andExpect(jsonPath("$.data.currentPoints").value(50))
+                .andExpect(jsonPath("$.data.totalEarnedPoints").value(150));
 
         mockMvc.perform(get("/api/v1/loyalty/history")
                         .header("Authorization", "Bearer " + accessToken)

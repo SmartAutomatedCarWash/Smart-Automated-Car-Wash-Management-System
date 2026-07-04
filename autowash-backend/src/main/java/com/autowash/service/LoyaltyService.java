@@ -14,9 +14,10 @@ public interface LoyaltyService {
     int calculateEarnPoints(UUID sessionId);
     EarnPointsResponse postEarnTransaction(UUID customerId, UUID sessionId);
     RedeemPointsResponse redeemPoints(UUID customerId, int pointsToRedeem, String referenceId);
-    RedeemPointsResponse applyPointsToBooking(UUID customerId, int pointsToRedeem, Booking booking);
+
     TransactionPage getTransactionHistory(UUID customerId, String type, Instant dateFrom, Instant dateTo, int page, int limit);
+
+    void updateCustomerTierByAdmin(UUID customerId, String newTier);
 
     record TransactionPage(List<com.autowash.dto.PointTransactionResponse> items, PaginationMeta pagination) {}
 }
-

@@ -185,7 +185,7 @@ CREATE TABLE "vouchers" (
 
 CREATE TABLE "voucher_tiers" (
   "voucher_id" uuid NOT NULL,
-  "tier" varchar(20) NOT NULL CHECK ("tier" IN ('MEMBER', 'SILVER', 'GOLD', 'PLATINUM')),
+  "tier" varchar(20) NOT NULL CONSTRAINT voucher_tiers_tier_check CHECK ("tier" IN ('BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND')),
   PRIMARY KEY ("voucher_id", "tier")
 );
 
@@ -206,7 +206,7 @@ CREATE TABLE "promotions" (
 
 CREATE TABLE "promotion_tiers" (
   "promotion_id" uuid NOT NULL,
-  "tier" varchar(20) NOT NULL CHECK ("tier" IN ('MEMBER', 'SILVER', 'GOLD', 'PLATINUM')),
+  "tier" varchar(20) NOT NULL CONSTRAINT promotion_tiers_tier_check CHECK ("tier" IN ('BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND')),
   PRIMARY KEY ("promotion_id", "tier")
 );
 
@@ -309,7 +309,7 @@ CREATE TABLE "loyalty_accounts" (
   "customer_id" uuid UNIQUE NOT NULL,
   "current_points" int NOT NULL DEFAULT 0,
   "total_earned_points" int NOT NULL DEFAULT 0,
-  "tier" varchar(20) NOT NULL DEFAULT 'MEMBER' CHECK ("tier" IN ('MEMBER', 'SILVER', 'GOLD', 'PLATINUM')),
+  "tier" varchar(20) NOT NULL DEFAULT 'BRONZE' CONSTRAINT loyalty_accounts_tier_check CHECK ("tier" IN ('BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND')),
   "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
   "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
   CHECK ("current_points" >= 0),
@@ -332,7 +332,7 @@ CREATE TABLE "tier_histories" (
   "id" BIGSERIAL PRIMARY KEY,
   "loyalty_account_id" uuid NOT NULL,
   "old_tier" varchar(20),
-  "new_tier" varchar(20) NOT NULL CHECK ("new_tier" IN ('MEMBER', 'SILVER', 'GOLD', 'PLATINUM')),
+  "new_tier" varchar(20) NOT NULL CONSTRAINT tier_histories_new_tier_check CHECK ("new_tier" IN ('BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND')),
   "total_points_at_change" int NOT NULL,
   "changed_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
   CHECK ("total_points_at_change" >= 0)

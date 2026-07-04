@@ -1,7 +1,7 @@
 package com.autowash.service;
 
-import com.autowash.dto.ApplyPointsRequest;
-import com.autowash.dto.ApplyPointsResponse;
+
+
 import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.BookingListItemResponse;
 import com.autowash.dto.CancelBookingResponse;
@@ -19,7 +19,7 @@ public interface BookingService {
     BookingPage listBookings(String status, LocalDate dateFrom, LocalDate dateTo, int page, int limit);
     BookingDetailResponse getBooking(String bookingId);
     CancelBookingResponse cancelBooking(String bookingId, String reason);
-    ApplyPointsResponse applyPoints(String bookingId, ApplyPointsRequest request);
+
     PayBookingResponse payBooking(String bookingId, String transactionRef);
     Booking requireBookingForOperations(String bookingId);
     void updateStatus(Booking booking, BookingStatus status);

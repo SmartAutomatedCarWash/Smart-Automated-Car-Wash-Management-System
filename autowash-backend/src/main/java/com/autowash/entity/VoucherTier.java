@@ -6,8 +6,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import java.io.Serializable;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -24,11 +22,14 @@ public class VoucherTier {
     private UUID voucherId;
 
     @Id
-    @Enumerated(EnumType.STRING)
-    @Column
-    private LoyaltyTier tier;
+    @Column(length = 50)
+    private String tier;
 
     public VoucherTier(UUID voucherId, LoyaltyTier tier) {
+        this(voucherId, tier.name());
+    }
+
+    public VoucherTier(UUID voucherId, String tier) {
         this.voucherId = voucherId;
         this.tier = tier;
     }
@@ -37,6 +38,6 @@ public class VoucherTier {
     @NoArgsConstructor
     public static class VoucherTierId implements Serializable {
         private UUID voucherId;
-        private LoyaltyTier tier;
+        private String tier;
     }
 }

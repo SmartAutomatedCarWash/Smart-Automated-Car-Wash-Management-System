@@ -22,17 +22,17 @@ type TierProgress = {
 const tierStyles: Record<Tier, { label: string; ring: string; gradient: string; glow: string; accent: string }> = {
   BRONZE: {
     label: "Bronze",
-    ring: "ring-orange-300",
-    gradient: "from-orange-500 via-amber-400 to-orange-300",
-    glow: "shadow-orange-400/30",
-    accent: "text-orange-600",
+    ring: "ring-amber-700",
+    gradient: "from-amber-700 via-orange-600 to-amber-600",
+    glow: "shadow-orange-700/40",
+    accent: "text-amber-800",
   },
   MEMBER: {
     label: "Bronze",
-    ring: "ring-orange-300",
-    gradient: "from-orange-500 via-amber-400 to-orange-300",
-    glow: "shadow-orange-400/30",
-    accent: "text-orange-600",
+    ring: "ring-amber-700",
+    gradient: "from-amber-700 via-orange-600 to-amber-600",
+    glow: "shadow-orange-700/40",
+    accent: "text-amber-800",
   },
   SILVER: {
     label: "Silver",
@@ -56,11 +56,11 @@ const tierStyles: Record<Tier, { label: string; ring: string; gradient: string; 
     accent: "text-cyan-600",
   },
   PLATINUM: {
-    label: "Diamond",
-    ring: "ring-cyan-300",
-    gradient: "from-cyan-400 via-blue-500 to-fuchsia-400",
-    glow: "shadow-cyan-300/50",
-    accent: "text-cyan-600",
+    label: "Platinum",
+    ring: "ring-zinc-300",
+    gradient: "from-zinc-400 via-gray-300 to-zinc-200",
+    glow: "shadow-zinc-300/50",
+    accent: "text-zinc-600",
   },
 };
 
@@ -215,6 +215,19 @@ function formatCountdown(milliseconds: number, language: Language) {
 export function getCustomerTierStyle(tier?: string | null) {
   const normalized = (tier ?? "MEMBER").toUpperCase() as Tier;
   return tierStyles[normalized] ?? tierStyles.MEMBER;
+}
+
+export function TierBadge({ tier }: { tier?: string | null }) {
+  const style = getCustomerTierStyle(tier);
+  return (
+    <span className={cn(
+      "inline-flex items-center rounded-full px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-white shadow-md",
+      `bg-gradient-to-r ${style.gradient}`,
+      style.glow
+    )}>
+      {style.label}
+    </span>
+  );
 }
 
 export function getCustomerTierMetalStyle(tier?: string | null) {

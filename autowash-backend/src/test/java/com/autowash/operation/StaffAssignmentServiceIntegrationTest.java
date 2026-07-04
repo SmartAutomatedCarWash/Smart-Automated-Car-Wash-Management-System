@@ -1,6 +1,5 @@
 package com.autowash.operation; 
 import java.time.Instant;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.autowash.entity.Booking;
@@ -15,7 +14,6 @@ import com.autowash.repository.UserRepository;
 import com.autowash.repository.VehicleRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.StaffAssignmentService;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Set;
 import java.util.UUID;
@@ -47,7 +45,7 @@ class StaffAssignmentServiceIntegrationTest {
     @Test
     void picksLeastLoadedActiveStaffForNewBookingAssignment() {
         User busyStaff = createStaff("Busy Staff", "0913");
-        User availableStaff = createStaff("Available Staff", "0912");
+        createStaff("Available Staff", "0912");
         createAssignedBooking(busyStaff, "0901777021");
         createAssignedBooking(busyStaff, "0901777022");
 
@@ -60,7 +58,7 @@ class StaffAssignmentServiceIntegrationTest {
 
     @Test
     void picksStaffWithLowestDailyCompletedWashCount() {
-        User lowDailyStaff = createStaff("Low Daily Staff", "0915");
+        createStaff("Low Daily Staff", "0915");
         User highDailyStaff = createStaff("High Daily Staff", "0916");
         createCompletedSession(highDailyStaff, "0901777031");
         createCompletedSession(highDailyStaff, "0901777032");

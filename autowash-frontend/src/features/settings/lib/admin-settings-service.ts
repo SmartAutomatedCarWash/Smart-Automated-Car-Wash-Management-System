@@ -6,17 +6,12 @@ export type SystemSettings = {
   operatingEndTime: string;
   maxAdvanceBookingDays: number;
   noShowGraceMinutes: number;
+  maxBookingsPerTimeSlot: number;
   currency: string;
   earnPointsUnitAmount: number;
   vndPerPoint: number;
   minRedemptionPoints: number;
   maxRedemptionPoints: number;
-  silverThreshold: number;
-  goldThreshold: number;
-  platinumThreshold: number;
-  silverMultiplier: number;
-  goldMultiplier: number;
-  platinumMultiplier: number;
   updatedAt: string;
 };
 

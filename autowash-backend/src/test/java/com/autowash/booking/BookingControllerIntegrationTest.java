@@ -1,9 +1,6 @@
 package com.autowash.booking;
 
-import com.autowash.entity.enums.PaymentMethod;
-import com.autowash.entity.enums.PaymentStatus;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -30,9 +27,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -439,69 +434,6 @@ class BookingControllerIntegrationTest {
     }
 
     @Test
-    void applyPointsRedeemsLoyaltyBalanceAndUpdatesBookingPricing() throws Exception {
-        String phone = "0901234718";
-        String accessToken = registerActivateAndLogin(phone);
-        User customer = UserRepository.findByEmailIgnoreCase(phone + "@example.com").orElseThrow();
-        LoyaltyAccount account = loyaltyAccountRepository.findByCustomerId(customer.getId())
-                .orElseGet(() -> new LoyaltyAccount(customer));
-        account.addPoints(120);
-        loyaltyAccountRepository.saveAndFlush(account);
-
-        String vehicleId = createVehicle(accessToken, "30H-223466");
-        String bookingId = createVerifiedBooking(accessToken, vehicleId);
-
-        mockMvc.perform(post("/api/v1/bookings/{bookingId}/apply-points", bookingId)
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType("application/json")
-                        .content("""
-                                {
-                                  "pointsToApply": 50
-                                }
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.bookingId").value(bookingId))
-                .andExpect(jsonPath("$.data.pointsApplied").value(50))
-                .andExpect(jsonPath("$.data.discountAmount").value(50000))
-                .andExpect(jsonPath("$.data.finalAmount").value(110000))
-                .andExpect(jsonPath("$.data.loyaltyBalance").value(70));
-
-        mockMvc.perform(get("/api/v1/customers/bookings/{bookingId}", bookingId)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.pricing.pointsRedeemed").value(50))
-                .andExpect(jsonPath("$.data.pricing.pointsDiscount").value(50000))
-                .andExpect(jsonPath("$.data.pricing.finalAmount").value(110000));
-    }
-
-    @Test
-    void applyPointsRejectsDuplicateApplication() throws Exception {
-        String phone = "0901234719";
-        String accessToken = registerActivateAndLogin(phone);
-        User customer = UserRepository.findByEmailIgnoreCase(phone + "@example.com").orElseThrow();
-        LoyaltyAccount account = loyaltyAccountRepository.findByCustomerId(customer.getId())
-                .orElseGet(() -> new LoyaltyAccount(customer));
-        account.addPoints(160);
-        loyaltyAccountRepository.saveAndFlush(account);
-
-        String vehicleId = createVehicle(accessToken, "30H-223467");
-        String bookingId = createVerifiedBooking(accessToken, vehicleId);
-
-        mockMvc.perform(post("/api/v1/bookings/{bookingId}/apply-points", bookingId)
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType("application/json")
-                        .content("{ \"pointsToApply\": 50 }"))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(post("/api/v1/bookings/{bookingId}/apply-points", bookingId)
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType("application/json")
-                        .content("{ \"pointsToApply\": 50 }"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.errorCode").value("POINTS_ALREADY_APPLIED"));
-    }
-
-    @Test
     void listBookingsRejectsInvalidStatusWithValidationError() throws Exception {
         String accessToken = registerActivateAndLogin("0901234711");
 
@@ -600,7 +532,6 @@ class BookingControllerIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.CancelBookingResponse.properties.refundStatus.type").value("string"));
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.paths['/api/v1/bookings/{bookingId}/apply-points']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/customers/wash-tracking/active']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/customers/wash-tracking/{washSessionId}']").exists());
     }

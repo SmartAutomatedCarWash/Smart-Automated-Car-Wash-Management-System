@@ -95,6 +95,18 @@ public class AdminCustomerController {
         );
     }
 
+    @PutMapping("/customers/{customerId}/tier")
+    @Operation(summary = "Update customer loyalty tier for admin")
+    public ApiResponse<UpdateAdminCustomerRoleResponse> updateCustomerTier(
+            @PathVariable UUID customerId,
+            @Valid @RequestBody com.autowash.dto.UpdateAdminCustomerTierRequest request
+    ) {
+        return ApiResponse.ok(
+                "Customer tier updated",
+                adminReportingService.updateCustomerTier(customerId, request.tier())
+        );
+    }
+
     @GetMapping("/customers/{customerId}/wash-sessions")
     @Operation(summary = "List completed wash sessions for a customer")
     public ApiResponse<List<AdminWashHistoryResponse>> getWashSessions(

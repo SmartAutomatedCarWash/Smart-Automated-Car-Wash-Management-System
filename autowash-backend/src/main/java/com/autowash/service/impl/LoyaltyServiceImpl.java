@@ -3,9 +3,7 @@ package com.autowash.service.impl;
 import com.autowash.service.*;
 import com.autowash.entity.User;
 import com.autowash.entity.BookingPromotion;
-import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.enums.ActiveStatus;
-import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.UserRepository;
 import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.Voucher;
@@ -44,6 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@SuppressWarnings("null")
 public class LoyaltyServiceImpl implements LoyaltyService {
 
     private static final Logger log = LoggerFactory.getLogger(LoyaltyService.class);
@@ -55,6 +54,9 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     private final PointTransactionRepository pointTransactionRepository;
     private final TierHistoryRepository tierHistoryRepository;
     private final VoucherRepository voucherRepository;
+    private final TierConfigService tierConfigService;
+    private final com.autowash.repository.SystemSettingsRepository systemSettingsRepository;
+    private final com.autowash.repository.NotificationRepository notificationRepository;
 
     public LoyaltyServiceImpl(
             UserRepository UserRepository,
@@ -63,7 +65,10 @@ public class LoyaltyServiceImpl implements LoyaltyService {
             BookingPromotionRepository bookingPromotionRepository,
             PointTransactionRepository pointTransactionRepository,
             TierHistoryRepository tierHistoryRepository,
-            VoucherRepository voucherRepository
+            VoucherRepository voucherRepository,
+            TierConfigService tierConfigService,
+            com.autowash.repository.SystemSettingsRepository systemSettingsRepository,
+            com.autowash.repository.NotificationRepository notificationRepository
     ) {
         this.UserRepository = UserRepository;
         this.washSessionRepository = washSessionRepository;
@@ -72,6 +77,9 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         this.pointTransactionRepository = pointTransactionRepository;
         this.tierHistoryRepository = tierHistoryRepository;
         this.voucherRepository = voucherRepository;
+        this.tierConfigService = tierConfigService;
+        this.systemSettingsRepository = systemSettingsRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     @Transactional
@@ -85,13 +93,14 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         WashSession session = requireSession(sessionId);
         LoyaltyAccount account = loyaltyAccountRepository.findByCustomerId(session.getBooking().getCustomer().getId())
                 .orElse(null);
-        LoyaltyTier tier = account == null ? LoyaltyTier.MEMBER : account.getTier();
+        String tier = account == null ? TierConfigService.BRONZE : account.getTier();
         long finalAmount = session.getBooking().getFinalAmount();
-        long basePoints = finalAmount / LoyaltyRules.EARN_POINTS_UNIT_AMOUNT;
+        com.autowash.entity.SystemSettings settings = systemSettingsRepository.findById(1).orElseThrow();
+        long basePoints = finalAmount / settings.getEarnPointsUnitAmount();
         BigDecimal promotionMultiplier = bookingPromotionMultiplier(session.getBooking().getId());
         return promotionMultiplier
                 .multiply(BigDecimal.valueOf(basePoints))
-                .multiply(BigDecimal.valueOf(LoyaltyRules.tierMultiplier(tier)))
+                .multiply(BigDecimal.valueOf(tierConfigService.getPointMultiplier(tier)))
                 .intValue();
     }
 
@@ -130,7 +139,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         );
 
         try {
-            pointTransactionRepository.save(transaction);
+            pointTransactionRepository.saveAndFlush(transaction);
         } catch (DataIntegrityViolationException exception) {
             PointTransaction racedTransaction = pointTransactionRepository
                     .findByTypeAndBookingId(PointTransactionType.EARN, session.getBooking().getId())
@@ -157,7 +166,8 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         }
 
         String voucherCode = generateVoucherCode();
-        long voucherValue = (long) pointsToRedeem * LoyaltyRules.VND_PER_POINT;
+        com.autowash.entity.SystemSettings settings = systemSettingsRepository.findById(1).orElseThrow();
+        long voucherValue = (long) pointsToRedeem * settings.getVndPerPoint();
         Instant expiresAt = Instant.now().plusSeconds(30L * 24 * 60 * 60);
         Voucher voucher = voucherRepository.save(new Voucher(
                 voucherCode,
@@ -219,12 +229,13 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 account.getCurrentPoints(),
                 "Points applied to booking " + booking.getId()
         ));
+        com.autowash.entity.SystemSettings settings = systemSettingsRepository.findById(1).orElseThrow();
         return new RedeemPointsResponse(
                 transaction.getId(),
                 pointsToRedeem,
                 account.getCurrentPoints(),
                 null,
-                (long) pointsToRedeem * LoyaltyRules.VND_PER_POINT,
+                (long) pointsToRedeem * settings.getVndPerPoint(),
                 null,
                 "APPLIED"
         );
@@ -262,12 +273,12 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     }
 
     void evaluateTierUpgrade(LoyaltyAccount account) {
-        LoyaltyTier targetTier = LoyaltyRules.tierForPoints(lifetimeEarnedPoints(account.getCustomer()));
-        if (targetTier.ordinal() <= account.getTier().ordinal()) {
+        String targetTier = tierConfigService.calculateTierForPoints(account.getTotalEarnedPoints());
+        if (tierConfigService.getTierRank(targetTier) <= tierConfigService.getTierRank(account.getTier())) {
             return;
         }
 
-        LoyaltyTier oldTier = account.getTier();
+        String oldTier = account.getTier();
         account.updateTier(targetTier);
         tierHistoryRepository.save(new TierHistory(account, oldTier, targetTier, account.getTotalEarnedPoints()));
         pointTransactionRepository.save(new PointTransaction(
@@ -279,6 +290,47 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 "Tier upgraded from " + oldTier + " to " + targetTier
         ));
         log.info("loyalty_tier_upgraded customerId={} oldTier={} newTier={}", account.getCustomer().getId(), oldTier, targetTier);
+        loyaltyAccountRepository.save(account);
+    }
+
+    @Transactional
+    public void updateCustomerTierByAdmin(UUID customerId, String newTier) {
+        String targetTier = com.autowash.entity.TierConfig.normalizeTier(newTier);
+        tierConfigService.getConfig(targetTier);
+        User customer = requireCustomer(customerId);
+        LoyaltyAccount account = getOrCreateAccountForUpdate(customer);
+        String oldTier = account.getTier();
+        
+        if (oldTier.equals(targetTier)) {
+            return;
+        }
+        
+        account.updateTier(targetTier);
+        tierHistoryRepository.save(new TierHistory(account, oldTier, targetTier, account.getTotalEarnedPoints()));
+        pointTransactionRepository.save(new PointTransaction(
+                account,
+                null,
+                PointTransactionType.ADJUST,
+                0,
+                account.getCurrentPoints(),
+                "Tier upgraded from " + oldTier + " to " + targetTier
+        ));
+        loyaltyAccountRepository.save(account);
+        
+        String title = "Hạng thành viên đã thay đổi";
+        String message = "Hạng thành viên của bạn đã được cập nhật thành " + targetTier + " bởi Quản trị viên.";
+        com.autowash.entity.Notification notification = com.autowash.entity.Notification.builder()
+                .id(UUID.randomUUID())
+                .user(customer)
+                .title(title)
+                .message(message)
+                .type("SYSTEM")
+                .read(false)
+                .createdAt(Instant.now())
+                .build();
+        notificationRepository.save(notification);
+        
+        log.info("loyalty_tier_updated_by_admin customerId={} oldTier={} newTier={}", customerId, oldTier, newTier);
     }
 
     private LoyaltyAccount getOrCreateAccount(User customer) {
@@ -307,17 +359,18 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     }
 
     private void validateRedemptionAmount(int pointsToRedeem) {
-        if (pointsToRedeem < LoyaltyRules.MIN_REDEMPTION_POINTS) {
+        com.autowash.entity.SystemSettings settings = systemSettingsRepository.findById(1).orElseThrow();
+        if (pointsToRedeem < settings.getMinRedemptionPoints()) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Minimum redemption is " + LoyaltyRules.MIN_REDEMPTION_POINTS + " points",
+                    "Minimum redemption is " + settings.getMinRedemptionPoints() + " points",
                     "BUSINESS_RULE_VIOLATION"
             );
         }
-        if (pointsToRedeem > LoyaltyRules.MAX_REDEMPTION_POINTS) {
+        if (pointsToRedeem > settings.getMaxRedemptionPoints()) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Maximum redemption is " + LoyaltyRules.MAX_REDEMPTION_POINTS + " points",
+                    "Maximum redemption is " + settings.getMaxRedemptionPoints() + " points",
                     "BUSINESS_RULE_VIOLATION"
             );
         }
@@ -341,7 +394,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     private LoyaltyAccountResponse toAccountResponse(LoyaltyAccount account) {
         return new LoyaltyAccountResponse(
                 account.getCustomer().getId().toString(),
-                account.getTier().name(),
+                account.getTier(),
                 account.getCurrentPoints(),
                 account.getTotalEarnedPoints(),
                 (int) washSessionRepository.countByBookingCustomerAndStatus(account.getCustomer(), WashSessionStatus.COMPLETED),
@@ -373,7 +426,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 transaction.getId(),
                 transaction.getPoints(),
                 transaction.getBalanceAfter(),
-                account.getTier().name()
+                account.getTier()
         );
     }
 

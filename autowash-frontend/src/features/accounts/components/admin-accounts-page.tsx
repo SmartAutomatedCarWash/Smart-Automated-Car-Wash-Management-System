@@ -66,9 +66,11 @@ function translateStatus(status: string, lang: "vi" | "en") {
 
 function translateTier(tier: string, lang: "vi" | "en") {
   const map: Record<string, { vi: string; en: string }> = {
+    BRONZE: { vi: "Đồng", en: "Bronze" },
     SILVER: { vi: "Bạc", en: "Silver" },
     GOLD: { vi: "Vàng", en: "Gold" },
     PLATINUM: { vi: "Bạch kim", en: "Platinum" },
+    DIAMOND: { vi: "Kim cương", en: "Diamond" },
   };
   return map[tier]?.[lang] || tier;
 }
@@ -189,16 +191,32 @@ export function AdminAccountsPageContent() {
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{translate(language, "Admin / Tài khoản", "Admin / Accounts")}</p>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-              {activeTab === "customers" 
-                ? translate(language, "Danh mục khách hàng", "Customer directory") 
-                : translate(language, "Danh mục Nhân viên & Admin", "Staff & Admin directory")}
-            </h1>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200">
+          <div className="flex">
+            <button
+              type="button"
+              className={`border-b-2 px-6 py-3 text-sm font-semibold transition-all -mb-px ${
+                activeTab === "customers"
+                  ? "border-sky-600 text-sky-700"
+                  : "border-transparent text-slate-500 hover:text-slate-900"
+              }`}
+              onClick={() => handleTabChange("customers")}
+            >
+              {translate(language, "Khách hàng", "Customers")}
+            </button>
+            <button
+              type="button"
+              className={`border-b-2 px-6 py-3 text-sm font-semibold transition-all -mb-px ${
+                activeTab === "staff_admin"
+                  ? "border-sky-600 text-sky-700"
+                  : "border-transparent text-slate-500 hover:text-slate-900"
+              }`}
+              onClick={() => handleTabChange("staff_admin")}
+            >
+              {translate(language, "Nhân viên & Admin", "Staff & Admin")}
+            </button>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 pb-2 sm:pb-0">
             {activeTab === "staff_admin" && (
               <Button
                 type="button"
@@ -220,31 +238,6 @@ export function AdminAccountsPageContent() {
               {translate(language, "Làm mới", "Refresh")}
             </Button>
           </div>
-        </div>
-
-        <div className="flex border-b border-slate-200">
-          <button
-            type="button"
-            className={`border-b-2 px-6 py-3 text-sm font-semibold transition-all ${
-              activeTab === "customers"
-                ? "border-sky-600 text-sky-700"
-                : "border-transparent text-slate-500 hover:text-slate-900"
-            }`}
-            onClick={() => handleTabChange("customers")}
-          >
-            {translate(language, "Khách hàng", "Customers")}
-          </button>
-          <button
-            type="button"
-            className={`border-b-2 px-6 py-3 text-sm font-semibold transition-all ${
-              activeTab === "staff_admin"
-                ? "border-sky-600 text-sky-700"
-                : "border-transparent text-slate-500 hover:text-slate-900"
-            }`}
-            onClick={() => handleTabChange("staff_admin")}
-          >
-            {translate(language, "Nhân viên & Admin", "Staff & Admin")}
-          </button>
         </div>
 
         <Card className="rounded-md border-slate-200 bg-white shadow-sm">
@@ -372,7 +365,9 @@ export function AdminAccountsPageContent() {
                           <TableCell className="text-slate-600">{account.email ?? translate(language, "Không có email", "No email")}</TableCell>
                           <TableCell className="font-medium text-slate-700">{account.phone}</TableCell>
                           {activeTab === "customers" ? (
-                            <TableCell>{translateTier(account.tier, language as "vi" | "en")}</TableCell>
+                            <TableCell>
+                              <TierBadge tier={account.tier} language={language as "vi" | "en"} />
+                            </TableCell>
                           ) : (
                             <TableCell>
                               <RoleBadge role={account.role} language={language as "vi" | "en"} />
@@ -649,4 +644,21 @@ const STATUS_TONE: Record<AdminAccount["status"], string> = {
   BLOCKED: "border-rose-300 bg-rose-100 text-rose-800",
   SUSPENDED: "border-slate-400 bg-slate-200 text-slate-800",
   DELETED: "border-zinc-400 bg-zinc-200 text-zinc-800",
+};
+
+function TierBadge({ tier, language }: { tier: string; language: "vi" | "en" }) {
+  const tone = TIER_TONE[tier] ?? "border-slate-300 bg-slate-100 text-slate-700";
+  return (
+    <Badge className={tone} variant="outline">
+      {translateTier(tier, language)}
+    </Badge>
+  );
+}
+
+const TIER_TONE: Record<string, string> = {
+  BRONZE: "border-amber-700/30 bg-amber-700/10 text-amber-900",
+  SILVER: "border-slate-400 bg-slate-100 text-slate-700",
+  GOLD: "border-yellow-400 bg-yellow-100 text-yellow-800",
+  PLATINUM: "border-cyan-300 bg-cyan-100 text-cyan-800",
+  DIAMOND: "border-violet-300 bg-violet-100 text-violet-800",
 };

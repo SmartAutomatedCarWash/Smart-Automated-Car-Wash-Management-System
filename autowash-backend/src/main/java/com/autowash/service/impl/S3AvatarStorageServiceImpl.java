@@ -89,8 +89,8 @@ public class S3AvatarStorageServiceImpl implements AvatarStorageService {
             s3ClientBuilder.credentialsProvider(staticCredentialsProvider);
             presignerBuilder.credentialsProvider(staticCredentialsProvider);
         } else {
-            s3ClientBuilder.credentialsProvider(DefaultCredentialsProvider.create());
-            presignerBuilder.credentialsProvider(DefaultCredentialsProvider.create());
+            s3ClientBuilder.credentialsProvider(DefaultCredentialsProvider.builder().build());
+            presignerBuilder.credentialsProvider(DefaultCredentialsProvider.builder().build());
         }
 
         if (endpoint != null && !endpoint.isBlank()) {

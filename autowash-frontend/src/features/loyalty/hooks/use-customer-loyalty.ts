@@ -14,6 +14,8 @@ import {
   listCustomerLoyaltyTransactions,
   listCustomerPromotions,
   listCustomerWashHistory,
+  getPublicTierConfigs,
+  listPublicTierVoucherOffers,
 } from "@/features/loyalty/lib/customer-loyalty-service";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
@@ -95,5 +97,19 @@ export function useCustomerRedeemPoints() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: customerLoyaltyScope(userId) });
     },
+  });
+}
+
+export function usePublicTierConfigs() {
+  return useQuery({
+    queryKey: ["public-tier-configs"],
+    queryFn: getPublicTierConfigs,
+  });
+}
+
+export function usePublicTierVoucherOffers() {
+  return useQuery({
+    queryKey: ["public-tier-voucher-offers"],
+    queryFn: listPublicTierVoucherOffers,
   });
 }

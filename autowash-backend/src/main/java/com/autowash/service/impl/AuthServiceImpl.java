@@ -278,7 +278,7 @@ public class AuthServiceImpl implements AuthService {
                 user.getEmail(),
                 user.getRole().name(),
                 user.getStatus().name(),
-                "MEMBER",
+                "BRONZE",
                 0,
                 user.isNewCustomer(),
                 accessToken,
@@ -328,9 +328,6 @@ public class AuthServiceImpl implements AuthService {
         return UserRepository.findByEmailIgnoreCase(email.trim());
     }
 
-    private void invalidateActiveRegistrationOtps(User user) {
-        // Feature removed as invalidated_at column is removed
-    }
 
     private void enforceResendLimit(User user) {
         Instant windowStart = Instant.now().minusSeconds(3600);
@@ -357,11 +354,7 @@ public class AuthServiceImpl implements AuthService {
         );
         OtpVerificationRepository.save(OtpVerification);
         try {
-            if (purpose == OtpPurpose.PASSWORD_RESET) {
-                emailDeliveryService.sendPasswordResetOtp(user.getEmail(), user.getFullName(), code, (int) otpExpirationSeconds);
-            } else {
-                emailDeliveryService.sendRegistrationOtp(user.getEmail(), user.getFullName(), code, (int) otpExpirationSeconds);
-            }
+            emailDeliveryService.sendRegistrationOtp(user.getEmail(), user.getFullName(), code, (int) otpExpirationSeconds);
         } catch (RuntimeException exception) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to send OTP email", "OTP_SEND_FAILED");
         }

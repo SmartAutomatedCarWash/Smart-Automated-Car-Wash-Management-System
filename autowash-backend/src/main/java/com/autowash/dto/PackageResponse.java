@@ -1,6 +1,5 @@
 package com.autowash.dto;
 
-import com.autowash.entity.enums.Popularity;
 
 import java.util.List;
 

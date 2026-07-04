@@ -32,8 +32,10 @@ import {
   useValidateBookingVoucher,
 } from "@/features/bookings/hooks/use-bookings";
 import { useCustomerVehicles } from "@/features/vehicles/hooks/use-customer-vehicles";
+import { useCustomerVouchers } from "@/features/vouchers/hooks/use-customer-vouchers";
 import { useBookingStore } from "@/features/bookings/store/booking.store";
 import type { BookingDraft, PaymentMethod, VoucherValidationResult } from "@/entities/bookings";
+import { Ticket, TicketCheck } from "lucide-react";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["BANK_TRANSFER", "E_WALLET", "CASH_AT_COUNTER"];
 
@@ -129,6 +131,7 @@ export function CustomerBookingForm() {
   const addonsQuery = useBookingAddons();
   const combosQuery = useBookingCombos();
   const activeCustomerCombosQuery = useActiveCustomerCombos();
+  const customerVouchersQuery = useCustomerVouchers();
   const voucherMutation = useValidateBookingVoucher();
   const createBookingMutation = useCreateCustomerBooking();
   const [validatedVoucher, setValidatedVoucher] = useState<VoucherValidationResult | null>(null);
@@ -265,8 +268,9 @@ export function CustomerBookingForm() {
     label: `${vehicle.plate} · ${vehicle.brand} ${vehicle.model}`,
     description: `${vehicle.type}${vehicle.isPrimary ? " · Primary vehicle" : ""}`,
   }));
-  const validateVoucher = async () => {
-    const normalizedCode = sanitizeVoucherCodeInput(draft.voucherCode);
+  const validateVoucher = async (codeToValidate?: string) => {
+    const code = codeToValidate ?? draft.voucherCode;
+    const normalizedCode = sanitizeVoucherCodeInput(code);
     const formatError = getVoucherCodeFormatError(normalizedCode);
 
     if (!normalizedCode || !summary) {
@@ -661,6 +665,7 @@ export function CustomerBookingForm() {
                   voucherMutation.isPending ||
                   !summary
                 }
+                className="rounded-xl border-primary/20 bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground sm:w-auto"
               >
                 {voucherMutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -676,6 +681,49 @@ export function CustomerBookingForm() {
                 Clear
               </Button>
             </div>
+            
+            {/* Vouchers from Wallet */}
+            {customerVouchersQuery.data && customerVouchersQuery.data.items.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  <Ticket className="h-4 w-4" />
+                  Hoặc chọn từ Ví Voucher của bạn
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {customerVouchersQuery.data.items.map((voucher) => {
+                    const isSelected = draft.voucherCode === voucher.code;
+                    const isValidated = validatedVoucher?.voucherCode === voucher.code;
+                    const discountText = voucher.discountType === "PERCENT" ? `${voucher.discountValue}% OFF` : `${voucher.discountValue.toLocaleString("vi-VN")}đ`;
+                    return (
+                      <button
+                        key={voucher.code}
+                        type="button"
+                        onClick={() => {
+                          setValidatedVoucher(null);
+                          setVoucherInputError(null);
+                          updateDraft({ voucherCode: voucher.code });
+                          // Automatically validate after setting state in next tick
+                          setTimeout(() => validateVoucher(voucher.code), 50);
+                        }}
+                        className={`group flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-all ${
+                          isValidated
+                            ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 shadow-sm"
+                            : isSelected
+                            ? "border-primary bg-primary/5 text-primary shadow-sm"
+                            : "border-border/60 bg-card text-foreground hover:border-primary/40 hover:bg-muted"
+                        }`}
+                      >
+                        <div className="font-bold">{voucher.name}</div>
+                        <div className="rounded-md bg-background/50 px-1.5 py-0.5 text-[10px] font-black tracking-wider opacity-80 border">
+                          {discountText}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <p className="mt-2 text-xs text-muted-foreground">{voucherCodeFormatMessage}</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Voucher validation uses the real contract with the current subtotal.

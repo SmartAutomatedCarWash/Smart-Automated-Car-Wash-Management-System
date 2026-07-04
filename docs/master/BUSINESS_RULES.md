@@ -29,7 +29,7 @@
 | BR-02 | One phone number cannot create multiple active accounts. | ✅ | `UserRepository.existsByPhone()` checked on register |
 | BR-03 | Customer must provide full name, phone number, **email**, password, and confirm password. | ✅ | `RegisterRequest`: all five `@NotBlank` |
 | BR-04 | Phone number must follow Vietnamese format `^0[0-9]{9}$`. | ✅ | `@Pattern` in `RegisterRequest`, `AuthServiceImpl.PHONE_PATTERN` |
-| BR-05 | New customer starts at tier `MEMBER` with 0 points and `PENDING` status. | ✅ | `User` constructor, `LoyaltyAccount` constructor |
+| BR-05 | New customer starts at tier `BRONZE` with 0 points and `PENDING` status. | ✅ | `User` constructor, `LoyaltyAccount` constructor |
 | BR-06 | Account activates only after OTP verification. | ✅ | `AuthServiceImpl.verifyRegistrationOtp()` → `user.activate()` |
 | BR-07 | Password must be 8–128 characters with uppercase, lowercase, digit, and special character. | ✅ | `@Pattern` regex in `RegisterRequest` |
 | BR-07a | Staff password must be 8–72 characters. | ✅ | `@Size(min=8, max=72)` in `ResetPasswordRequest` |
@@ -95,7 +95,7 @@
 | BR-43 | A new booking is created with status `PENDING`. | ✅ | `Booking` constructor sets `BookingStatus.PENDING` |
 | BR-44 | Booking creation is blocked for BLOCKED customers. | ⚠️ | `createBooking()` does not check `user.getStatus()`. See BR-S01. |
 | BR-45 | Booking creation is blocked during active suspension. | ⚠️ | No suspension mechanism exists. See BR-S02. |
-| BR-46 | Booking date window depends on customer tier (MEMBER shorter, PLATINUM longer). | ⚠️ | Not enforced. See BR-S03. |
+| BR-46 | Booking date window depends on customer tier (BRONZE shorter, DIAMOND longer). | ⚠️ | Not enforced. See BR-S03. |
 | BR-47 | Duplicate booking for same vehicle + date + time slot is blocked. | ⚠️ | No check exists. See BR-S04. |
 | BR-48 | Slot capacity per time slot is limited by shop configuration. | ⚠️ | Not enforced. See BR-S05. |
 | BR-49 | Last open slot in a time slot is reserved for PLATINUM customers. | ⚠️ | Not enforced. See BR-S06. |
@@ -131,7 +131,7 @@
 | BR-61 | Booking confirmation status is derived: `PENDING`→`PENDING`, `CONFIRMED/IN_PROGRESS/COMPLETED`→`VERIFIED`, `CANCELLED`→`CANCELLED`, `NO_SHOW`→`EXPIRED`. | ✅ | `Booking.getConfirmationStatus()` (transient) |
 | BR-62 | Cancellation is only allowed from `PENDING` or `CONFIRMED` status. | ✅ | `CANCELLABLE_BOOKING_STATUSES` in `BookingServiceImpl` → `RESOURCE_LOCKED` |
 | BR-63 | Cancellation is blocked when booking starts in less than 2 hours. | ⚠️ | Time check not implemented. See BR-S07. |
-| BR-64 | Auto-block after repeated cancellations within rolling window. | ⚠️ | Not implemented. See BR-S15. |
+| BR-64 | Auto-block after repeated cancellations within rolling window. | ❌ | Out of scope per `LOYALTY_TIER_RESEARCH.md` (Bỏ logic tính phạt hủy lịch). |
 | BR-65 | Points can only be applied to a booking in `CONFIRMED` status (before check-in). | ✅ | `BookingServiceImpl.applyPoints()` |
 | BR-66 | Points can only be applied once per booking. | ✅ | Checks `pointsRedeemed > 0` → `POINTS_ALREADY_APPLIED` |
 | BR-67 | Points discount cannot exceed booking final amount. | ✅ | `BookingServiceImpl.applyPoints()` |
@@ -170,6 +170,7 @@
 | BR-83 | Staff KPI target revenue is 5,000,000 VND per period. | ✅ | `OperationsServiceImpl.getStaffSummary()` hardcoded constant |
 | BR-84 | Staff cannot modify loyalty points directly. | ✅ | No staff-accessible endpoint to `ADJUST` point transactions |
 | BR-85 | Eligible session bookings list is capped at 50 per query. | ✅ | `OperationsServiceImpl.listEligibleSessionBookings()` `Math.min(limit, 50)` |
+| BR-85a | Eligible session list displays Priority Queue badges: GOLD, PLATINUM, DIAMOND. | ⚠️ | Not implemented. See `LOYALTY_TIER_RESEARCH.md` |
 
 ---
 
@@ -179,7 +180,7 @@
 |---|---|---|---|
 | BR-86 | Points are earned only after wash session `COMPLETED`. | ✅ | `LoyaltyServiceImpl.postEarnTransaction()` checks `WashSessionStatus.COMPLETED` |
 | BR-87 | Points formula: `floor(finalAmount / 10,000) × tier_multiplier × promotion_multiplier`. | ✅ | `LoyaltyServiceImpl.calculateEarnPoints()`, `LoyaltyRules` |
-| BR-88 | Tier multipliers: `MEMBER`=1.0x, `SILVER`=1.2x, `GOLD`=1.5x, `PLATINUM`=2.0x. | ✅ | `LoyaltyRules.tierMultiplier()` |
+| BR-88 | Tier multipliers: `BRONZE`=1.0x, `SILVER`=1.2x, `GOLD`=1.5x, `PLATINUM`=2.0x, `DIAMOND`=2.5x. | ✅ | `LoyaltyRules.tierMultiplier()` |
 | BR-89 | Promotion multiplier applied: highest multiplier among all linked booking promotions wins. | ✅ | `LoyaltyServiceImpl.bookingPromotionMultiplier()` |
 | BR-90 | Only one EARN transaction per booking (idempotent). | ✅ | `UNIQUE INDEX uk_point_transactions_booking_type` on `(booking_id, type)` |
 | BR-91 | Point balance cannot be negative. | ✅ | `loyalty_accounts.current_points >= 0` DB CHECK |
@@ -188,7 +189,7 @@
 | BR-94 | Redemption blocked when insufficient points. | ✅ | `LoyaltyServiceImpl` throws `INSUFFICIENT_POINTS` |
 | BR-95 | Redemption blocked for BLOCKED customers. | ⚠️ | `redeemPoints()` does not check `user.getStatus()`. See BR-S11. |
 | BR-96 | Customer can hold at most 3 active redemption vouchers. | ⚠️ | Not enforced. See BR-S14. |
-| BR-97 | Tier thresholds: `MEMBER`=0pts, `SILVER`=500pts, `GOLD`=1,500pts, `PLATINUM`=4,000pts. | ✅ | `LoyaltyRules.TIER_THRESHOLDS` |
+| BR-97 | Tier thresholds: `BRONZE`=0pts, `SILVER`=500pts, `GOLD`=1,500pts, `PLATINUM`=4,000pts, `DIAMOND`=10,000pts. | ✅ | `LoyaltyRules.TIER_THRESHOLDS` |
 | BR-98 | Tier is upgraded on every point-earn event when lifetime EARN total crosses a threshold. | ✅ | `LoyaltyServiceImpl.evaluateTierUpgrade()` using lifetime EARN sum |
 | BR-99 | Tier upgrade is recorded in `tier_histories`. | ✅ | `TierHistoryRepository.save()` in `evaluateTierUpgrade()` |
 | BR-100 | Tier recalculation uses **lifetime total EARN points** (not rolling 12-month). | ⚠️ | Diverges from original spec which described rolling 12-month. Decision required. See BR-S10. |
@@ -318,10 +319,10 @@ These rules are **designed intent** documented in specs but **not enforced** in 
 |---|---|---|---|
 | BR-S01 | Block booking creation for BLOCKED customers | `BookingServiceImpl.createBooking()` | — |
 | BR-S02 | Block booking creation during active suspension | `BookingServiceImpl.createBooking()` + new `suspended_until` field or table | — |
-| BR-S03 | Booking window limit by tier (MEMBER=7d, SILVER=14d, GOLD=21d, PLATINUM=30d) | `BookingServiceImpl.createBooking()` | — |
+| BR-S03 | Booking window limit by tier (BRONZE=7d, SILVER=14d, GOLD=21d, PLATINUM=30d, DIAMOND=45d) | `BookingServiceImpl.createBooking()` | — |
 | BR-S04 | Prevent duplicate booking for same (vehicle, date, time) | `BookingServiceImpl.createBooking()` + partial unique index | — |
 | BR-S05 | Enforce shop slot capacity per time slot (configurable) | `BookingServiceImpl.createBooking()` | — |
-| BR-S06 | Reserve last slot per time slot for PLATINUM customers | `BookingServiceImpl.createBooking()` | BR-S05 |
+| BR-S06 | Reserve last slot per time slot for PLATINUM and DIAMOND customers | `BookingServiceImpl.createBooking()` | BR-S05 |
 | BR-S07 | Block cancellation within 2 hours of scheduled time | `BookingServiceImpl.cancelBooking()` | — |
 | BR-S08 | Mark booking `NO_SHOW` when check-in is more than 20 min late (triggered by scheduled job or at check-in attempt) | `OperationsServiceImpl.checkInSession()` or scheduled job | — |
 | BR-S09 | Auto-suspend customer after 2 no-shows in 30 days (14-day suspension) | Triggered after BR-S08 | BR-S02, BR-S08 |
@@ -330,7 +331,7 @@ These rules are **designed intent** documented in specs but **not enforced** in 
 | BR-S12 | Prevent deletion of last remaining vehicle | `VehicleServiceImpl.deleteVehicle()` | — |
 | BR-S13 | ~~Validate plate format~~ **Resolved** — already enforced via `@Pattern` in `CreateVehicleRequest` | — | — |
 | BR-S14 | Cap active redemption vouchers at 3 per customer | `LoyaltyServiceImpl.redeemPoints()` | — |
-| BR-S15 | Auto-block customer after N cancellations in 30 days (configurable threshold) | `BookingServiceImpl.cancelBooking()` | — |
+| BR-S15 | Auto-block customer after N cancellations in 30 days (configurable threshold) | ❌ Out of Scope | `LOYALTY_TIER_RESEARCH.md` |
 | BR-S16 | Validate booking time within business hours 08:00–20:00 (configurable) | `BookingServiceImpl.createBooking()` | — |
 | BR-S17 | Validate booking date does not exceed 30 days from today (configurable) | `BookingServiceImpl.createBooking()` | — |
 | BR-S18 | One customer can use one voucher code only once per lifetime | `CatalogServiceImpl.validateVoucherOrThrow()` + new `voucher_usages` table or unique index | — |
@@ -528,7 +529,7 @@ These rules are **designed intent** documented in specs but **not enforced** in 
 | Column | Type | Constraints |
 |---|---|---|
 | `voucher_id` | uuid | PK, FK → vouchers(id) ON DELETE CASCADE |
-| `tier` | varchar(20) | PK, CHECK IN ('MEMBER','SILVER','GOLD','PLATINUM') |
+| `tier` | varchar(20) | PK, CHECK IN ('BRONZE','SILVER','GOLD','PLATINUM','DIAMOND') |
 
 **Indexes:** `idx_voucher_tiers_voucher_id`
 
@@ -550,7 +551,7 @@ These rules are **designed intent** documented in specs but **not enforced** in 
 | Column | Type | Constraints |
 |---|---|---|
 | `promotion_id` | uuid | PK, FK → promotions(id) ON DELETE CASCADE |
-| `tier` | varchar(20) | PK, CHECK IN ('MEMBER','SILVER','GOLD','PLATINUM') |
+| `tier` | varchar(20) | PK, CHECK IN ('BRONZE','SILVER','GOLD','PLATINUM','DIAMOND') |
 
 **Indexes:** `idx_promotion_tiers_promotion_id`
 
@@ -662,7 +663,7 @@ These rules are **designed intent** documented in specs but **not enforced** in 
 | `customer_id` | uuid | UNIQUE NOT NULL, FK → users(id) ON DELETE CASCADE |
 | `current_points` | int | NOT NULL DEFAULT 0, CHECK >= 0 |
 | `total_earned_points` | int | NOT NULL DEFAULT 0, CHECK >= 0 |
-| `tier` | varchar(20) | NOT NULL DEFAULT 'MEMBER', CHECK IN ('MEMBER','SILVER','GOLD','PLATINUM') |
+| `tier` | varchar(20) | NOT NULL DEFAULT 'BRONZE', CHECK IN ('BRONZE','SILVER','GOLD','PLATINUM','DIAMOND') |
 | `created_at` | timestamptz | NOT NULL DEFAULT CURRENT_TIMESTAMP |
 | `updated_at` | timestamptz | NOT NULL DEFAULT CURRENT_TIMESTAMP |
 
@@ -690,7 +691,7 @@ These rules are **designed intent** documented in specs but **not enforced** in 
 | `id` | bigserial | PK |
 | `loyalty_account_id` | uuid | NOT NULL, FK → loyalty_accounts(id) ON DELETE CASCADE |
 | `old_tier` | varchar(20) | nullable |
-| `new_tier` | varchar(20) | NOT NULL, CHECK IN ('MEMBER','SILVER','GOLD','PLATINUM') |
+| `new_tier` | varchar(20) | NOT NULL, CHECK IN ('BRONZE','SILVER','GOLD','PLATINUM','DIAMOND') |
 | `total_points_at_change` | int | NOT NULL, CHECK >= 0 |
 | `changed_at` | timestamptz | NOT NULL DEFAULT CURRENT_TIMESTAMP |
 
@@ -801,7 +802,7 @@ These columns/tables are referenced by `⚠️` BRs but **do not yet exist** in 
 | BR-02 (no multi-account) | BR-02 |
 | BR-03 (required fields) | BR-03 |
 | BR-04 (phone format) | BR-04 |
-| BR-05 (MEMBER tier on create) | BR-05 |
+| BR-05 (BRONZE tier on create) | BR-05 |
 | BR-06 (OTP activation) | BR-06 |
 | BR-07 (phone change OTP) | BR-23 (profile update phone uniqueness) |
 | BR-08 (account status) | BR-12, BR-136 |
@@ -826,7 +827,7 @@ These columns/tables are referenced by `⚠️` BRs but **do not yet exist** in 
 | BR-27 (2 no-shows → suspend) | BR-S09 |
 | BR-28 (cancelled cannot check-in) | BR-69 |
 | BR-29 (15 min late → no-show) | BR-S08 |
-| BR-30 (Platinum priority) | BR-S06 |
+| BR-30 (Platinum/Diamond priority) | BR-S06 |
 | BR-31 (session needs customerID) | BR-69 |
 | BR-32 (session needs staffID) | BR-70, BR-81 |
 | BR-33 (session data requirements) | BR-73 |
@@ -839,7 +840,7 @@ These columns/tables are referenced by `⚠️` BRs but **do not yet exist** in 
 | BR-40 (one promo per session) | BR-53 |
 | BR-41 (points after completion) | BR-86 |
 | BR-42 (formula configurable) | BR-87 |
-| BR-43 (tier multipliers) | BR-88 — *Note: spec says SILVER=1.5x, GOLD=2x, PLATINUM=3x; backend uses SILVER=1.2x, GOLD=1.5x, PLATINUM=2.0x. Values differ.* |
+| BR-43 (tier multipliers) | BR-88 — *Note: spec says SILVER=1.5x, GOLD=2x, PLATINUM=3x; backend uses SILVER=1.2x, GOLD=1.5x, PLATINUM=2.0x, DIAMOND=2.5x. Values differ.* |
 | BR-44 (points added post-completion) | BR-86 |
 | BR-45 (cancelled/no-show no points) | BR-86 (COMPLETED check) |
 | BR-46 (balance ≥ 0) | BR-91 |
@@ -860,7 +861,7 @@ These columns/tables are referenced by `⚠️` BRs but **do not yet exist** in 
 | BR-61 (promotion start/end) | BR-112 |
 | BR-62 (start before end) | BR-113 |
 | BR-63 (targeted by tier) | BR-115, BR-116 |
-| BR-64 (Silver+ hidden from Member) | BR-116, BR-127 |
+| BR-64 (Silver+ hidden from Bronze) | BR-116, BR-127 |
 | BR-65 (admin manages promotions) | BR-117, BR-130 |
 | BR-66 (expiry notification) | 🔲 Frontend-only |
 | BR-67 (booking reminder) | 🔲 Frontend-only |
@@ -881,9 +882,9 @@ These are cases where the original `List_BRs.md` spec and current backend implem
 
 | # | Spec (List_BRs.md) | Implementation | Decision Needed |
 |---|---|---|---|
-| 1 | Tier multipliers: SILVER=1.5x, GOLD=2x, PLATINUM=3x | Backend `LoyaltyRules`: SILVER=1.2x, GOLD=1.5x, PLATINUM=2.0x | Align spec or change code |
-| 2 | Tier recalculation uses rolling 12-month points | Backend uses lifetime EARN total | Choose Option A (lifetime, simpler) or Option B (rolling, spec-aligned) |
-| 3 | Booking window: MEMBER=7d, SILVER=10d, GOLD=12d, PLATINUM=14d | Not implemented in backend | Implement BR-S03 or adjust spec |
+| 1 | Tier multipliers: SILVER=1.5x, GOLD=2x, PLATINUM=3x | Backend `LoyaltyRules`: SILVER=1.2x, GOLD=1.5x, PLATINUM=2.0x, DIAMOND=2.5x | **Resolved**: Aligned with `LOYALTY_TIER_RESEARCH.md`. Spec updated. |
+| 2 | Tier recalculation uses rolling 12-month points | Backend uses lifetime EARN total | **Resolved**: Option A (lifetime, simpler) chosen per `LOYALTY_TIER_RESEARCH.md`. |
+| 3 | Booking window: BRONZE=7d, SILVER=10d, GOLD=12d, PLATINUM=14d, DIAMOND=30d | Not implemented in backend | Implement BR-S03 or adjust spec |
 | 4 | `blocked` customer cannot book or redeem points | Neither check enforced in backend | Implement BR-S01 and BR-S11 |
 | 5 | Password minimum 6 characters | Backend enforces 8–128 chars + complexity pattern | Spec is outdated — update `List_BRs.md` |
 | 6 | Registration does not collect email | Backend requires email (`@NotBlank @Email`) | Spec is outdated — update `List_BRs.md` |

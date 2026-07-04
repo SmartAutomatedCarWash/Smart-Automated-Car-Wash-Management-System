@@ -21,20 +21,18 @@ public class GoogleOAuthClientImpl implements GoogleOAuthClient {
     private final String clientId;
     private final String clientSecret;
     private final String redirectUri;
-    private final String frontendBaseUrl;
+
 
     public GoogleOAuthClientImpl(
             RestClient.Builder restClientBuilder,
             @Value("${autowash.auth.google.client-id:}") String clientId,
             @Value("${autowash.auth.google.client-secret:}") String clientSecret,
-            @Value("${autowash.auth.google.redirect-uri:}") String redirectUri,
-            @Value("${autowash.auth.google.frontend-base-url:http://localhost:3000}") String frontendBaseUrl
+            @Value("${autowash.auth.google.redirect-uri:}") String redirectUri
     ) {
         this.restClient = restClientBuilder.build();
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.redirectUri = redirectUri;
-        this.frontendBaseUrl = frontendBaseUrl;
     }
 
     @Override
@@ -54,6 +52,7 @@ public class GoogleOAuthClientImpl implements GoogleOAuthClient {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public GoogleOAuthUserInfo exchangeCode(String code) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("code", code);
@@ -62,7 +61,7 @@ public class GoogleOAuthClientImpl implements GoogleOAuthClient {
         formData.add("redirect_uri", redirectUri);
         formData.add("grant_type", "authorization_code");
 
-        Map tokenResponse = restClient.post()
+        Map<String, Object> tokenResponse = restClient.post()
                 .uri("https://oauth2.googleapis.com/token")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(formData)
