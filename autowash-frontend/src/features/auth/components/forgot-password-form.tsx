@@ -43,6 +43,7 @@ export function ForgotPasswordForm() {
   const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [successMessage, setSuccessMessage] = useState("");
+  const [devOtp, setDevOtp] = useState<string | null>(null);
 
   const normalizedEmail = email.trim().toLowerCase();
   const otp = otpDigits.join("");
@@ -93,6 +94,7 @@ export function ForgotPasswordForm() {
     setMaskedEmail(response.maskedEmail ?? response.email);
     setOtpExpiresAt(Date.now() + response.otpExpiresIn * 1000);
     setOtpDigits(Array.from({ length: OTP_LENGTH }, () => ""));
+    setDevOtp(response.devOtp ?? null);
     setStep("verify");
     window.setTimeout(() => otpRefs.current[0]?.focus(), 0);
   };
@@ -226,6 +228,7 @@ export function ForgotPasswordForm() {
             ) : (
               <span className="ml-1 font-semibold text-rose-600">The code expired.</span>
             )}
+            {devOtp ? <div className="mt-1 font-mono text-xs text-slate-500">Dev OTP: {devOtp}</div> : null}
           </div>
 
           <div className="space-y-2">

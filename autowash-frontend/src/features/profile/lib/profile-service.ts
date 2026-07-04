@@ -1,5 +1,5 @@
 import axios from "axios";
-import { apiRequest } from "@/shared/lib/api";
+import { apiClient, apiRequest } from "@/shared/lib/api";
 import type {
   CreateAvatarUploadUrlRequest,
   CreateAvatarUploadUrlResponse,
@@ -34,6 +34,16 @@ export function createCustomerAvatarUploadUrl(payload: CreateAvatarUploadUrlRequ
 }
 
 export async function uploadAvatarFile(uploadUrl: string, file: File, contentType: string) {
+  if (uploadUrl.startsWith("http://localhost:8080") || uploadUrl.startsWith("http://127.0.0.1:8080")) {
+    const url = new URL(uploadUrl);
+    await apiClient.put(`${url.pathname}${url.search}`, file, {
+      headers: {
+        "Content-Type": contentType,
+      },
+    });
+    return;
+  }
+
   await axios.put(uploadUrl, file, {
     headers: {
       "Content-Type": contentType,

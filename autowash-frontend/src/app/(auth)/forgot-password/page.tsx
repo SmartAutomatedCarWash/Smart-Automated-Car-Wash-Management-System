@@ -1,18 +1,22 @@
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ForgotPasswordForm } from "@/features/auth/components/forgot-password-form";
+import { PublicAuthShell } from "@/features/auth/components/public-auth-shell";
 
 export default function ForgotPasswordPage() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace("/?auth=forgot-password");
-  }, [router]);
-
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">
-      <p>Redirecting to forgot password...</p>
-    </div>
+    <PublicAuthShell
+      title="Reset Password"
+      description="Receive an OTP by email, verify your account, and set a new password."
+      footer={
+        <>
+          Remember your password?
+          <Link href="/login" className="font-bold text-teal-700 transition hover:text-teal-900 hover:underline">
+            Back to sign in
+          </Link>
+        </>
+      }
+    >
+      <ForgotPasswordForm />
+    </PublicAuthShell>
   );
 }
