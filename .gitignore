@@ -11,6 +11,7 @@ autowash-backend/build/
 autowash-backend/.gradle/
 autowash-backend/.env
 autowash-backend/*.log
+autowash-backend/uploads/
 
 /.idea/
 /.vscode/
