@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import {
   createTierConfig,
+  deleteTierConfig,
   getTierConfigs,
   updateTierConfig,
   type TierConfig,
@@ -55,6 +56,18 @@ export function useCreateTierConfig() {
 
   return useMutation<TierConfig, ApiErrorResponse, TierConfigCreateRequest>({
     mutationFn: createTierConfig,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: tiersScope(userId) });
+    },
+  });
+}
+
+export function useDeleteTierConfig() {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminTiersContext();
+
+  return useMutation<void, ApiErrorResponse, string>({
+    mutationFn: deleteTierConfig,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: tiersScope(userId) });
     },

@@ -6,7 +6,7 @@ export type SystemSettings = {
   operatingEndTime: string;
   maxAdvanceBookingDays: number;
   noShowGraceMinutes: number;
-  maxBookingsPerSlot: number;
+  maxBookingsPerTimeSlot: number;
   currency: string;
   earnPointsUnitAmount: number;
   vndPerPoint: number;

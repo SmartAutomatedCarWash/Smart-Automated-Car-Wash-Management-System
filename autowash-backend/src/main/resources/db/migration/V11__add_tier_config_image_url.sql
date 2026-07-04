@@ -1,0 +1,2 @@
+ALTER TABLE tier_configs
+    ADD COLUMN IF NOT EXISTS image_url VARCHAR(500);

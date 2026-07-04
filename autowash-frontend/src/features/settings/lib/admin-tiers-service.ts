@@ -9,6 +9,7 @@ export type TierConfig = {
   priorityScore: number;
   rankOrder: number;
   systemTier: boolean;
+  imageUrl?: string | null;
   active: boolean;
   updatedAt: string;
 };
@@ -19,6 +20,7 @@ export type TierConfigRequest = {
   pointMultiplier: number;
   priorityScore: number;
   rankOrder: number;
+  imageUrl?: string | null;
   active: boolean;
 };
 
@@ -49,5 +51,23 @@ export async function createTierConfig(request: TierConfigCreateRequest): Promis
     url: "/admin/tiers",
     method: "POST",
     data: request,
+  });
+}
+
+export async function deleteTierConfig(tier: string): Promise<void> {
+  return apiRequest<void>({
+    url: `/admin/tiers/${tier}`,
+    method: "DELETE",
+  });
+}
+
+export async function uploadTierImage(file: File): Promise<{ url: string; fileName: string; size: number }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiRequest<{ url: string; fileName: string; size: number }, FormData>({
+    url: "/admin/uploads/images",
+    method: "POST",
+    data: formData,
+    headers: { "Content-Type": "multipart/form-data" },
   });
 }

@@ -36,6 +36,7 @@ import {
   useUpdateAdminCustomerStatus,
   useUpdateAdminCustomerTier,
 } from "@/features/reports/hooks/use-admin-reporting";
+import { useTierConfigs } from "@/features/settings/hooks/use-admin-tiers";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 type AdminCustomerDetailPageContentProps = {
@@ -164,6 +165,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
   const updateStatusMutation = useUpdateAdminCustomerStatus(customerId);
   const updateRoleMutation = useUpdateAdminCustomerRole(customerId);
   const updateTierMutation = useUpdateAdminCustomerTier(customerId);
+  const tiersQuery = useTierConfigs();
   const profile = detailQuery.data?.profile;
   const loyalty = detailQuery.data?.loyalty;
 
@@ -265,6 +267,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
             }}
             isUpdatingTier={updateTierMutation.isPending}
             tierFeedback={tierFeedback}
+            tierOptions={tiersQuery.data ?? []}
             language={language as "vi" | "en"}
           />
 
@@ -397,6 +400,7 @@ function CustomerProfilePanel({
   onSubmitTier,
   isUpdatingTier,
   tierFeedback,
+  tierOptions,
   language,
 }: {
   query: ReturnType<typeof useAdminCustomerDetail>;
@@ -417,6 +421,7 @@ function CustomerProfilePanel({
   onSubmitTier: () => Promise<void>;
   isUpdatingTier: boolean;
   tierFeedback: string | null;
+  tierOptions: Array<{ tier: string; name?: string | null; active?: boolean }>;
   language: "vi" | "en";
 }) {
   if (query.isPending) {
@@ -538,11 +543,17 @@ function CustomerProfilePanel({
               value={tierDraft}
               onChange={(event) => onTierDraftChange(event.target.value)}
             >
-              <option value="BRONZE">{translateEnumLabel("BRONZE", language)}</option>
-              <option value="SILVER">{translateEnumLabel("SILVER", language)}</option>
-              <option value="GOLD">{translateEnumLabel("GOLD", language)}</option>
-              <option value="PLATINUM">{translateEnumLabel("PLATINUM", language)}</option>
-              <option value="DIAMOND">{translateEnumLabel("DIAMOND", language)}</option>
+              {(tierOptions.length ? tierOptions.filter((tier) => tier.active !== false) : [
+                { tier: "BRONZE", name: translateEnumLabel("BRONZE", language) },
+                { tier: "SILVER", name: translateEnumLabel("SILVER", language) },
+                { tier: "GOLD", name: translateEnumLabel("GOLD", language) },
+                { tier: "PLATINUM", name: translateEnumLabel("PLATINUM", language) },
+                { tier: "DIAMOND", name: translateEnumLabel("DIAMOND", language) },
+              ]).map((tier) => (
+                <option key={tier.tier} value={tier.tier}>
+                  {tier.name || translateEnumLabel(tier.tier, language)}
+                </option>
+              ))}
             </select>
           </label>
           <Button type="button" className="w-full" variant="outline" onClick={() => void onSubmitTier()} disabled={isUpdatingTier}>

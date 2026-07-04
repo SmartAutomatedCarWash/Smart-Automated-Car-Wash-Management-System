@@ -3,7 +3,6 @@ package com.autowash.service.impl;
 import com.autowash.service.*;
 import com.autowash.entity.User;
 import com.autowash.entity.BookingPromotion;
-import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.repository.UserRepository;
 import com.autowash.entity.enums.DiscountType;
@@ -295,29 +294,31 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     }
 
     @Transactional
-    public void updateCustomerTierByAdmin(UUID customerId, LoyaltyTier newTier) {
+    public void updateCustomerTierByAdmin(UUID customerId, String newTier) {
+        String targetTier = com.autowash.entity.TierConfig.normalizeTier(newTier);
+        tierConfigService.getConfig(targetTier);
         User customer = requireCustomer(customerId);
         LoyaltyAccount account = getOrCreateAccountForUpdate(customer);
         String oldTier = account.getTier();
         
-        if (oldTier.equals(newTier.name())) {
+        if (oldTier.equals(targetTier)) {
             return;
         }
         
-        account.updateTier(newTier);
-        tierHistoryRepository.save(new TierHistory(account, oldTier, newTier.name(), account.getTotalEarnedPoints()));
+        account.updateTier(targetTier);
+        tierHistoryRepository.save(new TierHistory(account, oldTier, targetTier, account.getTotalEarnedPoints()));
         pointTransactionRepository.save(new PointTransaction(
                 account,
                 null,
                 PointTransactionType.ADJUST,
                 0,
                 account.getCurrentPoints(),
-                "Tier upgraded from " + oldTier + " to " + newTier
+                "Tier upgraded from " + oldTier + " to " + targetTier
         ));
         loyaltyAccountRepository.save(account);
         
         String title = "Hạng thành viên đã thay đổi";
-        String message = "Hạng thành viên của bạn đã được cập nhật thành " + newTier.name() + " bởi Quản trị viên.";
+        String message = "Hạng thành viên của bạn đã được cập nhật thành " + targetTier + " bởi Quản trị viên.";
         com.autowash.entity.Notification notification = com.autowash.entity.Notification.builder()
                 .id(UUID.randomUUID())
                 .user(customer)
