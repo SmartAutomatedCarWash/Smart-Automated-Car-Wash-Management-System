@@ -22,4 +22,4 @@ INSERT INTO "package_services" ("package_id", "option_id", "option_name", "optio
 
 INSERT INTO "vouchers" ("id", "code", "name", "discount_type", "discount_value", "max_discount_amount", "min_order_amount", "usage_limit", "used_count", "start_at", "end_at", "status") VALUES ('99999999-1234-1234-1234-123456789012', 'OLD10', 'Expired 10% off', 'PERCENT', 10, 50000, 100000, 100, 0, DATEADD('DAY', -60, CURRENT_TIMESTAMP), DATEADD('DAY', -30, CURRENT_TIMESTAMP), 'ACTIVE');
 
-UPDATE "system_settings" SET "max_bookings_per_slot" = 100 WHERE "id" = 1;
+UPDATE "system_settings" SET "max_bookings_per_time_slot" = 100 WHERE "id" = 1;

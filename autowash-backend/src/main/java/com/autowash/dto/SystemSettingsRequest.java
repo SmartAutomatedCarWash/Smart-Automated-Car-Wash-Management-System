@@ -23,7 +23,7 @@ public record SystemSettingsRequest(
         Integer noShowGraceMinutes,
 
         @NotNull @Min(value = 1, message = "Must be at least 1 booking")
-        Integer maxBookingsPerSlot,
+        Integer maxBookingsPerTimeSlot,
 
         @NotBlank(message = "Currency is required")
         String currency,

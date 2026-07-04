@@ -138,7 +138,7 @@ public class BookingServiceImpl implements BookingService {
         LocalTime requestedBookingTime = LocalTime.parse(request.bookingTime());
         SystemSettings settings = loadSettings();
         validateBookingTime(request.bookingDate(), requestedBookingTime, settings);
-        validateSlotCapacity(request.bookingDate().atTime(requestedBookingTime), settings.getMaxBookingsPerSlot());
+        validateSlotCapacity(request.bookingDate().atTime(requestedBookingTime), settings.getMaxBookingsPerTimeSlot());
         if (BookingRepository.countByCustomerAndStatusIn(user, ACTIVE_BOOKING_STATUSES) >= 3) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Maximum active bookings exceeded", "MAX_ACTIVE_BOOKINGS_EXCEEDED");
         }
@@ -400,7 +400,7 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private void validateSlotCapacity(LocalDateTime scheduledAt, int maxBookingsPerSlot) {
+    private void validateSlotCapacity(LocalDateTime scheduledAt, int maxBookingsPerTimeSlot) {
         LocalDateTime slotStart = scheduledAt.withMinute(0).withSecond(0).withNano(0);
         LocalDateTime slotEnd = slotStart.plusHours(1);
         long existingBookings = BookingRepository.countByScheduledAtSlot(
@@ -408,7 +408,7 @@ public class BookingServiceImpl implements BookingService {
                 slotEnd.toInstant(java.time.ZoneOffset.UTC),
                 Set.of(BookingStatus.CANCELLED, BookingStatus.NO_SHOW)
         );
-        if (existingBookings >= maxBookingsPerSlot) {
+        if (existingBookings >= maxBookingsPerTimeSlot) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking slot is full", "BOOKING_SLOT_FULL");
         }
     }

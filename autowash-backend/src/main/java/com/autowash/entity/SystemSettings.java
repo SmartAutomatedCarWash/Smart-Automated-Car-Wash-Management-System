@@ -31,8 +31,8 @@ public class SystemSettings {
     @Column(name = "no_show_grace_minutes", nullable = false)
     private int noShowGraceMinutes = 15;
 
-    @Column(name = "max_bookings_per_slot", nullable = false)
-    private int maxBookingsPerSlot = 3;
+    @Column(name = "max_bookings_per_time_slot", nullable = false)
+    private int maxBookingsPerTimeSlot = 3;
 
     @Column(nullable = false, length = 10)
     private String currency = "VND";
@@ -58,7 +58,7 @@ public class SystemSettings {
             String operatingEndTime,
             int maxAdvanceBookingDays,
             int noShowGraceMinutes,
-            int maxBookingsPerSlot,
+            int maxBookingsPerTimeSlot,
             String currency,
             int earnPointsUnitAmount,
             int vndPerPoint,
@@ -69,7 +69,7 @@ public class SystemSettings {
         this.operatingEndTime = operatingEndTime;
         this.maxAdvanceBookingDays = maxAdvanceBookingDays;
         this.noShowGraceMinutes = noShowGraceMinutes;
-        this.maxBookingsPerSlot = maxBookingsPerSlot;
+        this.maxBookingsPerTimeSlot = maxBookingsPerTimeSlot;
         this.currency = currency;
         this.earnPointsUnitAmount = earnPointsUnitAmount;
         this.vndPerPoint = vndPerPoint;

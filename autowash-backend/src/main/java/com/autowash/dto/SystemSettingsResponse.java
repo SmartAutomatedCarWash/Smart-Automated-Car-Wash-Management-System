@@ -7,7 +7,7 @@ public record SystemSettingsResponse(
         String operatingEndTime,
         int maxAdvanceBookingDays,
         int noShowGraceMinutes,
-        int maxBookingsPerSlot,
+        int maxBookingsPerTimeSlot,
         String currency,
         int earnPointsUnitAmount,
         int vndPerPoint,

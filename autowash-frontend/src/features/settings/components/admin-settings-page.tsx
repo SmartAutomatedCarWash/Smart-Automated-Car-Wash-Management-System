@@ -132,7 +132,7 @@ function toForm(data: SystemSettings): SettingsForm {
     operatingEndTime: data.operatingEndTime,
     maxAdvanceBookingDays: data.maxAdvanceBookingDays,
     noShowGraceMinutes: data.noShowGraceMinutes,
-    maxBookingsPerSlot: data.maxBookingsPerSlot ?? 3,
+    maxBookingsPerTimeSlot: data.maxBookingsPerTimeSlot ?? 3,
     currency: data.currency,
     earnPointsUnitAmount: data.earnPointsUnitAmount,
     vndPerPoint: data.vndPerPoint,
@@ -210,7 +210,7 @@ export function AdminSettingsPage() {
                 <div className="grid gap-4 sm:grid-cols-3">
                   <FieldNumber label={copy.bookingRules.maxAdvance} value={form.maxAdvanceBookingDays} onChange={(v) => updateField("maxAdvanceBookingDays", v)} />
                   <FieldNumber label={copy.bookingRules.noShowGrace} value={form.noShowGraceMinutes} onChange={(v) => updateField("noShowGraceMinutes", v)} />
-                  <FieldNumber label={copy.bookingRules.maxPerSlot} value={form.maxBookingsPerSlot} onChange={(v) => updateField("maxBookingsPerSlot", v)} />
+                  <FieldNumber label={copy.bookingRules.maxPerSlot} value={form.maxBookingsPerTimeSlot} onChange={(v) => updateField("maxBookingsPerTimeSlot", v)} />
                 </div>
               </SettingsSection>
 
