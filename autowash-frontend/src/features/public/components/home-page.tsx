@@ -56,8 +56,8 @@ const HOME_COPY = {
     navContact: "Liên hệ",
     login: "Đăng nhập",
     register: "Đăng ký",
-    tagline: "Hệ thống chăm sóc xe thế hệ mới",
-    heroTitle: "Rửa xe chuyên nghiệp với công nghệ hiện đại tại TP.HCM.",
+    tagline: "Carwash",
+    heroTitle: "The Best Car Wash",
     heroSubtitle: "Đặt lịch trong 30 giây. Không chờ xếp hàng. Hoàn thiện cao cấp, minh bạch từng bước.",
     bookNow: "Đặt lịch ngay",
     viewServices: "Xem dịch vụ",
@@ -69,13 +69,13 @@ const HOME_COPY = {
     featureLoungeDesc: "Wi-Fi, nước uống và không gian mát mẻ.",
     facilityTitle: "Trải nghiệm dịch vụ đẳng cấp.",
     facilityDesc: "Nghỉ tại khu chờ tiện nghi trong lúc đội ngũ kỹ thuật hoàn thiện quy trình rửa không chạm và chăm sóc bóng sơn.",
-    beforeLabel: "Trước khi rửa",
-    afterLabel: "Sau khi rửa",
+    beforeLabel: "Công nghệ chuẩn premium",
+    afterLabel: "Sáng bóng chuẩn showroom",
     beforeDesc: "Lấm bẩn, bám bụi và xỉn màu.",
     afterDesc: "Hoàn thiện với độ bóng vượt trội và sạch sẽ từng chi tiết.",
     loungeDesc: "Thưởng thức cà phê đặc sản, Wi-Fi tốc độ cao và máy điều hòa mát mẻ trong phòng chờ hiện đại của chúng tôi.",
     loungeTag: "Áp dụng cho mọi lịch đặt",
-    servicesTitle: "Giá cả rõ ràng. Chất lượng vượt trội.",
+    servicesTitle: "Dịch vụ chăm sóc xe toàn diện.",
     servicesDesc: "Chọn gói dịch vụ phù hợp với nhu cầu chăm sóc xe của bạn. Tất cả các gói đều sử dụng bọt cao cấp và nước lọc tinh khiết RO.",
     promiseEyebrow: "Cam kết của chúng tôi",
     promiseTitle: "Quy trình kiểm chuẩn chất lượng Đức.",
@@ -94,7 +94,7 @@ const HOME_COPY = {
     footerHours: "T2 - CN: 7:00 AM - 8:00 PM",
     footerRights: "Bản quyền thuộc về Aura Car Care. Bảo lưu mọi quyền.",
     resultsEyebrow: "Cam kết của chúng tôi",
-    resultsTitle: "Chẩn đoán chất lượng tiêu chuẩn Đức.",
+    resultsTitle: "Vì sao Aura nổi bật?",
     resultsDesc: "Mỗi xe được quét tự động trước khi rửa để đảm bảo an toàn. Hệ thống phun không chạm giúp hạn chế trầy xước tối đa.",
     resultsTouchless: "Không chạm",
     resultsScratches: "Trầy xước sơn",
@@ -115,8 +115,8 @@ const HOME_COPY = {
     navContact: "Contact",
     login: "Login",
     register: "Sign Up",
-    tagline: "Next-gen car care platform",
-    heroTitle: "Professional car wash with modern technology in HCMC.",
+    tagline: "Carwash",
+    heroTitle: "The Best Car Wash",
     heroSubtitle: "Book in 30 seconds. Skip the line. Premium finish, fully transparent.",
     bookNow: "Book Now",
     viewServices: "View Services",
@@ -128,13 +128,13 @@ const HOME_COPY = {
     featureLoungeDesc: "Wi-Fi, drinks, and a comfortable waiting space.",
     facilityTitle: "Unmatched service experience.",
     facilityDesc: "Relax in our comfortable waiting lounge while our technical team completes the touchless wash and paint gloss care.",
-    beforeLabel: "Before",
-    afterLabel: "After",
+    beforeLabel: "Premium wash technology",
+    afterLabel: "Showroom deep gloss",
     beforeDesc: "Dirty, dusty, and lost gloss.",
     afterDesc: "Finished with premium gloss and clean details.",
     loungeDesc: "Enjoy specialty coffee, free high-speed Wi-Fi, and air conditioning inside our modern viewing lounge.",
     loungeTag: "Available for all bookings",
-    servicesTitle: "Clear pricing. Premium results.",
+    servicesTitle: "Our comprehensive services.",
     servicesDesc: "Choose a service package that fits your vehicle care needs. All washes utilize premium foam and RO purified water.",
     promiseEyebrow: "Our Promise",
     promiseTitle: "German standard diagnostics & safety.",
@@ -153,7 +153,7 @@ const HOME_COPY = {
     footerHours: "Mon - Sun: 7:00 AM - 8:00 PM",
     footerRights: "Aura Car Care. All rights reserved.",
     resultsEyebrow: "Our Promise",
-    resultsTitle: "German standard diagnostics & safety.",
+    resultsTitle: "Why we stand out.",
     resultsDesc: "Each vehicle is scanned automatically before washing to ensure safety. The touchless spray system minimizes paint scratches.",
     resultsTouchless: "Touchless Wash",
     resultsScratches: "Paint Protection",
@@ -242,7 +242,7 @@ export function HomePageView() {
   }, [language]);
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_32%),linear-gradient(180deg,#f8fbff_0%,#f5f9ff_30%,#ffffff_72%,#eff6ff_100%)] text-slate-950">
+    <main className="min-h-screen overflow-hidden bg-[#05080d] text-white">
       <MotionStyles />
       <PublicHeader onOpenAuth={handleOpenAuth} language={language} onChangeLanguage={setLanguage} copy={copy} />
       <HeroSection onOpenAuth={handleOpenAuth} copy={copy} />
@@ -303,20 +303,20 @@ function PublicHeader({
       className={cn(
         "sticky top-0 z-50 border-b transition-all duration-300",
         isScrolled
-          ? "border-sky-100/80 bg-white/92 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl"
-          : "border-transparent bg-white/70 backdrop-blur-md",
+          ? "border-cyan-300/15 bg-[#05080d]/88 shadow-[0_18px_50px_rgba(0,240,220,0.08)] backdrop-blur-xl"
+          : "border-transparent bg-[#05080d]/72 backdrop-blur-md",
       )}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex min-w-0 items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-[0_10px_30px_rgba(59,130,246,0.18)] ring-1 ring-sky-100 transition-transform duration-300 hover:scale-105">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/8 shadow-[0_0_28px_rgba(45,255,238,0.16)] ring-1 ring-cyan-300/25 transition-transform duration-300 hover:scale-105">
             <img src="/logo.png" alt="AutoWash Pro" className="h-9 w-9 rounded-xl object-cover" />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-[0.64rem] font-semibold uppercase tracking-[0.22em] text-sky-700 sm:text-[0.7rem] sm:tracking-[0.28em]">
+            <p className="truncate text-[0.64rem] font-semibold uppercase tracking-[0.22em] text-cyan-300 sm:text-[0.7rem] sm:tracking-[0.28em]">
               AutoWash Pro
             </p>
-            <p className="truncate text-sm font-semibold text-slate-900">Aura Car Care</p>
+            <p className="truncate text-sm font-semibold text-white/90">Aura Car Care</p>
           </div>
         </Link>
 
@@ -325,7 +325,7 @@ function PublicHeader({
             <a
               key={item.href}
               href={item.href}
-              className="text-sm font-medium text-slate-600 transition duration-300 hover:-translate-y-0.5 hover:text-slate-950"
+              className="text-sm font-medium text-white/66 transition duration-300 hover:-translate-y-0.5 hover:text-cyan-200"
             >
               {item.label}
             </a>
@@ -334,7 +334,7 @@ function PublicHeader({
 
         <div className="hidden items-center gap-3 lg:flex">
           {/* Aesthetic Language Switcher Capsule */}
-          <div className="flex rounded-full border border-sky-100/80 bg-sky-50/50 p-1 shadow-inner backdrop-blur-sm mr-2 transition-all duration-300">
+          <div className="mr-2 flex rounded-full border border-cyan-300/20 bg-white/6 p-1 shadow-inner backdrop-blur-sm transition-all duration-300">
             {(["vi", "en"] as const).map((item) => (
               <button
                 key={item}
@@ -343,8 +343,8 @@ function PublicHeader({
                 className={cn(
                   "rounded-full px-3 py-1.5 text-[11px] font-black uppercase transition-all duration-300",
                   language === item
-                    ? "bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-md shadow-blue-500/25 scale-105"
-                    : "text-slate-500 hover:text-slate-950"
+                    ? "scale-105 bg-cyan-300 text-slate-950 shadow-md shadow-cyan-300/25"
+                    : "text-white/55 hover:text-white"
                 )}
               >
                 {item.toUpperCase()}
@@ -354,13 +354,13 @@ function PublicHeader({
 
           <Button
             variant="ghost"
-            className="rounded-full px-5 text-sm font-semibold transition-transform duration-300 hover:scale-[1.02]"
+            className="rounded-full px-5 text-sm font-semibold text-white/80 transition-transform duration-300 hover:scale-[1.02] hover:bg-white/8 hover:text-white"
             onClick={() => onOpenAuth("login")}
           >
             {copy.login}
           </Button>
           <Button
-            className="rounded-full px-5 text-sm font-semibold shadow-[0_12px_32px_rgba(37,99,235,0.24)] transition-transform duration-300 hover:scale-[1.02]"
+            className="rounded-full bg-cyan-300 px-5 text-sm font-black text-slate-950 shadow-[0_12px_32px_rgba(45,255,238,0.24)] transition-transform duration-300 hover:scale-[1.02] hover:bg-cyan-200"
             onClick={() => onOpenAuth("register")}
           >
             {copy.register}
@@ -369,7 +369,7 @@ function PublicHeader({
 
         <button
           type="button"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-sky-100 bg-white text-slate-900 shadow-sm transition-transform duration-300 hover:scale-105 lg:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-cyan-300/20 bg-white/8 text-white shadow-sm transition-transform duration-300 hover:scale-105 lg:hidden"
           onClick={() => setIsOpen((value) => !value)}
           aria-label={isOpen ? "Close menu" : "Open menu"}
         >
@@ -378,13 +378,13 @@ function PublicHeader({
       </div>
 
       {isOpen ? (
-        <div className="animate-in fade-in slide-in-from-top-2 border-t border-sky-100 bg-white px-4 py-4 shadow-[0_12px_24px_rgba(15,23,42,0.08)] duration-300 lg:hidden">
+        <div className="animate-in fade-in slide-in-from-top-2 border-t border-cyan-300/15 bg-[#071016]/96 px-4 py-4 shadow-[0_12px_24px_rgba(0,0,0,0.28)] duration-300 lg:hidden">
           <nav className="flex flex-col gap-2">
             {navItems.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-slate-950"
+                className="rounded-2xl px-4 py-3 text-sm font-medium text-white/70 transition hover:bg-white/8 hover:text-cyan-200"
                 onClick={() => setIsOpen(false)}
               >
                 {item.label}
@@ -393,7 +393,7 @@ function PublicHeader({
           </nav>
           
           <div className="mt-4 flex justify-center">
-            <div className="flex rounded-full border border-sky-100 bg-sky-50/50 p-1 shadow-sm w-fit">
+            <div className="flex w-fit rounded-full border border-cyan-300/20 bg-white/6 p-1 shadow-sm">
               {(["vi", "en"] as const).map((item) => (
                 <button
                   key={item}
@@ -403,7 +403,7 @@ function PublicHeader({
                   }}
                   className={cn(
                     "rounded-full px-4 py-1.5 text-xs font-black uppercase transition",
-                    language === item ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900",
+                    language === item ? "bg-cyan-300 text-slate-950 shadow-sm" : "text-white/55 hover:text-white",
                   )}
                 >
                   {item.toUpperCase()}
@@ -428,25 +428,26 @@ function PublicHeader({
 
 function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "register") => void; copy: Record<string, string> }) {
   return (
-    <section className="relative overflow-hidden">
-      <div className="absolute inset-x-0 top-0 h-[36rem] animate-[heroGlow_14s_ease-in-out_infinite] bg-[radial-gradient(circle_at_10%_10%,rgba(191,219,254,0.7),transparent_32%),radial-gradient(circle_at_100%_0%,rgba(59,130,246,0.14),transparent_28%)]" />
-      <div className="mx-auto grid max-w-7xl gap-12 px-4 pb-20 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-8 lg:pb-24">
+    <section className="relative overflow-hidden bg-[#05080d]">
+      <div className="absolute inset-x-0 top-0 h-[42rem] animate-[heroGlow_14s_ease-in-out_infinite] bg-[radial-gradient(circle_at_18%_18%,rgba(45,255,238,0.18),transparent_30%),radial-gradient(circle_at_82%_20%,rgba(9,105,112,0.34),transparent_30%)]" />
+      <div className="absolute left-1/2 top-10 h-[34rem] w-[42rem] -translate-x-1/2 rounded-[4rem] border border-cyan-300/8 bg-[linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:42px_42px] opacity-70" />
+      <div className="mx-auto grid max-w-7xl gap-12 px-4 pb-20 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 lg:pb-24">
         <div className="relative z-10">
           <FadeIn delay={0}>
-            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/80 px-4 py-2 text-sm font-semibold text-sky-800 shadow-sm backdrop-blur">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-white/6 px-4 py-2 text-sm font-semibold text-cyan-200 shadow-[0_0_28px_rgba(45,255,238,0.12)] backdrop-blur">
               <Sparkles className="h-4 w-4" />
               {copy.tagline}
             </div>
           </FadeIn>
 
           <FadeIn delay={100}>
-            <h1 className="mt-6 max-w-3xl break-words text-[clamp(2rem,9vw,5.4rem)] font-black leading-[0.98] tracking-[-0.04em] text-slate-950 sm:text-[clamp(2.8rem,6vw,5.4rem)]">
+            <h1 className="mt-6 max-w-3xl break-words text-[clamp(2.75rem,12vw,7.2rem)] font-black leading-[0.88] tracking-[-0.055em] text-white sm:text-[clamp(4rem,8vw,7.2rem)] [text-shadow:0_18px_50px_rgba(0,0,0,0.32)]">
               {copy.heroTitle}
             </h1>
           </FadeIn>
 
           <FadeIn delay={180}>
-            <p className="mt-6 max-w-2xl break-words text-lg leading-8 text-slate-600 sm:text-xl">
+            <p className="mt-6 max-w-2xl break-words text-lg leading-8 text-white/64 sm:text-xl">
               {copy.heroSubtitle}
             </p>
           </FadeIn>
@@ -455,7 +456,7 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <Button
                 size="lg"
-                className="h-12 rounded-full px-7 text-sm font-semibold shadow-[0_14px_34px_rgba(37,99,235,0.28)] transition-transform duration-300 hover:scale-[1.02]"
+                className="h-12 rounded-full bg-cyan-300 px-7 text-sm font-black text-slate-950 shadow-[0_14px_34px_rgba(45,255,238,0.28)] transition-transform duration-300 hover:scale-[1.02] hover:bg-cyan-200"
                 onClick={() => onOpenAuth("login")}
               >
                 {copy.bookNow}
@@ -464,7 +465,7 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
               <Button
                 variant="outline"
                 size="lg"
-                className="h-12 rounded-full px-7 text-sm font-semibold transition-transform duration-300 hover:scale-[1.02]"
+                className="h-12 rounded-full border-cyan-300/25 bg-white/6 px-7 text-sm font-semibold text-white transition-transform duration-300 hover:scale-[1.02] hover:bg-white/10"
                 asChild
               >
                 <a href="#services">{copy.viewServices}</a>
@@ -486,26 +487,26 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
         </div>
 
         <FadeIn delay={180} className="relative z-10" yClass="translate-y-10 md:translate-y-0 md:translate-x-8">
-          <div className="absolute inset-x-10 top-0 h-32 animate-[floatSoft_9s_ease-in-out_infinite] rounded-full bg-sky-200/40 blur-3xl" />
+          <div className="absolute inset-x-10 top-0 h-32 animate-[floatSoft_9s_ease-in-out_infinite] rounded-full bg-cyan-300/20 blur-3xl" />
           <div className="grid gap-4 sm:grid-cols-[1.15fr_0.85fr]">
-            <div className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/80 shadow-[0_24px_60px_rgba(15,23,42,0.14)] backdrop-blur transition-transform duration-500 hover:-translate-y-1">
+            <div className="overflow-hidden rounded-[2rem] border border-cyan-300/14 bg-white/7 shadow-[0_28px_80px_rgba(0,0,0,0.38)] backdrop-blur transition-transform duration-500 hover:-translate-y-1">
               <img
                 src={homeGallery[0].src}
                 alt={homeGallery[0].alt}
-                className="h-[21rem] w-full object-cover transition-transform duration-700 hover:scale-[1.03] sm:h-[26rem]"
+                className="h-[21rem] w-full object-cover opacity-90 transition-transform duration-700 hover:scale-[1.03] sm:h-[26rem]"
               />
               <div className="space-y-4 p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">
                       {copy.navServices === "Dịch vụ" ? "Không gian AURA" : "AURA Facility"}
                     </p>
-                    <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+                    <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
                       {copy.navServices === "Dịch vụ" ? "Rửa bọt không chạm với hoàn thiện cao cấp" : "Touchless foam wash with premium finish"}
                     </h2>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3 border-t border-slate-100 pt-4">
+                <div className="grid grid-cols-3 gap-3 border-t border-white/10 pt-4">
                   <StatItem value="5000+" label={copy.navServices === "Dịch vụ" ? "Khách hàng" : "Happy clients"} />
                   <StatItem value="98%" label={copy.navServices === "Dịch vụ" ? "Hài lòng" : "Satisfaction"} />
                   <StatItem value="3 min" label={copy.navServices === "Dịch vụ" ? "Chờ trung bình" : "Avg. wait"} />
@@ -532,14 +533,14 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
                   }
                 />
               </div>
-              <div className="overflow-hidden rounded-[2rem] border border-white/80 bg-slate-950 shadow-[0_22px_44px_rgba(15,23,42,0.18)] transition-transform duration-500 hover:-translate-y-1">
+              <div className="overflow-hidden rounded-[2rem] border border-cyan-300/14 bg-[#071016] shadow-[0_22px_44px_rgba(0,0,0,0.30)] transition-transform duration-500 hover:-translate-y-1">
                 <img
                   src={homeGallery[2].src}
                   alt={homeGallery[2].alt}
                   className="h-48 w-full object-cover opacity-85 transition-transform duration-700 hover:scale-[1.03]"
                 />
                 <div className="space-y-2 p-5 text-white">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-200">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">
                     ECO-FRIENDLY
                   </p>
                   <h3 className="text-lg font-bold tracking-tight">
@@ -562,17 +563,22 @@ function FacilitySection({ copy }: { copy: Record<string, string> }) {
       eyebrow={copy.navServices === "Dịch vụ" ? "Không gian AURA" : "Aura facility"}
       title={copy.facilityTitle}
       description={copy.facilityDesc}
+      className="bg-[#05080d]"
+      invert
     >
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <BeforeAfterCard image={homeGallery[1].src} title={copy.beforeLabel} tone="bg-rose-100 text-rose-800 border border-rose-200" copy={copy} />
-        <BeforeAfterCard image={homeGallery[3].src} title={copy.afterLabel} tone="bg-emerald-100 text-emerald-800 border border-emerald-200" copy={copy} />
-        <div className="overflow-hidden rounded-[2rem] border border-sky-100 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-transform duration-500 hover:-translate-y-1">
+        <BeforeAfterCard image={homeGallery[1].src} title={copy.beforeLabel} copy={copy} />
+        <BeforeAfterCard image={homeGallery[3].src} title={copy.afterLabel} copy={copy} />
+        <div className="overflow-hidden rounded-[2rem] border border-cyan-300/14 bg-white/7 shadow-[0_22px_60px_rgba(0,0,0,0.34)] transition-transform duration-500 hover:-translate-y-1">
           <div className="relative">
             <img
               src="/images/5-star-lounge.png"
               alt="5-Star Lounge"
               className="h-[18rem] w-full object-cover transition-transform duration-700 hover:scale-[1.03] sm:h-[24rem]"
             />
+            <div className="absolute left-5 top-5 rounded-full border border-white/55 bg-slate-950/30 px-5 py-2 text-xs font-black uppercase tracking-[0.24em] text-white shadow-[0_12px_28px_rgba(15,23,42,0.28)] backdrop-blur-xl [text-shadow:0_1px_8px_rgba(15,23,42,0.42)]">
+              {copy.navServices === "Dịch vụ" ? "Lounge chuẩn 5 sao" : "5-star lounge"}
+            </div>
           </div>
         </div>
       </div>
@@ -595,6 +601,8 @@ function ServicesSection({
       eyebrow={copy.navServices === "Dịch vụ" ? "Dịch vụ AURA" : "AURA Services"}
       title={copy.servicesTitle}
       description={copy.servicesDesc}
+      className="relative bg-[#0d6c6b] py-24 before:absolute before:inset-x-0 before:-top-10 before:h-20 before:rounded-[0_0_50%_50%] before:bg-[#05080d] after:absolute after:left-8 after:top-16 after:h-9 after:w-9 after:rotate-45 after:bg-cyan-300"
+      invert
     >
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {services.map((service) => (
@@ -607,12 +615,12 @@ function ServicesSection({
 
 function ResultsSection({ copy }: { copy: Record<string, string> }) {
   return (
-    <section className="relative overflow-hidden bg-slate-950 py-24 text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.1),transparent_40%)]" />
+    <section className="relative overflow-hidden bg-[#05080d] py-24 text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(45,255,238,0.14),transparent_34%),linear-gradient(180deg,rgba(13,108,107,0.28),transparent_45%)]" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-400">{copy.resultsEyebrow}</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-300">{copy.resultsEyebrow}</p>
             <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
               {copy.resultsTitle}
             </h2>
@@ -620,17 +628,17 @@ function ResultsSection({ copy }: { copy: Record<string, string> }) {
               {copy.resultsDesc}
             </p>
             <div className="mt-8 grid grid-cols-2 gap-4">
-              <div className="border-l-2 border-sky-400 pl-4">
+              <div className="border-l-2 border-cyan-300 pl-4">
                 <p className="text-2xl font-black tracking-tight text-white">100%</p>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mt-1">{copy.resultsTouchless}</p>
               </div>
-              <div className="border-l-2 border-sky-400 pl-4">
+              <div className="border-l-2 border-cyan-300 pl-4">
                 <p className="text-2xl font-black tracking-tight text-white">0%</p>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mt-1">{copy.resultsScratches}</p>
               </div>
             </div>
           </div>
-          <div className="overflow-hidden rounded-[2rem] border border-white/10 shadow-[0_24px_50px_rgba(0,0,0,0.4)]">
+          <div className="overflow-hidden rounded-[2rem] border border-cyan-300/14 shadow-[0_24px_70px_rgba(0,0,0,0.48)]">
             <img
               src={homeGallery[3]?.src || homeGallery[0]?.src}
               alt="Diagnostics check"
@@ -658,7 +666,7 @@ function CombosSection({
       eyebrow={copy.combosEyebrow}
       title={copy.combosTitle}
       description={copy.combosDesc}
-      className="bg-slate-900 py-24 text-white"
+      className="bg-[#081017] py-24 text-white"
       invert
     >
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -683,24 +691,26 @@ function ReviewsSection({
       eyebrow={copy.reviewsEyebrow}
       title={copy.reviewsTitle}
       description={copy.reviewsDesc}
+      className="bg-[#05080d]"
+      invert
     >
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {testimonials.map((testimonial, index) => (
-          <div key={index} className="rounded-[2rem] border border-sky-100 bg-white p-7 shadow-[0_16px_40px_rgba(15,23,42,0.04)] flex flex-col justify-between">
+          <div key={index} className="flex flex-col justify-between rounded-[1.4rem] border border-cyan-300/12 bg-[#12242b] p-7 shadow-[0_18px_48px_rgba(0,0,0,0.26)]">
             <div>
-              <Quote className="h-6 w-6 text-sky-100" />
-              <p className="mt-4 text-sm leading-7 text-slate-700 italic">
+              <Quote className="h-6 w-6 text-cyan-300" />
+              <p className="mt-4 text-sm leading-7 text-white/70 italic">
                 &ldquo;{testimonial.content}&rdquo;
               </p>
             </div>
-            <div className="mt-6 flex items-center gap-3 border-t border-slate-100 pt-5">
-              <div className="h-10 w-10 overflow-hidden rounded-full border border-sky-100 bg-slate-100">
-                <div className="flex h-full w-full items-center justify-center font-bold text-sky-700 bg-sky-50 text-xs">
+            <div className="mt-6 flex items-center gap-3 border-t border-white/10 pt-5">
+              <div className="h-10 w-10 overflow-hidden rounded-full border border-cyan-300/20 bg-cyan-300/12">
+                <div className="flex h-full w-full items-center justify-center bg-cyan-300/12 text-xs font-bold text-cyan-200">
                   {testimonial.name[0]}
                 </div>
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-950">{testimonial.name}</p>
+                <p className="text-sm font-bold text-white">{testimonial.name}</p>
                 <div className="flex items-center gap-1 mt-0.5">
                   {Array.from({ length: testimonial.rating }).map((_, i) => (
                     <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
@@ -723,10 +733,10 @@ function CallToActionSection({
   copy: Record<string, string>;
 }) {
   return (
-    <section className="px-4 py-24 sm:px-6 lg:px-8 relative overflow-hidden bg-slate-900 text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(59,130,246,0.14),transparent_42%)]" />
+    <section className="relative overflow-hidden bg-[#05080d] px-4 py-24 text-white sm:px-6 lg:px-8">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(45,255,238,0.16),transparent_42%)]" />
       <div className="mx-auto max-w-4xl text-center relative z-10">
-        <p className="text-xs font-bold uppercase tracking-[0.24em] text-sky-400">{copy.ctaEyebrow}</p>
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-300">{copy.ctaEyebrow}</p>
         <h2 className="mt-5 text-3xl font-black tracking-tight sm:text-5xl">
           {copy.ctaTitle}
         </h2>
@@ -736,7 +746,7 @@ function CallToActionSection({
         <div className="mt-8 flex justify-center">
           <Button
             size="lg"
-            className="h-12 rounded-full px-8 text-sm font-semibold shadow-[0_12px_32px_rgba(37,99,235,0.28)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+            className="h-12 rounded-full bg-cyan-300 px-8 text-sm font-black text-slate-950 shadow-[0_12px_32px_rgba(45,255,238,0.28)] transition-all hover:scale-[1.02] hover:bg-cyan-200 active:scale-[0.98]"
             onClick={() => onOpenAuth("login")}
           >
             {copy.ctaButton}
@@ -750,25 +760,25 @@ function CallToActionSection({
 
 function PublicFooter({ copy }: { copy: Record<string, string> }) {
   return (
-    <footer className="border-t border-slate-100 bg-slate-50">
+    <footer className="border-t border-cyan-300/10 bg-[#030609]">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow ring-1 ring-sky-100/50">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/8 shadow ring-1 ring-cyan-300/20">
               <img src="/logo.png" alt="AutoWash Pro" className="h-7 w-7 rounded-lg object-cover" />
             </div>
-            <p className="text-sm font-bold text-slate-950">Aura Car Care</p>
+            <p className="text-sm font-bold text-white">Aura Car Care</p>
           </div>
-          <p className="text-xs leading-6 text-slate-500">
+          <p className="text-xs leading-6 text-white/52">
             {copy.footerDesc}
           </p>
         </div>
 
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">{copy.footerQuickLinks}</p>
-          <div className="mt-5 grid gap-3 text-sm text-slate-600">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-300">{copy.footerQuickLinks}</p>
+          <div className="mt-5 grid gap-3 text-sm text-white/58">
             {navigationItems.map((item) => (
-              <a key={item.href} href={item.href} className="transition hover:text-slate-950">
+              <a key={item.href} href={item.href} className="transition hover:text-cyan-200">
                 {item.label === "Services" ? copy.navServices : item.label === "Packages" ? copy.navCombos : item.label === "Reviews" ? copy.navReviews : copy.navContact}
               </a>
             ))}
@@ -776,8 +786,8 @@ function PublicFooter({ copy }: { copy: Record<string, string> }) {
         </div>
 
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">{copy.footerContact}</p>
-          <div className="mt-5 grid gap-3 text-sm leading-7 text-slate-600">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-300">{copy.footerContact}</p>
+          <div className="mt-5 grid gap-3 text-sm leading-7 text-white/58">
             <p>{copy.footerAddress}</p>
             <p>{copy.footerPhone}</p>
             <p>{copy.footerEmail}</p>
@@ -785,7 +795,7 @@ function PublicFooter({ copy }: { copy: Record<string, string> }) {
           </div>
         </div>
       </div>
-      <div className="border-t border-slate-100 px-4 py-5 text-center text-xs text-slate-500 sm:px-6 lg:px-8">
+      <div className="border-t border-cyan-300/10 px-4 py-5 text-center text-xs text-white/45 sm:px-6 lg:px-8">
         © {new Date().getFullYear()} {copy.footerRights}
       </div>
     </footer>
@@ -895,13 +905,13 @@ function SectionShell({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className={cn("px-4 py-20 sm:px-6 lg:px-8", className)}>
-      <div className="mx-auto max-w-7xl">
+    <section id={id} className={cn("relative px-4 py-20 sm:px-6 lg:px-8", className)}>
+      <div className="relative z-10 mx-auto max-w-7xl">
         <Reveal className="mx-auto max-w-3xl text-center">
           <p
             className={cn(
               "text-sm font-semibold uppercase tracking-[0.24em]",
-              invert ? "text-sky-300" : "text-sky-700",
+              invert ? "text-cyan-300" : "text-cyan-300",
             )}
           >
             {eyebrow}
@@ -909,12 +919,12 @@ function SectionShell({
           <h2
             className={cn(
               "mt-4 text-3xl font-black tracking-tight sm:text-4xl",
-              invert ? "text-white" : "text-slate-950",
+              invert ? "text-white" : "text-white",
             )}
           >
             {title}
           </h2>
-          <p className={cn("mt-4 text-base leading-7", invert ? "text-slate-300" : "text-slate-600")}>
+          <p className={cn("mt-4 text-base leading-7", invert ? "text-white/60" : "text-white/60")}>
             {description}
           </p>
         </Reveal>
@@ -934,12 +944,12 @@ function TrustItem({
   description: string;
 }) {
   return (
-    <div className="rounded-[1.5rem] border border-white/70 bg-white/80 p-4 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur transition-transform duration-300 hover:-translate-y-1">
-      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
+    <div className="rounded-[1.5rem] border border-cyan-300/14 bg-white/7 p-4 shadow-[0_18px_46px_rgba(0,0,0,0.24)] backdrop-blur transition-transform duration-300 hover:-translate-y-1">
+      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-300 text-slate-950">
         <Icon className="h-5 w-5" />
       </div>
-      <p className="mt-4 font-semibold text-slate-950">{title}</p>
-      <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
+      <p className="mt-4 font-semibold text-white">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-white/58">{description}</p>
     </div>
   );
 }
@@ -947,8 +957,8 @@ function TrustItem({
 function StatItem({ value, label }: { value: string; label: string }) {
   return (
     <div>
-      <p className="text-xl font-black tracking-tight text-slate-950">{value}</p>
-      <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+      <p className="text-xl font-black tracking-tight text-white">{value}</p>
+      <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-white/45">
         {label}
       </p>
     </div>
@@ -957,15 +967,15 @@ function StatItem({ value, label }: { value: string; label: string }) {
 
 function MiniFeatureCard({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-[2rem] border border-white/70 bg-white/80 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur transition-transform duration-500 hover:-translate-y-1">
-      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">{title}</p>
+    <div className="rounded-[2rem] border border-cyan-300/14 bg-white/7 p-6 shadow-[0_22px_56px_rgba(0,0,0,0.30)] backdrop-blur transition-transform duration-500 hover:-translate-y-1">
+      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">{title}</p>
       <div className="mt-4 grid gap-3">
         {items.map((item) => (
-          <div key={item} className="flex items-start gap-3 rounded-2xl bg-sky-50/70 px-4 py-3 transition duration-300 hover:bg-sky-100/70">
-            <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div key={item} className="flex items-start gap-3 rounded-2xl bg-white/6 px-4 py-3 transition duration-300 hover:bg-cyan-300/10">
+            <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-cyan-300/14 text-cyan-200">
               <Check className="h-3.5 w-3.5" />
             </div>
-            <p className="text-sm font-medium leading-6 text-slate-700">{item}</p>
+            <p className="text-sm font-medium leading-6 text-white/70">{item}</p>
           </div>
         ))}
       </div>
@@ -983,24 +993,24 @@ function ServiceCard({
   copy: Record<string, string>;
 }) {
   return (
-    <article className="group rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_60px_rgba(15,23,42,0.12)]">
+    <article className="group rounded-[1.6rem] border border-cyan-200/40 bg-cyan-300 p-6 text-slate-950 shadow-[0_20px_50px_rgba(45,255,238,0.14)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(45,255,238,0.22)]">
       <div className="flex items-center justify-between">
         <span className="text-3xl transition-transform duration-300 group-hover:scale-110">{service.icon}</span>
-        <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
+        <span className="rounded-full bg-slate-950/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-slate-950">
           {service.duration}
         </span>
       </div>
-      <h3 className="mt-5 text-xl font-bold tracking-tight text-slate-950">{service.name}</h3>
-      <p className="mt-3 text-sm leading-7 text-slate-600">{service.description}</p>
-      <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-5">
+      <h3 className="mt-5 text-xl font-black tracking-tight text-slate-950">{service.name}</h3>
+      <p className="mt-3 text-sm font-medium leading-7 text-slate-800/78">{service.description}</p>
+      <div className="mt-6 flex items-center justify-between border-t border-slate-950/10 pt-5">
         <div>
-          <p className="text-2xl font-black tracking-tight text-primary">
+          <p className="text-2xl font-black tracking-tight text-slate-950">
             {formatBookingCurrency(service.price)}
           </p>
         </div>
         <Button
           variant="outline"
-          className="rounded-full px-4 text-sm font-semibold transition-transform duration-300 hover:scale-[1.02]"
+          className="rounded-full border-slate-950/15 bg-slate-950 px-4 text-sm font-black text-white transition-transform duration-300 hover:scale-[1.02] hover:bg-slate-800"
           onClick={() => onOpenAuth("login")}
         >
           {copy.navServices === "Dịch vụ" ? "Đặt lịch" : "Book Now"}
@@ -1014,16 +1024,12 @@ function ServiceCard({
 function BeforeAfterCard({
   title,
   image,
-  tone,
   copy,
 }: {
   title: string;
   image: string;
-  tone: string;
   copy: Record<string, string>;
 }) {
-  const isVi = copy.navServices === "Dịch vụ";
-  const isBefore = title === copy.beforeLabel;
   return (
     <div className="overflow-hidden rounded-[2rem] border border-sky-100 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-transform duration-500 hover:-translate-y-1">
       <div className="relative">
@@ -1032,7 +1038,7 @@ function BeforeAfterCard({
           alt={title}
           className="h-[18rem] w-full object-cover transition-transform duration-700 hover:scale-[1.03] sm:h-[24rem]"
         />
-        <div className={cn("absolute left-5 top-5 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em]", tone)}>
+        <div className="absolute left-5 top-5 rounded-full border border-white/55 bg-slate-950/30 px-5 py-2 text-xs font-black uppercase tracking-[0.22em] text-white shadow-[0_12px_28px_rgba(15,23,42,0.28)] backdrop-blur-xl [text-shadow:0_1px_8px_rgba(15,23,42,0.42)]">
           {title}
         </div>
       </div>
