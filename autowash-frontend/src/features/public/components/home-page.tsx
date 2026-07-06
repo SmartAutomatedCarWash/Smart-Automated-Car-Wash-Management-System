@@ -1097,40 +1097,47 @@ function ComboCard({
           : "border-cyan-300/18 bg-[#122b31]/82 p-6 text-white shadow-[0_24px_70px_rgba(0,0,0,0.36)] backdrop-blur-xl",
       )}
     >
-      {combo.badge ? (
-        <span
+      <div className="relative z-10 mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div
           className={cn(
-            "absolute right-5 top-5 rounded-full px-3 py-1.5 text-[0.66rem] font-black uppercase tracking-[0.16em]",
-            featured ? "bg-slate-950/12 text-slate-950" : "bg-cyan-300 text-slate-950 shadow-[0_0_18px_rgba(45,255,238,0.22)]",
+            "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl",
+            featured ? "bg-slate-950/10 text-3xl" : "bg-cyan-300 text-2xl text-slate-950 shadow-[0_0_24px_rgba(45,255,238,0.18)]",
           )}
         >
-          {combo.badge}
-        </span>
-      ) : null}
+          {featured ? "🚘" : "🧼"}
+        </div>
 
-      <div className={cn("relative z-10", featured ? "pr-16" : "grid gap-5 md:grid-cols-[1fr_auto] md:items-start")}>
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+          {combo.badge ? (
+            <span
+              className={cn(
+                "max-w-full rounded-full border px-3 py-1.5 text-[0.66rem] font-black uppercase tracking-[0.16em] backdrop-blur",
+                featured
+                  ? "border-[#6ff7ff]/45 bg-[#06111a] text-[#a9fbff] shadow-[0_12px_28px_rgba(2,6,23,0.22),0_0_18px_rgba(45,255,238,0.16)]"
+                  : "border-cyan-200/28 bg-slate-950/44 text-cyan-100 shadow-[0_0_22px_rgba(45,255,238,0.12)]",
+              )}
+            >
+              {combo.badge}
+            </span>
+          ) : null}
+
+          {!featured ? (
+            <Button
+              size="sm"
+              className="h-10 shrink-0 rounded-full bg-cyan-300 px-5 text-xs font-black text-slate-950 shadow-[0_0_20px_rgba(45,255,238,0.18)] hover:bg-cyan-200"
+              onClick={() => onOpenAuth("login")}
+            >
+              {copy.getThisPack}
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="relative z-10">
         <div>
-          <div
-            className={cn(
-              "mb-5 flex h-14 w-14 items-center justify-center rounded-2xl",
-              featured ? "bg-slate-950/10 text-3xl" : "bg-cyan-300 text-2xl text-slate-950 shadow-[0_0_24px_rgba(45,255,238,0.18)]",
-            )}
-          >
-            {featured ? "🚘" : "🧼"}
-          </div>
           <h3 className={cn("font-black tracking-tight", featured ? "text-2xl text-slate-950" : "text-2xl text-white")}>{combo.name}</h3>
           <p className={cn("mt-3 text-sm leading-7", featured ? "text-slate-800/78" : "max-w-xl text-white/64")}>{combo.description}</p>
         </div>
-
-        {!featured ? (
-          <Button
-            size="sm"
-            className="mt-1 rounded-full bg-cyan-300 px-5 text-xs font-black text-slate-950 shadow-[0_0_20px_rgba(45,255,238,0.18)] hover:bg-cyan-200 md:mt-0"
-            onClick={() => onOpenAuth("login")}
-          >
-            {copy.getThisPack}
-          </Button>
-        ) : null}
       </div>
 
       <div className={cn("relative z-10 mt-6 py-5", featured ? "border-y border-slate-950/12" : "border-y border-white/12")}>
