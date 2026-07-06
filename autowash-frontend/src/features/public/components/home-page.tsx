@@ -428,32 +428,46 @@ function PublicHeader({
 
 function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "register") => void; copy: Record<string, string> }) {
   return (
-    <section className="relative overflow-hidden bg-[#05080d]">
-      <div className="absolute inset-x-0 top-0 h-[42rem] animate-[heroGlow_14s_ease-in-out_infinite] bg-[radial-gradient(circle_at_18%_18%,rgba(45,255,238,0.18),transparent_30%),radial-gradient(circle_at_82%_20%,rgba(9,105,112,0.34),transparent_30%)]" />
-      <div className="absolute left-1/2 top-10 h-[34rem] w-[42rem] -translate-x-1/2 rounded-[4rem] border border-cyan-300/8 bg-[linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:42px_42px] opacity-70" />
-      <div className="mx-auto grid max-w-7xl gap-12 px-4 pb-20 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 lg:pb-24">
-        <div className="relative z-10">
+    <section className="relative overflow-hidden bg-[#05080d] px-4 pb-20 pt-8 sm:px-6 sm:pt-12 lg:px-8">
+      <div className="absolute inset-0">
+        <img src="/images/detailer-side-wash.png" alt="" className="h-full w-full object-cover opacity-18" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,8,13,0.92),rgba(5,8,13,0.74)_46%,rgba(5,8,13,0.98))]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(45,255,238,0.15),transparent_28rem),radial-gradient(circle_at_82%_32%,rgba(10,116,120,0.24),transparent_32rem)]" />
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#0d6c6b]/35 to-transparent" />
+
+      <div className="relative z-10 mx-auto max-w-7xl">
+        <div className="relative overflow-hidden rounded-[2.5rem] border border-cyan-300/12 bg-[#071016] px-5 py-8 shadow-[0_30px_110px_rgba(0,0,0,0.50)] sm:px-8 lg:px-12 lg:py-12">
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[length:42px_42px]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_58%,rgba(45,255,238,0.18),transparent_22rem)]" />
+          <div className="absolute left-12 top-1/2 h-7 w-7 rotate-45 rounded-[0.35rem] bg-cyan-300 shadow-[0_0_30px_rgba(45,255,238,0.56)]" />
+          <div className="absolute bottom-24 right-16 h-4 w-4 rounded-full border border-cyan-300/70 shadow-[0_0_18px_rgba(45,255,238,0.45)]" />
+
+          <div className="relative z-10 grid gap-8 lg:grid-cols-[0.92fr_0.72fr] lg:items-start">
+            <div>
           <FadeIn delay={0}>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-white/6 px-4 py-2 text-sm font-semibold text-cyan-200 shadow-[0_0_28px_rgba(45,255,238,0.12)] backdrop-blur">
+                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-white/6 px-4 py-2 text-sm font-semibold text-cyan-200 shadow-[0_0_28px_rgba(45,255,238,0.12)] backdrop-blur">
               <Sparkles className="h-4 w-4" />
               {copy.tagline}
             </div>
           </FadeIn>
 
           <FadeIn delay={100}>
-            <h1 className="mt-6 max-w-3xl break-words text-[clamp(2.75rem,12vw,7.2rem)] font-black leading-[0.88] tracking-[-0.055em] text-white sm:text-[clamp(4rem,8vw,7.2rem)] [text-shadow:0_18px_50px_rgba(0,0,0,0.32)]">
+                <h1 className="mt-6 max-w-3xl break-words text-[clamp(3rem,12vw,7.6rem)] font-black leading-[0.86] tracking-[-0.06em] text-white sm:text-[clamp(4.5rem,8vw,7.6rem)] [text-shadow:0_18px_50px_rgba(0,0,0,0.38)]">
               {copy.heroTitle}
             </h1>
           </FadeIn>
+            </div>
 
+            <div className="lg:pt-12">
           <FadeIn delay={180}>
-            <p className="mt-6 max-w-2xl break-words text-lg leading-8 text-white/64 sm:text-xl">
+                <p className="max-w-sm break-words text-base leading-7 text-white/66">
               {copy.heroSubtitle}
             </p>
           </FadeIn>
 
           <FadeIn delay={260}>
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <div className="mt-6 flex flex-col gap-4 sm:flex-row lg:flex-col xl:flex-row">
               <Button
                 size="lg"
                 className="h-12 rounded-full bg-cyan-300 px-7 text-sm font-black text-slate-950 shadow-[0_14px_34px_rgba(45,255,238,0.28)] transition-transform duration-300 hover:scale-[1.02] hover:bg-cyan-200"
@@ -472,85 +486,70 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
               </Button>
             </div>
           </FadeIn>
+            </div>
+          </div>
 
-          <div className="mt-10 grid gap-3 sm:grid-cols-3">
-            <FadeIn delay={340}>
+          <FadeIn delay={320} className="relative z-10 mt-8">
+            <div className="relative mx-auto max-w-5xl">
+              <div className="absolute inset-x-[8%] bottom-2 h-12 rounded-[999px] border-4 border-cyan-300 shadow-[0_0_34px_rgba(45,255,238,0.62),inset_0_0_24px_rgba(45,255,238,0.28)]" />
+              <div className="absolute inset-x-[12%] bottom-8 h-20 rounded-full bg-cyan-300/18 blur-3xl" />
+              <img
+                src={homeGallery[3].src}
+                alt={homeGallery[3].alt}
+                className="relative z-10 mx-auto h-[18rem] w-full max-w-4xl rounded-[2rem] object-cover object-center shadow-[0_32px_90px_rgba(0,0,0,0.46)] [clip-path:polygon(4%_10%,96%_0,100%_88%,0_100%)] sm:h-[24rem] lg:h-[28rem]"
+              />
+              <div className="absolute left-4 top-1/4 z-20 hidden rounded-[1.4rem] border border-cyan-300/18 bg-[#071016]/82 p-4 shadow-[0_18px_48px_rgba(0,0,0,0.36)] backdrop-blur md:block">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">Aura Care</p>
+                <p className="mt-1 text-sm font-semibold text-white/80">{copy.featurePromiseTitle}</p>
+              </div>
+              <div className="absolute right-3 top-8 z-20 hidden overflow-hidden rounded-[1.3rem] border border-cyan-300/18 bg-white/8 shadow-[0_18px_48px_rgba(0,0,0,0.36)] backdrop-blur md:block">
+                <img src="/images/soap-tail-detail.png" alt="Detailed foam wash" className="h-28 w-44 object-cover opacity-90" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-cyan-300 text-slate-950 shadow-[0_0_26px_rgba(45,255,238,0.44)]">
+                    <ArrowRight className="h-5 w-5" />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+
+          <div className="relative z-10 mt-8 grid gap-3 sm:grid-cols-3">
+            <FadeIn delay={420}>
               <TrustItem icon={Clock3} title={copy.featureBookingTitle} description={copy.featureBookingDesc} />
             </FadeIn>
-            <FadeIn delay={420}>
+            <FadeIn delay={500}>
               <TrustItem icon={Shield} title={copy.featurePromiseTitle} description={copy.featurePromiseDesc} />
             </FadeIn>
-            <FadeIn delay={500}>
+            <FadeIn delay={580}>
               <TrustItem icon={Star} title={copy.featureLoungeTitle} description={copy.featureLoungeDesc} />
             </FadeIn>
           </div>
         </div>
 
-        <FadeIn delay={180} className="relative z-10" yClass="translate-y-10 md:translate-y-0 md:translate-x-8">
-          <div className="absolute inset-x-10 top-0 h-32 animate-[floatSoft_9s_ease-in-out_infinite] rounded-full bg-cyan-300/20 blur-3xl" />
-          <div className="grid gap-4 sm:grid-cols-[1.15fr_0.85fr]">
-            <div className="overflow-hidden rounded-[2rem] border border-cyan-300/14 bg-white/7 shadow-[0_28px_80px_rgba(0,0,0,0.38)] backdrop-blur transition-transform duration-500 hover:-translate-y-1">
-              <img
-                src={homeGallery[0].src}
-                alt={homeGallery[0].alt}
-                className="h-[21rem] w-full object-cover opacity-90 transition-transform duration-700 hover:scale-[1.03] sm:h-[26rem]"
-              />
-              <div className="space-y-4 p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">
-                      {copy.navServices === "Dịch vụ" ? "Không gian AURA" : "AURA Facility"}
-                    </p>
-                    <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
-                      {copy.navServices === "Dịch vụ" ? "Rửa bọt không chạm với hoàn thiện cao cấp" : "Touchless foam wash with premium finish"}
-                    </h2>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3 border-t border-white/10 pt-4">
-                  <StatItem value="5000+" label={copy.navServices === "Dịch vụ" ? "Khách hàng" : "Happy clients"} />
-                  <StatItem value="98%" label={copy.navServices === "Dịch vụ" ? "Hài lòng" : "Satisfaction"} />
-                  <StatItem value="3 min" label={copy.navServices === "Dịch vụ" ? "Chờ trung bình" : "Avg. wait"} />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-4">
-              <div className="animate-[floatSoft_10s_ease-in-out_infinite]">
-                <MiniFeatureCard
-                  title={copy.navServices === "Dịch vụ" ? "Tại sao chọn chúng tôi" : "Why drivers choose us"}
-                  items={
-                    copy.navServices === "Dịch vụ"
-                      ? [
-                          "Rửa không chạm bảo vệ bề mặt sơn",
-                          "Đặt lịch thời gian thực với khung giờ rõ ràng",
-                          "Tích điểm thưởng sau mỗi lần rửa",
-                        ]
-                      : [
-                          "Touchless wash protects paint surface",
-                          "Real-time booking with clear time slots",
-                          "Loyalty rewards every visit",
-                        ]
-                  }
-                />
-              </div>
-              <div className="overflow-hidden rounded-[2rem] border border-cyan-300/14 bg-[#071016] shadow-[0_22px_44px_rgba(0,0,0,0.30)] transition-transform duration-500 hover:-translate-y-1">
-                <img
-                  src={homeGallery[2].src}
-                  alt={homeGallery[2].alt}
-                  className="h-48 w-full object-cover opacity-85 transition-transform duration-700 hover:scale-[1.03]"
-                />
-                <div className="space-y-2 p-5 text-white">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">
-                    ECO-FRIENDLY
-                  </p>
-                  <h3 className="text-lg font-bold tracking-tight">
-                    {copy.navServices === "Dịch vụ" ? "Hệ thống lọc nước tuần hoàn" : "Recycled water filtration system"}
-                  </h3>
-                </div>
-              </div>
+        <div className="relative z-10 mx-auto mt-14 grid max-w-5xl gap-8 lg:grid-cols-[0.9fr_1fr] lg:items-center">
+          <div className="grid grid-cols-[1fr_0.62fr] gap-3">
+            <img src="/images/detailer-side-wash.png" alt="Professional hand detailing" className="h-64 rounded-[2rem] object-cover shadow-[0_24px_70px_rgba(0,0,0,0.35)]" />
+            <div className="grid gap-3">
+              <img src="/images/soap-tail-detail.png" alt="Foam tail detail" className="h-28 rounded-[1.4rem] object-cover shadow-[0_18px_50px_rgba(0,0,0,0.28)]" />
+              <img src="/images/wash-bay-foam-front.png" alt="Foam wash bay" className="h-32 rounded-[1.4rem] object-cover shadow-[0_18px_50px_rgba(0,0,0,0.28)]" />
             </div>
           </div>
-        </FadeIn>
+          <div className="rounded-[2rem] border border-cyan-300/12 bg-white/6 p-7 shadow-[0_24px_70px_rgba(0,0,0,0.32)] backdrop-blur">
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-300">
+              {copy.navServices === "Dịch vụ" ? "Về Aura" : "About us"}
+            </p>
+            <h2 className="mt-3 text-3xl font-black leading-tight text-white">
+              {copy.navServices === "Dịch vụ" ? "Hơn cả một lần rửa xe" : "More than just a car wash"}
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-white/62">{copy.facilityDesc}</p>
+            <Button
+              className="mt-6 rounded-full bg-cyan-300 text-sm font-black text-slate-950 hover:bg-cyan-200"
+              onClick={() => onOpenAuth("login")}
+            >
+              {copy.bookNow}
+            </Button>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -567,8 +566,8 @@ function FacilitySection({ copy }: { copy: Record<string, string> }) {
       invert
     >
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <BeforeAfterCard image={homeGallery[1].src} title={copy.beforeLabel} copy={copy} />
-        <BeforeAfterCard image={homeGallery[3].src} title={copy.afterLabel} copy={copy} />
+        <BeforeAfterCard image="/images/soap-tail-detail.png" title={copy.beforeLabel} copy={copy} />
+        <BeforeAfterCard image="/images/detailer-side-wash.png" title={copy.afterLabel} copy={copy} />
         <div className="overflow-hidden rounded-[2rem] border border-cyan-300/14 bg-white/7 shadow-[0_22px_60px_rgba(0,0,0,0.34)] transition-transform duration-500 hover:-translate-y-1">
           <div className="relative">
             <img
@@ -616,7 +615,11 @@ function ServicesSection({
 function ResultsSection({ copy }: { copy: Record<string, string> }) {
   return (
     <section className="relative overflow-hidden bg-[#05080d] py-24 text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(45,255,238,0.14),transparent_34%),linear-gradient(180deg,rgba(13,108,107,0.28),transparent_45%)]" />
+      <div className="absolute inset-0">
+        <img src="/images/detailer-side-wash.png" alt="" className="h-full w-full object-cover opacity-26" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,13,0.96)_0%,rgba(5,8,13,0.78)_50%,rgba(5,8,13,0.94)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(45,255,238,0.14),transparent_34%),linear-gradient(180deg,rgba(13,108,107,0.28),transparent_45%)]" />
+      </div>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
           <div>
@@ -640,8 +643,8 @@ function ResultsSection({ copy }: { copy: Record<string, string> }) {
           </div>
           <div className="overflow-hidden rounded-[2rem] border border-cyan-300/14 shadow-[0_24px_70px_rgba(0,0,0,0.48)]">
             <img
-              src={homeGallery[3]?.src || homeGallery[0]?.src}
-              alt="Diagnostics check"
+              src="/images/wash-bay-foam-front.png"
+              alt="Premium foam wash diagnostics"
               className="h-80 w-full object-cover transition-transform duration-700 hover:scale-[1.03] sm:h-96"
             />
           </div>
@@ -660,21 +663,41 @@ function CombosSection({
   copy: Record<string, string>;
   combos: any[];
 }) {
+  const featuredCombo = combos.find((combo) => combo.highlight) ?? combos[0];
+  const secondaryCombos = combos.filter((combo) => combo.id !== featuredCombo?.id);
+
   return (
-    <SectionShell
-      id="combos"
-      eyebrow={copy.combosEyebrow}
-      title={copy.combosTitle}
-      description={copy.combosDesc}
-      className="bg-[#081017] py-24 text-white"
-      invert
-    >
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {combos.map((combo) => (
-          <ComboCard key={combo.id} combo={combo} onOpenAuth={onOpenAuth} copy={copy} />
-        ))}
+    <section id="combos" className="relative overflow-hidden bg-[#05080d] px-4 py-24 text-white sm:px-6 lg:px-8">
+      <div className="absolute inset-0">
+        <img src="/images/wash-bay-foam-front.png" alt="" className="h-full w-full object-cover opacity-34" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,13,0.96)_0%,rgba(5,8,13,0.78)_48%,rgba(5,8,13,0.95)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_22%,rgba(45,255,238,0.16),transparent_24rem),radial-gradient(circle_at_24%_62%,rgba(13,108,107,0.26),transparent_28rem)]" />
       </div>
-    </SectionShell>
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <Reveal className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-300">{copy.combosEyebrow}</p>
+            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">{copy.combosTitle}</h2>
+            <p className="mt-4 text-base leading-7 text-white/62">{copy.combosDesc}</p>
+          </div>
+          <div className="flex w-fit items-center gap-3 rounded-full border border-cyan-300/18 bg-white/7 px-4 py-2 text-sm font-semibold text-white/75 shadow-[0_0_26px_rgba(45,255,238,0.12)] backdrop-blur">
+            <Phone className="h-4 w-4 text-cyan-300" />
+            {copy.footerPhone}
+          </div>
+        </Reveal>
+
+        <div className="grid gap-5 lg:grid-cols-[0.72fr_1.28fr]">
+          {featuredCombo ? (
+            <ComboCard combo={featuredCombo} onOpenAuth={onOpenAuth} copy={copy} featured />
+          ) : null}
+          <div className="grid gap-5">
+            {secondaryCombos.map((combo) => (
+              <ComboCard key={combo.id} combo={combo} onOpenAuth={onOpenAuth} copy={copy} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -733,8 +756,13 @@ function CallToActionSection({
   copy: Record<string, string>;
 }) {
   return (
-    <section className="relative overflow-hidden bg-[#05080d] px-4 py-24 text-white sm:px-6 lg:px-8">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(45,255,238,0.16),transparent_42%)]" />
+    <section className="relative overflow-hidden bg-[#05080d] px-4 py-28 text-white sm:px-6 lg:px-8">
+      <div className="absolute inset-0">
+        <img src="/images/soap-tail-detail.png" alt="" className="h-full w-full object-cover opacity-34" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,13,0.96),rgba(5,8,13,0.72)_52%,rgba(5,8,13,0.92))]" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-[#0d6c6b]/45 blur-2xl" />
+        <div className="absolute left-8 top-12 h-10 w-10 rotate-45 rounded-[0.35rem] bg-cyan-300 shadow-[0_0_34px_rgba(45,255,238,0.55)]" />
+      </div>
       <div className="mx-auto max-w-4xl text-center relative z-10">
         <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-300">{copy.ctaEyebrow}</p>
         <h2 className="mt-5 text-3xl font-black tracking-tight sm:text-5xl">
@@ -1050,56 +1078,79 @@ function ComboCard({
   combo,
   onOpenAuth,
   copy,
+  featured = false,
 }: {
   combo: HomeCombo;
-  onOpenAuth: (mode: "login") => void;
+  onOpenAuth: (mode: "login" | "register") => void;
   copy: Record<string, string>;
+  featured?: boolean;
 }) {
   const savings = combo.originalPrice - combo.comboPrice;
 
   return (
     <article
       className={cn(
-        "relative rounded-[2rem] border p-7 shadow-[0_24px_60px_rgba(2,6,23,0.28)] transition-transform duration-500 hover:-translate-y-1",
-        combo.highlight
-          ? "border-sky-300 bg-[linear-gradient(180deg,rgba(37,99,235,0.22)_0%,rgba(15,23,42,0.95)_100%)]"
-          : "border-white/10 bg-white/5 backdrop-blur-sm",
+        "group relative overflow-hidden rounded-[1.55rem] border transition duration-500 hover:-translate-y-1",
+        "before:pointer-events-none before:absolute before:inset-0 before:bg-[linear-gradient(120deg,transparent_0%,rgba(255,255,255,0.22)_22%,transparent_42%)] before:opacity-0 before:transition-opacity before:duration-500 hover:before:opacity-100",
+        featured
+          ? "min-h-full border-cyan-200/55 bg-cyan-300 p-7 text-slate-950 shadow-[0_0_0_1px_rgba(255,255,255,0.2)_inset,0_26px_80px_rgba(45,255,238,0.18)]"
+          : "border-cyan-300/18 bg-[#122b31]/82 p-6 text-white shadow-[0_24px_70px_rgba(0,0,0,0.36)] backdrop-blur-xl",
       )}
     >
       {combo.badge ? (
         <span
           className={cn(
-            "absolute left-7 top-0 -translate-y-1/2 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em]",
-            combo.highlight ? "bg-white text-slate-950" : "bg-sky-400 text-slate-950",
+            "absolute right-5 top-5 rounded-full px-3 py-1.5 text-[0.66rem] font-black uppercase tracking-[0.16em]",
+            featured ? "bg-slate-950/12 text-slate-950" : "bg-cyan-300 text-slate-950 shadow-[0_0_18px_rgba(45,255,238,0.22)]",
           )}
         >
           {combo.badge}
         </span>
       ) : null}
 
-      <div className="pt-2">
-        <h3 className="text-2xl font-bold tracking-tight text-white">{combo.name}</h3>
-        <p className="mt-3 text-sm leading-7 text-slate-300">{combo.description}</p>
+      <div className={cn("relative z-10", featured ? "pr-16" : "grid gap-5 md:grid-cols-[1fr_auto] md:items-start")}>
+        <div>
+          <div
+            className={cn(
+              "mb-5 flex h-14 w-14 items-center justify-center rounded-2xl",
+              featured ? "bg-slate-950/10 text-3xl" : "bg-cyan-300 text-2xl text-slate-950 shadow-[0_0_24px_rgba(45,255,238,0.18)]",
+            )}
+          >
+            {featured ? "🚘" : "🧼"}
+          </div>
+          <h3 className={cn("font-black tracking-tight", featured ? "text-2xl text-slate-950" : "text-2xl text-white")}>{combo.name}</h3>
+          <p className={cn("mt-3 text-sm leading-7", featured ? "text-slate-800/78" : "max-w-xl text-white/64")}>{combo.description}</p>
+        </div>
+
+        {!featured ? (
+          <Button
+            size="sm"
+            className="mt-1 rounded-full bg-cyan-300 px-5 text-xs font-black text-slate-950 shadow-[0_0_20px_rgba(45,255,238,0.18)] hover:bg-cyan-200 md:mt-0"
+            onClick={() => onOpenAuth("login")}
+          >
+            {copy.getThisPack}
+          </Button>
+        ) : null}
       </div>
 
-      <div className="mt-6 border-y border-white/10 py-6">
-        <p className="text-3xl font-black tracking-tight text-white">
+      <div className={cn("relative z-10 mt-6 py-5", featured ? "border-y border-slate-950/12" : "border-y border-white/12")}>
+        <p className={cn("text-3xl font-black tracking-tight", featured ? "text-slate-950" : "text-white")}>
           {formatBookingCurrency(combo.comboPrice)}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
-          <span className="text-slate-400 line-through">
+          <span className={cn("line-through", featured ? "text-slate-700/54" : "text-white/38")}>
             {formatBookingCurrency(combo.originalPrice)}
           </span>
-          <span className="rounded-full bg-emerald-400/20 px-3 py-1 font-semibold text-emerald-300">
+          <span className={cn("rounded-full px-3 py-1 font-bold", featured ? "bg-slate-950/10 text-slate-950" : "bg-cyan-300/12 text-cyan-200")}>
             {copy.savingsLabel} {formatBookingCurrency(savings)}
           </span>
         </div>
       </div>
 
-      <ul className="mt-6 grid gap-3">
+      <ul className={cn("relative z-10 mt-6 grid gap-3", featured ? "" : "sm:grid-cols-2")}>
         {combo.services.map((item) => (
-          <li key={item} className="flex items-start gap-3 text-sm leading-6 text-slate-200">
-            <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-sky-400/20 text-sky-200">
+          <li key={item} className={cn("flex items-start gap-3 text-sm leading-6", featured ? "font-semibold text-slate-900/82" : "text-white/72")}>
+            <span className={cn("mt-0.5 flex h-5 w-5 items-center justify-center rounded-full", featured ? "bg-slate-950/10 text-slate-950" : "bg-cyan-300/14 text-cyan-200")}>
               <Check className="h-3.5 w-3.5" />
             </span>
             {item}
@@ -1107,20 +1158,16 @@ function ComboCard({
         ))}
       </ul>
 
-      <Button
-        variant={combo.highlight ? "default" : "secondary"}
-        size="lg"
-        className={cn(
-          "mt-8 h-12 w-full rounded-full text-sm font-semibold transition-transform duration-300 hover:scale-[1.02]",
-          combo.highlight
-            ? "bg-white text-slate-950 hover:bg-slate-100"
-            : "bg-white/10 text-white hover:bg-white/15",
-        )}
-        onClick={() => onOpenAuth("login")}
-      >
-        {copy.getThisPack}
-        <ArrowRight className="h-4 w-4" />
-      </Button>
+      {featured ? (
+        <Button
+          size="lg"
+          className="relative z-10 mt-8 h-12 w-full rounded-full bg-slate-950 text-sm font-black text-white transition-transform duration-300 hover:scale-[1.02] hover:bg-slate-800"
+          onClick={() => onOpenAuth("login")}
+        >
+          {copy.getThisPack}
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      ) : null}
     </article>
   );
 }
