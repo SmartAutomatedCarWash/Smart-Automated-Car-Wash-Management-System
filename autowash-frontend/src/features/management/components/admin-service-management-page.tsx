@@ -9,20 +9,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/sha
 import { AdminManagementTabs } from "@/features/management/components/admin-management-tabs";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { cn } from "@/shared/lib/utils";
 import {
   useAdminCatalogPackages,
   useAdminCatalogServices,
   useAdminCombosCatalog,
   useCreateAdminCombo,
   useDeleteAdminCombo,
+  useUpdateAdminCombo,
   useCreateAdminService,
   useDeleteAdminService,
+  useUpdateAdminService,
   useCreateAdminPackage,
   useDeleteAdminPackage,
+  useUpdateAdminPackage,
 } from "@/features/management/hooks/use-admin-service-management";
-import type { AdminCatalogService, AdminComboForm, AdminServiceForm, AdminPackageForm } from "@/entities/management";
+import type { AdminCatalogService, AdminCatalogPackage, AdminComboForm, AdminServiceForm, AdminPackageForm } from "@/entities/management";
 import { uploadCatalogImage } from "@/features/management/lib/admin-service-management-service";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
+import { Pencil } from "lucide-react";
 
 const EMPTY_COMBO_FORM: AdminComboForm = {
   name: "",
@@ -32,7 +37,7 @@ const EMPTY_COMBO_FORM: AdminComboForm = {
   durationMinutes: "",
   durationDays: "",
   maxUsages: "",
-  imageUrl: "",
+  imageUrls: [],
   status: "ACTIVE",
   optionIds: [],
 };
@@ -84,14 +89,18 @@ function LiveServicesPanel() {
   const servicesQuery = useAdminCatalogServices();
   const createServiceMutation = useCreateAdminService();
   const deleteServiceMutation = useDeleteAdminService();
-  const [form, setForm] = useState<AdminServiceForm>({
+  const updateServiceMutation = useUpdateAdminService();
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
+  
+  const defaultForm: AdminServiceForm = {
     name: "",
     description: "",
     price: "",
     duration: "",
     status: "ACTIVE",
-    imageUrl: "",
-  });
+    imageUrls: [],
+  };
+  const [form, setForm] = useState<AdminServiceForm>(defaultForm);
   const [touched, setTouched] = useState<Partial<Record<keyof AdminServiceForm, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
 
@@ -114,11 +123,35 @@ function LiveServicesPanel() {
     setTouched((current) => ({ ...current, [field]: true }));
   }
 
+  function handleEdit(service: AdminCatalogService) {
+    setEditingServiceId(service.serviceId);
+    setForm({
+      name: service.name || "",
+      description: service.description || "",
+      price: service.price != null ? String(service.price) : "",
+      duration: service.duration != null ? String(service.duration) : "",
+      status: service.status as "ACTIVE" | "INACTIVE",
+      imageUrls: service.imageUrls || [],
+    });
+    setTouched({});
+    setSubmitted(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleCancelEdit() {
+    setEditingServiceId(null);
+    setForm(defaultForm);
+    setTouched({});
+    setSubmitted(false);
+  }
+
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
       <Card className="border-slate-200 bg-white shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg">{translate(language, "Tạo dịch vụ mới", "Create service")}</CardTitle>
+          <CardTitle className="text-lg">
+            {editingServiceId ? translate(language, "Chỉnh sửa dịch vụ", "Edit service") : translate(language, "Tạo dịch vụ mới", "Create service")}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <FormField label={translate(language, "Tên dịch vụ", "Name")} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
@@ -127,7 +160,7 @@ function LiveServicesPanel() {
             <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
           </div>
           <FormField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
-          <ImageUploadField label={translate(language, "Ảnh dịch vụ", "Service image")} value={form.imageUrl || ""} onChange={(value) => setForm((current) => ({ ...current, imageUrl: value }))} language={language as "vi" | "en"} />
+          <ImageUploadField label={translate(language, "Ảnh dịch vụ", "Service image")} value={form.imageUrls || []} onChange={(value) => setForm((current) => ({ ...current, imageUrls: value }))} language={language as "vi" | "en"} />
           <label className="grid gap-2">
             <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
             <select
@@ -140,37 +173,46 @@ function LiveServicesPanel() {
             </select>
           </label>
 
-          {createServiceMutation.isError ? (
-            <ErrorPanel message={getDisplayErrorMessage(createServiceMutation.error)} />
-          ) : null}
+          {createServiceMutation.isError ? <ErrorPanel message={getDisplayErrorMessage(createServiceMutation.error)} /> : null}
+          {updateServiceMutation.isError ? <ErrorPanel message={getDisplayErrorMessage(updateServiceMutation.error)} /> : null}
 
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-3">
+            {editingServiceId && (
+              <Button type="button" variant="outline" onClick={handleCancelEdit}>
+                {translate(language, "Hủy", "Cancel")}
+              </Button>
+            )}
             <Button
               type="button"
-              disabled={createServiceMutation.isPending}
+              disabled={createServiceMutation.isPending || updateServiceMutation.isPending}
               onClick={async () => {
                 setSubmitted(true);
                 if (Object.keys(formErrors).length > 0) return;
                 try {
-                  await createServiceMutation.mutateAsync(form);
-                  setForm({
-                    name: "",
-                    description: "",
-                    price: "",
-                    duration: "",
-                    status: "ACTIVE",
-                    imageUrl: "",
-                  });
-                  setTouched({});
-                  setSubmitted(false);
-                  toast.success(translate(language, "Tạo dịch vụ mới thành công.", "Service created successfully."));
+                  if (editingServiceId) {
+                    await updateServiceMutation.mutateAsync({ ...form, serviceId: editingServiceId });
+                    toast.success(translate(language, "Cập nhật dịch vụ thành công.", "Service updated successfully."));
+                    handleCancelEdit();
+                  } else {
+                    await createServiceMutation.mutateAsync(form);
+                    toast.success(translate(language, "Tạo dịch vụ mới thành công.", "Service created successfully."));
+                    setForm(defaultForm);
+                    setTouched({});
+                    setSubmitted(false);
+                  }
                 } catch (error) {
                   toast.error(getDisplayErrorMessage(error));
                 }
               }}
             >
-              {createServiceMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-              {translate(language, "Tạo dịch vụ", "Create service")}
+              {(createServiceMutation.isPending || updateServiceMutation.isPending) ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : editingServiceId ? (
+                <Pencil className="mr-2 h-4 w-4" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              {editingServiceId ? translate(language, "Cập nhật", "Update") : translate(language, "Tạo dịch vụ", "Create service")}
             </Button>
           </div>
         </CardContent>
@@ -200,9 +242,9 @@ function LiveServicesPanel() {
                     <Card key={service.serviceId} className="border-slate-200 bg-slate-50/50">
                       <CardContent className="p-5 flex items-start justify-between gap-3">
                         <div className="flex items-start gap-4">
-                          {service.imageUrl && (
+                          {service.imageUrls && service.imageUrls.length > 0 && (
                             <img
-                              src={service.imageUrl}
+                              src={service.imageUrls[0]}
                               alt={service.name}
                               className="h-14 w-14 rounded-lg object-cover border border-slate-200"
                             />
@@ -218,22 +260,32 @@ function LiveServicesPanel() {
                             </div>
                           </div>
                         </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={service.status !== "ACTIVE" || isDeleting}
-                          onClick={async () => {
-                            try {
-                              await deleteServiceMutation.mutateAsync(service.serviceId);
-                              toast.success(translate(language, "Đã ngưng hoạt động dịch vụ.", "Service deactivated."));
-                            } catch (error) {
-                              toast.error(getDisplayErrorMessage(error));
-                            }
-                          }}
-                        >
-                          {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                          {translate(language, "Ngưng hoạt động", "Deactivate")}
-                        </Button>
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => handleEdit(service)}
+                          >
+                            <Pencil className="mr-2 h-4 w-4" />
+                            {translate(language, "Sửa", "Edit")}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={service.status !== "ACTIVE" || isDeleting}
+                            onClick={async () => {
+                              try {
+                                await deleteServiceMutation.mutateAsync(service.serviceId);
+                                toast.success(translate(language, "Đã ngưng hoạt động dịch vụ.", "Service deactivated."));
+                              } catch (error) {
+                                toast.error(getDisplayErrorMessage(error));
+                              }
+                            }}
+                          >
+                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                            {translate(language, "Ngưng hoạt động", "Deactivate")}
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   );
@@ -253,7 +305,10 @@ function LivePackagesPanel() {
   const servicesQuery = useAdminCatalogServices();
   const createPackageMutation = useCreateAdminPackage();
   const deletePackageMutation = useDeleteAdminPackage();
-  const [form, setForm] = useState<AdminPackageForm>({
+  const updatePackageMutation = useUpdateAdminPackage();
+  const [editingPackageId, setEditingPackageId] = useState<string | null>(null);
+
+  const defaultForm: AdminPackageForm = {
     name: "",
     description: "",
     basePrice: "",
@@ -262,8 +317,9 @@ function LivePackagesPanel() {
     features: "",
     status: "ACTIVE",
     serviceIds: [],
-    imageUrl: "",
-  });
+    imageUrls: [],
+  };
+  const [form, setForm] = useState<AdminPackageForm>(defaultForm);
   const [touched, setTouched] = useState<Partial<Record<keyof AdminPackageForm, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
 
@@ -288,11 +344,38 @@ function LivePackagesPanel() {
     setTouched((current) => ({ ...current, [field]: true }));
   }
 
+  function handleEdit(pkg: AdminCatalogPackage) {
+    setEditingPackageId(pkg.packageId);
+    setForm({
+      name: pkg.name || "",
+      description: pkg.description || "",
+      basePrice: pkg.basePrice != null ? String(pkg.basePrice) : "",
+      duration: pkg.duration != null ? String(pkg.duration) : "",
+      category: pkg.category || "",
+      features: pkg.features ? pkg.features.join(", ") : "",
+      status: pkg.status as "ACTIVE" | "INACTIVE",
+      serviceIds: pkg.serviceIds || [],
+      imageUrls: pkg.imageUrls || [],
+    });
+    setTouched({});
+    setSubmitted(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleCancelEdit() {
+    setEditingPackageId(null);
+    setForm(defaultForm);
+    setTouched({});
+    setSubmitted(false);
+  }
+
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
       <Card className="border-slate-200 bg-white shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg">{translate(language, "Tạo gói dịch vụ mới", "Create package")}</CardTitle>
+          <CardTitle className="text-lg">
+            {editingPackageId ? translate(language, "Chỉnh sửa gói dịch vụ", "Edit package") : translate(language, "Tạo gói dịch vụ mới", "Create package")}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <FormField label={translate(language, "Tên gói", "Name")} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
@@ -300,10 +383,31 @@ function LivePackagesPanel() {
             <FormField label={translate(language, "Giá gói (VND)", "Base price")} value={form.basePrice} onChange={(value) => setForm((current) => ({ ...current, basePrice: value }))} onBlur={() => touchField("basePrice")} error={visibleErrors.basePrice} />
             <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
           </div>
-          <FormField label={translate(language, "Danh mục (ví dụ: Tiêu chuẩn, Cao cấp)", "Category (e.g. Basic, Premium)")} value={form.category} onChange={(value) => setForm((current) => ({ ...current, category: value }))} onBlur={() => touchField("category")} error={visibleErrors.category} />
+          <label className="grid gap-2">
+            <span className="text-sm font-semibold text-slate-800">
+              {translate(language, "Danh mục", "Category")}
+            </span>
+            <input
+              type="text"
+              list="package-categories"
+              value={form.category}
+              onChange={(e) => setForm(current => ({ ...current, category: e.target.value }))}
+              onBlur={() => touchField("category")}
+              className={cn(
+                "h-11 rounded-xl border bg-white px-3 text-sm text-slate-900 outline-none transition-colors",
+                visibleErrors.category ? "border-red-500 focus:border-red-500" : "border-slate-200 focus:border-[#0566D9]"
+              )}
+            />
+            <datalist id="package-categories">
+              {Array.from(new Set(packagesQuery.data?.map(p => p.category).filter(Boolean))).map(cat => (
+                <option key={cat as string} value={cat as string} />
+              ))}
+            </datalist>
+            {visibleErrors.category && <span className="text-xs text-red-500">{visibleErrors.category}</span>}
+          </label>
           <FormField label={translate(language, "Tính năng nổi bật (cách nhau bởi dấu phẩy)", "Features (comma separated)")} value={form.features} onChange={(value) => setForm((current) => ({ ...current, features: value }))} placeholder={translate(language, "Hút bụi, Rửa tay, Làm bóng lốp", "Vacuuming, Hand wash, Tire shine")} />
           <FormField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
-          <ImageUploadField label={translate(language, "Ảnh gói dịch vụ", "Package image")} value={form.imageUrl || ""} onChange={(value) => setForm((current) => ({ ...current, imageUrl: value }))} language={language as "vi" | "en"} />
+          <ImageUploadField label={translate(language, "Ảnh gói dịch vụ", "Package image")} value={form.imageUrls || []} onChange={(value) => setForm((current) => ({ ...current, imageUrls: value }))} language={language as "vi" | "en"} />
 
           {/* Services multi-select dropdown */}
           <ServiceMultiSelect
@@ -330,40 +434,46 @@ function LivePackagesPanel() {
             </select>
           </label>
 
-          {createPackageMutation.isError ? (
-            <ErrorPanel message={getDisplayErrorMessage(createPackageMutation.error)} />
-          ) : null}
+          {createPackageMutation.isError ? <ErrorPanel message={getDisplayErrorMessage(createPackageMutation.error)} /> : null}
+          {updatePackageMutation.isError ? <ErrorPanel message={getDisplayErrorMessage(updatePackageMutation.error)} /> : null}
 
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-3">
+            {editingPackageId && (
+              <Button type="button" variant="outline" onClick={handleCancelEdit}>
+                {translate(language, "Hủy", "Cancel")}
+              </Button>
+            )}
             <Button
               type="button"
-              disabled={createPackageMutation.isPending}
+              disabled={createPackageMutation.isPending || updatePackageMutation.isPending}
               onClick={async () => {
                 setSubmitted(true);
                 if (Object.keys(formErrors).length > 0) return;
                 try {
-                  await createPackageMutation.mutateAsync(form);
-                  setForm({
-                    name: "",
-                    description: "",
-                    basePrice: "",
-                    duration: "",
-                    category: "",
-                    features: "",
-                    status: "ACTIVE",
-                    serviceIds: [],
-                    imageUrl: "",
-                  });
-                  setTouched({});
-                  setSubmitted(false);
-                  toast.success(translate(language, "Tạo gói dịch vụ mới thành công.", "Package created successfully."));
+                  if (editingPackageId) {
+                    await updatePackageMutation.mutateAsync({ ...form, packageId: editingPackageId });
+                    toast.success(translate(language, "Cập nhật gói dịch vụ thành công.", "Package updated successfully."));
+                    handleCancelEdit();
+                  } else {
+                    await createPackageMutation.mutateAsync(form);
+                    toast.success(translate(language, "Tạo gói dịch vụ mới thành công.", "Package created successfully."));
+                    setForm(defaultForm);
+                    setTouched({});
+                    setSubmitted(false);
+                  }
                 } catch (error) {
                   toast.error(getDisplayErrorMessage(error));
                 }
               }}
             >
-              {createPackageMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-              {translate(language, "Tạo gói dịch vụ", "Create package")}
+              {(createPackageMutation.isPending || updatePackageMutation.isPending) ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : editingPackageId ? (
+                <Pencil className="mr-2 h-4 w-4" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              {editingPackageId ? translate(language, "Cập nhật", "Update") : translate(language, "Tạo gói dịch vụ", "Create package")}
             </Button>
           </div>
         </CardContent>
@@ -393,9 +503,9 @@ function LivePackagesPanel() {
                     <Card key={pkg.packageId} className="border-slate-200 bg-slate-50/50">
                       <CardContent className="p-5 flex items-start justify-between gap-3">
                         <div className="flex items-start gap-4">
-                          {pkg.image && (
+                          {pkg.imageUrls && pkg.imageUrls.length > 0 && (
                             <img
-                              src={pkg.image}
+                              src={pkg.imageUrls[0]}
                               alt={pkg.name}
                               className="h-16 w-16 rounded-xl object-cover border border-slate-200"
                             />
@@ -422,7 +532,16 @@ function LivePackagesPanel() {
                           ) : null}
                         </div>
                       </div>
-                      <Button
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleEdit(pkg)}
+                        >
+                          <Pencil className="mr-2 h-4 w-4" />
+                          {translate(language, "Sửa", "Edit")}
+                        </Button>
+                        <Button
                           type="button"
                           variant="outline"
                           disabled={pkg.status !== "ACTIVE" || isDeleting}
@@ -438,6 +557,7 @@ function LivePackagesPanel() {
                           {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                           {translate(language, "Ngưng hoạt động", "Deactivate")}
                         </Button>
+                      </div>
                       </CardContent>
                     </Card>
                   );
@@ -457,6 +577,9 @@ function LiveCombosPanel() {
   const combosQuery = useAdminCombosCatalog();
   const createComboMutation = useCreateAdminCombo();
   const deleteComboMutation = useDeleteAdminCombo();
+  const updateComboMutation = useUpdateAdminCombo();
+  const [editingComboId, setEditingComboId] = useState<string | null>(null);
+
   const [form, setForm] = useState<AdminComboForm>(EMPTY_COMBO_FORM);
   const [touched, setTouched] = useState<Partial<Record<keyof AdminComboForm, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -483,11 +606,39 @@ function LiveCombosPanel() {
     setTouched((current) => ({ ...current, [field]: true }));
   }
 
+  function handleEdit(combo: any) {
+    setEditingComboId(combo.comboId);
+    setForm({
+      name: combo.name || "",
+      description: combo.description || "",
+      price: combo.basePrice != null ? String(combo.basePrice) : (combo.price != null ? String(combo.price) : ""),
+      originalPrice: combo.originalPrice != null ? String(combo.originalPrice) : "",
+      durationMinutes: combo.durationMinutes != null ? String(combo.durationMinutes) : "",
+      durationDays: combo.durationDays != null ? String(combo.durationDays) : "",
+      maxUsages: combo.maxServices != null ? String(combo.maxServices) : (combo.maxUsages != null ? String(combo.maxUsages) : ""),
+      imageUrls: combo.imageUrls || [],
+      status: combo.isActive ? "ACTIVE" : "INACTIVE",
+      optionIds: combo.options ? combo.options.map((o: any) => o.optionId) : [],
+    });
+    setTouched({});
+    setSubmitted(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleCancelEdit() {
+    setEditingComboId(null);
+    setForm(EMPTY_COMBO_FORM);
+    setTouched({});
+    setSubmitted(false);
+  }
+
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
       <Card className="border-slate-200 bg-white shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg">{translate(language, "Tạo Combo mới", "Create combo")}</CardTitle>
+          <CardTitle className="text-lg">
+            {editingComboId ? translate(language, "Chỉnh sửa Combo", "Edit combo") : translate(language, "Tạo Combo mới", "Create combo")}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -503,7 +654,7 @@ function LiveCombosPanel() {
             value={form.description}
             onChange={(value) => setForm((current) => ({ ...current, description: value }))}
           />
-          <ImageUploadField label={translate(language, "Ảnh Combo", "Combo image")} value={form.imageUrl} onChange={(value) => setForm((current) => ({ ...current, imageUrl: value }))} language={language as "vi" | "en"} />
+          <ImageUploadField label={translate(language, "Ảnh Combo", "Combo image")} value={form.imageUrls || []} onChange={(value) => setForm((current) => ({ ...current, imageUrls: value }))} language={language as "vi" | "en"} />
           <label className="grid gap-2">
             <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
             <select
@@ -528,30 +679,46 @@ function LiveCombosPanel() {
             language={language as "vi" | "en"}
           />
 
-          {createComboMutation.isError ? (
-            <ErrorPanel message={getDisplayErrorMessage(createComboMutation.error)} />
-          ) : null}
+          {createComboMutation.isError ? <ErrorPanel message={getDisplayErrorMessage(createComboMutation.error)} /> : null}
+          {updateComboMutation.isError ? <ErrorPanel message={getDisplayErrorMessage(updateComboMutation.error)} /> : null}
 
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-3">
+            {editingComboId && (
+              <Button type="button" variant="outline" onClick={handleCancelEdit}>
+                {translate(language, "Hủy", "Cancel")}
+              </Button>
+            )}
             <Button
               type="button"
-              disabled={createComboMutation.isPending}
+              disabled={createComboMutation.isPending || updateComboMutation.isPending}
               onClick={async () => {
                 setSubmitted(true);
                 if (Object.keys(formErrors).length > 0) return;
                 try {
-                  await createComboMutation.mutateAsync(form);
-                  setForm(EMPTY_COMBO_FORM);
-                  setTouched({});
-                  setSubmitted(false);
-                  toast.success(translate(language, "Tạo Combo thành công.", "Combo created successfully."));
+                  if (editingComboId) {
+                    await updateComboMutation.mutateAsync({ ...form, comboId: editingComboId });
+                    toast.success(translate(language, "Cập nhật Combo thành công.", "Combo updated successfully."));
+                    handleCancelEdit();
+                  } else {
+                    await createComboMutation.mutateAsync(form);
+                    toast.success(translate(language, "Tạo Combo thành công.", "Combo created successfully."));
+                    setForm(EMPTY_COMBO_FORM);
+                    setTouched({});
+                    setSubmitted(false);
+                  }
                 } catch (error) {
                   toast.error(getDisplayErrorMessage(error));
                 }
               }}
             >
-              {createComboMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-              {translate(language, "Tạo Combo", "Create combo")}
+              {(createComboMutation.isPending || updateComboMutation.isPending) ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : editingComboId ? (
+                <Pencil className="mr-2 h-4 w-4" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              {editingComboId ? translate(language, "Cập nhật", "Update") : translate(language, "Tạo Combo", "Create combo")}
             </Button>
           </div>
         </CardContent>
@@ -586,9 +753,9 @@ function LiveCombosPanel() {
                   <CardContent className="space-y-4 p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-4">
-                        {(combo.image || (combo as any).imageUrl) && (
+                        {(combo.imageUrls?.[0] || (combo as any).imageUrl) && (
                           <img
-                            src={combo.image || (combo as any).imageUrl}
+                            src={combo.imageUrls?.[0] || (combo as any).imageUrl}
                             alt={combo.name}
                             className="h-16 w-16 rounded-xl object-cover border border-slate-200"
                           />
@@ -600,22 +767,32 @@ function LiveCombosPanel() {
                           </div>
                         </div>
                       </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={!combo.isActive || isDeleting}
-                        onClick={async () => {
-                          try {
-                            await deleteComboMutation.mutateAsync(combo.comboId);
-                            toast.success(translate(language, "Đã ngưng hoạt động Combo.", "Combo deactivated."));
-                          } catch (error) {
-                            toast.error(getDisplayErrorMessage(error));
-                          }
-                        }}
-                      >
-                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                        {translate(language, "Ngưng hoạt động", "Deactivate")}
-                      </Button>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleEdit(combo)}
+                        >
+                          <Pencil className="mr-2 h-4 w-4" />
+                          {translate(language, "Sửa", "Edit")}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={!combo.isActive || isDeleting}
+                          onClick={async () => {
+                            try {
+                              await deleteComboMutation.mutateAsync(combo.comboId);
+                              toast.success(translate(language, "Đã ngưng hoạt động Combo.", "Combo deactivated."));
+                            } catch (error) {
+                              toast.error(getDisplayErrorMessage(error));
+                            }
+                          }}
+                        >
+                          {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                          {translate(language, "Ngưng hoạt động", "Deactivate")}
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
                       <span className="rounded-full bg-white px-2.5 py-1">{formatCurrency(combo.basePrice)}</span>
@@ -862,47 +1039,64 @@ function ImageUploadField({
   language,
 }: {
   label: string;
-  value: string;
-  onChange: (value: string) => void;
+  value: string[];
+  onChange: (value: string[]) => void;
   language: "vi" | "en";
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
     try {
       setIsUploading(true);
-      const uploaded = await uploadCatalogImage(file);
-      onChange(uploaded.url);
-      toast.success(translate(language, "Tải ảnh lên thành công.", "Image uploaded."));
+      const newUrls = [...(value || [])];
+      for (let i = 0; i < files.length; i++) {
+        const uploaded = await uploadCatalogImage(files[i]);
+        newUrls.push(uploaded.url);
+      }
+      onChange(newUrls);
+      toast.success(translate(language, "Tải ảnh lên thành công.", "Images uploaded."));
     } catch (error) {
       toast.error(getDisplayErrorMessage(error));
     } finally {
       setIsUploading(false);
+      event.target.value = "";
     }
+  }
+
+  function handleRemove(index: number) {
+    const newUrls = [...(value || [])];
+    newUrls.splice(index, 1);
+    onChange(newUrls);
   }
 
   return (
     <div className="grid gap-2">
       <span className="text-sm font-semibold text-slate-800">{label}</span>
       <div className="flex gap-2">
-        <input
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder="https://example.com/image.jpg"
-          className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
-        />
-        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+        <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
         <Button type="button" variant="outline" disabled={isUploading} onClick={() => inputRef.current?.click()}>
           {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageUp className="mr-2 h-4 w-4" />}
           {translate(language, "Tải lên", "Upload")}
         </Button>
       </div>
-      {value ? (
-        <img src={value} alt="" className="h-24 w-24 rounded-xl border border-slate-200 object-cover" />
+      {value && value.length > 0 ? (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {value.map((url, i) => (
+            <div key={i} className="relative group">
+              <img src={url} alt="" className="h-24 w-24 rounded-xl border border-slate-200 object-cover" />
+              <button
+                type="button"
+                onClick={() => handleRemove(i)}
+                className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+        </div>
       ) : null}
     </div>
   );

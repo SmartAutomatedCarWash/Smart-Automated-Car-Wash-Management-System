@@ -17,7 +17,7 @@ public record AdminComboRequest(
         @Min(1) int durationMinutes,
         @Min(1) Integer durationDays,
         @Min(1) Integer maxUsages,
-        @Size(max = 500) String imageUrl,
+        List<String> imageUrls,
         ActiveStatus status,
         List<@Valid ComboOptionRequest> options
 ) {

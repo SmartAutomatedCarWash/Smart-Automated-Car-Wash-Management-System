@@ -8,6 +8,7 @@ public record CancelBookingResponse(
         Instant cancelledAt,
         long refundAmount,
         String refundStatus,
+        String voucherRefundStatus,
         String refundMessage
 ) {
 }

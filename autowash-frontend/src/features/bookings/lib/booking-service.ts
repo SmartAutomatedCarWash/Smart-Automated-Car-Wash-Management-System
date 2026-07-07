@@ -62,7 +62,7 @@ export async function listActiveCustomerCombos(): Promise<CustomerCombo[]> {
 export function validateBookingVoucher(payload: VoucherValidationRequest) {
   return apiRequest<VoucherValidationResult, VoucherValidationRequest>({
     method: "POST",
-    url: "/bookings/validate-voucher",
+    url: "/customers/bookings/validate-voucher",
     data: payload,
   });
 }

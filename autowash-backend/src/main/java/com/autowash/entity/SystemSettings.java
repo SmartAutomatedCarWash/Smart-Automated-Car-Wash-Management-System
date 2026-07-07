@@ -4,7 +4,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -40,14 +39,8 @@ public class SystemSettings {
     @Column(name = "earn_points_unit_amount", nullable = false)
     private int earnPointsUnitAmount = 10_000;
 
-    @Column(name = "vnd_per_point", nullable = false)
-    private int vndPerPoint = 1_000;
-
-    @Column(name = "min_redemption_points", nullable = false)
-    private int minRedemptionPoints = 50;
-
-    @Column(name = "max_redemption_points", nullable = false)
-    private int maxRedemptionPoints = 200;
+    @Column(name = "redemption_voucher_expiration_days", nullable = false)
+    private int redemptionVoucherExpirationDays = 30;
 
 
     @Column(name = "updated_at", nullable = false)
@@ -61,9 +54,7 @@ public class SystemSettings {
             int maxBookingsPerTimeSlot,
             String currency,
             int earnPointsUnitAmount,
-            int vndPerPoint,
-            int minRedemptionPoints,
-            int maxRedemptionPoints
+            int redemptionVoucherExpirationDays
     ) {
         this.operatingStartTime = operatingStartTime;
         this.operatingEndTime = operatingEndTime;
@@ -72,9 +63,7 @@ public class SystemSettings {
         this.maxBookingsPerTimeSlot = maxBookingsPerTimeSlot;
         this.currency = currency;
         this.earnPointsUnitAmount = earnPointsUnitAmount;
-        this.vndPerPoint = vndPerPoint;
-        this.minRedemptionPoints = minRedemptionPoints;
-        this.maxRedemptionPoints = maxRedemptionPoints;
+        this.redemptionVoucherExpirationDays = redemptionVoucherExpirationDays;
         this.updatedAt = Instant.now();
     }
 }

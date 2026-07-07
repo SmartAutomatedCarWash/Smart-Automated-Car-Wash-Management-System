@@ -1,4 +1,4 @@
-import { apiClient } from "@/shared/lib/api";
+import { apiClient, apiRequest } from "@/shared/lib/api";
 import type { ApiPaginatedResponse, ApiSuccessResponse } from "@/shared/types/api.types";
 import type {
   AdminVoucher,
@@ -27,3 +27,27 @@ export async function listAdminVoucherRedemptions(params?: {
     pagination: response.data.pagination,
   };
 }
+
+export function createAdminVoucher(payload: import("@/entities/vouchers").AdminVoucherRequest) {
+  return apiRequest<AdminVoucher, import("@/entities/vouchers").AdminVoucherRequest>({
+    method: "POST",
+    url: "/admin/vouchers",
+    data: payload,
+  });
+}
+
+export function updateAdminVoucher(code: string, payload: import("@/entities/vouchers").AdminVoucherRequest) {
+  return apiRequest<AdminVoucher, import("@/entities/vouchers").AdminVoucherRequest>({
+    method: "PUT",
+    url: `/admin/vouchers/${code}`,
+    data: payload,
+  });
+}
+
+export function deleteAdminVoucher(code: string) {
+  return apiRequest<AdminVoucher>({
+    method: "DELETE",
+    url: `/admin/vouchers/${code}`,
+  });
+}
+

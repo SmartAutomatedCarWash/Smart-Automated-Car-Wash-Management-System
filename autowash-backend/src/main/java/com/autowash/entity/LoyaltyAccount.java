@@ -58,6 +58,11 @@ public class LoyaltyAccount {
         this.updatedAt = Instant.now();
     }
 
+    public void addActivePoints(int points) {
+        this.currentPoints += points;
+        this.updatedAt = Instant.now();
+    }
+
     public void redeemPoints(int points) {
         this.currentPoints -= points;
         this.updatedAt = Instant.now();

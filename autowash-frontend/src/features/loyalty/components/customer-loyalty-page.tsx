@@ -47,7 +47,7 @@ import { useCustomerVouchers } from "@/features/vouchers/hooks/use-customer-vouc
 import { cn } from "@/shared/lib/utils";
 import type { RedeemPointsResponse, TierVoucherOffer } from "@/entities/loyalty";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
-import { getCustomerTierMetalStyle } from "@/shared/ui/customer/customer-experience";
+import { useTierStyle } from "@/shared/lib/tier-styles";
 
 type VoucherOfferState = TierVoucherOffer & {
   eligible: boolean;
@@ -85,6 +85,7 @@ export function CustomerLoyaltyPageContent() {
   );
 
   const locale = language === "vi" ? "vi-VN" : "en-US";
+  const tierStyle = useTierStyle(summary?.tier);
 
   const handleRedeem = () => {
     if (!selectedOffer || !summary) {
@@ -134,7 +135,7 @@ export function CustomerLoyaltyPageContent() {
   }
 
   const currentTierIndex = TIER_ORDER.indexOf(summary.tier);
-  const tierMetal = getCustomerTierMetalStyle(summary.tier);
+  const tierMetal = tierStyle.metal;
   const selectedRemainingPoints = selectedOffer
     ? Math.max(summary.availablePoints - selectedOffer.pointsCost, 0)
     : summary.availablePoints;
@@ -168,18 +169,18 @@ export function CustomerLoyaltyPageContent() {
 
           {/* Main Lifetime Progress Card */}
           <div className={cn(
-              "relative overflow-hidden rounded-[32px] p-8 shadow-xl border border-white/20",
-              tierMetal.surface
-            )}>
+              "relative overflow-hidden rounded-[32px] p-8 shadow-xl border border-white/20"
+            )}
+            style={{ background: tierMetal.surface }}>
             <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.44)_0%,rgba(255,255,255,0.12)_42%,rgba(67,40,23,0.12)_100%)]" />
             <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-white/80" />
             
             <div className="relative z-10 flex items-start justify-between">
               <div className="space-y-6">
-                <div className={cn("text-xs font-black uppercase tracking-[0.2em]", tierMetal.softText)}>
+                <div className="text-xs font-black uppercase tracking-[0.2em]" style={{ color: tierMetal.softText }}>
                   {translate(language, "Tiến trình nâng hạng", "Lifetime tier progress")}
                 </div>
-                <div className={cn("text-3xl sm:text-4xl font-black tracking-tight", tierMetal.text)}>
+                <div className="text-3xl sm:text-4xl font-black tracking-tight" style={{ color: tierMetal.text }}>
                   {summary.progress.nextTier ? (
                     `${summary.lifetimePoints.toLocaleString(locale)} / ${(summary.lifetimePoints + summary.progress.pointsToNextTier).toLocaleString(locale)} lifetime pts`
                   ) : (
@@ -190,7 +191,7 @@ export function CustomerLoyaltyPageContent() {
                 {/* Perks section */}
                 <div className="flex flex-col gap-3 pt-2">
                   {currentTierConfig && (
-                    <div className={cn("flex items-center gap-2 text-sm font-semibold", tierMetal.text)}>
+                    <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: tierMetal.text }}>
                       <Sparkles className="h-5 w-5" />
                       {translate(
                         language, 
@@ -214,10 +215,10 @@ export function CustomerLoyaltyPageContent() {
               </div>
 
               <div className="flex flex-col items-center gap-3">
-                <div className={cn("flex h-[72px] w-[72px] items-center justify-center rounded-2xl shadow-lg border-transparent text-white", tierMetal.surface, tierMetal.border, tierMetal.text)}>
+                <div className="flex h-[72px] w-[72px] items-center justify-center rounded-2xl shadow-lg border-transparent text-white" style={{ background: tierMetal.surface, borderColor: tierMetal.border, color: tierMetal.text }}>
                   <Crown className="h-8 w-8" />
                 </div>
-                <div className={cn("rounded-full border bg-white/58 px-3 py-1 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur", tierMetal.border, tierMetal.text)}>
+                <div className="rounded-full border bg-white/58 px-3 py-1 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur" style={{ borderColor: tierMetal.border, color: tierMetal.text }}>
                   {summary.progress.nextTier
                     ? `${formatTierLabel(summary.progress.nextTier)} ${translate(language, "tiếp theo", "next")}`
                     : translate(language, "Hạng tối đa", "Max tier")}
@@ -228,8 +229,8 @@ export function CustomerLoyaltyPageContent() {
             {summary.progress.nextTier && (
               <div className="relative z-10 mt-10 flex h-14 items-center overflow-hidden rounded-full bg-white p-1.5 shadow-[inset_0_2px_10px_rgba(0,0,0,0.06)]">
                 <div
-                  className={cn("relative h-full overflow-hidden rounded-full shadow-sm transition-all duration-1000 ease-out", tierMetal.progress)}
-                  style={{ width: `${summary.progress.progressPercent}%` }}
+                  className="relative h-full overflow-hidden rounded-full shadow-sm transition-all duration-1000 ease-out"
+                  style={{ width: `${summary.progress.progressPercent}%`, background: tierMetal.progress }}
                 >
                   <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.42),transparent_54%,rgba(0,0,0,0.08))]" />
                   <span className="absolute inset-0 -translate-x-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.30),transparent)] animate-[customerShimmer_3s_infinite_ease-in-out]" />
@@ -421,31 +422,41 @@ function ExchangeVoucherCard({
 }) {
   const disabled = !offer.eligible || !offer.affordable || isPending;
 
-  const tierStyles: Record<string, { bg: string; border: string; glow: string }> = {
+  const tierStyles: Record<string, { bg: string; border: string; glow: string; text: string; badgeText: string }> = {
     BRONZE: {
       bg: "bg-[#FCF9F6]",
       border: "border-[#D4A373]/30",
       glow: "shadow-sm",
+      text: "text-[#B07D4B]",
+      badgeText: "text-[#8C5D30]",
     },
     SILVER: {
       bg: "bg-gradient-to-br from-slate-50 to-slate-200",
       border: "border-slate-300",
       glow: "shadow-md",
+      text: "text-slate-600",
+      badgeText: "text-slate-700",
     },
     GOLD: {
       bg: "bg-gradient-to-br from-[#FDFBF1] to-[#F3E7C3]",
       border: "border-[#E8D190]",
       glow: "shadow-lg shadow-amber-200/40",
+      text: "text-[#B8860B]",
+      badgeText: "text-[#996515]",
     },
     PLATINUM: {
       bg: "bg-gradient-to-br from-slate-50 to-pink-50",
       border: "border-slate-200",
       glow: "shadow-xl shadow-slate-300/40",
+      text: "text-slate-700",
+      badgeText: "text-slate-800",
     },
     DIAMOND: {
       bg: "bg-[linear-gradient(135deg,#e0f2fe_0%,#e8dbfa_50%,#fce7f3_100%)] relative overflow-hidden",
       border: "border-transparent",
       glow: "shadow-2xl shadow-purple-200/50",
+      text: "text-purple-700",
+      badgeText: "text-purple-800",
     },
   };
 
@@ -474,7 +485,7 @@ function ExchangeVoucherCard({
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/80 shadow-sm backdrop-blur-sm text-slate-700">
           <TicketPercent className="h-5 w-5" />
         </div>
-        <Badge variant="outline" className="border-white/40 bg-white/60 px-3 py-1 font-bold text-slate-700 backdrop-blur-md">
+        <Badge variant="outline" className={cn("border-white/40 bg-white/60 px-3 py-1 font-bold backdrop-blur-md", style.badgeText)}>
           {formatTierLabel(offer.minTier)}
         </Badge>
       </div>
@@ -482,7 +493,7 @@ function ExchangeVoucherCard({
       <div className="relative z-10 mt-5 flex-1">
         <h3 className="text-[17px] font-black text-slate-900 leading-tight">{offer.title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-700">
-          {offer.voucherValue.toLocaleString(locale)} VND voucher {translate(language, "cho thành viên", "for")} <span className="font-bold">{formatTierLabel(offer.minTier)}</span> {translate(language, "trở lên", "and above")}.
+          {offer.voucherValue.toLocaleString(locale)} VND voucher {translate(language, "cho thành viên", "for")} <span className={cn("font-bold", style.text)}>{formatTierLabel(offer.minTier)}</span> {translate(language, "trở lên", "and above")}.
         </p>
       </div>
 
@@ -612,7 +623,7 @@ function MyVouchersList({ language, locale }: { language: string, locale: string
               ? voucher.targetTiers.map(t => formatTierLabel(t as any)).join(", ")
               : translate(language as any, "Tất cả hạng", "All Tiers")
           }
-          validUntil={voucher.endAt ? new Date(voucher.endAt).toLocaleDateString(locale) : "Không giới hạn"}
+          validUntil={voucher.expiredAt ? new Date(voucher.expiredAt).toLocaleDateString(locale) : "Không giới hạn"}
           minOrder={
             voucher.minOrderAmount > 0
               ? `${voucher.minOrderAmount.toLocaleString(locale)} VND`

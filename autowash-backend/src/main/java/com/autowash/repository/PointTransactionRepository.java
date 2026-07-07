@@ -19,6 +19,8 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
 
     Optional<PointTransaction> findByTypeAndBookingId(PointTransactionType type, UUID bookingId);
 
+    Optional<PointTransaction> findByReasonContaining(String reasonPart);
+
     long countByTypeAndBookingId(PointTransactionType type, UUID bookingId);
 
     default Optional<PointTransaction> findByTypeAndReferenceId(PointTransactionType type, String referenceId) {

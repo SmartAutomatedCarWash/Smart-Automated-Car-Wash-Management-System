@@ -19,131 +19,7 @@ type TierProgress = {
   requiredPoints: number;
 };
 
-const tierStyles: Record<Tier, { label: string; ring: string; gradient: string; glow: string; accent: string }> = {
-  BRONZE: {
-    label: "Bronze",
-    ring: "ring-amber-700",
-    gradient: "from-amber-700 via-orange-600 to-amber-600",
-    glow: "shadow-orange-700/40",
-    accent: "text-amber-800",
-  },
-  MEMBER: {
-    label: "Bronze",
-    ring: "ring-amber-700",
-    gradient: "from-amber-700 via-orange-600 to-amber-600",
-    glow: "shadow-orange-700/40",
-    accent: "text-amber-800",
-  },
-  SILVER: {
-    label: "Silver",
-    ring: "ring-slate-300",
-    gradient: "from-slate-500 via-slate-300 to-white",
-    glow: "shadow-slate-300/40",
-    accent: "text-slate-600",
-  },
-  GOLD: {
-    label: "Gold",
-    ring: "ring-yellow-300",
-    gradient: "from-yellow-500 via-amber-300 to-yellow-100",
-    glow: "shadow-yellow-300/50",
-    accent: "text-amber-600",
-  },
-  DIAMOND: {
-    label: "Diamond",
-    ring: "ring-cyan-300",
-    gradient: "from-cyan-400 via-blue-500 to-fuchsia-400",
-    glow: "shadow-cyan-300/50",
-    accent: "text-cyan-600",
-  },
-  PLATINUM: {
-    label: "Platinum",
-    ring: "ring-zinc-300",
-    gradient: "from-zinc-400 via-gray-300 to-zinc-200",
-    glow: "shadow-zinc-300/50",
-    accent: "text-zinc-600",
-  },
-};
-
-type TierMetalStyle = {
-  label: string;
-  surface: string;
-  progress: string;
-  text: string;
-  softText: string;
-  border: string;
-  ring: string;
-  glow: string;
-  glowVar: string;
-};
-
-const tierMetalStyles: Record<Tier, TierMetalStyle> = {
-  BRONZE: {
-    label: "Bronze",
-    surface: "bg-[linear-gradient(135deg,#f7eadb_0%,#d5aa7b_42%,#a9784c_76%,#fff2df_100%)]",
-    progress: "bg-[linear-gradient(90deg,#8f6139_0%,#c3905b_42%,#e4bf8d_62%,#9b6b42_100%)]",
-    text: "text-[#432817]",
-    softText: "text-[#704927]",
-    border: "border-[#c28a56]/70",
-    ring: "ring-[#e8bb86]/65",
-    glow: "shadow-[0_18px_48px_rgba(163,107,66,0.32)]",
-    glowVar: "rgba(194,138,86,0.72)",
-  },
-  MEMBER: {
-    label: "Bronze",
-    surface: "bg-[linear-gradient(135deg,#f7eadb_0%,#d5aa7b_42%,#a9784c_76%,#fff2df_100%)]",
-    progress: "bg-[linear-gradient(90deg,#8f6139_0%,#c3905b_42%,#e4bf8d_62%,#9b6b42_100%)]",
-    text: "text-[#432817]",
-    softText: "text-[#704927]",
-    border: "border-[#c28a56]/70",
-    ring: "ring-[#e8bb86]/65",
-    glow: "shadow-[0_18px_48px_rgba(163,107,66,0.32)]",
-    glowVar: "rgba(194,138,86,0.72)",
-  },
-  SILVER: {
-    label: "Silver",
-    surface: "bg-[linear-gradient(135deg,#f8fbff_0%,#dfe8f2_38%,#b5c1cf_68%,#ffffff_100%)]",
-    progress: "bg-[linear-gradient(90deg,#6f7d8d_0%,#dce5ee_40%,#ffffff_58%,#8997a7_100%)]",
-    text: "text-[#273445]",
-    softText: "text-[#607086]",
-    border: "border-[#c7d4e3]/80",
-    ring: "ring-[#dbe6f2]/80",
-    glow: "shadow-[0_18px_48px_rgba(113,128,150,0.24)]",
-    glowVar: "rgba(148,163,184,0.7)",
-  },
-  GOLD: {
-    label: "Gold",
-    surface: "bg-[linear-gradient(135deg,#fff9df_0%,#f3d47a_38%,#c99718_68%,#fff2b8_100%)]",
-    progress: "bg-[linear-gradient(90deg,#9a6507_0%,#dca91a_40%,#fff0a8_60%,#b77a05_100%)]",
-    text: "text-[#3f2a04]",
-    softText: "text-[#7c5608]",
-    border: "border-[#e5bf45]/70",
-    ring: "ring-[#f7d96d]/65",
-    glow: "shadow-[0_18px_52px_rgba(216,164,20,0.28)]",
-    glowVar: "rgba(216,164,20,0.68)",
-  },
-  DIAMOND: {
-    label: "Diamond",
-    surface: "bg-[linear-gradient(135deg,#eefcff_0%,#a9f3ff_36%,#7db9ff_68%,#ffffff_100%)]",
-    progress: "bg-[linear-gradient(90deg,#0891b2_0%,#67e8f9_38%,#ffffff_58%,#60a5fa_100%)]",
-    text: "text-[#07314a]",
-    softText: "text-[#0e7490]",
-    border: "border-[#8eeaff]/70",
-    ring: "ring-[#a5f3fc]/70",
-    glow: "shadow-[0_18px_52px_rgba(34,211,238,0.24)]",
-    glowVar: "rgba(34,211,238,0.65)",
-  },
-  PLATINUM: {
-    label: "Platinum",
-    surface: "bg-[linear-gradient(135deg,#fbfbff_0%,#e6ebf3_36%,#d9c7f6_68%,#ffffff_100%)]",
-    progress: "bg-[linear-gradient(90deg,#737373_0%,#e9eef5_38%,#fff7fb_58%,#d8b4fe_100%)]",
-    text: "text-[#31283d]",
-    softText: "text-[#6d5d80]",
-    border: "border-[#d8b4fe]/70",
-    ring: "ring-[#ede9fe]/80",
-    glow: "shadow-[0_18px_52px_rgba(168,85,247,0.20)]",
-    glowVar: "rgba(168,85,247,0.48)",
-  },
-};
+import { useTierStyle } from "@/shared/lib/tier-styles";
 
 const liveSessionSteps: LiveSessionStep[] = ["PENDING", "SCHEDULED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED"];
 
@@ -212,27 +88,16 @@ function formatCountdown(milliseconds: number, language: Language) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-export function getCustomerTierStyle(tier?: string | null) {
-  const normalized = (tier ?? "MEMBER").toUpperCase() as Tier;
-  return tierStyles[normalized] ?? tierStyles.MEMBER;
-}
-
 export function TierBadge({ tier }: { tier?: string | null }) {
-  const style = getCustomerTierStyle(tier);
+  const { gradient } = useTierStyle(tier);
   return (
-    <span className={cn(
-      "inline-flex items-center rounded-full px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-white shadow-md",
-      `bg-gradient-to-r ${style.gradient}`,
-      style.glow
-    )}>
-      {style.label}
+    <span 
+      className="inline-flex items-center rounded-full px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-white shadow-md"
+      style={gradient}
+    >
+      {tier || "MEMBER"}
     </span>
   );
-}
-
-export function getCustomerTierMetalStyle(tier?: string | null) {
-  const normalized = (tier ?? "MEMBER").toUpperCase() as Tier;
-  return tierMetalStyles[normalized] ?? tierMetalStyles.MEMBER;
 }
 
 export function CustomerAvatarBadge({
@@ -244,17 +109,23 @@ export function CustomerAvatarBadge({
   tier?: string | null;
   compact?: boolean;
 }) {
-  const style = getCustomerTierStyle(tier);
+  const { gradient, hex } = useTierStyle(tier);
   const initial = name?.trim()?.[0]?.toUpperCase() ?? "A";
 
   return (
     <div className="flex items-center gap-2">
-      <div className={cn("grid h-10 w-10 place-items-center rounded-full bg-white font-black text-[#102A43] shadow-sm ring-2", style.ring)}>
+      <div 
+        className="grid h-10 w-10 place-items-center rounded-full bg-white font-black text-[#102A43] shadow-sm ring-2"
+        style={{ "--tw-ring-color": hex } as React.CSSProperties}
+      >
         {initial}
       </div>
       {!compact ? (
-        <span className={cn("rounded-full bg-gradient-to-r px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow-lg", style.gradient, style.glow)}>
-          {style.label}
+        <span 
+          className="rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow-lg"
+          style={gradient}
+        >
+          {tier || "MEMBER"}
         </span>
       ) : null}
     </div>
@@ -268,7 +139,7 @@ export function TierProgressBar({
   progress: TierProgress;
   language: Language;
 }) {
-  const style = getCustomerTierStyle(progress.currentTier);
+  const { gradient, hex } = useTierStyle(progress.currentTier);
   const requiredPoints = Math.max(progress.requiredPoints, 1);
   const percentage = Math.min(100, Math.round((progress.currentPoints / requiredPoints) * 100));
   const remainingPoints = Math.max(requiredPoints - progress.currentPoints, 0);
@@ -285,23 +156,29 @@ export function TierProgressBar({
             {translate(language, `Còn ${remainingPoints} điểm nữa để lên hạng ${progress.nextTier}`, `${remainingPoints} more points to reach ${progress.nextTier}`)}
           </p>
         </div>
-        <div className={cn("rounded-full bg-gradient-to-r px-3 py-1 text-xs font-black text-white shadow-lg", style.gradient, style.glow)}>
+        <div 
+          className="rounded-full px-3 py-1 text-xs font-black text-white shadow-lg"
+          style={gradient}
+        >
           {percentage}%
         </div>
       </div>
 
       <div className="relative mt-5 h-3 overflow-hidden rounded-full bg-[#EAF6FD] dark:bg-slate-800">
         <div
-          className={cn("relative h-full rounded-full bg-gradient-to-r transition-all duration-700", style.gradient)}
-          style={{ width: `${percentage}%` }}
+          className="relative h-full rounded-full transition-all duration-700"
+          style={{ ...gradient, width: `${percentage}%` }}
         >
           <span className="absolute inset-0 animate-[customerShimmer_1.8s_linear_infinite] bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.55),transparent)]" />
         </div>
         {milestones.map((dot) => (
           <span
             key={dot}
-            className={cn("absolute top-1/2 h-2 w-2 -translate-y-1/2 rounded-full border border-white", dot <= percentage ? "bg-[#06D6A0]" : "bg-[#BFD7EA]")}
-            style={{ left: `calc(${dot}% - 4px)` }}
+            className="absolute top-1/2 h-2 w-2 -translate-y-1/2 rounded-full border border-white"
+            style={{ 
+              left: `calc(${dot}% - 4px)`,
+              backgroundColor: dot <= percentage ? hex : "#BFD7EA"
+            }}
           />
         ))}
       </div>
@@ -327,12 +204,15 @@ export function MembershipFloatingCard({
   requiredPoints: number;
   language: Language;
 }) {
-  const style = getCustomerTierStyle(tier);
+  const { gradient, hex } = useTierStyle(tier);
   const currentTier = ((tier ?? "MEMBER").toUpperCase() as Tier) || "MEMBER";
   const nextTier: Tier = currentTier === "GOLD" || currentTier === "DIAMOND" || currentTier === "PLATINUM" ? "DIAMOND" : currentTier === "SILVER" ? "GOLD" : "SILVER";
 
   return (
-    <div className={cn("relative overflow-hidden rounded-3xl bg-gradient-to-br p-[1px] shadow-2xl", style.gradient, style.glow)}>
+    <div 
+      className="relative overflow-hidden rounded-3xl p-[1px] shadow-2xl"
+      style={{ ...gradient, boxShadow: `0 25px 50px -12px ${hex}80` }}
+    >
       <div className="rounded-3xl bg-white/92 p-5 backdrop-blur dark:bg-slate-950/90">
         <div className="flex items-start justify-between gap-4">
           <div>

@@ -36,10 +36,7 @@ const ADMIN_SETTINGS_COPY = {
       title: "Tiền tệ & Điểm",
       desc: "Cấu hình tiền tệ và quy tắc tích lũy/đổi điểm thưởng.",
       currency: "Tiền tệ",
-      earnPerVnd: "Tích điểm mỗi (VNĐ)",
-      vndPerPoint: "VNĐ mỗi điểm",
-      minRedemption: "Điểm đổi tối thiểu",
-      maxRedemption: "Điểm đổi tối đa",
+      earnPerVnd: "VNĐ để được 1 điểm",
     },
     loyaltyTiers: {
       title: "Hạng Thành viên",
@@ -90,10 +87,7 @@ const ADMIN_SETTINGS_COPY = {
       title: "Currency & Points",
       desc: "Configure currency and the loyalty points earning/redemption rules.",
       currency: "Currency",
-      earnPerVnd: "Earn points per (VND)",
-      vndPerPoint: "VND per point",
-      minRedemption: "Min redemption points",
-      maxRedemption: "Max redemption points",
+      earnPerVnd: "VND per earned point",
     },
     loyaltyTiers: {
       title: "Loyalty Tiers",
@@ -135,9 +129,7 @@ function toForm(data: SystemSettings): SettingsForm {
     maxBookingsPerTimeSlot: data.maxBookingsPerTimeSlot ?? 3,
     currency: data.currency,
     earnPointsUnitAmount: data.earnPointsUnitAmount,
-    vndPerPoint: data.vndPerPoint,
-    minRedemptionPoints: data.minRedemptionPoints,
-    maxRedemptionPoints: data.maxRedemptionPoints,
+    redemptionVoucherExpirationDays: data.redemptionVoucherExpirationDays,
   };
 }
 
@@ -216,14 +208,8 @@ export function AdminSettingsPage() {
 
               {/* Currency */}
               <SettingsSection icon={Coins} title={copy.currencyPoints.title} description={copy.currencyPoints.desc}>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <FieldInput label={copy.currencyPoints.currency} value={form.currency} onChange={(v) => updateField("currency", v)} />
-                  <FieldNumber label={copy.currencyPoints.earnPerVnd} value={form.earnPointsUnitAmount} onChange={(v) => updateField("earnPointsUnitAmount", v)} />
-                  <FieldNumber label={copy.currencyPoints.vndPerPoint} value={form.vndPerPoint} onChange={(v) => updateField("vndPerPoint", v)} />
-                </div>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <FieldNumber label={copy.currencyPoints.minRedemption} value={form.minRedemptionPoints} onChange={(v) => updateField("minRedemptionPoints", v)} />
-                  <FieldNumber label={copy.currencyPoints.maxRedemption} value={form.maxRedemptionPoints} onChange={(v) => updateField("maxRedemptionPoints", v)} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FieldFormattedCurrency label={copy.currencyPoints.earnPerVnd} value={form.earnPointsUnitAmount} onChange={(v) => updateField("earnPointsUnitAmount", v)} />
                 </div>
               </SettingsSection>
 
@@ -304,6 +290,44 @@ function FieldInput({ label, value, onChange }: { label: string; value: string; 
   );
 }
 
+function FieldFormattedCurrency({ label, value, onChange, disabled }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean }) {
+  const [displayValue, setDisplayValue] = useState(() => value ? value.toLocaleString("vi-VN") : "");
+
+  useEffect(() => {
+    setDisplayValue(value ? value.toLocaleString("vi-VN") : "");
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/[^0-9]/g, "");
+    if (!rawValue) {
+      setDisplayValue("");
+      onChange(0);
+      return;
+    }
+    const num = parseInt(rawValue, 10);
+    setDisplayValue(num.toLocaleString("vi-VN"));
+    onChange(num);
+  };
+
+  return (
+    <label className="grid gap-1.5">
+      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+      <div className="relative">
+        <input
+          type="text"
+          value={displayValue}
+          disabled={disabled}
+          onChange={handleChange}
+          className="h-10 w-full rounded-xl border border-border bg-background px-3 pr-28 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+        />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground whitespace-nowrap">
+          VND = 1 Point
+        </span>
+      </div>
+    </label>
+  );
+}
+
 function FieldNumber({ label, value, onChange, disabled }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean }) {
   return (
     <label className="grid gap-1.5">
@@ -376,8 +400,9 @@ function LoyaltyTiersSection({ copy }: { copy: any }) {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-4">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+          <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-5 shadow-sm">
+            <h4 className="text-sm font-bold text-primary mb-4">{copy.loyaltyTiers.create}</h4>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <FieldInput label={copy.loyaltyTiers.code} value={newTier.code} onChange={(v) => setNewTier((current) => ({ ...current, code: v }))} />
               <FieldInput label={copy.loyaltyTiers.name} value={newTier.name} onChange={(v) => setNewTier((current) => ({ ...current, name: v }))} />
               <FieldNumber label={copy.loyaltyTiers.threshold} value={newTier.minPoints} onChange={(v) => setNewTier((current) => ({ ...current, minPoints: v }))} />
@@ -394,22 +419,20 @@ function LoyaltyTiersSection({ copy }: { copy: any }) {
                 ]}
                 onChange={(v) => setNewTier((current) => ({ ...current, priorityScore: v }))}
               />
-            </div>
-            <div className="mt-4">
-              <TierImageUploadField
-                label={copy.loyaltyTiers.image}
+              <FieldColorPicker
+                label="Color Hex"
                 value={newTier.imageUrl}
                 onChange={(value) => setNewTier((current) => ({ ...current, imageUrl: value }))}
               />
             </div>
             <div className="mt-4 flex justify-end">
-              <Button type="button" size="sm" disabled={createMutation.isPending} onClick={handleCreateTier}>
+              <Button type="button" disabled={createMutation.isPending} onClick={handleCreateTier}>
                 {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
                 {copy.loyaltyTiers.create}
               </Button>
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3">
             {tiersQuery.data?.map((tier) => (
               <TierCard key={tier.tier} copy={copy} initialConfig={tier} />
             ))}
@@ -423,6 +446,7 @@ function LoyaltyTiersSection({ copy }: { copy: any }) {
 function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfig }) {
   const updateMutation = useUpdateTierConfig();
   const deleteMutation = useDeleteTierConfig();
+  const [isExpanded, setIsExpanded] = useState(false);
   const [name, setName] = useState(initialConfig.name || initialConfig.tier);
   const [threshold, setThreshold] = useState(initialConfig.minPoints);
   const [multiplier, setMultiplier] = useState(initialConfig.pointMultiplier);
@@ -480,116 +504,151 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
   const isBronze = initialConfig.tier === "BRONZE";
 
   return (
-    <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4 relative group hover:border-primary/30 transition-colors">
-      <div className="flex items-center justify-between">
-        <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold border ${colorMap[initialConfig.tier] || "bg-teal-50 text-teal-700 border-teal-200"}`}>
-          {nameMap[initialConfig.tier] || name || initialConfig.tier}
-        </span>
+    <div className="flex flex-col rounded-xl border border-border/60 bg-muted/20 hover:border-primary/30 transition-all shadow-sm overflow-hidden">
+      <div 
+        className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-4">
+          <span 
+            className="inline-block rounded-full px-3 py-1 text-xs font-black border"
+            style={
+              imageUrl && imageUrl.startsWith("#")
+                ? { color: imageUrl, borderColor: imageUrl, backgroundColor: `${imageUrl}1A` }
+                : { color: "#0f766e", borderColor: "#ccfbf1", backgroundColor: "#f0fdfa" }
+            }
+          >
+            {nameMap[initialConfig.tier] || name || initialConfig.tier}
+          </span>
+          <div className="hidden sm:flex items-center gap-4 text-sm font-medium text-muted-foreground">
+            <span>{threshold.toLocaleString("vi-VN")} pts</span>
+            <span>x{multiplier} multiplier</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <label 
+            className="flex items-center gap-2 text-sm font-semibold text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input type="checkbox" className="accent-primary w-4 h-4" checked={active} onChange={(event) => setActive(event.target.checked)} />
+            <span className="hidden sm:inline">{copy.loyaltyTiers.active}</span>
+          </label>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted text-muted-foreground">
+            {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+          </div>
+        </div>
       </div>
-      <FieldInput label={copy.loyaltyTiers.name} value={name} onChange={setName} />
-      <FieldNumber 
-        label={copy.loyaltyTiers.threshold} 
-        value={threshold} 
-        onChange={setThreshold} 
-        disabled={isBronze}
-      />
-      <FieldNumber 
-        label={copy.loyaltyTiers.multiplier} 
-        value={multiplier} 
-        onChange={setMultiplier} 
-      />
-      <FieldNumber
-        label={copy.loyaltyTiers.rank}
-        value={rankOrder}
-        onChange={setRankOrder}
-      />
-      <FieldSelect 
-        label={copy.loyaltyTiers.priorityScore} 
-        value={priorityScore} 
-        options={[
-          { label: copy.loyaltyTiers.priorityLevels[30], value: 30 },
-          { label: copy.loyaltyTiers.priorityLevels[20], value: 20 },
-          { label: copy.loyaltyTiers.priorityLevels[10], value: 10 },
-          { label: copy.loyaltyTiers.priorityLevels[0], value: 0 },
-        ]}
-        onChange={setPriorityScore} 
-      />
-      <TierImageUploadField label={copy.loyaltyTiers.image} value={imageUrl} onChange={setImageUrl} />
-      <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-        <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
-        {copy.loyaltyTiers.active}
-      </label>
-      {updateMutation.isError && (
-        <div className="text-[10px] text-rose-600 font-medium">
-          {getDisplayErrorMessage(updateMutation.error)}
+      
+      {isExpanded && (
+        <div className="p-5 pt-0 border-t border-border/40 mt-1">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4">
+            <div className="col-span-2 md:col-span-3">
+              <FieldInput label={copy.loyaltyTiers.name} value={name} onChange={setName} />
+            </div>
+            <FieldNumber 
+              label={copy.loyaltyTiers.threshold} 
+              value={threshold} 
+              onChange={setThreshold} 
+              disabled={isBronze}
+            />
+            <FieldNumber 
+              label={copy.loyaltyTiers.multiplier} 
+              value={multiplier} 
+              onChange={setMultiplier} 
+            />
+            <FieldNumber
+              label={copy.loyaltyTiers.rank}
+              value={rankOrder}
+              onChange={setRankOrder}
+            />
+            <FieldSelect 
+              label={copy.loyaltyTiers.priorityScore} 
+              value={priorityScore} 
+              options={[
+                { label: copy.loyaltyTiers.priorityLevels[30], value: 30 },
+                { label: copy.loyaltyTiers.priorityLevels[20], value: 20 },
+                { label: copy.loyaltyTiers.priorityLevels[10], value: 10 },
+                { label: copy.loyaltyTiers.priorityLevels[0], value: 0 },
+              ]}
+              onChange={setPriorityScore} 
+            />
+            <FieldColorPicker label="Tier Color Hex" value={imageUrl} onChange={setImageUrl} />
+          </div>
+
+          {updateMutation.isError && (
+            <div className="mt-3 text-[10px] text-rose-600 font-medium">
+              {getDisplayErrorMessage(updateMutation.error)}
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-2 pt-4">
+            {!initialConfig.systemTier ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-9 border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-50"
+                disabled={deleteMutation.isPending}
+                onClick={handleDelete}
+              >
+                {deleteMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Trash2 className="mr-1.5 h-3.5 w-3.5" />}
+                {copy.loyaltyTiers.delete}
+              </Button>
+            ) : null}
+            <Button 
+              type="button" 
+              size="sm" 
+              className="h-9 text-xs font-bold w-full sm:w-32"
+              variant={isChanged ? "default" : "outline"}
+              disabled={!isChanged || updateMutation.isPending} 
+              onClick={handleSave}
+            >
+              {updateMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
+              {copy.loyaltyTiers.save}
+            </Button>
+          </div>
         </div>
       )}
-      <Button 
-        type="button" 
-        size="sm" 
-        className="w-full h-8 text-xs font-semibold"
-        variant={isChanged ? "default" : "outline"}
-        disabled={!isChanged || updateMutation.isPending} 
-        onClick={handleSave}
-      >
-        {updateMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
-        {copy.loyaltyTiers.save}
-      </Button>
-      {!initialConfig.systemTier ? (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="h-8 w-full border-rose-200 text-xs font-semibold text-rose-600 hover:bg-rose-50"
-          disabled={deleteMutation.isPending}
-          onClick={handleDelete}
-        >
-          {deleteMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Trash2 className="mr-1.5 h-3.5 w-3.5" />}
-          {copy.loyaltyTiers.delete}
-        </Button>
-      ) : null}
     </div>
   );
 }
 
-function TierImageUploadField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const [uploading, setUploading] = useState(false);
+function FieldColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  const [localValue, setLocalValue] = useState(value || "#000000");
 
-  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const uploaded = await uploadTierImage(file);
-      onChange(uploaded.url);
-      toast.success("Image uploaded.");
-    } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
-    } finally {
-      setUploading(false);
-      event.target.value = "";
+  useEffect(() => {
+    if (value && value !== localValue) {
+      setLocalValue(value);
     }
-  }
+  }, [value]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (localValue !== value) {
+        onChange(localValue);
+      }
+    }, 150);
+    return () => clearTimeout(handler);
+  }, [localValue, onChange, value]);
 
   return (
-    <div className="grid gap-2">
+    <label className="grid gap-1.5">
       <span className="text-xs font-semibold text-muted-foreground">{label}</span>
-      {value ? (
-        <img src={value} alt={label} className="h-24 w-full rounded-lg border border-border object-cover" />
-      ) : null}
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         <input
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="h-10 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          placeholder="https://example.com/image.jpg"
+          type="color"
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          className="h-10 w-14 rounded cursor-pointer border border-border p-1 bg-background"
         />
-        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-        <Button type="button" size="icon" variant="outline" disabled={uploading} onClick={() => inputRef.current?.click()}>
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
-        </Button>
+        <input
+          type="text"
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          placeholder="#000000"
+          className="h-10 flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 uppercase"
+        />
       </div>
-    </div>
+    </label>
   );
 }

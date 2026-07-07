@@ -59,7 +59,7 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
                 request.price(),
                 request.durationMinutes(),
                 statusOrActive(request.status()),
-                request.imageUrl()
+                join(request.imageUrls())
         ));
         return toServiceResponse(service);
     }
@@ -74,7 +74,7 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
                 request.price(),
                 request.durationMinutes(),
                 statusOrActive(request.status()),
-                request.imageUrl()
+                join(request.imageUrls())
         );
         return toServiceResponse(service);
     }
@@ -109,7 +109,8 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
                 request.description(),
                 request.basePrice(),
                 request.durationMinutes(),
-                request.imageUrl(),
+                request.category(),
+                join(request.imageUrls()),
                 statusOrActive(request.status())
         ));
         replaceOptions(pkg, request.options());
@@ -125,7 +126,8 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
                 request.description(),
                 request.basePrice(),
                 request.durationMinutes(),
-                request.imageUrl(),
+                request.category(),
+                join(request.imageUrls()),
                 statusOrActive(request.status())
         );
         replaceOptions(pkg, request.options());
@@ -204,13 +206,17 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
                 service.getPrice(),
                 service.getDurationMinutes(),
                 service.getStatus().name(),
-                service.getImageUrl()
+                split(service.getImageUrl())
         );
     }
 
     private PackageResponse toPackageResponse(Package pkg) {
-        List<String> features = packageServiceRepository.findByPackageIdOrderBySortOrderAsc(pkg.getId()).stream()
+        List<PackageService> packageServices = packageServiceRepository.findByPackageIdOrderBySortOrderAsc(pkg.getId());
+        List<String> features = packageServices.stream()
                 .map(PackageService::getOptionName)
+                .toList();
+        List<String> serviceIds = packageServices.stream()
+                .map(ps -> ps.getOptionId().toString())
                 .toList();
         return new PackageResponse(
                 pkg.getId().toString(),
@@ -218,11 +224,20 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
                 pkg.getDescription(),
                 pkg.getBasePrice(),
                 pkg.getDurationMinutes(),
-                null,
+                pkg.getCategory(),
                 features,
-                pkg.getImageUrl(),
+                serviceIds,
+                split(pkg.getImageUrl()),
                 pkg.getStatus().name(),
                 null
         );
+    }
+
+    private String join(List<String> list) {
+        return list == null || list.isEmpty() ? null : String.join(",", list);
+    }
+
+    private List<String> split(String str) {
+        return str == null || str.isEmpty() ? new java.util.ArrayList<>() : java.util.Arrays.asList(str.split(","));
     }
 }

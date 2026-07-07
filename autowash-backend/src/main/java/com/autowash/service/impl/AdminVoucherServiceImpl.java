@@ -3,11 +3,15 @@ package com.autowash.service.impl;
 import com.autowash.dto.AdminVoucherRequest;
 import com.autowash.dto.AdminVoucherRedemptionResponse;
 import com.autowash.dto.AdminVoucherResponse;
+import com.autowash.entity.Service;
 import com.autowash.entity.TierConfig;
-import com.autowash.entity.Voucher;
+import com.autowash.entity.VoucherApplicableService;
+import com.autowash.entity.VoucherTemplate;
 import com.autowash.entity.VoucherTier;
 import com.autowash.entity.enums.ActiveStatus;
-import com.autowash.repository.VoucherRepository;
+import com.autowash.repository.ServiceRepository;
+import com.autowash.repository.VoucherApplicableServiceRepository;
+import com.autowash.repository.VoucherTemplateRepository;
 import com.autowash.repository.VoucherTierRepository;
 import com.autowash.entity.PointTransaction;
 import com.autowash.entity.enums.PointTransactionType;
@@ -24,32 +28,37 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Service
+@org.springframework.stereotype.Service
 public class AdminVoucherServiceImpl implements AdminVoucherService {
 
-    private final VoucherRepository voucherRepository;
+    private final VoucherTemplateRepository voucherTemplateRepository;
     private final VoucherTierRepository voucherTierRepository;
+    private final VoucherApplicableServiceRepository voucherApplicableServiceRepository;
+    private final ServiceRepository serviceRepository;
     private final PointTransactionRepository pointTransactionRepository;
     private final TierConfigService tierConfigService;
 
     public AdminVoucherServiceImpl(
-            VoucherRepository voucherRepository,
+            VoucherTemplateRepository voucherTemplateRepository,
             VoucherTierRepository voucherTierRepository,
+            VoucherApplicableServiceRepository voucherApplicableServiceRepository,
+            ServiceRepository serviceRepository,
             PointTransactionRepository pointTransactionRepository,
             TierConfigService tierConfigService
     ) {
-        this.voucherRepository = voucherRepository;
+        this.voucherTemplateRepository = voucherTemplateRepository;
         this.voucherTierRepository = voucherTierRepository;
+        this.voucherApplicableServiceRepository = voucherApplicableServiceRepository;
+        this.serviceRepository = serviceRepository;
         this.pointTransactionRepository = pointTransactionRepository;
         this.tierConfigService = tierConfigService;
     }
 
     @Transactional(readOnly = true)
     public List<AdminVoucherResponse> listVouchers() {
-        return voucherRepository.findAll(Sort.by(Sort.Order.asc("status"), Sort.Order.asc("endAt"))).stream()
+        return voucherTemplateRepository.findAll(Sort.by(Sort.Order.asc("status"), Sort.Order.asc("endAt"))).stream()
                 .map(this::toVoucherResponse)
                 .toList();
     }
@@ -63,16 +72,19 @@ public class AdminVoucherServiceImpl implements AdminVoucherService {
     public AdminVoucherResponse createVoucher(AdminVoucherRequest request) {
         validateRequest(request);
         String code = normalizeCode(request.code());
-        if (voucherRepository.existsByCode(code)) {
+        if (voucherTemplateRepository.findByCode(code).isPresent()) {
             throw new ApiException(HttpStatus.CONFLICT, "Voucher code already exists", "DUPLICATE_RESOURCE");
         }
-        Voucher voucher = voucherRepository.save(new Voucher(
+        VoucherTemplate voucher = voucherTemplateRepository.save(new VoucherTemplate(
                 code,
                 request.name(),
+                request.description(),
                 request.discountType(),
                 request.discountValue(),
                 request.minOrderAmount(),
                 request.maxDiscountAmount(),
+                request.requiredPoints(),
+                request.validDaysAfterClaim(),
                 request.usageLimit(),
                 request.newCustomerOnly(),
                 request.startAt(),
@@ -80,23 +92,27 @@ public class AdminVoucherServiceImpl implements AdminVoucherService {
                 statusOrActive(request.status())
         ));
         replaceVoucherTiers(voucher.getId(), request.targetTiers());
+        replaceApplicableServices(voucher, request.applicableServiceIds());
         return toVoucherResponse(voucher);
     }
 
     @Transactional
     public AdminVoucherResponse updateVoucher(String code, AdminVoucherRequest request) {
         validateRequest(request);
-        Voucher voucher = requireVoucher(code);
+        VoucherTemplate voucher = requireVoucher(code);
         String requestedCode = normalizeCode(request.code());
         if (!voucher.getCode().equals(requestedCode)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher code cannot be changed", "VALIDATION_ERROR");
         }
         voucher.update(
                 request.name(),
+                request.description(),
                 request.discountType(),
                 request.discountValue(),
                 request.minOrderAmount(),
                 request.maxDiscountAmount(),
+                request.requiredPoints(),
+                request.validDaysAfterClaim(),
                 request.usageLimit(),
                 request.newCustomerOnly(),
                 request.startAt(),
@@ -104,12 +120,13 @@ public class AdminVoucherServiceImpl implements AdminVoucherService {
                 statusOrActive(request.status())
         );
         replaceVoucherTiers(voucher.getId(), request.targetTiers());
+        replaceApplicableServices(voucher, request.applicableServiceIds());
         return toVoucherResponse(voucher);
     }
 
     @Transactional
     public AdminVoucherResponse deleteVoucher(String code) {
-        Voucher voucher = requireVoucher(code);
+        VoucherTemplate voucher = requireVoucher(code);
         voucher.deactivate();
         return toVoucherResponse(voucher);
     }
@@ -146,23 +163,35 @@ public class AdminVoucherServiceImpl implements AdminVoucherService {
         return "%" + searchQuery.trim().toLowerCase() + "%";
     }
 
-    private AdminVoucherResponse toVoucherResponse(Voucher voucher) {
+    private AdminVoucherResponse toVoucherResponse(VoucherTemplate voucher) {
         return new AdminVoucherResponse(
                 voucher.getCode(),
+                voucher.getName(),
+                voucher.getDescription(),
                 voucher.getDiscountType().name(),
-                Math.toIntExact(voucher.getDiscountValue()),
+                voucher.getDiscountValue(),
                 voucher.getMinOrderAmount(),
-                voucher.getEndAt(),
-                voucher.getStatus() == com.autowash.entity.enums.ActiveStatus.ACTIVE,
+                voucher.getMaxDiscountAmount(),
+                voucher.getRequiredPoints(),
+                voucher.getValidDaysAfterClaim(),
+                voucher.getEndAt(), // Keep expiresAt populated with endAt for backwards compatibility if needed
+                voucher.getStatus() == ActiveStatus.ACTIVE,
                 voucher.isNewCustomerOnly(),
                 voucherTierRepository.findByVoucherId(voucher.getId()).stream()
                         .map(VoucherTier::getTier)
-                        .toList()
+                        .toList(),
+                voucherApplicableServiceRepository.findAllByVoucherTemplateId(voucher.getId()).stream()
+                        .map(vas -> vas.getService().getId())
+                        .toList(),
+                voucher.getStartAt(),
+                voucher.getEndAt(),
+                voucher.getStatus().name(),
+                voucher.getUsageLimit()
         );
     }
 
-    private Voucher requireVoucher(String code) {
-        return voucherRepository.findByCode(normalizeCode(code))
+    private VoucherTemplate requireVoucher(String code) {
+        return voucherTemplateRepository.findByCode(normalizeCode(code))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Voucher not found", "RESOURCE_NOT_FOUND"));
     }
 
@@ -177,6 +206,18 @@ public class AdminVoucherServiceImpl implements AdminVoucherService {
                 .peek(tierConfigService::getConfig)
                 .map(tier -> new VoucherTier(voucherId, tier))
                 .toList());
+    }
+    
+    private void replaceApplicableServices(VoucherTemplate voucher, List<UUID> serviceIds) {
+        voucherApplicableServiceRepository.deleteAllByVoucherTemplateId(voucher.getId());
+        if (serviceIds == null || serviceIds.isEmpty()) {
+            return;
+        }
+        for (UUID serviceId : serviceIds) {
+            Service service = serviceRepository.findById(serviceId)
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Service not found", "RESOURCE_NOT_FOUND"));
+            voucherApplicableServiceRepository.save(new VoucherApplicableService(voucher, service));
+        }
     }
 
     private void validateRequest(AdminVoucherRequest request) {

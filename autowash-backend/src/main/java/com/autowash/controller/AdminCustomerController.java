@@ -107,6 +107,16 @@ public class AdminCustomerController {
         );
     }
 
+    @PutMapping("/customers/{customerId}/points")
+    @Operation(summary = "Add/deduct customer active points for admin")
+    public ApiResponse<Void> updateCustomerPoints(
+            @PathVariable UUID customerId,
+            @Valid @RequestBody com.autowash.dto.AdjustPointsRequest request
+    ) {
+        adminReportingService.adjustActivePoints(customerId, request.points(), request.reason());
+        return ApiResponse.ok("Customer points adjusted", null);
+    }
+
     @GetMapping("/customers/{customerId}/wash-sessions")
     @Operation(summary = "List completed wash sessions for a customer")
     public ApiResponse<List<AdminWashHistoryResponse>> getWashSessions(

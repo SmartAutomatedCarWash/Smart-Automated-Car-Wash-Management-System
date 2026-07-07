@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { TierBadge, getCustomerTierStyle } from "@/shared/ui/customer/customer-experience";
+import { TierBadge } from "@/shared/ui/customer/customer-experience";
 import {
   ArrowRightFromLine,
   Bell,
@@ -52,7 +52,8 @@ import { useQuery } from "@tanstack/react-query";
 import { MarqueeTicker } from "@/shared/ui/marquee-ticker";
 import { getEligibleSessionBookings, getOperationsQueue } from "@/features/operations/lib/operations-service";
 import { useCustomerNotifications, useMarkCustomerNotificationAsRead } from "@/features/notifications/hooks/use-customer-notifications";
-import { getCustomerTierMetalStyle } from "@/shared/ui/customer/customer-experience";
+import { useTierStore } from "@/shared/store/tier.store";
+import { useTierStyle } from "@/shared/lib/tier-styles";
 
 type RoleWorkspaceShellProps = {
   requiredRole: UserRole;
@@ -122,7 +123,9 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
   const isStaff = requiredRole === "STAFF";
   const isCustomer = requiredRole === "CUSTOMER";
-  const tierStyle = isCustomer && user ? getCustomerTierStyle(user.tier) : null;
+  const tierStyleData = useTierStyle(user?.tier);
+  const tierStyle = isCustomer && user ? tierStyleData : null;
+  const customerTierMetal = tierStyle?.metal;
 
   const eligibleQuery = useQuery({
     queryKey: ["staff-notifications", "eligible"],
@@ -160,6 +163,8 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const mobileItems = mobileNavForRole(requiredRole);
   const headerMeta = getWorkspaceHeaderMeta(pathname);
 
+  const { fetchTiers } = useTierStore();
+  
   // Sync language from localStorage on mount
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -172,6 +177,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
   useEffect(() => { setIsMounted(true); }, []);
   useEffect(() => { setMobileMenuOpen(false); }, [pathname]);
+  useEffect(() => { fetchTiers(); }, [fetchTiers]);
 
   // Staff notification tracking
   useEffect(() => {
@@ -259,12 +265,11 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     : "/admin/dashboard";
 
   const quickActions = getProfileQuickActions(requiredRole);
-  const customerTierMetal = requiredRole === "CUSTOMER" ? getCustomerTierMetalStyle(user.tier) : null;
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col h-screen overflow-hidden">
       {requiredRole === "CUSTOMER" && <MarqueeTicker />}
-      <div className={cn("flex flex-1 text-foreground relative", requiredRole === "CUSTOMER" ? "bg-[#f7fcff]" : "bg-background")}>
+      <div className={cn("flex flex-1 text-foreground relative overflow-hidden", requiredRole === "CUSTOMER" ? "bg-[#f7fcff]" : "bg-background")}>
         <div 
           className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--card))_55%,hsl(var(--muted))_100%)]" 
           style={requiredRole === "CUSTOMER" ? { background: "radial-gradient(circle at top left, rgba(0,184,217,0.12), #f7fcff 68%)" } : undefined}
@@ -273,7 +278,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       {/* ── Sidebar ── */}
       <aside
         className={cn(
-          "sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-border/70 bg-card/85 backdrop-blur-xl transition-all duration-300 lg:flex",
+          "sticky top-0 z-20 hidden h-full shrink-0 flex-col border-r border-border/70 bg-card/85 backdrop-blur-xl transition-all duration-300 lg:flex",
           requiredRole === "CUSTOMER"
             ? (sidebarCollapsed ? "w-[5.25rem] bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.02)]" : "w-64 bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.02)]")
             : (sidebarCollapsed ? "w-[5.25rem]" : "w-72"),
@@ -352,7 +357,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       </aside>
 
       {/* ── Main content ── */}
-      <div className="relative z-10 flex min-w-0 flex-1 flex-col">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-y-auto">
         {/* Header */}
         <header className="sticky top-0 z-30 border-b border-border/70 bg-background/90 px-4 py-4 backdrop-blur-xl lg:px-8">
           <div className="flex items-start justify-between gap-3">
@@ -614,38 +619,33 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <button
                     type="button"
                     className={cn(
-                      "group flex h-10 max-w-[9.75rem] items-center gap-1.5 rounded-xl border px-2 py-1.5 text-left transition sm:w-[11.75rem] sm:max-w-[11.75rem] sm:px-2",
+                      "group flex h-10 w-auto items-center gap-2 rounded-xl border px-3 py-1.5 text-left transition sm:px-3",
                       customerTierMetal
-                        ? "relative overflow-hidden border-[#c28a56]/70 bg-[#d5aa7b] shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_0_0_1px_rgba(255,238,210,0.34),0_8px_20px_rgba(163,107,66,0.20)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_0_0_1px_rgba(255,238,210,0.46),0_10px_24px_rgba(163,107,66,0.24)] [&>*]:relative [&>*]:z-10"
+                        ? "relative overflow-hidden border-transparent shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_4px_14px_rgba(0,0,0,0.15)] [&>*]:relative [&>*]:z-10"
                         : "border-border/70 bg-card/90 hover:border-primary/30 hover:bg-card",
                     )}
+                    style={customerTierMetal ? { background: customerTierMetal.surface, borderColor: customerTierMetal.border } : {}}
                     aria-label={t("Mở menu hồ sơ", "Open profile menu")}
                   >
                     {customerTierMetal ? (
-                      <span className={cn("absolute inset-0 rounded-xl opacity-100", customerTierMetal.surface)} />
-                    ) : null}
-                    {customerTierMetal ? (
                       <>
-                        <span className="absolute inset-0 rounded-xl bg-[linear-gradient(135deg,rgba(255,255,255,0.40)_0%,rgba(255,255,255,0.10)_42%,rgba(67,40,23,0.12)_100%)]" />
-                        <span className="absolute inset-x-3 top-px h-px bg-white/70" />
-                        <span className="absolute left-8 top-1.5 h-1 w-1 rounded-full bg-white/50 shadow-[0_0_8px_rgba(255,255,255,0.52)]" />
-                        <span className="absolute right-6 top-2 h-1 w-1 rounded-full bg-[#fff3d6]/55 shadow-[0_0_10px_rgba(255,232,186,0.58)]" />
-                        <span className="absolute bottom-2 right-12 h-0.5 w-0.5 rounded-full bg-white/50 shadow-[0_0_7px_rgba(255,255,255,0.50)]" />
+                        <span className="absolute inset-0 rounded-xl bg-[linear-gradient(135deg,rgba(255,255,255,0.30)_0%,rgba(255,255,255,0.05)_42%,rgba(0,0,0,0.12)_100%)]" />
+                        <span className="absolute inset-x-3 top-px h-px bg-white/40" />
                       </>
                     ) : null}
-                    <Avatar className={cn("h-7 w-7 border bg-[#fcf9f5]/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_3px_8px_rgba(67,40,23,0.15)]", customerTierMetal ? ["ring-2", customerTierMetal.ring, customerTierMetal.border] : workspaceTheme.accentSoft)}>
+                    <Avatar className={cn("h-7 w-7 border shadow-sm", customerTierMetal ? "" : workspaceTheme.accentSoft)} style={customerTierMetal ? { background: "rgba(255,255,255,0.8)", borderColor: customerTierMetal.border } : {}}>
                       <AvatarImage src={user.avatarUrl ?? undefined} alt={user.fullName} className="object-cover" />
-                      <AvatarFallback className={cn("text-[10px] font-black", customerTierMetal ? ["bg-[#fcf9f5]/80", customerTierMetal.text] : workspaceTheme.accentSoft)}>
+                      <AvatarFallback className={cn("text-[10px] font-black", customerTierMetal ? "" : workspaceTheme.accentSoft)} style={customerTierMetal ? { color: customerTierMetal.text } : {}}>
                         {getUserInitials(user.fullName)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="hidden min-w-0 sm:block">
-                      <div className={cn("truncate text-[13px] font-black leading-tight", customerTierMetal?.text)}>{user.fullName}</div>
-                      <div className={cn("truncate text-[10px] font-black uppercase tracking-wide", customerTierMetal ? customerTierMetal.softText : "text-muted-foreground")}>
+                      <div className={cn("truncate text-[13px] font-black leading-tight")} style={customerTierMetal ? { color: customerTierMetal.text } : {}}>{user.fullName}</div>
+                      <div className={cn("truncate text-[10px] font-black uppercase tracking-wide")} style={customerTierMetal ? { color: customerTierMetal.softText } : {}}>
                         {requiredRole === "CUSTOMER" ? (user.tier ?? (t("THÀNH VIÊN", "MEMBER"))) : user.role}
                       </div>
                     </div>
-                    <ChevronDown className={cn("hidden h-3.5 w-3.5 transition group-data-[state=open]:rotate-180 sm:block", customerTierMetal ? customerTierMetal.softText : "text-muted-foreground")} />
+                    <ChevronDown className={cn("hidden h-3.5 w-3.5 transition group-data-[state=open]:rotate-180 sm:block", customerTierMetal ? "" : "text-muted-foreground")} style={customerTierMetal ? { color: customerTierMetal.softText } : {}} />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -974,7 +974,7 @@ function SidebarNavLink({
   collapsed: boolean;
   activeClassName: string;
   language: "vi" | "en";
-  tierStyle?: ReturnType<typeof getCustomerTierStyle> | null;
+  tierStyle?: ReturnType<typeof useTierStyle> | null;
   onNavigate?: () => void;
 }) {
   const active = isNavActive(pathname, item);
@@ -996,9 +996,9 @@ function SidebarNavLink({
       >
         <Icon 
           className={cn(
-            "h-4 w-4 shrink-0",
-            isLoyaltyItem && tierStyle && !active ? tierStyle.accent : ""
-          )} 
+            "h-4 w-4 shrink-0"
+          )}
+          style={isLoyaltyItem && tierStyle && !active ? { color: tierStyle.hex } : undefined}
         />
         {!collapsed && <span>{displayLabel}</span>}
       </Link>

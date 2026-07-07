@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 public record AdminVoucherRequest(
         @NotBlank
@@ -18,15 +19,19 @@ public record AdminVoucherRequest(
         @NotBlank
         @Size(max = 120)
         String name,
+        String description,
         @NotNull DiscountType discountType,
-        @Min(1) long discountValue,
+        @Min(0) long discountValue,
         @Min(0) long minOrderAmount,
         @Min(0) Long maxDiscountAmount,
+        @Min(0) int requiredPoints,
+        @Min(1) int validDaysAfterClaim,
         @Min(1) Integer usageLimit,
         boolean newCustomerOnly,
         @NotNull Instant startAt,
         @NotNull Instant endAt,
         ActiveStatus status,
-        List<String> targetTiers
+        List<String> targetTiers,
+        List<UUID> applicableServiceIds
 ) {
 }

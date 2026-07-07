@@ -9,7 +9,7 @@ import { Badge } from "@/shared/ui/ui/badge";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
-import { useAdminAccountDetail, useUpdateAdminCustomerRole, useUpdateAdminCustomerStatus } from "@/features/reports/hooks/use-admin-reporting";
+import { useAdminAccountDetail, useUpdateAdminCustomerStatus, useUpdateAdminCustomerPoints } from "@/features/reports/hooks/use-admin-reporting";
 import type { AdminEditableAccountRole } from "@/entities/reports";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
@@ -41,20 +41,19 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
   const router = useRouter();
   const { language } = useLanguageStore();
   const detailQuery = useAdminAccountDetail(accountId);
-  const updateRoleMutation = useUpdateAdminCustomerRole(accountId);
   const updateStatusMutation = useUpdateAdminCustomerStatus(accountId);
-  const [roleDraft, setRoleDraft] = useState<AdminEditableAccountRole>("CUSTOMER");
+  const updatePointsMutation = useUpdateAdminCustomerPoints(accountId);
   const [statusDraft, setStatusDraft] = useState<string>("ACTIVE");
+  const [pointsDraft, setPointsDraft] = useState<string>("");
+  const [pointsReason, setPointsReason] = useState<string>("");
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [pointsFeedback, setPointsFeedback] = useState<string | null>(null);
 
   useEffect(() => {
-    if (detailQuery.data?.role) {
-      setRoleDraft(detailQuery.data.role as AdminEditableAccountRole);
-    }
     if (detailQuery.data?.status) {
       setStatusDraft(detailQuery.data.status);
     }
-  }, [detailQuery.data?.role, detailQuery.data?.status]);
+  }, [detailQuery.data?.status]);
 
   const account = detailQuery.data;
 
@@ -124,21 +123,6 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
                 <div className="space-y-4 border-t border-slate-200 pt-4">
                   <div className="space-y-3">
                     <label className="block space-y-1.5">
-                      <span className="text-xs font-medium text-slate-500">{translate(language, "Vai trò tài khoản", "Account role")}</span>
-                      <select
-                        className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
-                        value={roleDraft}
-                        onChange={(event) => setRoleDraft(event.target.value as AdminEditableAccountRole)}
-                      >
-                        {ROLE_OPTIONS.map((role) => (
-                          <option key={role} value={role}>
-                            {translateEnumLabel(role, language as "vi" | "en")}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="block space-y-1.5">
                       <span className="text-xs font-medium text-slate-500">{translate(language, "Trạng thái tài khoản", "Account status")}</span>
                       <select
                         className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
@@ -161,34 +145,18 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
                     onClick={async () => {
                       setFeedback(null);
                       try {
-                        const promises = [];
-                        let roleChanged = false;
-                        
-                        if (roleDraft !== account?.role) {
-                          promises.push(updateRoleMutation.mutateAsync({ role: roleDraft }).then(res => {
-                            if (res.role !== "CUSTOMER") roleChanged = true;
-                          }));
-                        }
                         if (statusDraft !== account?.status) {
-                          promises.push(updateStatusMutation.mutateAsync({ status: statusDraft as any }));
-                        }
-                        
-                        if (promises.length > 0) {
-                          await Promise.all(promises);
+                          await updateStatusMutation.mutateAsync({ status: statusDraft as any });
                           setFeedback(translate(language, "Cập nhật thành công.", "Successfully updated."));
-                          if (roleChanged) {
-                            router.replace("/admin/accounts");
-                          } else {
-                            void detailQuery.refetch();
-                          }
+                          void detailQuery.refetch();
                         }
                       } catch (error) {
                         setFeedback(getDisplayErrorMessage(error));
                       }
                     }}
-                    disabled={updateRoleMutation.isPending || updateStatusMutation.isPending}
+                    disabled={updateStatusMutation.isPending || statusDraft === account?.status}
                   >
-                    {updateRoleMutation.isPending || updateStatusMutation.isPending
+                    {updateStatusMutation.isPending
                       ? translate(language, "Đang cập nhật...", "Updating...") 
                       : translate(language, "Lưu thay đổi", "Save changes")}
                   </Button>
@@ -196,6 +164,70 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
                 </div>
               </CardContent>
             </Card>
+
+            {account.role === "CUSTOMER" && (
+              <Card className="rounded-md border-slate-200 bg-white shadow-sm mt-5">
+                <CardContent className="space-y-4 p-5">
+                  <h2 className="text-base font-semibold text-slate-950">
+                    {translate(language, "Cộng/Trừ điểm khả dụng", "Add/Deduct active points")}
+                  </h2>
+                  <div className="space-y-3">
+                    <label className="block space-y-1.5">
+                      <span className="text-xs font-medium text-slate-500">{translate(language, "Số điểm (+ để cộng, - để trừ)", "Points (+ to add, - to deduct)")}</span>
+                      <input
+                        type="number"
+                        className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
+                        placeholder="e.g. 100 or -50"
+                        value={pointsDraft}
+                        onChange={(e) => setPointsDraft(e.target.value)}
+                      />
+                    </label>
+                    <label className="block space-y-1.5">
+                      <span className="text-xs font-medium text-slate-500">{translate(language, "Lý do", "Reason")}</span>
+                      <input
+                        type="text"
+                        className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
+                        placeholder={translate(language, "Nhập lý do điều chỉnh...", "Enter reason...")}
+                        value={pointsReason}
+                        onChange={(e) => setPointsReason(e.target.value)}
+                      />
+                    </label>
+                  </div>
+                  <Button
+                    type="button"
+                    className="w-full"
+                    variant="outline"
+                    onClick={async () => {
+                      setPointsFeedback(null);
+                      const points = parseInt(pointsDraft, 10);
+                      if (isNaN(points) || points === 0) {
+                        setPointsFeedback(translate(language, "Vui lòng nhập số điểm hợp lệ.", "Please enter a valid points amount."));
+                        return;
+                      }
+                      if (!pointsReason.trim()) {
+                        setPointsFeedback(translate(language, "Vui lòng nhập lý do.", "Please enter a reason."));
+                        return;
+                      }
+                      try {
+                        await updatePointsMutation.mutateAsync({ points, reason: pointsReason });
+                        setPointsFeedback(translate(language, "Cập nhật điểm thành công.", "Successfully updated points."));
+                        setPointsDraft("");
+                        setPointsReason("");
+                        void detailQuery.refetch();
+                      } catch (error) {
+                        setPointsFeedback(getDisplayErrorMessage(error));
+                      }
+                    }}
+                    disabled={updatePointsMutation.isPending}
+                  >
+                    {updatePointsMutation.isPending
+                      ? translate(language, "Đang xử lý...", "Processing...") 
+                      : translate(language, "Thực hiện", "Execute")}
+                  </Button>
+                  {pointsFeedback ? <p className="text-xs text-slate-600">{pointsFeedback}</p> : null}
+                </CardContent>
+              </Card>
+            )}
 
             <Card className="rounded-md border-slate-200 bg-white shadow-sm">
               <CardContent className="p-5">

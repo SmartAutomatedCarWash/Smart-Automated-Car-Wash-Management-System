@@ -193,6 +193,18 @@ export function useUpdateAdminCustomerTier(customerId: string) {
   });
 }
 
+export function useUpdateAdminCustomerPoints(customerId: string) {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminReportingContext();
+
+  return useMutation<void, ApiErrorResponse, { points: number; reason: string }>({
+    mutationFn: (payload) => import("@/features/reports/api/admin-reporting-service").then(m => m.updateAdminCustomerPoints(customerId, payload)),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: adminReportingScope(userId) });
+    },
+  });
+}
+
 export function useCreateAdminStaff() {
   const queryClient = useQueryClient();
   const { userId } = useAdminReportingContext();

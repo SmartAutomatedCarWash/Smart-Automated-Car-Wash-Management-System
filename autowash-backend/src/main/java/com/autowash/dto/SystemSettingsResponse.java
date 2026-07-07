@@ -10,9 +10,7 @@ public record SystemSettingsResponse(
         int maxBookingsPerTimeSlot,
         String currency,
         int earnPointsUnitAmount,
-        int vndPerPoint,
-        int minRedemptionPoints,
-        int maxRedemptionPoints,
+        int redemptionVoucherExpirationDays,
         String updatedAt
 ) {
 }

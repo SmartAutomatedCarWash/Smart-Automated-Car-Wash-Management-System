@@ -12,6 +12,9 @@ import {
   listAdminCatalogPackages,
   listAdminCatalogServices,
   listAdminCombos,
+  updateAdminCombo,
+  updateAdminPackage,
+  updateAdminService,
 } from "@/features/management/lib/admin-service-management-service";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type {
@@ -90,6 +93,18 @@ export function useDeleteAdminCombo() {
   });
 }
 
+export function useUpdateAdminCombo() {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminManagementContext();
+
+  return useMutation<AdminCombo, ApiErrorResponse, AdminComboForm & { comboId: string }>({
+    mutationFn: updateAdminCombo,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: adminManagementScope(userId) });
+    },
+  });
+}
+
 export function useCreateAdminService() {
   const queryClient = useQueryClient();
   const { userId } = useAdminManagementContext();
@@ -102,7 +117,7 @@ export function useCreateAdminService() {
         price: Number(form.price),
         duration: Number(form.duration),
         status: form.status,
-        imageUrl: form.imageUrl || null,
+        imageUrls: form.imageUrls || [],
       });
     },
     onSuccess: async () => {
@@ -117,6 +132,28 @@ export function useDeleteAdminService() {
 
   return useMutation<AdminCatalogService, ApiErrorResponse, string>({
     mutationFn: deleteAdminService,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: adminManagementScope(userId) });
+    },
+  });
+}
+
+export function useUpdateAdminService() {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminManagementContext();
+
+  return useMutation<AdminCatalogService, ApiErrorResponse, AdminServiceForm & { serviceId: string }>({
+    mutationFn: async (form) => {
+      return updateAdminService({
+        serviceId: form.serviceId,
+        name: form.name,
+        description: form.description,
+        price: Number(form.price),
+        duration: Number(form.duration),
+        status: form.status,
+        imageUrls: form.imageUrls || [],
+      });
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: adminManagementScope(userId) });
     },
@@ -141,7 +178,7 @@ export function useCreateAdminPackage() {
         features,
         status: form.status,
         serviceIds: form.serviceIds,
-        imageUrl: form.imageUrl || null,
+        imageUrls: form.imageUrls || [],
       });
     },
     onSuccess: async () => {
@@ -156,6 +193,34 @@ export function useDeleteAdminPackage() {
 
   return useMutation<AdminCatalogPackage, ApiErrorResponse, string>({
     mutationFn: deleteAdminPackage,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: adminManagementScope(userId) });
+    },
+  });
+}
+
+export function useUpdateAdminPackage() {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminManagementContext();
+
+  return useMutation<AdminCatalogPackage, ApiErrorResponse, AdminPackageForm & { packageId: string }>({
+    mutationFn: async (form) => {
+      const features = form.features
+        ? form.features.split(",").map((f) => f.trim()).filter(Boolean)
+        : [];
+      return updateAdminPackage({
+        packageId: form.packageId,
+        name: form.name,
+        description: form.description,
+        basePrice: Number(form.basePrice),
+        duration: Number(form.duration),
+        category: form.category,
+        features,
+        status: form.status,
+        serviceIds: form.serviceIds,
+        imageUrls: form.imageUrls || [],
+      });
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: adminManagementScope(userId) });
     },

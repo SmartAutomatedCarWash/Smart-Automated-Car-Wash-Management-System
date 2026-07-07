@@ -15,10 +15,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Set;
+import com.autowash.service.ImageUploadService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import java.util.UUID;
 
 @Service
-public class LocalImageUploadService {
+@ConditionalOnProperty(prefix = "autowash.storage.s3", name = "enabled", havingValue = "false", matchIfMissing = true)
+public class LocalImageUploadServiceImpl implements ImageUploadService {
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             MediaType.IMAGE_JPEG_VALUE,
@@ -30,7 +33,7 @@ public class LocalImageUploadService {
     private final Path uploadRoot;
     private final long maxSizeBytes;
 
-    public LocalImageUploadService(
+    public LocalImageUploadServiceImpl(
             @Value("${autowash.upload.dir:uploads}") String uploadDir,
             @Value("${autowash.upload.max-image-size-bytes:5242880}") long maxSizeBytes
     ) {
@@ -38,6 +41,7 @@ public class LocalImageUploadService {
         this.maxSizeBytes = maxSizeBytes;
     }
 
+    @Override
     public ImageUploadResponse store(MultipartFile file, String folder, HttpServletRequest request) {
         if (file == null || file.isEmpty()) {
             throw validationError("file", "Image file is required");

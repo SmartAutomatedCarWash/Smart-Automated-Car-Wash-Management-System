@@ -9,9 +9,7 @@ export type SystemSettings = {
   maxBookingsPerTimeSlot: number;
   currency: string;
   earnPointsUnitAmount: number;
-  vndPerPoint: number;
-  minRedemptionPoints: number;
-  maxRedemptionPoints: number;
+  redemptionVoucherExpirationDays: number;
   updatedAt: string;
 };
 

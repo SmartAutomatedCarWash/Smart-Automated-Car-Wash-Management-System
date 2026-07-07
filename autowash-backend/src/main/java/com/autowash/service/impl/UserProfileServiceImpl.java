@@ -71,6 +71,8 @@ public class UserProfileServiceImpl implements UserProfileService {
                 loyaltyService.getAccount(user.getId()).tier(),
                 hasGoogleAuth,
                 user.isNewCustomer(),
+                user.getDateOfBirth(),
+                user.isBirthdayLocked(),
                 customerLoyaltyService.getCurrentBalance(user),
                 user.getCreatedAt(),
                 new UserPreferencesDto(
@@ -130,6 +132,15 @@ public class UserProfileServiceImpl implements UserProfileService {
             user.setEmail(request.email());
         }
         user.setPhone(normalizedPhone);
+        
+        if (request.dateOfBirth() != null) {
+            if (!user.isBirthdayLocked()) {
+                user.updateDateOfBirth(request.dateOfBirth());
+            } else if (!request.dateOfBirth().equals(user.getDateOfBirth())) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Date of birth is locked and cannot be changed", "VALIDATION_ERROR");
+            }
+        }
+        
         user.markNotNewCustomer();
 
         return new UpdateUserProfileResponse(

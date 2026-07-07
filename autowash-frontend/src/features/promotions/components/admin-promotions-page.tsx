@@ -63,6 +63,8 @@ import type {
 import type { LoyaltyTier } from "@/entities/loyalty";
 import { useTierConfigs } from "@/features/settings/hooks/use-admin-tiers";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
+import { useTierStore } from "@/shared/store/tier.store";
+import { DynamicTierBadge } from "@/shared/ui/workspace/dynamic-tier-badge";
 
 type PromotionFormValues = {
   name: string;
@@ -102,13 +104,18 @@ const EMPTY_FORM: PromotionFormValues = {
 
 export function AdminPromotionsPageContent() {
   const { language } = useLanguageStore();
+  const { fetchTiers } = useTierStore();
+  
+  useEffect(() => {
+    fetchTiers();
+  }, [fetchTiers]);
+
   const [displayPage, setDisplayPage] = useState(1);
   const [filters, setFilters] = useState<PromotionFilters>({ name: "", status: "ALL", date: "" });
   const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null);
   const [editingPromotionId, setEditingPromotionId] = useState<string | null>(null);
   const [form, setForm] = useState<PromotionFormValues>(EMPTY_FORM);
   const [showValidation, setShowValidation] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const promotionsQuery = useAdminPromotions(1, FETCH_LIMIT);
@@ -116,7 +123,6 @@ export function AdminPromotionsPageContent() {
   const promotionDetailQuery = useAdminPromotion(editingPromotionId);
   const createMutation = useCreateAdminPromotion();
   const updateMutation = useUpdateAdminPromotion();
-  const deleteMutation = useDeleteAdminPromotion();
   const tierOptions = tiersQuery.data?.map((tier) => tier.tier) ?? FALLBACK_TIERS;
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
@@ -231,19 +237,8 @@ export function AdminPromotionsPageContent() {
     }
   };
 
-  const handleDelete = async (promotionId: string) => {
-    try {
-      await deleteMutation.mutateAsync(promotionId);
-      toast.success(translate(language, "Đã xoá chương trình khuyến mãi.", "Promotion deleted."));
-      setConfirmDeleteId(null);
-    } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
-    }
-  };
-
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.12),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.10),_transparent_24%),linear-gradient(180deg,_#fffdf9_0%,_#f8fafc_48%,_#f7f9fc_100%)] p-4 md:p-8 lg:p-10">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
         <section className="overflow-hidden rounded-[28px] border border-white/70 bg-white/90 shadow-[0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur">
           <div className="grid gap-8 px-6 py-7 md:px-8 lg:grid-cols-[1.25fr_0.95fr] lg:items-end">
             <div className="space-y-5">
@@ -294,20 +289,20 @@ export function AdminPromotionsPageContent() {
                 <div
                   key={card.label}
                   className={cn(
-                    "rounded-[22px] bg-gradient-to-br p-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]",
+                    "rounded-2xl bg-gradient-to-br p-3.5 shadow-md",
                     card.tone,
                   )}
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/80">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">
                         {card.label}
                       </p>
-                      <p className="mt-3 text-3xl font-black tracking-tight">{card.value}</p>
-                      <p className="mt-2 text-xs leading-5 text-white/80">{card.description}</p>
+                      <p className="mt-1 text-2xl font-black tracking-tight">{card.value}</p>
+                      <p className="mt-1.5 text-[11px] leading-snug text-white/80 line-clamp-2">{card.description}</p>
                     </div>
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/18 ring-1 ring-white/20">
-                      <Icon className="h-5 w-5" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/20 ring-1 ring-white/30">
+                      <Icon className="h-4 w-4" />
                     </div>
                   </div>
                 </div>
@@ -729,16 +724,33 @@ export function AdminPromotionsPageContent() {
                                   {translate(language, "Tất cả các hạng", "All tiers")}
                                 </Badge>
                               ) : (
-                                <div className="flex max-w-[220px] flex-wrap gap-1.5">
-                                  {promotion.applicableTiers.map((tier) => (
-                                    <Badge
-                                      key={tier}
-                                      variant="outline"
-                                      className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800"
-                                    >
-                                      {tier}
-                                    </Badge>
+                                <div className="flex max-w-[220px] flex-wrap gap-1.5 items-center">
+                                  {(promotion.applicableTiers || []).slice(0, 2).map((tier) => (
+                                    <DynamicTierBadge key={tier} tier={tier} />
                                   ))}
+                                  {(promotion.applicableTiers?.length || 0) > 2 ? (
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <Badge
+                                          variant="outline"
+                                          className="cursor-pointer rounded-full border-amber-200 bg-amber-50 px-2 py-1 hover:bg-amber-100 text-[11px] font-bold text-amber-800 transition-colors"
+                                        >
+                                          <Plus className="h-3 w-3 inline-block" />
+                                          {(promotion.applicableTiers?.length || 0) - 2}
+                                        </Badge>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto p-3" align="start">
+                                        <p className="mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                          {translate(language, "Hạng áp dụng", "Applicable tiers")}
+                                        </p>
+                                        <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+                                          {(promotion.applicableTiers || []).map((tier) => (
+                                            <DynamicTierBadge key={tier} tier={tier} />
+                                          ))}
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+                                  ) : null}
                                 </div>
                               )}
                             </TableCell>
@@ -783,45 +795,6 @@ export function AdminPromotionsPageContent() {
                                   <Pencil className="mr-1.5 h-3.5 w-3.5" />
                                   {translate(language, "Sửa", "Edit")}
                                 </Button>
-                                {confirmDeleteId === promotion.promotionId ? (
-                                  <>
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="destructive"
-                                      className="h-9 rounded-full px-3.5"
-                                      onClick={() => handleDelete(promotion.promotionId)}
-                                      disabled={deleteMutation.isPending}
-                                    >
-                                      {deleteMutation.isPending ? (
-                                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                                      ) : (
-                                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                                      )}
-                                      {translate(language, "Xác nhận", "Confirm")}
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="outline"
-                                      className="h-9 rounded-full px-3.5"
-                                      onClick={() => setConfirmDeleteId(null)}
-                                    >
-                                      {translate(language, "Huỷ", "Cancel")}
-                                    </Button>
-                                  </>
-                                ) : (
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-9 rounded-full border-rose-200 bg-rose-50/50 px-3.5 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                                    onClick={() => setConfirmDeleteId(promotion.promotionId)}
-                                  >
-                                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                                    {translate(language, "Xoá", "Delete")}
-                                  </Button>
-                                )}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -865,7 +838,6 @@ export function AdminPromotionsPageContent() {
           </CardContent>
         </Card>
       </div>
-    </div>
   );
 }
 

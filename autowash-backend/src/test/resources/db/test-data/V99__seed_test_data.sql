@@ -9,17 +9,18 @@ INSERT INTO "services" ("id", "name", "description", "price", "duration_minutes"
 INSERT INTO "combos" ("id", "name", "description", "price", "duration_minutes", "max_usages", "status") VALUES
 ('55555555-1234-1234-1234-123456789012', 'Monthly Basic Combo', '5 Basic Washes', 600000, 45, 5, 'ACTIVE');
 
-INSERT INTO "vouchers" ("id", "code", "name", "discount_type", "discount_value", "max_discount_amount", "min_order_amount", "usage_limit", "used_count", "start_at", "end_at", "status") VALUES
-('66666666-1234-1234-1234-123456789012', 'WELCOME20', '20% off for new customers', 'PERCENT', 20, 50000, 100000, 100, 0, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE'),
-('77777777-1234-1234-1234-123456789012', 'ADMINVOUCHER50', '50k off', 'FIXED_AMOUNT', 50000, 50000, 100000, 100, 0, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE');
+INSERT INTO "voucher_templates" ("id", "code", "name", "discount_type", "discount_value", "max_discount_amount", "min_order_amount", "usage_limit", "used_count", "start_at", "end_at", "status", "required_points", "valid_days_after_claim") VALUES
+('66666666-1234-1234-1234-123456789012', 'WELCOME20', '20% off for new customers', 'PERCENT', 20, 50000, 100000, 100, 0, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE', 0, 30),
+('77777777-1234-1234-1234-123456789012', 'ADMINVOUCHER50', '50k off', 'FIXED_AMOUNT', 50000, 50000, 100000, 100, 0, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE', 100, 30),
+('aaaaaaaa-1234-1234-1234-123456789012', 'TESTVOUCHER0', 'Test 0 points', 'FIXED_AMOUNT', 10000, 10000, 0, 100, 0, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE', 0, 30);
 
-UPDATE "vouchers" SET "new_customer_only" = true WHERE "code" = 'WELCOME20';
+UPDATE "voucher_templates" SET "new_customer_only" = true WHERE "code" = 'WELCOME20';
 
 INSERT INTO "promotions" ("id", "name", "description", "targeting_mode", "point_multiplier", "start_at", "end_at", "status") VALUES
 ('88888888-1234-1234-1234-123456789012', 'All 10% Off', '10% off for all', 'ALL_TIERS', 1.0, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE');
 
 INSERT INTO "package_services" ("package_id", "option_id", "option_name", "option_description", "option_price", "option_duration_minutes") VALUES ('12345678-1234-1234-1234-123456789012', '33333333-1234-1234-1234-123456789012', 'Waxing', 'Apply carnauba wax', 50000, 15);
 
-INSERT INTO "vouchers" ("id", "code", "name", "discount_type", "discount_value", "max_discount_amount", "min_order_amount", "usage_limit", "used_count", "start_at", "end_at", "status") VALUES ('99999999-1234-1234-1234-123456789012', 'OLD10', 'Expired 10% off', 'PERCENT', 10, 50000, 100000, 100, 0, DATEADD('DAY', -60, CURRENT_TIMESTAMP), DATEADD('DAY', -30, CURRENT_TIMESTAMP), 'ACTIVE');
+INSERT INTO "voucher_templates" ("id", "code", "name", "discount_type", "discount_value", "max_discount_amount", "min_order_amount", "usage_limit", "used_count", "start_at", "end_at", "status", "required_points", "valid_days_after_claim") VALUES ('99999999-1234-1234-1234-123456789012', 'OLD10', 'Expired 10% off', 'PERCENT', 10, 50000, 100000, 100, 0, DATEADD('DAY', -60, CURRENT_TIMESTAMP), DATEADD('DAY', -30, CURRENT_TIMESTAMP), 'ACTIVE', 0, 30);
 
 UPDATE "system_settings" SET "max_bookings_per_time_slot" = 100 WHERE "id" = 1;

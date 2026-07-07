@@ -18,6 +18,7 @@ import { useAdminVoucherRedemptions, useAdminVouchers } from "@/features/voucher
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import { WorkspaceEmptyState, WorkspaceErrorState } from "@/shared/ui/workspace/workspace-page";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
+import { DynamicTierBadge } from "@/shared/ui/workspace/dynamic-tier-badge";
 
 export function AdminVouchersManagementPanel() {
   const { language } = useLanguageStore();
@@ -102,9 +103,9 @@ export function AdminVouchersManagementPanel() {
                       ) : null}
                       {voucher.targetTiers.length > 0
                         ? voucher.targetTiers.map((tier) => (
-                            <Badge key={tier} variant="outline">
+                            <DynamicTierBadge key={tier} tier={tier}>
                               {tier}
-                            </Badge>
+                            </DynamicTierBadge>
                           ))
                         : <Badge variant="outline">{translate(language, "Tất cả các hạng", "All tiers")}</Badge>}
                     </div>

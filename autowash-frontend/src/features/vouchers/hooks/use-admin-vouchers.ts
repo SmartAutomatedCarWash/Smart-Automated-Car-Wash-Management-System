@@ -1,10 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { listAdminVoucherRedemptions, listAdminVouchers } from "@/features/vouchers/api/admin-vouchers-service";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { listAdminVoucherRedemptions, listAdminVouchers, createAdminVoucher, updateAdminVoucher, deleteAdminVoucher } from "@/features/vouchers/api/admin-vouchers-service";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
-import type { AdminVoucher, AdminVoucherRedemptionPage } from "@/entities/vouchers";
+import type { AdminVoucher, AdminVoucherRedemptionPage, AdminVoucherRequest } from "@/entities/vouchers";
 
 function useAdminVoucherQueryContext() {
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -34,3 +34,40 @@ export function useAdminVoucherRedemptions(page = 1, limit = 20, searchQuery?: s
     enabled,
   });
 }
+
+export function useCreateAdminVoucher() {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminVoucherQueryContext();
+
+  return useMutation<AdminVoucher, ApiErrorResponse, AdminVoucherRequest>({
+    mutationFn: createAdminVoucher,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-vouchers", userId, "catalog"] });
+    },
+  });
+}
+
+export function useUpdateAdminVoucher() {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminVoucherQueryContext();
+
+  return useMutation<AdminVoucher, ApiErrorResponse, { code: string; payload: AdminVoucherRequest }>({
+    mutationFn: ({ code, payload }) => updateAdminVoucher(code, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-vouchers", userId, "catalog"] });
+    },
+  });
+}
+
+export function useDeleteAdminVoucher() {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminVoucherQueryContext();
+
+  return useMutation<AdminVoucher, ApiErrorResponse, string>({
+    mutationFn: deleteAdminVoucher,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-vouchers", userId, "catalog"] });
+    },
+  });
+}
+

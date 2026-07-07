@@ -11,8 +11,6 @@ import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.UserRepository;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.repository.BookingRepository;
-import com.autowash.entity.LoyaltyAccount;
-import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.shared.security.UserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,9 +44,6 @@ class BookingControllerIntegrationTest {
 
     @Autowired
     private UserRepository UserRepository;
-
-    @Autowired
-    private LoyaltyAccountRepository loyaltyAccountRepository;
 
     @BeforeEach
     void ensureActiveStaffExists() {
@@ -84,50 +79,18 @@ class BookingControllerIntegrationTest {
                 .andExpect(jsonPath("$.data[0].comboId").value("55555555-1234-1234-1234-123456789012"));
     }
 
-    @Test
-    void validateVoucherReturnsDiscountBreakdown() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234701");
 
-        mockMvc.perform(post("/api/v1/bookings/validate-voucher")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType("application/json")
-                        .content("""
-                                {
-                                  "voucherCode": "WELCOME20",
-                                  "packageId": "12345678-1234-1234-1234-123456789012",
-                                  "amount": 150000
-                                }
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.voucherCode").value("WELCOME20"))
-                .andExpect(jsonPath("$.data.isValid").value(true))
-                .andExpect(jsonPath("$.data.discountAmount").value(30000))
-                .andExpect(jsonPath("$.data.finalAmount").value(120000));
-    }
-
-    @Test
-    void validateVoucherReturnsContractErrorForExpiredVoucher() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234702");
-
-        mockMvc.perform(post("/api/v1/bookings/validate-voucher")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType("application/json")
-                        .content("""
-                                {
-                                  "voucherCode": "OLD10",
-                                  "packageId": "12345678-1234-1234-1234-123456789012",
-                                  "amount": 150000
-                                }
-                                """))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.errorCode").value("BUSINESS_RULE_VIOLATION"))
-                .andExpect(jsonPath("$.error.code").value("VOUCHER_EXPIRED"));
-    }
 
     @Test
     void createBookingCreatesPendingAndPayConfirmsBooking() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234703");
+        String accessToken = registerActivateAndLogin("0901234998");
         String vehicleId = createVehicle(accessToken, "30H-223456");
+
+        MvcResult claimResult = mockMvc.perform(post("/api/v1/vouchers/{id}/claim", "66666666-1234-1234-1234-123456789012")
+                .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        String voucherCode = readJson(claimResult).path("data").path("code").asText();
 
         JsonNode createResponse = readJson(mockMvc.perform(post("/api/v1/customers/bookings")
                         .header("Authorization", "Bearer " + accessToken)
@@ -138,10 +101,10 @@ class BookingControllerIntegrationTest {
                                   "packageId": "12345678-1234-1234-1234-123456789012",
                                   "bookingDate": "%s",
                                   "bookingTime": "14:00",
-                                  "voucherCode": "WELCOME20",
+                                  "voucherCode": "%s",
                                   "paymentMethod": "E_WALLET"
                                 }
-                                """.formatted(vehicleId, futureBookingDate())))
+                                """.formatted(vehicleId, futureBookingDate(), voucherCode)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.confirmationStatus").value("PENDING"))
@@ -293,8 +256,14 @@ class BookingControllerIntegrationTest {
 
     @Test
     void newCustomerOnlyVoucherRequiresNoPriorBookings() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234724");
-        String vehicleId = createVehicle(accessToken, "30H-223471");
+        String accessToken = registerActivateAndLogin("0901234999");
+        String vehicleId = createVehicle(accessToken, "30H-223999");
+
+        MvcResult claimResult = mockMvc.perform(post("/api/v1/vouchers/{id}/claim", "66666666-1234-1234-1234-123456789012")
+                .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        String voucherCode = readJson(claimResult).path("data").path("code").asText();
 
         mockMvc.perform(post("/api/v1/customers/bookings")
                         .header("Authorization", "Bearer " + accessToken)
@@ -319,12 +288,12 @@ class BookingControllerIntegrationTest {
                                   "packageId": "12345678-1234-1234-1234-123456789012",
                                   "bookingDate": "%s",
                                   "bookingTime": "15:00",
-                                  "voucherCode": "WELCOME20",
+                                  "voucherCode": "%s",
                                   "paymentMethod": "E_WALLET"
                                 }
-                                """.formatted(vehicleId, futureBookingDate())))
+                                """.formatted(vehicleId, futureBookingDate(), voucherCode)))
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.error.code").value("NEW_CUSTOMER_ONLY"));
+                .andExpect(jsonPath("$.errorCode").value("NEW_CUSTOMER_ONLY"));
     }
 
     @Test
@@ -332,6 +301,12 @@ class BookingControllerIntegrationTest {
         String accessToken = registerActivateAndLogin("0901234725");
         String vehicleId = createVehicle(accessToken, "30H-223472");
 
+        MvcResult claimResult = mockMvc.perform(post("/api/v1/vouchers/{id}/claim", "aaaaaaaa-1234-1234-1234-123456789012")
+                .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        String voucherCode = readJson(claimResult).path("data").path("code").asText();
+
         mockMvc.perform(post("/api/v1/customers/bookings")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType("application/json")
@@ -341,10 +316,10 @@ class BookingControllerIntegrationTest {
                                   "packageId": "12345678-1234-1234-1234-123456789012",
                                   "bookingDate": "%s",
                                   "bookingTime": "14:00",
-                                  "voucherCode": "ADMINVOUCHER50",
+                                  "voucherCode": "%s",
                                   "paymentMethod": "E_WALLET"
                                 }
-                                """.formatted(vehicleId, futureBookingDate())))
+                                """.formatted(vehicleId, futureBookingDate(), voucherCode)))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/v1/customers/bookings")
@@ -356,12 +331,12 @@ class BookingControllerIntegrationTest {
                                   "packageId": "12345678-1234-1234-1234-123456789012",
                                   "bookingDate": "%s",
                                   "bookingTime": "15:00",
-                                  "voucherCode": "ADMINVOUCHER50",
+                                  "voucherCode": "%s",
                                   "paymentMethod": "E_WALLET"
                                 }
-                                """.formatted(vehicleId, futureBookingDate())))
+                                """.formatted(vehicleId, futureBookingDate(), voucherCode)))
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.error.code").value("VOUCHER_ALREADY_USED"));
+                .andExpect(jsonPath("$.errorCode").value("VOUCHER_ALREADY_USED"));
     }
 
     @Test
@@ -526,7 +501,6 @@ class BookingControllerIntegrationTest {
     void openApiDocumentsBookingAndCatalogSchemas() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.components.schemas.ValidateVoucherRequest.properties.voucherCode.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.CreateBookingRequest.properties.vehicleId.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.CreateBookingResponse.properties.bookingId.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.CancelBookingResponse.properties.refundStatus.type").value("string"));
@@ -549,7 +523,6 @@ class BookingControllerIntegrationTest {
                                   "options": ["33333333-1234-1234-1234-123456789012"],
                                   "bookingDate": "%s",
                                   "bookingTime": "14:00",
-                                  "voucherCode": "WELCOME20",
                                   "paymentMethod": "E_WALLET"
                                 }
                                 """.formatted(vehicleId, futureBookingDate())))

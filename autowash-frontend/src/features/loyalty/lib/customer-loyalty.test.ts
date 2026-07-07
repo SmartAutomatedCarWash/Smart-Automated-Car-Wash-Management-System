@@ -14,11 +14,11 @@ import type { TierConfig } from "@/features/settings/lib/admin-tiers-service";
 import type { TierVoucherOffer } from "@/entities/loyalty";
 
 const MOCK_CONFIGS: TierConfig[] = [
-  { tier: "MEMBER", minPoints: 0, pointMultiplier: 1.0, priorityScore: 0, updatedAt: "" },
-  { tier: "SILVER", minPoints: 500, pointMultiplier: 1.2, priorityScore: 0, updatedAt: "" },
-  { tier: "GOLD", minPoints: 1500, pointMultiplier: 1.5, priorityScore: 0, updatedAt: "" },
-  { tier: "PLATINUM", minPoints: 4000, pointMultiplier: 2.0, priorityScore: 80, updatedAt: "" },
-  { tier: "DIAMOND", minPoints: 10000, pointMultiplier: 2.5, priorityScore: 100, updatedAt: "" },
+  { tier: "MEMBER", name: "Member", minPoints: 0, pointMultiplier: 1.0, priorityScore: 0, rankOrder: 1, systemTier: true, active: true, updatedAt: "" },
+  { tier: "SILVER", name: "Silver", minPoints: 500, pointMultiplier: 1.2, priorityScore: 0, rankOrder: 2, systemTier: true, active: true, updatedAt: "" },
+  { tier: "GOLD", name: "Gold", minPoints: 1500, pointMultiplier: 1.5, priorityScore: 0, rankOrder: 3, systemTier: true, active: true, updatedAt: "" },
+  { tier: "PLATINUM", name: "Platinum", minPoints: 4000, pointMultiplier: 2.0, priorityScore: 80, rankOrder: 4, systemTier: true, active: true, updatedAt: "" },
+  { tier: "DIAMOND", name: "Diamond", minPoints: 10000, pointMultiplier: 2.5, priorityScore: 100, rankOrder: 5, systemTier: true, active: true, updatedAt: "" },
 ];
 
 const MOCK_OFFERS: TierVoucherOffer[] = [

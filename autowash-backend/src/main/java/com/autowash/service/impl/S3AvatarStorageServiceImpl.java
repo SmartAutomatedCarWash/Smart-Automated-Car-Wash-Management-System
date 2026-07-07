@@ -25,10 +25,17 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
+import org.springframework.beans.factory.InitializingBean;
+import software.amazon.awssdk.services.s3.model.PutBucketCorsRequest;
+import software.amazon.awssdk.services.s3.model.CORSConfiguration;
+import software.amazon.awssdk.services.s3.model.CORSRule;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 
 @Service
 @ConditionalOnProperty(prefix = "autowash.storage.s3", name = "enabled", havingValue = "true")
-public class S3AvatarStorageServiceImpl implements AvatarStorageService {
+public class S3AvatarStorageServiceImpl implements AvatarStorageService, InitializingBean {
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/jpeg",
@@ -101,6 +108,41 @@ public class S3AvatarStorageServiceImpl implements AvatarStorageService {
 
         this.s3Client = s3ClientBuilder.build();
         this.s3Presigner = presignerBuilder.build();
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        try {
+            // Check if bucket exists, create if not
+            try {
+                s3Client.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
+            } catch (NoSuchBucketException e) {
+                System.out.println("Bucket " + bucket + " does not exist. Creating...");
+                s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
+            }
+
+            CORSRule rule = CORSRule.builder()
+                    .allowedOrigins("*")
+                    .allowedMethods("GET", "PUT", "POST", "DELETE", "HEAD")
+                    .allowedHeaders("*")
+                    .exposeHeaders("ETag")
+                    .maxAgeSeconds(3600)
+                    .build();
+
+            CORSConfiguration corsConfig = CORSConfiguration.builder()
+                    .corsRules(rule)
+                    .build();
+
+            PutBucketCorsRequest putCorsReq = PutBucketCorsRequest.builder()
+                    .bucket(bucket)
+                    .corsConfiguration(corsConfig)
+                    .build();
+
+            s3Client.putBucketCors(putCorsReq);
+            System.out.println("Applied S3 CORS policy for bucket: " + bucket);
+        } catch (Exception e) {
+            System.err.println("Failed to apply S3 CORS policy for bucket " + bucket + ": " + e.getMessage());
+        }
     }
 
     @Override

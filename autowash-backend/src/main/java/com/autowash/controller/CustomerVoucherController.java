@@ -9,8 +9,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,5 +37,21 @@ public class CustomerVoucherController {
     ) {
         CustomerVoucherService.VoucherPage voucherPage = customerVoucherService.listActiveVouchers(page, limit);
         return ApiResponse.ok("Vouchers retrieved", voucherPage.items(), voucherPage.pagination());
+    }
+
+    @GetMapping("/api/v1/vouchers/my")
+    @Operation(summary = "List my claimed vouchers")
+    public ApiResponse<List<com.autowash.dto.MyVoucherResponse>> listMyVouchers(
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
+    ) {
+        CustomerVoucherService.MyVoucherPage voucherPage = customerVoucherService.listMyVouchers(page, limit);
+        return ApiResponse.ok("My vouchers retrieved", voucherPage.items(), voucherPage.pagination());
+    }
+    
+    @PostMapping("/api/v1/vouchers/{voucherTemplateId}/claim")
+    @Operation(summary = "Claim a voucher")
+    public ApiResponse<com.autowash.dto.MyVoucherResponse> claimVoucher(@PathVariable UUID voucherTemplateId) {
+        return ApiResponse.ok("Voucher claimed", customerVoucherService.claimVoucher(voucherTemplateId));
     }
 }

@@ -452,8 +452,6 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                         booking.getBasePrice() + booking.getOptionsTotal(),
                         booking.getVoucherCode(),
                         booking.getVoucherDiscount(),
-                        booking.getPointsRedeemed(),
-                        booking.getPointsDiscount(),
                         booking.getFinalAmount(),
                         "VND"
                 ),
@@ -542,6 +540,12 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 newTier,
                 Instant.now()
         );
+    }
+
+    @Transactional
+    public void adjustActivePoints(UUID customerId, int points, String reason) {
+        requireCustomer(customerId);
+        loyaltyService.adjustActivePoints(customerId, points, reason);
     }
 
     @Transactional(readOnly = true)

@@ -98,9 +98,7 @@ class LoyaltyControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.pointsRedeemed").value(100))
                 .andExpect(jsonPath("$.data.newBalance").value(50))
                 .andExpect(jsonPath("$.data.voucherCode").isString())
-                .andExpect(jsonPath("$.data.voucherValue").value(100000))
-                .andExpect(jsonPath("$.data.expiresAt").exists())
-                .andExpect(jsonPath("$.data.status").value("SUCCESS"));
+                .andExpect(jsonPath("$.data.status").value("REDEEMED"));
 
         mockMvc.perform(get("/api/v1/loyalty/account")
                         .header("Authorization", "Bearer " + accessToken))
@@ -122,7 +120,7 @@ class LoyaltyControllerIntegrationTest {
                                 { "pointsToRedeem": 201, "referenceId": "LOY_CTL_001" }
                                 """))
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.message").value("Maximum redemption is 200 points"));
+                .andExpect(jsonPath("$.message").value("Insufficient points: have 50, need 201"));
 
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())

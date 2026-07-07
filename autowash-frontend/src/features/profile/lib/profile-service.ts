@@ -44,7 +44,10 @@ export async function uploadAvatarFile(uploadUrl: string, file: File, contentTyp
     return;
   }
 
-  await axios.put(uploadUrl, file, {
+  // Use Next.js proxy to bypass MinIO CORS
+  const proxyUrl = uploadUrl.replace(/^http:\/\/(127\.0\.0\.1|localhost):9000/, '/minio-api');
+
+  await axios.put(proxyUrl, file, {
     headers: {
       "Content-Type": contentType,
     },

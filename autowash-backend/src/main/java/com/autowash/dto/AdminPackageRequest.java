@@ -23,8 +23,10 @@ public record AdminPackageRequest(
         @Min(value = 1, message = "Duration must be at least 1 minute")
         Integer durationMinutes,
 
-        @Size(max = 500, message = "Image URL must be less than 500 characters")
-        String imageUrl,
+        List<String> imageUrls,
+
+        @Size(max = 100, message = "Category must be less than 100 characters")
+        String category,
 
         ActiveStatus status,
 

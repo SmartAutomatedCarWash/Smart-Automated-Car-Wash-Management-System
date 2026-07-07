@@ -4,21 +4,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import com.autowash.dto.ComboResponse;
 import com.autowash.dto.PackageResponse;
 import com.autowash.dto.ServiceResponse;
-import com.autowash.dto.ValidateVoucherRequest;
-import com.autowash.dto.ValidateVoucherResponse;
 import com.autowash.service.CatalogService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.List;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -66,11 +60,6 @@ public class CatalogController {
     public ApiResponse<ComboResponse> getCombo(@PathVariable String comboId) {
         return ApiResponse.ok("Combo retrieved", catalogService.getComboById(comboId));
     }
-
-    @PostMapping("/api/v1/bookings/validate-voucher")
-    @Operation(summary = "Validate voucher code before booking")
-    @SecurityRequirement(name = "bearerAuth")
-    public ApiResponse<ValidateVoucherResponse> validateVoucher(@Valid @RequestBody ValidateVoucherRequest request) {
-        return ApiResponse.ok("Voucher is valid", catalogService.validateVoucher(request.voucherCode(), request.amount()));
-    }
 }
+
+

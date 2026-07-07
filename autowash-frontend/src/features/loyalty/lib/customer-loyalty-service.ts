@@ -90,3 +90,12 @@ export async function listPublicTierVoucherOffers(): Promise<TierVoucherOffer[]>
   });
   return response;
 }
+
+
+
+export function claimCustomerVoucher(voucherTemplateId: string) {
+  return apiRequest<any>({
+    method: 'POST',
+    url: '/vouchers/' + voucherTemplateId + '/claim'
+  });
+}

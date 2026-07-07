@@ -11,7 +11,8 @@ public record PackageResponse(
         int duration,
         String category,
         List<String> features,
-        String image,
+        List<String> serviceIds,
+        List<String> imageUrls,
         String status,
         String popularity
 ) {
