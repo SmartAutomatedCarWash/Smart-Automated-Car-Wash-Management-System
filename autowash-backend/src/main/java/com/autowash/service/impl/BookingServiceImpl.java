@@ -13,6 +13,8 @@ import com.autowash.dto.CreateBookingResponse;
 import com.autowash.dto.PayBookingResponse;
 import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.enums.BookingStatus;
+import com.autowash.dto.ValidateVoucherRequest;
+import com.autowash.dto.ValidateVoucherResponse;
 import com.autowash.entity.Booking;
 import com.autowash.entity.BookingOption;
 import com.autowash.entity.BookingPromotion;
@@ -28,14 +30,16 @@ import com.autowash.repository.PaymentRepository;
 import com.autowash.entity.Combo;
 import com.autowash.entity.Package;
 import com.autowash.entity.SystemSettings;
-import com.autowash.entity.Voucher;
 import com.autowash.repository.ComboRepository;
 import com.autowash.repository.PackageRepository;
 import com.autowash.repository.SystemSettingsRepository;
+import com.autowash.repository.SlotHoldRepository;
+import com.autowash.repository.ViolationRecordRepository;
+import com.autowash.entity.ViolationRecord;
 import com.autowash.service.BookingService;
 import com.autowash.service.CatalogService;
-import com.autowash.dto.RedeemPointsResponse;
 import com.autowash.service.CustomerComboService;
+import com.autowash.service.VoucherRedemptionService;
 
 import com.autowash.service.LoyaltyService;
 import com.autowash.service.PromotionService;
@@ -50,6 +54,7 @@ import com.autowash.repository.VehicleRepository;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
@@ -95,6 +100,9 @@ public class BookingServiceImpl implements BookingService {
     private final BookingEmailDeliveryService bookingEmailDeliveryService;
     private final PromotionService promotionService;
     private final SystemSettingsRepository systemSettingsRepository;
+    private final VoucherRedemptionService voucherRedemptionService;
+    private final SlotHoldRepository slotHoldRepository;
+    private final ViolationRecordRepository violationRecordRepository;
 
     public BookingServiceImpl(
             CurrentUserService currentUserService,
@@ -112,7 +120,10 @@ public class BookingServiceImpl implements BookingService {
             BookingStatusHistoryRepository bookingStatusHistoryRepository,
             BookingEmailDeliveryService bookingEmailDeliveryService,
             PromotionService promotionService,
-            SystemSettingsRepository systemSettingsRepository
+            SystemSettingsRepository systemSettingsRepository,
+            VoucherRedemptionService voucherRedemptionService,
+            SlotHoldRepository slotHoldRepository,
+            ViolationRecordRepository violationRecordRepository
     ) {
         this.currentUserService = currentUserService;
         this.VehicleRepository = VehicleRepository;
@@ -130,6 +141,9 @@ public class BookingServiceImpl implements BookingService {
         this.bookingEmailDeliveryService = bookingEmailDeliveryService;
         this.promotionService = promotionService;
         this.systemSettingsRepository = systemSettingsRepository;
+        this.voucherRedemptionService = voucherRedemptionService;
+        this.slotHoldRepository = slotHoldRepository;
+        this.violationRecordRepository = violationRecordRepository;
     }
 
     @Transactional
@@ -192,11 +206,18 @@ public class BookingServiceImpl implements BookingService {
                 : catalogService.requireActiveComboOptions(Combo, request.options());
         long optionsTotal = options.stream().mapToLong(CatalogService.CatalogOption::price).sum();
         long subtotal = basePrice + optionsTotal;
-        Voucher voucher = null;
+        UUID userVoucherId = null;
         long voucherDiscount = 0;
         if (request.voucherCode() != null && !request.voucherCode().isBlank()) {
-            voucher = catalogService.validateVoucherForBooking(request.voucherCode(), subtotal);
-            voucherDiscount = catalogService.calculateDiscountAmount(voucher, subtotal);
+            com.autowash.entity.UserVoucher userVoucher;
+            try {
+                userVoucher = voucherRedemptionService.getUserVoucherByCode(user.getId(), request.voucherCode());
+            } catch (ApiException e) {
+                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Voucher already used or expired", "VOUCHER_ALREADY_USED");
+            }
+            userVoucherId = userVoucher.getId();
+            voucherDiscount = voucherRedemptionService.calculateDiscount(userVoucherId, subtotal, 
+                    options.stream().map(CatalogService.CatalogOption::optionId).toList());
         }
 
         LocalDateTime scheduledAt = request.bookingDate().atTime(requestedBookingTime);
@@ -206,7 +227,7 @@ public class BookingServiceImpl implements BookingService {
                 vehicle,
                 Package == null ? null : Package.getId(),
                 Combo == null ? null : Combo.getId(),
-                voucher == null ? null : voucher.getId(),
+                userVoucherId == null ? null : voucherRedemptionService.getTemplateIdForUserVoucher(userVoucherId),
                 scheduledAt.toInstant(java.time.ZoneOffset.UTC),
                 requestedBookingTime,
                 request.paymentMethod(),
@@ -217,6 +238,10 @@ public class BookingServiceImpl implements BookingService {
                 baseDuration + options.stream().mapToInt(CatalogService.CatalogOption::durationMinutes).sum()
         );
         BookingRepository.save(booking);
+        long totalBookings = BookingRepository.countByCustomer(user);
+        if (totalBookings == 1) {
+            loyaltyService.postBonusTransaction(user.getId(), 30, "First booking bonus");
+        }
         List<BookingOption> bookingOptions = options.stream()
                 .map(option -> new BookingOption(booking, option.optionId(), option.name(), option.price()))
                 .toList();
@@ -231,9 +256,13 @@ public class BookingServiceImpl implements BookingService {
                 initialPaymentStatus(request.paymentMethod()),
                 booking.getFinalAmount()
         ));
-        if (voucher != null) {
-            voucher.recordUse();
+        if (userVoucherId != null) {
+            voucherRedemptionService.applyVoucher(userVoucherId, booking.getId(), subtotal, options.stream().map(CatalogService.CatalogOption::optionId).toList());
         }
+        
+        slotHoldRepository.findByCustomerAndSlotTime(user, scheduledAt.atZone(java.time.ZoneId.systemDefault()).toInstant())
+                .ifPresent(slotHoldRepository::delete);
+
         recordStatusHistory(booking, null, booking.getStatus(), user, "Booking created");
 
         if (Combo != null) {
@@ -316,14 +345,50 @@ public class BookingServiceImpl implements BookingService {
         }
         BookingStatus oldStatus = booking.getStatus();
         booking.cancel(reason);
+
+        java.time.Duration timeUntilScheduled = java.time.Duration.between(Instant.now(), booking.getScheduledAt());
+        long hoursUntilScheduled = timeUntilScheduled.toHours();
+        
+        int pointsPenalty = 0;
+        String voucherRefundStatus = "NONE";
+        
+        if (hoursUntilScheduled > 24) {
+            if (booking.getVoucherId() != null) {
+                voucherRedemptionService.releaseVoucherForBooking(booking.getId());
+                voucherRefundStatus = "REFUNDED";
+            }
+        } else if (hoursUntilScheduled >= 6) {
+            pointsPenalty = 5;
+            loyaltyService.postBonusTransaction(booking.getCustomer().getId(), -pointsPenalty, "Cancellation penalty (6-24h)");
+            violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", pointsPenalty, "Cancelled between 6 and 24 hours"));
+            if (booking.getVoucherId() != null) {
+                voucherRefundStatus = "FORFEITED";
+            }
+        } else if (hoursUntilScheduled >= 1) {
+            pointsPenalty = 10;
+            loyaltyService.postBonusTransaction(booking.getCustomer().getId(), -pointsPenalty, "Cancellation penalty (1-6h)");
+            violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", pointsPenalty, "Cancelled between 1 and 6 hours"));
+            if (booking.getVoucherId() != null) {
+                voucherRefundStatus = "FORFEITED";
+            }
+        } else {
+            pointsPenalty = 20;
+            loyaltyService.postBonusTransaction(booking.getCustomer().getId(), -pointsPenalty, "Cancellation penalty (<1h)");
+            violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", pointsPenalty, "Cancelled under 1 hour"));
+            if (booking.getVoucherId() != null) {
+                voucherRefundStatus = "FORFEITED";
+            }
+        }
+
         recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), reason);
         return new CancelBookingResponse(
                 booking.getId().toString(),
                 booking.getStatus().name(),
-                null,
+                booking.getUpdatedAt(),
                 0L,
                 "NONE",
-                "Refund will be processed within 3-5 business days"
+                voucherRefundStatus,
+                pointsPenalty > 0 ? "Refund processed with " + pointsPenalty + " points penalty." : "Refund processed with no penalty."
         );
     }
 
@@ -401,14 +466,18 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void validateSlotCapacity(LocalDateTime scheduledAt, int maxBookingsPerTimeSlot) {
-        LocalDateTime slotStart = scheduledAt.withMinute(0).withSecond(0).withNano(0);
-        LocalDateTime slotEnd = slotStart.plusHours(1);
+        LocalDateTime slotStartLocal = scheduledAt.withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime slotEndLocal = slotStartLocal.plusHours(1);
+        Instant slotStart = slotStartLocal.atZone(java.time.ZoneId.systemDefault()).toInstant();
+        Instant slotEnd = slotEndLocal.atZone(java.time.ZoneId.systemDefault()).toInstant();
+
         long existingBookings = BookingRepository.countByScheduledAtSlot(
-                slotStart.toInstant(java.time.ZoneOffset.UTC),
-                slotEnd.toInstant(java.time.ZoneOffset.UTC),
+                slotStart,
+                slotEnd,
                 Set.of(BookingStatus.CANCELLED, BookingStatus.NO_SHOW)
         );
-        if (existingBookings >= maxBookingsPerTimeSlot) {
+        long activeHolds = slotHoldRepository.countActiveHoldsForSlot(slotStart, slotEnd, Instant.now());
+        if (existingBookings + activeHolds >= maxBookingsPerTimeSlot) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking slot is full", "BOOKING_SLOT_FULL");
         }
     }
@@ -479,8 +548,6 @@ public class BookingServiceImpl implements BookingService {
                         booking.getBasePrice() + booking.getOptionsTotal(),
                         booking.getVoucherCode(),
                         booking.getVoucherDiscount(),
-                        booking.getPointsRedeemed(),
-                        booking.getPointsDiscount(),
                         booking.getFinalAmount(),
                         "VND"
                 ),
@@ -631,6 +698,26 @@ public class BookingServiceImpl implements BookingService {
             String transactionRef,
             java.time.Instant paidAt
     ) {
+    }
+    
+    @Override
+    public ValidateVoucherResponse validateVoucher(ValidateVoucherRequest request) {
+        User user = currentUserService.getCurrentUser();
+        com.autowash.entity.UserVoucher userVoucher = voucherRedemptionService.getUserVoucherByCode(user.getId(), request.voucherCode());
+        
+        List<java.util.UUID> serviceIds = new java.util.ArrayList<>();
+        long discount = voucherRedemptionService.calculateDiscount(userVoucher.getId(), request.amount(), serviceIds);
+        long finalAmount = Math.max(0, request.amount() - discount);
+        
+        return new ValidateVoucherResponse(
+                request.voucherCode(), 
+                true, 
+                userVoucher.getVoucherTemplate().getDiscountType().name(),
+                (int) userVoucher.getVoucherTemplate().getDiscountValue(),
+                discount, 
+                finalAmount,
+                userVoucher.getExpiredAt()
+        );
     }
 }
 

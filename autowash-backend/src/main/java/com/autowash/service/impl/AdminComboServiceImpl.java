@@ -57,7 +57,7 @@ public class AdminComboServiceImpl implements AdminComboService {
                 request.durationMinutes(),
                 request.durationDays(),
                 request.maxUsages(),
-                request.imageUrl(),
+                join(request.imageUrls()),
                 statusOrActive(request.status())
         ));
         replaceOptions(combo, request.options());
@@ -75,7 +75,7 @@ public class AdminComboServiceImpl implements AdminComboService {
                 request.durationMinutes(),
                 request.durationDays(),
                 request.maxUsages(),
-                request.imageUrl(),
+                join(request.imageUrls()),
                 statusOrActive(request.status())
         );
         replaceOptions(combo, request.options());
@@ -154,12 +154,20 @@ public class AdminComboServiceImpl implements AdminComboService {
             combo.getDurationDays() == null ? 0 : combo.getDurationDays(),
             rows.stream().mapToInt(ComboService::getQuantity).sum(),
             services,
-            combo.getImageUrl(),
+            split(combo.getImageUrl()),
             combo.getStatus() == ActiveStatus.ACTIVE,
             false,
             0L
     );
 }
+
+    private String join(List<String> list) {
+        return list == null || list.isEmpty() ? null : String.join(",", list);
+    }
+
+    private List<String> split(String str) {
+        return str == null || str.isEmpty() ? new java.util.ArrayList<>() : java.util.Arrays.asList(str.split(","));
+    }
 
     private ActiveStatus statusOrActive(ActiveStatus status) {
         return status == null ? ActiveStatus.ACTIVE : status;

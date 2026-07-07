@@ -34,7 +34,7 @@ import { Button } from "@/shared/ui/ui/button";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
-import { TierBadge, getCustomerTierStyle } from "@/shared/ui/customer/customer-experience";
+import { TierBadge } from "@/shared/ui/customer/customer-experience";
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
 import { useCustomerBookings } from "@/features/bookings/hooks/use-bookings";
 import { useBookingPackages, useBookingCombos } from "@/features/bookings/hooks/use-bookings";
@@ -138,8 +138,6 @@ export default function CustomerHomePage() {
   const bookingsQuery = useCustomerBookings();
   const packagesQuery = useBookingPackages();
   const combosQuery = useBookingCombos();
-
-  const tierStyle = getCustomerTierStyle(user?.tier);
 
   const activeBooking = bookingsQuery.data?.items?.find((booking) =>
     ["PENDING", "SCHEDULED", "CHECKED_IN", "IN_PROGRESS", "CONFIRMED"].includes(booking.status),

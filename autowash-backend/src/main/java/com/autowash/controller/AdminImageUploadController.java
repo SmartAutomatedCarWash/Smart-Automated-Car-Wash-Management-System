@@ -1,7 +1,7 @@
 package com.autowash.controller;
 
 import com.autowash.dto.ImageUploadResponse;
-import com.autowash.service.impl.LocalImageUploadService;
+import com.autowash.service.ImageUploadService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -22,9 +22,9 @@ import org.springframework.web.multipart.MultipartFile;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminImageUploadController {
 
-    private final LocalImageUploadService imageUploadService;
+    private final ImageUploadService imageUploadService;
 
-    public AdminImageUploadController(LocalImageUploadService imageUploadService) {
+    public AdminImageUploadController(ImageUploadService imageUploadService) {
         this.imageUploadService = imageUploadService;
     }
 

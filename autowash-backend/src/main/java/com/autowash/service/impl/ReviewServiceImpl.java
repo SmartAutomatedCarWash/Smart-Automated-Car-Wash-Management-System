@@ -9,6 +9,7 @@ import com.autowash.entity.enums.BookingStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.ReviewRepository;
 import com.autowash.service.CurrentUserService;
+import com.autowash.service.LoyaltyService;
 import com.autowash.service.ReviewService;
 import com.autowash.shared.exception.ApiException;
 import java.util.List;
@@ -22,15 +23,18 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository reviewRepository;
     private final BookingRepository bookingRepository;
     private final CurrentUserService currentUserService;
+    private final LoyaltyService loyaltyService;
 
     public ReviewServiceImpl(
             ReviewRepository reviewRepository,
             BookingRepository bookingRepository,
-            CurrentUserService currentUserService
+            CurrentUserService currentUserService,
+            LoyaltyService loyaltyService
     ) {
         this.reviewRepository = reviewRepository;
         this.bookingRepository = bookingRepository;
         this.currentUserService = currentUserService;
+        this.loyaltyService = loyaltyService;
     }
 
     @Override
@@ -53,6 +57,7 @@ public class ReviewServiceImpl implements ReviewService {
                 request.beforeImageUrl(),
                 request.afterImageUrl()
         ));
+        loyaltyService.postBonusTransaction(customer.getId(), 10, "Review bonus");
         return toResponse(review);
     }
 

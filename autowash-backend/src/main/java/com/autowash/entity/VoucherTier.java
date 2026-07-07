@@ -19,6 +19,7 @@ import lombok.NoArgsConstructor;
 public class VoucherTier {
 
     @Id
+    @Column(name = "voucher_template_id")
     private UUID voucherId;
 
     @Id

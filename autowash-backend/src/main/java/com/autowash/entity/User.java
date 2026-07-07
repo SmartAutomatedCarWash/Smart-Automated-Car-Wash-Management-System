@@ -12,6 +12,7 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.AccessLevel;
@@ -44,6 +45,12 @@ public class User {
     @Column(nullable = false)
     private UserStatus status;
 
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Column(name = "birthday_locked", nullable = false)
+    private boolean birthdayLocked;
+
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private UserPreference preference;
 
@@ -67,6 +74,7 @@ public class User {
         this.createdAt = now;
         this.updatedAt = now;
         this.newCustomer = true;
+        this.birthdayLocked = false;
     }
 
     /**
@@ -87,6 +95,7 @@ public class User {
         user.createdAt = now;
         user.updatedAt = now;
         user.newCustomer = true;
+        user.birthdayLocked = false;
         return user;
     }
 
@@ -141,5 +150,14 @@ public class User {
 
     public boolean isNewCustomer() {
         return newCustomer;
+    }
+
+    public void updateDateOfBirth(LocalDate dateOfBirth) {
+        if (this.birthdayLocked) {
+            throw new IllegalStateException("Birthday is already locked and cannot be changed");
+        }
+        this.dateOfBirth = dateOfBirth;
+        this.birthdayLocked = true;
+        this.updatedAt = Instant.now();
     }
 }

@@ -11,7 +11,6 @@ import com.autowash.dto.CreateAdminStaffRequest;
 import com.autowash.dto.UpdateAdminStaffRequest;
 import com.autowash.dto.AdminTierHistoryResponse;
 import com.autowash.dto.AdminWashHistoryResponse;
-import com.autowash.dto.UpdateAdminCustomerRoleResponse;
 import com.autowash.shared.dto.PaginationMeta;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -35,6 +34,7 @@ public interface AdminReportingService {
     AdminCustomerDetailResponse getCustomerDetail(UUID customerId);
     com.autowash.dto.UpdateAdminCustomerRoleResponse updateCustomerRole(UUID customerId, String role);
     com.autowash.dto.UpdateAdminCustomerRoleResponse updateCustomerTier(UUID customerId, String tier);
+    void adjustActivePoints(UUID customerId, int points, String reason);
     WashHistoryPage getWashHistory(UUID customerId, Instant dateFrom, Instant dateTo, int page, int limit);
     LoyaltyService.TransactionPage getPointHistory(UUID customerId, String type, Instant dateFrom, Instant dateTo, int page, int limit);
     CustomerVehiclePage getCustomerVehicles(UUID customerId, int page, int limit);

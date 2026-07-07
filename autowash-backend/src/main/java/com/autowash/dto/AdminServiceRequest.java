@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
+
 public record AdminServiceRequest(
         @NotBlank(message = "Name is required")
         @Size(max = 100, message = "Name must be less than 100 characters")
@@ -24,7 +26,6 @@ public record AdminServiceRequest(
 
         ActiveStatus status,
 
-        @Size(max = 500, message = "Image URL must be less than 500 characters")
-        String imageUrl
+        List<String> imageUrls
 ) {
 }

@@ -55,10 +55,9 @@ public class AdminSettingsController {
                 request.maxBookingsPerTimeSlot(),
                 request.currency(),
                 request.earnPointsUnitAmount(),
-                request.vndPerPoint(),
-                request.minRedemptionPoints(),
-                request.maxRedemptionPoints()
+                request.redemptionVoucherExpirationDays()
         );
+        systemSettingsRepository.save(settings);
         return ApiResponse.ok("Settings updated", toResponse(settings));
     }
 
@@ -71,19 +70,17 @@ public class AdminSettingsController {
                 ));
     }
 
-    private SystemSettingsResponse toResponse(SystemSettings s) {
+    private SystemSettingsResponse toResponse(SystemSettings settings) {
         return new SystemSettingsResponse(
-                s.getOperatingStartTime(),
-                s.getOperatingEndTime(),
-                s.getMaxAdvanceBookingDays(),
-                s.getNoShowGraceMinutes(),
-                s.getMaxBookingsPerTimeSlot(),
-                s.getCurrency(),
-                s.getEarnPointsUnitAmount(),
-                s.getVndPerPoint(),
-                s.getMinRedemptionPoints(),
-                s.getMaxRedemptionPoints(),
-                s.getUpdatedAt().toString()
+                settings.getOperatingStartTime(),
+                settings.getOperatingEndTime(),
+                settings.getMaxAdvanceBookingDays(),
+                settings.getNoShowGraceMinutes(),
+                settings.getMaxBookingsPerTimeSlot(),
+                settings.getCurrency(),
+                settings.getEarnPointsUnitAmount(),
+                settings.getRedemptionVoucherExpirationDays(),
+                settings.getUpdatedAt().toString()
         );
     }
 }

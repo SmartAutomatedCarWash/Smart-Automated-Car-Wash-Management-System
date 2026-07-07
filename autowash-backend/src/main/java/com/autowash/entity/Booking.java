@@ -79,11 +79,8 @@ public class Booking {
     @Column(name = "estimated_duration_minutes", nullable = false)
     private int estimatedDurationMinutes;
 
-    @Column(name = "points_redeemed", nullable = false)
-    private int pointsRedeemed;
-
-    @Column(name = "points_discount", nullable = false)
-    private long pointsDiscount;
+    @Column(name = "voucher_discount", nullable = false)
+    private long voucherDiscount;
 
     @Column(name = "note")
     private String note;
@@ -128,8 +125,7 @@ public class Booking {
         this.discountAmount = discountAmount;
         this.finalAmount = finalAmount;
         this.estimatedDurationMinutes = estimatedDurationMinutes;
-        this.pointsRedeemed = 0;
-        this.pointsDiscount = 0;
+        this.voucherDiscount = 0;
         this.createdAt = now;
         this.updatedAt = now;
     }
@@ -165,12 +161,6 @@ public class Booking {
         this.updatedAt = Instant.now();
     }
 
-    public void applyPoints(int pointsRedeemed, long pointsDiscount) {
-        this.pointsRedeemed = pointsRedeemed;
-        this.pointsDiscount = pointsDiscount;
-        this.finalAmount = Math.max(0, this.finalAmount - pointsDiscount);
-        this.updatedAt = Instant.now();
-    }
 
     public LocalDate getBookingDate() {
         return scheduledAt == null ? null : scheduledAt.atZone(java.time.ZoneOffset.UTC).toLocalDate();
@@ -198,14 +188,6 @@ public class Booking {
 
     public int getEstimatedDurationMinutes() {
         return estimatedDurationMinutes;
-    }
-
-    public int getPointsRedeemed() {
-        return pointsRedeemed;
-    }
-
-    public long getPointsDiscount() {
-        return pointsDiscount;
     }
 
     public PaymentMethod getPaymentMethod() {

@@ -5,31 +5,19 @@ import com.autowash.dto.ComboResponse;
 import com.autowash.dto.PackageResponse;
 import com.autowash.dto.ServiceResponse;
 import com.autowash.dto.ValidateVoucherResponse;
-import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.Combo;
 import com.autowash.entity.ComboService;
-import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.Package;
 import com.autowash.entity.PackageService;
-import com.autowash.entity.User;
-import com.autowash.entity.Voucher;
-import com.autowash.entity.VoucherTier;
-import com.autowash.repository.BookingRepository;
 import com.autowash.repository.ServiceRepository;
 import com.autowash.repository.ComboRepository;
 import com.autowash.repository.ComboServiceRepository;
-import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PackageRepository;
 import com.autowash.repository.PackageServiceRepository;
-import com.autowash.repository.VoucherRepository;
-import com.autowash.repository.VoucherTierRepository;
 import com.autowash.service.CatalogService;
-import com.autowash.service.CurrentUserService;
-import com.autowash.service.TierConfigService;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -53,37 +41,19 @@ public class CatalogServiceImpl implements CatalogService {
     private final ComboRepository ComboRepository;
     private final PackageServiceRepository packageServiceRepository;
     private final ComboServiceRepository comboServiceRepository;
-    private final VoucherRepository voucherRepository;
-    private final VoucherTierRepository voucherTierRepository;
-    private final LoyaltyAccountRepository loyaltyAccountRepository;
-    private final BookingRepository bookingRepository;
-    private final CurrentUserService currentUserService;
-    private final TierConfigService tierConfigService;
 
     public CatalogServiceImpl(
             PackageRepository PackageRepository,
             ServiceRepository serviceRepository,
             ComboRepository ComboRepository,
             PackageServiceRepository packageServiceRepository,
-            ComboServiceRepository comboServiceRepository,
-            VoucherRepository voucherRepository,
-            VoucherTierRepository voucherTierRepository,
-            LoyaltyAccountRepository loyaltyAccountRepository,
-            BookingRepository bookingRepository,
-            CurrentUserService currentUserService,
-            TierConfigService tierConfigService
+            ComboServiceRepository comboServiceRepository
     ) {
         this.PackageRepository = PackageRepository;
         this.serviceRepository = serviceRepository;
         this.ComboRepository = ComboRepository;
         this.packageServiceRepository = packageServiceRepository;
         this.comboServiceRepository = comboServiceRepository;
-        this.voucherRepository = voucherRepository;
-        this.voucherTierRepository = voucherTierRepository;
-        this.loyaltyAccountRepository = loyaltyAccountRepository;
-        this.bookingRepository = bookingRepository;
-        this.currentUserService = currentUserService;
-        this.tierConfigService = tierConfigService;
     }
 
     @Transactional(readOnly = true)
@@ -119,19 +89,7 @@ public class CatalogServiceImpl implements CatalogService {
 
     @Transactional(readOnly = true)
     public ValidateVoucherResponse validateVoucher(String voucherCode, long amount) {
-        Voucher voucher = voucherRepository.findByCode(voucherCode)
-                .orElseThrow(() -> businessRule("VOUCHER_NOT_FOUND", "Voucher not found", "USE_DIFFERENT_VOUCHER"));
-        validateVoucherOrThrow(voucher, amount);
-        long discountAmount = calculateDiscountAmount(voucher, amount);
-        return new ValidateVoucherResponse(
-                voucher.getCode(),
-                true,
-                voucher.getDiscountType().name(),
-                Math.toIntExact(voucher.getDiscountValue()),
-                discountAmount,
-                Math.max(amount - discountAmount, 0),
-                voucher.getEndAt()
-        );
+        throw new UnsupportedOperationException("Not supported in new voucher system");
     }
 
     @Transactional(readOnly = true)
@@ -205,57 +163,7 @@ public class CatalogServiceImpl implements CatalogService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    public Voucher validateVoucherForBooking(String voucherCode, long amount) {
-        Voucher voucher = voucherRepository.findByCode(voucherCode)
-                .orElseThrow(() -> businessRule("VOUCHER_NOT_FOUND", "Voucher not found", "USE_DIFFERENT_VOUCHER"));
-        validateVoucherOrThrow(voucher, amount);
-        return voucher;
-    }
 
-    public long calculateDiscountAmount(Voucher voucher, long amount) {
-        long discountAmount;
-        if (voucher.getDiscountType() == DiscountType.PERCENT) {
-            discountAmount = amount * voucher.getDiscountValue() / 100;
-        } else {
-            discountAmount = Math.min(voucher.getDiscountValue(), amount);
-        }
-        if (voucher.getMaxDiscountAmount() != null) {
-            discountAmount = Math.min(discountAmount, voucher.getMaxDiscountAmount());
-        }
-        return Math.min(discountAmount, amount);
-    }
-
-    private void validateVoucherOrThrow(Voucher voucher, long amount) {
-        Instant now = Instant.now();
-        if (voucher.getStatus() != ActiveStatus.ACTIVE) {
-            throw businessRule("VOUCHER_NOT_FOUND", "Voucher not found", "USE_DIFFERENT_VOUCHER");
-        }
-        if (voucher.getStartAt().isAfter(now)) {
-            throw businessRule("VOUCHER_NOT_STARTED", "This voucher is not active yet", "USE_DIFFERENT_VOUCHER");
-        }
-        if (voucher.getEndAt().isBefore(now)) {
-            throw businessRule("VOUCHER_EXPIRED", "This voucher has expired", "USE_DIFFERENT_VOUCHER");
-        }
-        if (voucher.isUsageLimitReached()) {
-            throw businessRule("USAGE_LIMIT_REACHED", "This voucher has reached its usage limit", "USE_DIFFERENT_VOUCHER");
-        }
-        if (amount < voucher.getMinOrderAmount()) {
-            throw businessRule("AMOUNT_TOO_LOW", "Booking amount is below minimum for this voucher", "INCREASE_ORDER_VALUE");
-        }
-        User currentUser = currentUserService.getCurrentUser();
-        if (voucher.isNewCustomerOnly() && bookingRepository.countByCustomer(currentUser) > 0) {
-            throw businessRule("NEW_CUSTOMER_ONLY", "This voucher is for new customers only", "USE_DIFFERENT_VOUCHER");
-        }
-        if (bookingRepository.existsByCustomerAndVoucherId(currentUser, voucher.getId())) {
-            throw businessRule("VOUCHER_ALREADY_USED", "You have already used this voucher", "USE_DIFFERENT_VOUCHER");
-        }
-        List<VoucherTier> tiers = voucherTierRepository.findByVoucherId(voucher.getId());
-        List<String> eligibleTiers = currentCustomerEligibleTiers();
-        if (!tiers.isEmpty() && tiers.stream().noneMatch(tier -> eligibleTiers.contains(tier.getTier()))) {
-            throw businessRule("TIER_NOT_ELIGIBLE", "This voucher is not available for your loyalty tier", "USE_DIFFERENT_VOUCHER");
-        }
-    }
 
     @Transactional(readOnly = true)
 public PackageResponse getPackageById(String packageId) {
@@ -267,36 +175,21 @@ public ComboResponse getComboById(String comboId) {
     return toComboResponse(requireActiveCombo(comboId));
 }
 
-    private List<String> currentCustomerEligibleTiers() {
-        return loyaltyAccountRepository.findByCustomerId(currentUserService.getCurrentUser().getId())
-                .map(LoyaltyAccount::getTier)
-                .map(tierConfigService::eligibleTierCodesFor)
-                .orElseGet(() -> tierConfigService.eligibleTierCodesFor(TierConfigService.BRONZE));
-    }
-
-    private ApiException businessRule(String code, String message, String action) {
-        return new ApiException(
-                HttpStatus.UNPROCESSABLE_ENTITY,
-                "Voucher validation failed",
-                "BUSINESS_RULE_VIOLATION",
-                Map.of("code", code, "message", message, "action", action)
-        );
-    }
-
-    private PackageResponse toPackageResponse(Package Package) {
-        List<String> features = packageServiceRepository.findByPackageIdOrderBySortOrderAsc(Package.getId()).stream()
+    private PackageResponse toPackageResponse(Package pkg) {
+        List<String> features = packageServiceRepository.findByPackageIdOrderBySortOrderAsc(pkg.getId()).stream()
                 .map(PackageService::getOptionName)
                 .toList();
         return new PackageResponse(
-                Package.getId().toString(),
-                Package.getName(),
-                Package.getDescription(),
-                Package.getBasePrice(),
-                Package.getDurationMinutes(),
-                null,
+                pkg.getId().toString(),
+                pkg.getName(),
+                pkg.getDescription(),
+                pkg.getBasePrice(),
+                pkg.getDurationMinutes(),
+                pkg.getCategory(),
                 features,
-                Package.getImageUrl(),
-                Package.getStatus().name(),
+                null,
+                split(pkg.getImageUrl()),
+                pkg.getStatus().name(),
                 null
         );
     }
@@ -309,7 +202,7 @@ public ComboResponse getComboById(String comboId) {
                 service.getPrice(),
                 service.getDurationMinutes(),
                 service.getStatus().name(),
-                service.getImageUrl()
+                split(service.getImageUrl())
         );
     }
 
@@ -335,12 +228,16 @@ public ComboResponse getComboById(String comboId) {
             combo.getDurationDays() == null ? 0 : combo.getDurationDays(),
             rows.stream().mapToInt(ComboService::getQuantity).sum(),
             services,
-            combo.getImageUrl(),
+            split(combo.getImageUrl()),
             combo.getStatus() == ActiveStatus.ACTIVE,
             false,
             0L
     );
 }
+
+    private List<String> split(String str) {
+        return str == null || str.isEmpty() ? new ArrayList<>() : java.util.Arrays.asList(str.split(","));
+    }
 
     private List<UUID> parseUniqueOptionIds(List<String> optionIds) {
         if (optionIds == null || optionIds.isEmpty()) {
@@ -379,4 +276,5 @@ public ComboResponse getComboById(String comboId) {
         return new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Service option is not available", "BUSINESS_RULE_VIOLATION");
     }
 }
+
 

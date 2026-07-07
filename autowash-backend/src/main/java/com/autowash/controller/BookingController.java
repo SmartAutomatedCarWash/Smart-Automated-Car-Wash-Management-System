@@ -8,6 +8,8 @@ import com.autowash.dto.CreateBookingRequest;
 import com.autowash.dto.CreateBookingResponse;
 import com.autowash.dto.PayBookingRequest;
 import com.autowash.dto.PayBookingResponse;
+import com.autowash.dto.ValidateVoucherRequest;
+import com.autowash.dto.ValidateVoucherResponse;
 import com.autowash.service.BookingService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -97,5 +99,12 @@ public class BookingController {
                 bookingService.payBooking(bookingId, request == null ? null : request.transactionRef())
         );
     }
-
+    
+    @PostMapping("/validate-voucher")
+    @Operation(summary = "Validate voucher for booking")
+    public ApiResponse<ValidateVoucherResponse> validateVoucher(
+            @Valid @RequestBody ValidateVoucherRequest request
+    ) {
+        return ApiResponse.ok("Voucher validated", bookingService.validateVoucher(request));
+    }
 }

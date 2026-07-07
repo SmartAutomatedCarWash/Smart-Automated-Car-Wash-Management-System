@@ -243,7 +243,7 @@ export function HomePageView() {
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#05080d] text-white">
-      <MotionStyles />
+
       <PublicHeader onOpenAuth={handleOpenAuth} language={language} onChangeLanguage={setLanguage} copy={copy} />
       <HeroSection onOpenAuth={handleOpenAuth} copy={copy} />
       <FacilitySection copy={copy} />
@@ -830,20 +830,7 @@ function PublicFooter({ copy }: { copy: Record<string, string> }) {
   );
 }
 
-function MotionStyles() {
-  return (
-    <style jsx global>{`
-      @keyframes heroGlow {
-        0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-        50% { transform: translate3d(0, 10px, 0) scale(1.02); }
-      }
-      @keyframes floatSoft {
-        0%, 100% { transform: translate3d(0, 0, 0); }
-        50% { transform: translate3d(0, -10px, 0); }
-      }
-    `}</style>
-  );
-}
+
 
 function FadeIn({
   children,
@@ -1176,5 +1163,21 @@ function ComboCard({
         </Button>
       ) : null}
     </article>
+  );
+}
+
+function MotionStyles() {
+  return (
+    <style jsx global>{`
+      @keyframes floatSoft {
+        0%,
+        100% {
+          transform: translate3d(0, 0, 0);
+        }
+        50% {
+          transform: translate3d(0, -15px, 0);
+        }
+      }
+    `}</style>
   );
 }

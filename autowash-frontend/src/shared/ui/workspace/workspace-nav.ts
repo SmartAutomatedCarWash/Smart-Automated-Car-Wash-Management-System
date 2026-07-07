@@ -74,7 +74,6 @@ const CUSTOMER_NAV: WorkspaceNavItem[] = [
   { href: "/customer/services", label: "Service Catalog", labelVi: "Danh mục dịch vụ", icon: Wrench },
   { href: "/customer/bookings", label: "Booking Tracker", labelVi: "Theo dõi đơn đặt", icon: ClipboardList },
   { href: "/customer/loyalty", label: "Member Lounge", labelVi: "Phòng chờ thành viên", icon: Gift },
-  { href: "/customer/settings", label: "Settings", labelVi: "Cài đặt", icon: Settings2 },
 ];
 
 const STAFF_NAV: WorkspaceNavItem[] = [

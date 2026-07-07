@@ -1,6 +1,12 @@
 # AutoWash Pro — Business Rules (Source of Truth)
 
-> **Version:** 1.2 | **Last updated:** 2026-06-25
+> **Cập nhật 2026‑07‑07**
+> - **BR‑129c**: `validDaysAfterClaim` được cấu hình trên Admin UI để xác định thời gian voucher có hiệu lực sau khi khách hàng đổi điểm.
+> - **BR‑122**: Đã loại bỏ `maxDiscountAmount` trùng lặp; UI hiện chỉ hiển thị `validDaysAfterClaim` và `maxDiscountAmount` (cho PERCENT) một lần.
+> - **BR‑124**: Admin UI `Discount value` chuyển thành dropdown các mức phần trăm (5 %‑70 %) khi loại giảm là **PERCENT**.
+
+
+> **Version:** 2.0 | **Last updated:** 2026-07-06
 > **Scope:** Backend-enforced rules only. Frontend-only prototype behaviors are labelled `[Frontend]`.
 > **Status legend:**
 > - ✅ Implemented in backend
@@ -109,13 +115,14 @@
 | BR-50 | `final_amount = base_price + options_total - voucher_discount - points_discount`. All amounts ≥ 0. | ✅ | `Booking` constructor + DB CHECK constraints |
 | BR-51 | Add-on service options must be active and belong to the selected package or combo. Duplicate options are rejected. | ✅ | `CatalogServiceImpl.requireActivePackageOptions()` / `requireActiveComboOptions()` |
 | BR-52 | Estimated duration = base duration + sum of selected option durations. | ✅ | `BookingServiceImpl.createBooking()` |
-| BR-53 | One voucher per booking. Voucher code must be uppercase alphanumeric (`^[A-Z0-9_-]+$`). | ✅ | `@AssertTrue isValidVoucherCode()` in `CreateBookingRequest` |
-| BR-54 | Voucher must be: `ACTIVE` status, not expired, within usage limit, min order met, tier-eligible, new-customer valid if flagged. | ✅ | `CatalogServiceImpl.validateVoucherOrThrow()` |
-| BR-54a | Voucher `new_customer_only = true` is blocked for customers who have at least one completed booking. | ✅ | `CatalogServiceImpl.validateVoucherOrThrow()` checks `countByCustomerAndStatus(COMPLETED) > 0` |
-| BR-54b | Voucher `usage_limit` must not be exceeded (`used_count < usage_limit`). When `usage_limit` is null, unlimited use is allowed. | ✅ | `CatalogServiceImpl.validateVoucherOrThrow()` |
-| BR-54c | Tier-restricted vouchers (`voucher_tiers`) are only usable by customers whose loyalty tier is in the allowed tier set. | ✅ | `CatalogServiceImpl.validateVoucherOrThrow()` with `VoucherTier` lookup |
-| BR-54d | One customer can use one voucher code only once per lifetime (no repeat use of same code). | ⚠️ | Not enforced. See BR-S18. |
-| BR-55 | Voucher `used_count` is incremented immediately on booking creation. | ✅ | `voucher.recordUse()` in `BookingServiceImpl` |
+| BR-53 | One voucher per booking. Customer selects from their active `UserVoucher` list (status `AVAILABLE`). | ✅ | `CreateBookingRequest` receives `voucherCode`; `VoucherRedemptionServiceImpl.getUserVoucherByCode()` resolves it. |
+| BR-54 | Voucher must be: `AVAILABLE` status, not expired, min order met, tier-eligible, new-customer valid if flagged. | ✅ | `VoucherRedemptionServiceImpl.isVoucherApplicable()` |
+| BR-54a | Voucher `new_customer_only = true` is blocked for customers who have at least one completed booking. When evaluating during a new booking creation, the new booking itself is skipped from the count. | ✅ | `VoucherRedemptionServiceImpl.isVoucherApplicable()` uses `skipNewCustomerCheck` |
+| BR-54b | Customer redeems points for a Voucher Template to receive a User Voucher (`AVAILABLE`). Each User Voucher can be applied once. Points are deducted via `REDEEM` transaction. | ✅ | `VoucherRedemptionServiceImpl.redeemVoucher()` |
+| BR-54c | Tier-restricted vouchers (`voucher_tiers`) are only redeemable/usable by customers whose loyalty tier is in the allowed tier set. | ✅ | `VoucherRedemptionServiceImpl.redeemVoucher()` + `isVoucherApplicable()` with `VoucherTier` lookup |
+| BR-54d | Voucher restricted to specific services (`voucher_applicable_services`) is only applicable if the booking contains that service. `FREE_SERVICE` type uses this to determine which service to discount. | ✅ | `VoucherRedemptionServiceImpl.calculateDiscountAmount()` |
+| BR-54e | Validate-voucher endpoint (`POST /customers/bookings/validate-voucher`) checks voucher eligibility and returns discount amount without applying it. | ✅ | `BookingController.validateVoucher()` → `BookingServiceImpl.validateVoucher()` |
+| BR-55 | `UserVoucher` status transitions from `AVAILABLE` to `USED` via `markAsUsed(booking)`. If booking is cancelled, `release()` restores `AVAILABLE`. | ✅ | `VoucherRedemptionServiceImpl.applyVoucher()`, `UserVoucher.release()` |
 | BR-56 | Payment method: `CASH_AT_COUNTER` → initial status `UNPAID`; `BANK_TRANSFER` / `E_WALLET` → `PENDING_PAYMENT`. | ✅ | `BookingServiceImpl.initialPaymentStatus()` |
 | BR-57 | Paying a booking marks payment as `PAID` and transitions `PENDING` booking to `CONFIRMED`. | ✅ | `BookingServiceImpl.payBooking()` |
 | BR-58 | Payment is blocked for `CANCELLED` or `NO_SHOW` bookings. | ✅ | `BookingServiceImpl.payBooking()` |
@@ -179,22 +186,25 @@
 | BR | Rule | Status | Implementation |
 |---|---|---|---|
 | BR-86 | Points are earned only after wash session `COMPLETED`. | ✅ | `LoyaltyServiceImpl.postEarnTransaction()` checks `WashSessionStatus.COMPLETED` |
-| BR-87 | Points formula: `floor(finalAmount / 10,000) × tier_multiplier × promotion_multiplier`. | ✅ | `LoyaltyServiceImpl.calculateEarnPoints()`, `LoyaltyRules` |
-| BR-88 | Tier multipliers: `BRONZE`=1.0x, `SILVER`=1.2x, `GOLD`=1.5x, `PLATINUM`=2.0x, `DIAMOND`=2.5x. | ✅ | `LoyaltyRules.tierMultiplier()` |
+| BR-87 | Points formula: `floor(finalAmount / earnPointsUnitAmount) × tier_multiplier × promotion_multiplier`. `earnPointsUnitAmount` is configurable via `SystemSettings` (default 10,000). | ✅ | `LoyaltyServiceImpl.calculateEarnPoints()`, `TierConfigService.getPointMultiplier()` |
+| BR-88 | Tier multipliers are stored in `tier_configs` table and configurable by Admin. Defaults: `BRONZE`=1.0x, `SILVER`=1.2x, `GOLD`=1.5x, `PLATINUM`=2.0x, `DIAMOND`=2.5x. | ✅ | `TierConfigServiceImpl.getPointMultiplier()` reads from `tier_configs` |
 | BR-89 | Promotion multiplier applied: highest multiplier among all linked booking promotions wins. | ✅ | `LoyaltyServiceImpl.bookingPromotionMultiplier()` |
 | BR-90 | Only one EARN transaction per booking (idempotent). | ✅ | `UNIQUE INDEX uk_point_transactions_booking_type` on `(booking_id, type)` |
 | BR-91 | Point balance cannot be negative. | ✅ | `loyalty_accounts.current_points >= 0` DB CHECK |
-| BR-92 | Redemption requires 50–200 points per operation. | ✅ | `LoyaltyRules.MIN/MAX_REDEMPTION_POINTS`, `validateRedemptionAmount()`, `@Min/@Max` in `ApplyPointsRequest` |
-| BR-93 | Redemption rate: 1 point = 1,000 VND. | ✅ | `LoyaltyRules.VND_PER_POINT = 1_000` |
-| BR-94 | Redemption blocked when insufficient points. | ✅ | `LoyaltyServiceImpl` throws `INSUFFICIENT_POINTS` |
+| BR-92 | Voucher redemption requires `requiredPoints` (configured per VoucherTemplate). | ✅ | `VoucherRedemptionServiceImpl.redeemVoucher()` checks `loyaltyAccount.getCurrentPoints() < template.getRequiredPoints()` |
+| BR-93 | Points are deducted via `REDEEM` transaction when customer exchanges points for a voucher. | ✅ | `LoyaltyServiceImpl.redeemPoints()` creates `REDEEM` PointTransaction |
+| BR-94 | Redemption blocked when insufficient points. | ✅ | `LoyaltyServiceImpl.redeemPoints()` throws `INSUFFICIENT_POINTS` |
 | BR-95 | Redemption blocked for BLOCKED customers. | ⚠️ | `redeemPoints()` does not check `user.getStatus()`. See BR-S11. |
 | BR-96 | Customer can hold at most 3 active redemption vouchers. | ⚠️ | Not enforced. See BR-S14. |
-| BR-97 | Tier thresholds: `BRONZE`=0pts, `SILVER`=500pts, `GOLD`=1,500pts, `PLATINUM`=4,000pts, `DIAMOND`=10,000pts. | ✅ | `LoyaltyRules.TIER_THRESHOLDS` |
-| BR-98 | Tier is upgraded on every point-earn event when lifetime EARN total crosses a threshold. | ✅ | `LoyaltyServiceImpl.evaluateTierUpgrade()` using lifetime EARN sum |
-| BR-99 | Tier upgrade is recorded in `tier_histories`. | ✅ | `TierHistoryRepository.save()` in `evaluateTierUpgrade()` |
-| BR-100 | Tier recalculation uses **lifetime total EARN points** (not rolling 12-month). | ⚠️ | Diverges from original spec which described rolling 12-month. Decision required. See BR-S10. |
+| BR-97 | Tier thresholds stored in `tier_configs.min_points`. Defaults: `BRONZE`=0, `SILVER`=500, `GOLD`=1,500, `PLATINUM`=4,000, `DIAMOND`=10,000. Configurable by Admin. | ✅ | `TierConfigServiceImpl.calculateTierForPoints()` reads from `tier_configs` |
+| BR-98 | Tier is upgraded on every point-earn event when lifetime EARN total crosses a threshold. Upgrade only (no downgrade). | ✅ | `LoyaltyServiceImpl.evaluateTierUpgrade()` using `totalEarnedPoints` |
+| BR-99 | Tier upgrade is recorded in `tier_histories`. A notification is sent to the customer. | ✅ | `TierHistoryRepository.save()` + `notificationRepository.save()` in `evaluateTierUpgrade()` |
+| BR-100 | Tier recalculation uses **lifetime total EARN points** (not rolling 12-month). **Resolved**: lifetime approach chosen per `LOYALTY_TIER_RESEARCH.md`. | ✅ | `LoyaltyServiceImpl.evaluateTierUpgrade()` uses `account.getTotalEarnedPoints()` |
 | BR-101 | Loyalty account is auto-created on customer registration. | ✅ | `AuthServiceImpl.ensureDefaultCustomerRecords()` |
-| BR-101a | Admin can manually adjust a customer's point balance (add or subtract) with a mandatory reason; recorded as `ADJUST` transaction. | ⚠️ | `ADJUST` type exists in `point_transaction_type` but no admin endpoint exists. See BR-S24. |
+| BR-101a | Admin can manually adjust a customer's point balance (add or subtract) with a mandatory reason; recorded as `ADJUST` transaction. | ✅ | `LoyaltyServiceImpl.postBonusTransaction()` / `adjustActivePoints()` called from `AdminCustomerController` |
+| BR-101b | Customer earns +30 bonus points on their first completed booking. | ✅ | `BookingServiceImpl.createBooking()` |
+| BR-101c | Customer earns +10 bonus points when submitting a review. | ✅ | `ReviewServiceImpl.submitReview()` |
+| BR-101d | Admin can manually set a customer's tier via the Admin panel. | ✅ | `LoyaltyServiceImpl.updateCustomerTierByAdmin()` |
 
 ---
 
@@ -230,22 +240,28 @@
 
 ---
 
-## 12. Vouchers
+## 12. Vouchers (Refactored — Template + UserVoucher Model)
+
+> **Architecture:** The old `vouchers` table has been renamed to `voucher_templates`. Customers no longer use vouchers directly — they first **redeem points** to receive a personal `UserVoucher` (stored in `user_vouchers`), then apply that `UserVoucher` to a booking.
 
 | BR | Rule | Status | Implementation |
 |---|---|---|---|
-| BR-120 | Voucher requires code (max 50 chars, uppercase `^[A-Z0-9_-]+$`), name, discount type, discount value ≥ 1, start date, end date. | ✅ | `@Pattern @Min @NotBlank` in `AdminVoucherRequest` |
-| BR-121 | Voucher `end_at` must be after `start_at`. | ✅ | `AdminVoucherServiceImpl.validateRequest()` → `VALIDATION_ERROR` |
-| BR-122 | If discount type is `PERCENT`, discount value must be ≤ 100. | ✅ | `AdminVoucherServiceImpl.validateRequest()` |
-| BR-123 | Voucher code must be globally unique. | ✅ | `vouchers.code UNIQUE`; `existsByCode()` check on create |
+| BR-120 | VoucherTemplate requires code (max 50 chars, uppercase `^[A-Z0-9_-]+$`), name, discount type (`PERCENT`/`FIXED_AMOUNT`/`FREE_SERVICE`), discount value ≥ 1, start date, end date. | ✅ | `@Pattern @Min @NotBlank` in `AdminVoucherRequest` |
+| BR-121 | VoucherTemplate `end_at` must be after `start_at`. | ✅ | `AdminVoucherServiceImpl.validateRequest()` → `VALIDATION_ERROR` |
+| BR-122 | If discount type is `PERCENT`, discount value must be ≤ 100. Admin UI allows configuring `maxDiscountAmount` and `minOrderAmount`. | ✅ | `AdminVoucherServiceImpl.validateRequest()` |
+| BR-123 | Voucher code must be globally unique. | ✅ | `voucher_templates.code UNIQUE`; `existsByCode()` check on create |
 | BR-124 | Voucher code cannot be changed after creation. | ✅ | `AdminVoucherServiceImpl.updateVoucher()` rejects code mismatch |
-| BR-125 | Discount calculation: PERCENT → `min(amount × rate / 100, max_discount, amount)`; FIXED → `min(value, max_discount, amount)`. | ✅ | `CatalogServiceImpl.calculateDiscountAmount()` |
-| BR-126 | New-customer-only vouchers are blocked for customers with at least one completed booking. | ✅ | `CatalogServiceImpl.validateVoucherOrThrow()` checks `countByCustomerAndStatus(COMPLETED) > 0` |
-| BR-127 | Tier-restricted vouchers are blocked for customers not in the allowed tier set. | ✅ | `CatalogServiceImpl.validateVoucherOrThrow()` with `VoucherTier` lookup |
-| BR-128 | Voucher deactivation is a soft-delete (sets status to `INACTIVE`). | ✅ | `AdminVoucherServiceImpl.deleteVoucher()` → `voucher.deactivate()` |
-| BR-129 | Customer can hold at most 3 active point-redemption vouchers. | ⚠️ | Not enforced. See BR-S14. |
-| BR-129a | One customer can use the same voucher code only once (per-user usage limit). | ⚠️ | No `voucher_usages` table exists; only global `used_count` tracked. See BR-S18. |
-| BR-129b | Voucher status is auto-set to `INACTIVE` when `end_at` is reached (lazy or scheduled). | ⚠️ | No scheduled job exists. Expiry is currently only checked at validation time. See BR-S25. |
+| BR-125 | Discount calculation: `PERCENT` → `min(amount × rate / 100, maxDiscountAmount)`; `FIXED_AMOUNT` → `min(value, amount)`; `FREE_SERVICE` → `min(amount, highest applicable service price)`. | ✅ | `VoucherRedemptionServiceImpl.calculateDiscountAmount()` |
+| BR-126 | New-customer-only vouchers are blocked for customers with at least one completed booking. | ✅ | `VoucherRedemptionServiceImpl.redeemVoucher()` + `isVoucherApplicable()` |
+| BR-127 | Tier-restricted vouchers (via `voucher_tiers`) are blocked for customers not in the allowed tier set. | ✅ | `VoucherRedemptionServiceImpl.redeemVoucher()` + `isVoucherApplicable()` |
+| BR-128 | VoucherTemplate deactivation is a soft-delete (sets status to `INACTIVE`). | ✅ | `AdminVoucherServiceImpl.deleteVoucher()` → `voucher.deactivate()` |
+| BR-128a | `FREE_SERVICE` vouchers require `voucher_applicable_services` mapping. Discount equals the price of the highest-priced applicable service selected in the booking. | ✅ | `VoucherRedemptionServiceImpl.calculateDiscountAmount()` |
+| BR-129 | Customer can hold at most 3 active UserVouchers. | ⚠️ | Not enforced. See BR-S14. |
+| BR-129a | Each `UserVoucher` is a unique instance — two customers redeeming the same VoucherTemplate code get separate UserVouchers. A customer cannot use another customer's voucher. | ✅ | `UserVoucher` has `user_id` FK; `getUserVoucherByCode()` filters by user |
+| BR-129b | `UserVoucher` expiration is based on `expiredAt = issuedAt + validDaysAfterClaim`. Expired vouchers are auto-marked `EXPIRED` by `VoucherExpirationJob`. | ✅ | `UserVoucher.expire()`, `VoucherExpiryNotificationJob` |
+| BR-129c | UserVoucher `validDaysAfterClaim` is defined on the VoucherTemplate. Default 30 days, configurable per template via Admin UI. | ✅ | `VoucherRedemptionServiceImpl.redeemVoucher()` uses `template.getValidDaysAfterClaim()` |
+| BR-129d | When a booking is cancelled, the applied UserVoucher is released back to `AVAILABLE` status and the VoucherTemplate's `usedCount` is decremented. | ✅ | `UserVoucher.release()`, `VoucherTemplate.undoUse()` |
+| BR-129e | VoucherTemplate `usageLimit` controls global redemption cap. `usedCount` is incremented on each redemption and checked against `usageLimit`. | ✅ | `VoucherTemplate.isUsageLimitReached()`, `recordUse()` |
 
 ---
 
@@ -285,6 +301,8 @@
 | BR-144e | Notification `type` must be one of a defined enum set (e.g. `BOOKING_CREATED`, `BOOKING_CONFIRMED`, `WASH_CHECKED_IN`, `WASH_COMPLETED`, `BOOKING_REMINDER`). Free-form string is not allowed. | ⚠️ | `type VARCHAR(50)` in DB with no constraint. See BR-S28. |
 | BR-144f | Real-time or push delivery of notifications (WebSocket or SSE) is not supported. Client polls `GET /api/v1/notifications` every 30 seconds. Poll must pause when browser tab is hidden (`visibilitychange`). After key actions (create booking, payment), frontend calls notification API immediately without waiting for the next cycle. | ✅ | Accepted limitation — pull-only model by design. `idx_notifications_user_id` index exists to ensure fast poll queries. |
 | BR-145 | Frontend and backend collaborate on notifications. **Frontend:** poll every 30s, pause on tab hidden, call immediately after key actions, render badge/toast/reminder UI. **Backend:** write to `notifications` table on booking events (see BR-S20), write loyalty-expiry warning via scheduled job (see BR-S21). | ⚠️ | Backend write-on-event and scheduled job not yet implemented. See BR-S20, BR-S21. |
+| BR-145a | Backend sends a notification when a customer's loyalty tier is upgraded. | ✅ | `LoyaltyServiceImpl.evaluateTierUpgrade()` |
+| BR-145b | Backend runs a daily scheduled job to send notifications for vouchers expiring in 3 days. | ✅ | `VoucherExpiryNotificationJob` |
 
 ---
 
@@ -345,6 +363,11 @@ These rules are **designed intent** documented in specs but **not enforced** in 
 | BR-S26 | Admin can create, update, and deactivate/reactivate Packages (wash package catalog) | New `AdminPackageController` + `AdminPackageService` + `AdminPackageServiceImpl` | — |
 | BR-S27 | Admin can create, update, and deactivate/reactivate Services (add-on service catalog) | New `AdminServiceController` + `AdminServiceService` + `AdminServiceServiceImpl` | — |
 | BR-S28 | `notifications.type` must match a controlled enum (`BOOKING_CREATED`, `BOOKING_CONFIRMED`, `WASH_CHECKED_IN`, `WASH_COMPLETED`, `BOOKING_REMINDER`); enforced at application layer | New `NotificationType` enum + DB CHECK constraint via migration | BR-S20 |
+| BR-S29 | Registration bonus: Award +20 points when a user registers a new account | `AuthServiceImpl` | — |
+| BR-S30 | Referral bonus: Award +100 points when a user successfully refers a friend | New `ReferralService` | — |
+| BR-S31 | Birthday bonus: Award +50 points on the user's birthday | New `@Scheduled` job | — |
+| BR-S32 | Auto-distribute tier-exclusive vouchers (Birthday Voucher, Monthly 50K/100K) to eligible loyalty tiers | New `@Scheduled` job | — |
+| BR-S33 | Anti-fraud: Limit voucher redemption per day/month, limit birthday voucher to one per year | `CatalogServiceImpl.validateVoucherOrThrow()` + usage history tracking | — |
 
 ---
 
@@ -508,16 +531,19 @@ These rules are **designed intent** documented in specs but **not enforced** in 
 
 ### 18.4 Vouchers & Promotions
 
-#### `vouchers`
+#### `voucher_templates` (renamed from `vouchers` via V18 migration)
 | Column | Type | Constraints |
 |---|---|---|
 | `id` | uuid | PK, DEFAULT gen_random_uuid() |
 | `code` | varchar(50) | UNIQUE NOT NULL |
 | `name` | varchar(120) | NOT NULL |
-| `discount_type` | varchar(20) | NOT NULL, CHECK IN ('PERCENT','FIXED_AMOUNT') |
+| `description` | text | nullable |
+| `discount_type` | varchar(20) | NOT NULL, CHECK IN ('PERCENT','FIXED_AMOUNT','FREE_SERVICE') |
 | `discount_value` | bigint | NOT NULL, CHECK > 0 |
 | `min_order_amount` | bigint | NOT NULL DEFAULT 0, CHECK >= 0 |
 | `max_discount_amount` | bigint | nullable, CHECK >= 0 if not null |
+| `required_points` | int | NOT NULL DEFAULT 0 |
+| `valid_days_after_claim` | int | NOT NULL DEFAULT 30 |
 | `usage_limit` | int | nullable, CHECK > 0 if not null |
 | `used_count` | int | NOT NULL DEFAULT 0, CHECK >= 0 |
 | `new_customer_only` | boolean | NOT NULL DEFAULT false |
@@ -525,13 +551,36 @@ These rules are **designed intent** documented in specs but **not enforced** in 
 | `end_at` | timestamptz | NOT NULL, CHECK > start_at |
 | `status` | varchar(20) | NOT NULL DEFAULT 'ACTIVE', CHECK IN ('ACTIVE','INACTIVE') |
 
+> - **BR‑129c**: `validDaysAfterClaim` được cấu hình trên Admin UI để xác định thời gian voucher có hiệu lực sau khi khách hàng đổi điểm.
+> - **BR‑122**: Đã loại bỏ `maxDiscountAmount` trùng lặp; UI hiện chỉ hiển thị `validDaysAfterClaim` và `maxDiscountAmount` (cho PERCENT) một lần.
+> - **BR‑124**: Admin UI `Discount value` chuyển thành dropdown các mức phần trăm (5 %‑70 %) khi loại giảm là **PERCENT**.
+
+
 #### `voucher_tiers`
 | Column | Type | Constraints |
 |---|---|---|
-| `voucher_id` | uuid | PK, FK → vouchers(id) ON DELETE CASCADE |
+| `voucher_template_id` | uuid | PK, FK → voucher_templates(id) ON DELETE CASCADE |
 | `tier` | varchar(20) | PK, CHECK IN ('BRONZE','SILVER','GOLD','PLATINUM','DIAMOND') |
 
-**Indexes:** `idx_voucher_tiers_voucher_id`
+#### `voucher_applicable_services`
+| Column | Type | Constraints |
+|---|---|---|
+| `voucher_template_id` | uuid | PK, FK → voucher_templates(id) ON DELETE CASCADE |
+| `service_id` | uuid | PK, FK → services(id) ON DELETE CASCADE |
+
+#### `user_vouchers`
+| Column | Type | Constraints |
+|---|---|---|
+| `id` | uuid | PK |
+| `user_id` | uuid | NOT NULL, FK → users(id) |
+| `voucher_template_id` | uuid | NOT NULL, FK → voucher_templates(id) |
+| `status` | varchar(20) | NOT NULL DEFAULT 'AVAILABLE', CHECK IN ('AVAILABLE','USED','EXPIRED') |
+| `issued_at` | timestamptz | NOT NULL DEFAULT now() |
+| `expired_at` | timestamptz | NOT NULL |
+| `used_at` | timestamptz | nullable |
+| `booking_id` | uuid | nullable, FK → bookings(id) |
+
+**Indexes:** `idx_user_vouchers_user_status(user_id, status)`, `idx_user_vouchers_expired(expired_at)`
 
 #### `promotions`
 | Column | Type | Constraints |
@@ -882,17 +931,19 @@ These are cases where the original `List_BRs.md` spec and current backend implem
 
 | # | Spec (List_BRs.md) | Implementation | Decision Needed |
 |---|---|---|---|
-| 1 | Tier multipliers: SILVER=1.5x, GOLD=2x, PLATINUM=3x | Backend `LoyaltyRules`: SILVER=1.2x, GOLD=1.5x, PLATINUM=2.0x, DIAMOND=2.5x | **Resolved**: Aligned with `LOYALTY_TIER_RESEARCH.md`. Spec updated. |
+| 1 | Tier multipliers: SILVER=1.5x, GOLD=2x, PLATINUM=3x | `tier_configs` table: SILVER=1.2x, GOLD=1.5x, PLATINUM=2.0x, DIAMOND=2.5x (configurable) | **Resolved**: Aligned with `LOYALTY_TIER_RESEARCH.md`. |
 | 2 | Tier recalculation uses rolling 12-month points | Backend uses lifetime EARN total | **Resolved**: Option A (lifetime, simpler) chosen per `LOYALTY_TIER_RESEARCH.md`. |
-| 3 | Booking window: BRONZE=7d, SILVER=10d, GOLD=12d, PLATINUM=14d, DIAMOND=30d | Not implemented in backend | Implement BR-S03 or adjust spec |
-| 4 | `blocked` customer cannot book or redeem points | Neither check enforced in backend | Implement BR-S01 and BR-S11 |
-| 5 | Password minimum 6 characters | Backend enforces 8–128 chars + complexity pattern | Spec is outdated — update `List_BRs.md` |
-| 6 | Registration does not collect email | Backend requires email (`@NotBlank @Email`) | Spec is outdated — update `List_BRs.md` |
-| 7 | Points expire after 12 months | No expiry logic in backend | Implement scheduled expiry job or remove from spec |
-| 8 | 2 no-shows in 30 days → 14-day suspension | Not implemented | Implement BR-S08 + BR-S09 or deprioritize |
+| 3 | Voucher model: single `vouchers` table, direct use | Refactored to `voucher_templates` + `user_vouchers` (redeem-then-use model) | **Resolved**: V18 migration applied. |
+| 4 | Discount types: PERCENT, FIXED_AMOUNT | Backend adds `FREE_SERVICE` type | **Resolved**: New type fully implemented. |
+| 5 | Booking window: BRONZE=7d, SILVER=10d, GOLD=12d, PLATINUM=14d, DIAMOND=30d | Not implemented in backend | Implement BR-S03 or adjust spec |
+| 6 | `blocked` customer cannot book or redeem points | Neither check enforced in backend | Implement BR-S01 and BR-S11 |
+| 7 | Password minimum 6 characters | Backend enforces 8–128 chars + complexity pattern | Spec is outdated — update `List_BRs.md` |
+| 8 | Registration does not collect email | Backend requires email (`@NotBlank @Email`) | Spec is outdated — update `List_BRs.md` |
+| 9 | Points expire after 12 months | No expiry logic in backend | Implement scheduled expiry job or remove from spec |
+| 10 | 2 no-shows in 30 days → 14-day suspension | Not implemented | Implement BR-S08 + BR-S09 or deprioritize |
 
 ---
 
 *This file is the **single source of truth** for AutoWash Pro business rules.*
-*For implementation work: refer to backend codebase + `V1__init_schema.sql`.*
+*For implementation work: refer to backend codebase + `V1__init_schema.sql` + V18–V20 migrations.*
 *For spec decisions: update this file and `docs/List_BRs.md` together.*

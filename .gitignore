@@ -18,3 +18,8 @@ autowash-backend/uploads/
 
 Task/
 docs/
+
+mc.exe
+minio.exe
+minio.license
+minio-data/

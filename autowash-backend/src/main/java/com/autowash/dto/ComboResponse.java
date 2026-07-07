@@ -11,7 +11,7 @@ public record ComboResponse(
         int durationDays,
         int maxServices,
         List<ComboServiceItem> services,
-        String image,
+        List<String> imageUrls,
         boolean isActive,
         boolean canUpgrade,
         long upgradePriceFrom

@@ -33,8 +33,11 @@ public class Package {
     @Column(name = "duration_minutes", nullable = false)
     private int durationMinutes;
 
-    @Column(name = "image_url", length = 255)
+    @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
+
+    @Column(length = 100)
+    private String category;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -46,23 +49,25 @@ public class Package {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public Package(String name, String description, long basePrice, int durationMinutes, String imageUrl, ActiveStatus status) {
+    public Package(String name, String description, long basePrice, int durationMinutes, String category, String imageUrl, ActiveStatus status) {
         this.id = UUID.randomUUID();
         this.name = name;
         this.description = description;
         this.basePrice = basePrice;
         this.durationMinutes = durationMinutes;
+        this.category = category;
         this.imageUrl = imageUrl;
         this.status = status;
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
     }
 
-    public void update(String name, String description, long basePrice, int durationMinutes, String imageUrl, ActiveStatus status) {
+    public void update(String name, String description, long basePrice, int durationMinutes, String category, String imageUrl, ActiveStatus status) {
         this.name = name;
         this.description = description;
         this.basePrice = basePrice;
         this.durationMinutes = durationMinutes;
+        this.category = category;
         this.imageUrl = imageUrl;
         this.status = status;
         this.updatedAt = Instant.now();

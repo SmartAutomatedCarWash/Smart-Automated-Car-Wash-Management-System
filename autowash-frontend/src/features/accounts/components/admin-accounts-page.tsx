@@ -31,6 +31,8 @@ import type {
 } from "@/entities/reports";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
+import { DynamicTierBadge } from "@/shared/ui/workspace/dynamic-tier-badge";
+
 const PAGE_LIMIT = 20;
 const ROLE_OPTIONS: AdminAccountRole[] = ["CUSTOMER", "STAFF", "ADMIN", "GUEST"];
 const STAFF_ROLE_OPTIONS: AdminAccountRole[] = ["STAFF", "ADMIN"];
@@ -366,7 +368,9 @@ export function AdminAccountsPageContent() {
                           <TableCell className="font-medium text-slate-700">{account.phone}</TableCell>
                           {activeTab === "customers" ? (
                             <TableCell>
-                              <TierBadge tier={account.tier} language={language as "vi" | "en"} />
+                              <DynamicTierBadge tier={account.tier}>
+                                {translateTier(account.tier, language as "vi" | "en")}
+                              </DynamicTierBadge>
                             </TableCell>
                           ) : (
                             <TableCell>
@@ -646,19 +650,3 @@ const STATUS_TONE: Record<AdminAccount["status"], string> = {
   DELETED: "border-zinc-400 bg-zinc-200 text-zinc-800",
 };
 
-function TierBadge({ tier, language }: { tier: string; language: "vi" | "en" }) {
-  const tone = TIER_TONE[tier] ?? "border-slate-300 bg-slate-100 text-slate-700";
-  return (
-    <Badge className={tone} variant="outline">
-      {translateTier(tier, language)}
-    </Badge>
-  );
-}
-
-const TIER_TONE: Record<string, string> = {
-  BRONZE: "border-amber-700/30 bg-amber-700/10 text-amber-900",
-  SILVER: "border-slate-400 bg-slate-100 text-slate-700",
-  GOLD: "border-yellow-400 bg-yellow-100 text-yellow-800",
-  PLATINUM: "border-cyan-300 bg-cyan-100 text-cyan-800",
-  DIAMOND: "border-violet-300 bg-violet-100 text-violet-800",
-};

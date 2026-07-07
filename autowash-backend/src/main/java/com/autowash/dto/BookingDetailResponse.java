@@ -37,8 +37,6 @@ public record BookingDetailResponse(
             long subtotal,
             String voucherCode,
             long voucherDiscount,
-            int pointsRedeemed,
-            long pointsDiscount,
             long finalAmount,
             String currency
     ) {}

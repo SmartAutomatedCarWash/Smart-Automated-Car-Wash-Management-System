@@ -23,7 +23,7 @@ export function createAdminService(payload: {
   price: number;
   duration: number;
   status: string;
-  imageUrl?: string | null;
+  imageUrls?: string[];
 }) {
   return apiRequest<AdminCatalogService, Record<string, unknown>>({
     method: "POST",
@@ -34,7 +34,7 @@ export function createAdminService(payload: {
       price: Number(payload.price),
       durationMinutes: Number(payload.duration),
       status: payload.status,
-      imageUrl: payload.imageUrl || null,
+      imageUrls: payload.imageUrls || [],
     },
   });
 }
@@ -43,6 +43,29 @@ export function deleteAdminService(serviceId: string) {
   return apiRequest<AdminCatalogService>({
     method: "DELETE",
     url: `/admin/services/${serviceId}`,
+  });
+}
+
+export function updateAdminService(payload: {
+  serviceId: string;
+  name: string;
+  description: string;
+  price: number;
+  duration: number;
+  status: string;
+  imageUrls?: string[];
+}) {
+  return apiRequest<AdminCatalogService, Record<string, unknown>>({
+    method: "PUT",
+    url: `/admin/services/${payload.serviceId}`,
+    data: {
+      name: payload.name,
+      description: payload.description,
+      price: Number(payload.price),
+      durationMinutes: Number(payload.duration),
+      status: payload.status,
+      imageUrls: payload.imageUrls || [],
+    },
   });
 }
 
@@ -55,7 +78,7 @@ export function createAdminPackage(payload: {
   features: string[];
   status: string;
   serviceIds: string[];
-  imageUrl?: string | null;
+  imageUrls?: string[];
 }) {
   return apiRequest<AdminCatalogPackage, Record<string, unknown>>({
     method: "POST",
@@ -65,7 +88,7 @@ export function createAdminPackage(payload: {
       description: payload.description,
       basePrice: Number(payload.basePrice),
       durationMinutes: Number(payload.duration),
-      imageUrl: payload.imageUrl || null,
+      imageUrls: payload.imageUrls || [],
       status: payload.status,
       options: payload.serviceIds.map((serviceId, index) => ({
         optionId: serviceId,
@@ -80,6 +103,37 @@ export function deleteAdminPackage(packageId: string) {
   return apiRequest<AdminCatalogPackage>({
     method: "DELETE",
     url: `/admin/packages/${packageId}`,
+  });
+}
+
+export function updateAdminPackage(payload: {
+  packageId: string;
+  name: string;
+  description: string;
+  basePrice: number;
+  duration: number;
+  category: string;
+  features: string[];
+  status: string;
+  serviceIds: string[];
+  imageUrls?: string[];
+}) {
+  return apiRequest<AdminCatalogPackage, Record<string, unknown>>({
+    method: "PUT",
+    url: `/admin/packages/${payload.packageId}`,
+    data: {
+      name: payload.name,
+      description: payload.description,
+      basePrice: Number(payload.basePrice),
+      durationMinutes: Number(payload.duration),
+      imageUrls: payload.imageUrls || [],
+      status: payload.status,
+      options: payload.serviceIds.map((serviceId, index) => ({
+        optionId: serviceId,
+        quantity: 1,
+        sortOrder: index + 1,
+      })),
+    },
   });
 }
 
@@ -100,7 +154,7 @@ export function createAdminCombo(payload: AdminComboForm) {
       durationMinutes: Number(payload.durationMinutes),
       durationDays: payload.durationDays ? Number(payload.durationDays) : null,
       maxUsages: payload.maxUsages ? Number(payload.maxUsages) : null,
-      imageUrl: payload.imageUrl || null,
+      imageUrls: payload.imageUrls || [],
       status: payload.status,
       options: payload.optionIds.map((optionId, index) => ({
         optionId,
@@ -115,6 +169,29 @@ export function deleteAdminCombo(comboId: string) {
   return apiRequest<AdminCombo>({
     method: "DELETE",
     url: `/admin/combos/${comboId}`,
+  });
+}
+
+export function updateAdminCombo(payload: AdminComboForm & { comboId: string }) {
+  return apiRequest<AdminCombo, Record<string, unknown>>({
+    method: "PUT",
+    url: `/admin/combos/${payload.comboId}`,
+    data: {
+      name: payload.name,
+      description: payload.description || null,
+      price: Number(payload.price),
+      originalPrice: payload.originalPrice ? Number(payload.originalPrice) : null,
+      durationMinutes: Number(payload.durationMinutes),
+      durationDays: payload.durationDays ? Number(payload.durationDays) : null,
+      maxUsages: payload.maxUsages ? Number(payload.maxUsages) : null,
+      imageUrls: payload.imageUrls || [],
+      status: payload.status,
+      options: payload.optionIds.map((optionId, index) => ({
+        optionId,
+        quantity: 1,
+        sortOrder: index + 1,
+      })),
+    },
   });
 }
 

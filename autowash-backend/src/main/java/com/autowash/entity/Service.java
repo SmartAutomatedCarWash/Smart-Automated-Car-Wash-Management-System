@@ -44,7 +44,7 @@ public class Service {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @Column(name = "image_url", length = 500)
+    @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
 
     public Service(String name, String description, long price, int durationMinutes, ActiveStatus status, String imageUrl) {

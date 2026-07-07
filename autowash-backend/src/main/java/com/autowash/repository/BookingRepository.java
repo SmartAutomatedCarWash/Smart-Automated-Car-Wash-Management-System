@@ -46,6 +46,9 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @EntityGraph(attributePaths = {"vehicle"})
     Page<Booking> findByCustomerAndStatusOrderByCreatedAtDesc(User customer, BookingStatus status, Pageable pageable);
 
+    @Query("select booking from Booking booking where booking.customer = :customer and booking.voucherId is not null order by booking.createdAt desc")
+    Page<Booking> findByCustomerAndVoucherIdNotNull(@Param("customer") User customer, Pageable pageable);
+
     @EntityGraph(attributePaths = {"vehicle"})
     Page<Booking> findByCustomerAndScheduledAtBetweenOrderByCreatedAtDesc(
             User customer,

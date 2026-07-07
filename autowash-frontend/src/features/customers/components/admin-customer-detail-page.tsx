@@ -32,9 +32,9 @@ import {
   useAdminCustomerTierHistory,
   useAdminCustomerVehicles,
   useAdminCustomerWashHistory,
-  useUpdateAdminCustomerRole,
   useUpdateAdminCustomerStatus,
   useUpdateAdminCustomerTier,
+  useUpdateAdminCustomerPoints,
 } from "@/features/reports/hooks/use-admin-reporting";
 import { useTierConfigs } from "@/features/settings/hooks/use-admin-tiers";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
@@ -49,7 +49,8 @@ type CustomerTab =
   | "bookings"
   | "wash-history"
   | "point-transactions"
-  | "tier-history";
+  | "tier-history"
+  | "management";
 
 type DateRangeDraft = {
   dateFrom: string;
@@ -108,8 +109,9 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
   const [statusDraft, setStatusDraft] = useState<AdminCustomerStatus>("ACTIVE");
   const [statusReasonDraft, setStatusReasonDraft] = useState("");
   const [statusFeedback, setStatusFeedback] = useState<string | null>(null);
-  const [roleDraft, setRoleDraft] = useState<AdminEditableAccountRole>("CUSTOMER");
-  const [roleFeedback, setRoleFeedback] = useState<string | null>(null);
+  const [pointsDraft, setPointsDraft] = useState<string>("");
+  const [pointsReason, setPointsReason] = useState<string>("");
+  const [pointsFeedback, setPointsFeedback] = useState<string | null>(null);
   const [tierDraft, setTierDraft] = useState<string>("BRONZE");
   const [tierFeedback, setTierFeedback] = useState<string | null>(null);
 
@@ -163,7 +165,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
     { enabled: activeTab === "tier-history" },
   );
   const updateStatusMutation = useUpdateAdminCustomerStatus(customerId);
-  const updateRoleMutation = useUpdateAdminCustomerRole(customerId);
+  const updatePointsMutation = useUpdateAdminCustomerPoints(customerId);
   const updateTierMutation = useUpdateAdminCustomerTier(customerId);
   const tiersQuery = useTierConfigs();
   const profile = detailQuery.data?.profile;
@@ -183,16 +185,6 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
   }, [detailQuery.data?.profile.status]);
 
   useEffect(() => {
-    if (!detailQuery.data?.profile.role) {
-      return;
-    }
-
-    if (detailQuery.data.profile.role === "CUSTOMER" || detailQuery.data.profile.role === "STAFF" || detailQuery.data.profile.role === "ADMIN") {
-      setRoleDraft(detailQuery.data.profile.role);
-    }
-  }, [detailQuery.data?.profile.role]);
-
-  useEffect(() => {
     if (!detailQuery.data?.loyalty.tier) {
       return;
     }
@@ -206,6 +198,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
     { id: "wash-history" as CustomerTab, label: translate(language, "Lịch sử rửa xe", "Wash history") },
     { id: "point-transactions" as CustomerTab, label: translate(language, "Giao dịch điểm", "Point transactions") },
     { id: "tier-history" as CustomerTab, label: translate(language, "Lịch sử hạng", "Tier history") },
+    { id: "management" as CustomerTab, label: translate(language, "Quản lý", "Management") },
   ];
 
   return (
@@ -216,58 +209,6 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
         <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
           <CustomerProfilePanel
             query={detailQuery}
-            statusDraft={statusDraft}
-            statusReasonDraft={statusReasonDraft}
-            onStatusDraftChange={setStatusDraft}
-            onStatusReasonDraftChange={setStatusReasonDraft}
-            onSubmitStatus={async () => {
-              setStatusFeedback(null);
-              try {
-                await updateStatusMutation.mutateAsync({
-                  status: statusDraft,
-                  reason: statusReasonDraft.trim() || undefined,
-                });
-                await detailQuery.refetch();
-                setStatusFeedback(translate(language, "Cập nhật trạng thái khách hàng thành công.", "Customer status updated."));
-              } catch (error) {
-                setStatusFeedback(getDisplayErrorMessage(error));
-              }
-            }}
-            isUpdatingStatus={updateStatusMutation.isPending}
-            statusFeedback={statusFeedback}
-            roleDraft={roleDraft}
-            onRoleDraftChange={setRoleDraft}
-            onSubmitRole={async () => {
-              setRoleFeedback(null);
-              try {
-                const result = await updateRoleMutation.mutateAsync({ role: roleDraft });
-                setRoleFeedback(translate(language, "Cập nhật vai trò tài khoản thành công.", "Account role updated."));
-                if (result.role !== "CUSTOMER") {
-                  router.replace("/admin/accounts");
-                  return;
-                }
-                await detailQuery.refetch();
-              } catch (error) {
-                setRoleFeedback(getDisplayErrorMessage(error));
-              }
-            }}
-            isUpdatingRole={updateRoleMutation.isPending}
-            roleFeedback={roleFeedback}
-            tierDraft={tierDraft}
-            onTierDraftChange={setTierDraft}
-            onSubmitTier={async () => {
-              setTierFeedback(null);
-              try {
-                await updateTierMutation.mutateAsync({ tier: tierDraft });
-                setTierFeedback(translate(language, "Cập nhật hạng thành viên thành công.", "Tier updated."));
-                await detailQuery.refetch();
-              } catch (error) {
-                setTierFeedback(getDisplayErrorMessage(error));
-              }
-            }}
-            isUpdatingTier={updateTierMutation.isPending}
-            tierFeedback={tierFeedback}
-            tierOptions={tiersQuery.data ?? []}
             language={language as "vi" | "en"}
           />
 
@@ -348,6 +289,74 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
                 {activeTab === "tier-history" ? (
                   <TierHistoryTab query={tierHistoryQuery} page={tierPage} onPageChange={setTierPage} language={language as "vi" | "en"} />
                 ) : null}
+
+                {activeTab === "management" ? (
+                  <ManagementTab
+                    profile={profile}
+                    language={language as "vi" | "en"}
+                    statusDraft={statusDraft}
+                    statusReasonDraft={statusReasonDraft}
+                    onStatusDraftChange={setStatusDraft}
+                    onStatusReasonDraftChange={setStatusReasonDraft}
+                    onSubmitStatus={async () => {
+                      setStatusFeedback(null);
+                      try {
+                        await updateStatusMutation.mutateAsync({
+                          status: statusDraft,
+                          reason: statusReasonDraft.trim() || undefined,
+                        });
+                        await detailQuery.refetch();
+                        setStatusFeedback(translate(language, "Cập nhật trạng thái khách hàng thành công.", "Customer status updated."));
+                      } catch (error) {
+                        setStatusFeedback(getDisplayErrorMessage(error));
+                      }
+                    }}
+                    isUpdatingStatus={updateStatusMutation.isPending}
+                    statusFeedback={statusFeedback}
+                    pointsDraft={pointsDraft}
+                    pointsReason={pointsReason}
+                    onPointsDraftChange={setPointsDraft}
+                    onPointsReasonChange={setPointsReason}
+                    onSubmitPoints={async () => {
+                      setPointsFeedback(null);
+                      const points = parseInt(pointsDraft, 10);
+                      if (isNaN(points) || points === 0) {
+                        setPointsFeedback(translate(language, "Vui lòng nhập số điểm hợp lệ.", "Please enter a valid points amount."));
+                        return;
+                      }
+                      if (!pointsReason.trim()) {
+                        setPointsFeedback(translate(language, "Vui lòng nhập lý do.", "Please enter a reason."));
+                        return;
+                      }
+                      try {
+                        await updatePointsMutation.mutateAsync({ points, reason: pointsReason });
+                        setPointsFeedback(translate(language, "Cập nhật điểm thành công.", "Successfully updated points."));
+                        setPointsDraft("");
+                        setPointsReason("");
+                        await detailQuery.refetch();
+                      } catch (error) {
+                        setPointsFeedback(getDisplayErrorMessage(error));
+                      }
+                    }}
+                    isUpdatingPoints={updatePointsMutation.isPending}
+                    pointsFeedback={pointsFeedback}
+                    tierDraft={tierDraft}
+                    onTierDraftChange={setTierDraft}
+                    onSubmitTier={async () => {
+                      setTierFeedback(null);
+                      try {
+                        await updateTierMutation.mutateAsync({ tier: tierDraft });
+                        setTierFeedback(translate(language, "Cập nhật hạng thành viên thành công.", "Tier updated."));
+                        await detailQuery.refetch();
+                      } catch (error) {
+                        setTierFeedback(getDisplayErrorMessage(error));
+                      }
+                    }}
+                    isUpdatingTier={updateTierMutation.isPending}
+                    tierFeedback={tierFeedback}
+                    tierOptions={tiersQuery.data ?? []}
+                  />
+                ) : null}
               </div>
             </CardContent>
           </Card>
@@ -383,45 +392,9 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
 
 function CustomerProfilePanel({
   query,
-  statusDraft,
-  statusReasonDraft,
-  onStatusDraftChange,
-  onStatusReasonDraftChange,
-  onSubmitStatus,
-  isUpdatingStatus,
-  statusFeedback,
-  roleDraft,
-  onRoleDraftChange,
-  onSubmitRole,
-  isUpdatingRole,
-  roleFeedback,
-  tierDraft,
-  onTierDraftChange,
-  onSubmitTier,
-  isUpdatingTier,
-  tierFeedback,
-  tierOptions,
   language,
 }: {
   query: ReturnType<typeof useAdminCustomerDetail>;
-  statusDraft: AdminCustomerStatus;
-  statusReasonDraft: string;
-  onStatusDraftChange: (value: AdminCustomerStatus) => void;
-  onStatusReasonDraftChange: (value: string) => void;
-  onSubmitStatus: () => Promise<void>;
-  isUpdatingStatus: boolean;
-  statusFeedback: string | null;
-  roleDraft: AdminEditableAccountRole;
-  onRoleDraftChange: (value: AdminEditableAccountRole) => void;
-  onSubmitRole: () => Promise<void>;
-  isUpdatingRole: boolean;
-  roleFeedback: string | null;
-  tierDraft: string;
-  onTierDraftChange: (value: string) => void;
-  onSubmitTier: () => Promise<void>;
-  isUpdatingTier: boolean;
-  tierFeedback: string | null;
-  tierOptions: Array<{ tier: string; name?: string | null; active?: boolean }>;
   language: "vi" | "en";
 }) {
   if (query.isPending) {
@@ -490,79 +463,158 @@ function CustomerProfilePanel({
           <MiniStat label={translate(language, "Tích lũy", "Earned")} value={String(summary.totalPointsEarned)} />
         </div>
 
-        <div className="space-y-3 border-t border-slate-200 pt-4">
-          <label className="space-y-1.5">
-            <span className="text-xs font-medium text-slate-500">{translate(language, "Trạng thái tài khoản", "Account status")}</span>
-            <select
-              className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
-              value={statusDraft}
-              onChange={(event) => onStatusDraftChange(event.target.value as AdminCustomerStatus)}
-            >
-              <option value="ACTIVE">{translate(language, "Hoạt động", "Active")}</option>
-              <option value="BLOCKED">{translate(language, "Đã khóa", "Blocked")}</option>
-              <option value="SUSPENDED">{translate(language, "Tạm ngưng", "Suspended")}</option>
-            </select>
-          </label>
-          <Input
-            placeholder={translate(language, "Lý do (tùy chọn)", "Reason (optional)")}
-            value={statusReasonDraft}
-            onChange={(event) => onStatusReasonDraftChange(event.target.value)}
-          />
-          <Button type="button" className="w-full" onClick={() => void onSubmitStatus()} disabled={isUpdatingStatus}>
-            {isUpdatingStatus ? translate(language, "Đang cập nhật...", "Updating...") : translate(language, "Cập nhật trạng thái", "Update status")}
-          </Button>
-          {statusFeedback ? <p className="text-xs text-slate-600">{statusFeedback}</p> : null}
-        </div>
-
-        <div className="space-y-3 border-t border-slate-200 pt-4">
-          <label className="space-y-1.5">
-            <span className="text-xs font-medium text-slate-500">{translate(language, "Vai trò tài khoản", "Account role")}</span>
-            <select
-              className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
-              value={roleDraft}
-              onChange={(event) => onRoleDraftChange(event.target.value as AdminEditableAccountRole)}
-            >
-              {EDITABLE_ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {translateEnumLabel(role, language)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <Button type="button" className="w-full" variant="outline" onClick={() => void onSubmitRole()} disabled={isUpdatingRole}>
-            {isUpdatingRole ? translate(language, "Đang cập nhật...", "Updating...") : translate(language, "Cập nhật vai trò", "Update role")}
-          </Button>
-          {roleFeedback ? <p className="text-xs text-slate-600">{roleFeedback}</p> : null}
-        </div>
-
-        <div className="space-y-3 border-t border-slate-200 pt-4">
-          <label className="space-y-1.5">
-            <span className="text-xs font-medium text-slate-500">{translate(language, "Hạng thành viên", "Loyalty tier")}</span>
-            <select
-              className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
-              value={tierDraft}
-              onChange={(event) => onTierDraftChange(event.target.value)}
-            >
-              {(tierOptions.length ? tierOptions.filter((tier) => tier.active !== false) : [
-                { tier: "BRONZE", name: translateEnumLabel("BRONZE", language) },
-                { tier: "SILVER", name: translateEnumLabel("SILVER", language) },
-                { tier: "GOLD", name: translateEnumLabel("GOLD", language) },
-                { tier: "PLATINUM", name: translateEnumLabel("PLATINUM", language) },
-                { tier: "DIAMOND", name: translateEnumLabel("DIAMOND", language) },
-              ]).map((tier) => (
-                <option key={tier.tier} value={tier.tier}>
-                  {tier.name || translateEnumLabel(tier.tier, language)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <Button type="button" className="w-full" variant="outline" onClick={() => void onSubmitTier()} disabled={isUpdatingTier}>
-            {isUpdatingTier ? translate(language, "Đang cập nhật...", "Updating...") : translate(language, "Cập nhật hạng", "Update tier")}
-          </Button>
-          {tierFeedback ? <p className="text-xs text-slate-600">{tierFeedback}</p> : null}
-        </div>
       </CardContent>
     </Card>
+  );
+}
+
+type ManagementTabProps = {
+  profile: any;
+  language: "vi" | "en";
+  statusDraft: AdminCustomerStatus;
+  statusReasonDraft: string;
+  onStatusDraftChange: (value: AdminCustomerStatus) => void;
+  onStatusReasonDraftChange: (value: string) => void;
+  onSubmitStatus: () => Promise<void>;
+  isUpdatingStatus: boolean;
+  statusFeedback: string | null;
+  pointsDraft: string;
+  pointsReason: string;
+  onPointsDraftChange: (value: string) => void;
+  onPointsReasonChange: (value: string) => void;
+  onSubmitPoints: () => Promise<void>;
+  isUpdatingPoints: boolean;
+  pointsFeedback: string | null;
+  tierDraft: string;
+  onTierDraftChange: (value: string) => void;
+  onSubmitTier: () => Promise<void>;
+  isUpdatingTier: boolean;
+  tierFeedback: string | null;
+  tierOptions: { tier: string; name?: string | null; active?: boolean }[];
+};
+
+function ManagementTab({
+  profile,
+  language,
+  statusDraft,
+  statusReasonDraft,
+  onStatusDraftChange,
+  onStatusReasonDraftChange,
+  onSubmitStatus,
+  isUpdatingStatus,
+  statusFeedback,
+  pointsDraft,
+  pointsReason,
+  onPointsDraftChange,
+  onPointsReasonChange,
+  onSubmitPoints,
+  isUpdatingPoints,
+  pointsFeedback,
+  tierDraft,
+  onTierDraftChange,
+  onSubmitTier,
+  isUpdatingTier,
+  tierFeedback,
+  tierOptions,
+}: ManagementTabProps) {
+  return (
+    <div className="grid gap-5 md:grid-cols-2">
+      <Card className="rounded-md border-slate-200 bg-white shadow-sm">
+        <CardContent className="p-5 space-y-4">
+          <h2 className="text-base font-semibold text-slate-950">
+            {translate(language, "Trạng thái tài khoản", "Account status")}
+          </h2>
+          <div className="space-y-3">
+            <label className="space-y-1.5 block">
+              <select
+                className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
+                value={statusDraft}
+                onChange={(event) => onStatusDraftChange(event.target.value as AdminCustomerStatus)}
+              >
+                <option value="ACTIVE">{translate(language, "Hoạt động", "Active")}</option>
+                <option value="BLOCKED">{translate(language, "Đã khóa", "Blocked")}</option>
+                <option value="SUSPENDED">{translate(language, "Tạm ngưng", "Suspended")}</option>
+              </select>
+            </label>
+            <Input
+              placeholder={translate(language, "Lý do (tùy chọn)", "Reason (optional)")}
+              value={statusReasonDraft}
+              onChange={(event) => onStatusReasonDraftChange(event.target.value)}
+            />
+            <Button type="button" className="w-full" onClick={() => void onSubmitStatus()} disabled={isUpdatingStatus}>
+              {isUpdatingStatus ? translate(language, "Đang cập nhật...", "Updating...") : translate(language, "Cập nhật trạng thái", "Update status")}
+            </Button>
+            {statusFeedback ? <p className="text-xs text-slate-600">{statusFeedback}</p> : null}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-md border-slate-200 bg-white shadow-sm">
+        <CardContent className="p-5 space-y-4">
+          <h2 className="text-base font-semibold text-slate-950">
+            {translate(language, "Hạng thành viên", "Loyalty tier")}
+          </h2>
+          <div className="space-y-3">
+            <label className="space-y-1.5 block">
+              <select
+                className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
+                value={tierDraft}
+                onChange={(event) => onTierDraftChange(event.target.value)}
+              >
+                {(tierOptions.length ? tierOptions.filter((tier) => tier.active !== false) : [
+                  { tier: "BRONZE", name: translateEnumLabel("BRONZE", language) },
+                  { tier: "SILVER", name: translateEnumLabel("SILVER", language) },
+                  { tier: "GOLD", name: translateEnumLabel("GOLD", language) },
+                  { tier: "PLATINUM", name: translateEnumLabel("PLATINUM", language) },
+                  { tier: "DIAMOND", name: translateEnumLabel("DIAMOND", language) },
+                ]).map((tier) => (
+                  <option key={tier.tier} value={tier.tier}>
+                    {tier.name || translateEnumLabel(tier.tier, language)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button type="button" className="w-full" variant="outline" onClick={() => void onSubmitTier()} disabled={isUpdatingTier}>
+              {isUpdatingTier ? translate(language, "Đang cập nhật...", "Updating...") : translate(language, "Cập nhật hạng", "Update tier")}
+            </Button>
+            {tierFeedback ? <p className="text-xs text-slate-600">{tierFeedback}</p> : null}
+          </div>
+        </CardContent>
+      </Card>
+
+      {profile?.role === "CUSTOMER" && (
+        <Card className="rounded-md border-slate-200 bg-white shadow-sm">
+          <CardContent className="p-5 space-y-4">
+            <h2 className="text-base font-semibold text-slate-950">
+              {translate(language, "Cộng/Trừ điểm khả dụng", "Add/Deduct active points")}
+            </h2>
+            <div className="space-y-3">
+              <label className="block space-y-1.5">
+                <span className="text-xs font-medium text-slate-500">{translate(language, "Số điểm (+ để cộng, - để trừ)", "Points (+ to add, - to deduct)")}</span>
+                <Input
+                  type="number"
+                  placeholder="e.g. 100 or -50"
+                  value={pointsDraft}
+                  onChange={(e) => onPointsDraftChange(e.target.value)}
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-xs font-medium text-slate-500">{translate(language, "Lý do", "Reason")}</span>
+                <Input
+                  placeholder={translate(language, "Nhập lý do điều chỉnh...", "Enter reason...")}
+                  value={pointsReason}
+                  onChange={(e) => onPointsReasonChange(e.target.value)}
+                />
+              </label>
+              <Button type="button" className="w-full" variant="outline" onClick={() => void onSubmitPoints()} disabled={isUpdatingPoints}>
+                {isUpdatingPoints ? translate(language, "Đang xử lý...", "Processing...") : translate(language, "Thực hiện", "Execute")}
+              </Button>
+              {pointsFeedback ? <p className="text-xs text-slate-600">{pointsFeedback}</p> : null}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
 

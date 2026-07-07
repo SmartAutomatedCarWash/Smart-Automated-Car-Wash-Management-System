@@ -1,6 +1,7 @@
 package com.autowash.dto;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 public record UserProfileResponse(
         String userId,
@@ -13,6 +14,8 @@ public record UserProfileResponse(
         String tier,
         boolean hasGoogleAuth,
         boolean isNewCustomer,
+        LocalDate dateOfBirth,
+        boolean birthdayLocked,
         int loyaltyBalance,
         Instant registeredAt,
         UserPreferencesDto preferences

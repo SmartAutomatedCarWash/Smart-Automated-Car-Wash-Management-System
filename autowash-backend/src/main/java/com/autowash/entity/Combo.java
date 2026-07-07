@@ -42,7 +42,7 @@ public class Combo {
     @Column(name = "max_usages")
     private Integer maxUsages;
 
-    @Column(name = "image_url", length = 500)
+    @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
 
     @Enumerated(EnumType.STRING)

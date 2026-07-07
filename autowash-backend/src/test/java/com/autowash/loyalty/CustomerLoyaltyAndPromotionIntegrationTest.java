@@ -128,9 +128,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 .andExpect(jsonPath("$.data.pointsRedeemed").value(100))
                 .andExpect(jsonPath("$.data.newBalance").value(50))
                 .andExpect(jsonPath("$.data.voucherCode").isString())
-                .andExpect(jsonPath("$.data.voucherValue").value(100000))
-                .andExpect(jsonPath("$.data.expiresAt").exists())
-                .andExpect(jsonPath("$.data.status").value("SUCCESS"));
+                .andExpect(jsonPath("$.data.status").value("REDEEMED"));
 
         mockMvc.perform(get("/api/v1/loyalty/account")
                         .with(authenticatedCustomer(customer)))

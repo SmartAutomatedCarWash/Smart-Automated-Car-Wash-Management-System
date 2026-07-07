@@ -65,25 +65,24 @@ class AdminVoucherControllerIntegrationTest {
 
     @Test
     void adminCanInspectVoucherRedemptionHistory() throws Exception {
-        String voucherCode = "silver-100";
+        String voucherCode = "ADMINVOUCHER50";
         User customer = createActiveCustomer("0901999001");
         User staff = createActiveStaff("Staff Voucher Admin");
         Booking booking = createConfirmedBooking(customer, staff, "ADMIN_VOUCHER_BK_001", "30H-999001", LocalDate.of(2026, 6, 14), 1500000);
         completeSession(booking.getId(), staff);
 
-        MvcResult redeemResult = mockMvc.perform(post("/api/v1/loyalty/redeem")
+        com.autowash.entity.VoucherTemplate template = org.springframework.beans.factory.BeanFactoryUtils.beanOfTypeIncludingAncestors(
+                org.springframework.web.context.support.WebApplicationContextUtils.getWebApplicationContext(mockMvc.getDispatcherServlet().getServletContext()),
+                com.autowash.repository.VoucherTemplateRepository.class
+        ).findByCode(voucherCode).orElseThrow();
+
+        MvcResult redeemResult = mockMvc.perform(post("/api/v1/vouchers/{voucherTemplateId}/claim", template.getId())
                         .with(authenticatedCustomer(customer))
-                        .contentType("application/json")
-                        .content("""
-                                {
-                                  "pointsToRedeem": 100,
-                                  "referenceId": "%s"
-                                }
-                                """.formatted(voucherCode)))
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        String issuedVoucherCode = readJson(redeemResult).path("data").path("voucherCode").asText();
+        String issuedVoucherCode = readJson(redeemResult).path("data").path("code").asText();
 
         mockMvc.perform(get("/api/v1/admin/vouchers/redemptions")
                         .with(user("admin").roles("ADMIN"))

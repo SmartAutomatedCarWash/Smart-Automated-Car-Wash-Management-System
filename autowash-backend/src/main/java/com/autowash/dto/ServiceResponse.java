@@ -7,6 +7,6 @@ public record ServiceResponse(
         long price,
         int duration,
         String status,
-        String imageUrl
+        java.util.List<String> imageUrls
 ) {
 }

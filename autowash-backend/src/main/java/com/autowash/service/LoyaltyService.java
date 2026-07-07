@@ -3,7 +3,6 @@ package com.autowash.service;
 import com.autowash.dto.EarnPointsResponse;
 import com.autowash.dto.LoyaltyAccountResponse;
 import com.autowash.dto.RedeemPointsResponse;
-import com.autowash.entity.Booking;
 import com.autowash.shared.dto.PaginationMeta;
 import java.time.Instant;
 import java.util.List;
@@ -13,6 +12,8 @@ public interface LoyaltyService {
     LoyaltyAccountResponse getAccount(UUID customerId);
     int calculateEarnPoints(UUID sessionId);
     EarnPointsResponse postEarnTransaction(UUID customerId, UUID sessionId);
+    void postBonusTransaction(UUID customerId, int points, String reason);
+    void adjustActivePoints(UUID customerId, int points, String reason);
     RedeemPointsResponse redeemPoints(UUID customerId, int pointsToRedeem, String referenceId);
 
     TransactionPage getTransactionHistory(UUID customerId, String type, Instant dateFrom, Instant dateTo, int page, int limit);

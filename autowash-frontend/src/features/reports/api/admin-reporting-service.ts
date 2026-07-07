@@ -212,6 +212,14 @@ export function updateAdminCustomerTier(customerId: string, payload: { tier: str
   });
 }
 
+export function updateAdminCustomerPoints(customerId: string, payload: { points: number; reason: string }) {
+  return apiRequest<void, { points: number; reason: string }>({
+    method: "PUT",
+    url: `/admin/customers/${customerId}/points`,
+    data: payload,
+  });
+}
+
 export function createAdminStaff(payload: CreateAdminStaffPayload) {
   return apiRequest<AdminAccount, CreateAdminStaffPayload>({
     method: "POST",

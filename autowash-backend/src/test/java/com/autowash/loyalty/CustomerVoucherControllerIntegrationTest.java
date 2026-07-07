@@ -9,14 +9,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.User;
-import com.autowash.entity.Voucher;
+import com.autowash.entity.VoucherTemplate;
 import com.autowash.entity.VoucherTier;
 import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.UserRepository;
-import com.autowash.repository.VoucherRepository;
+import com.autowash.repository.VoucherTemplateRepository;
 import com.autowash.repository.VoucherTierRepository;
 import com.autowash.shared.security.UserPrincipal;
 import java.time.Instant;
@@ -43,7 +43,7 @@ class CustomerVoucherControllerIntegrationTest {
     private LoyaltyAccountRepository loyaltyAccountRepository;
 
     @Autowired
-    private VoucherRepository voucherRepository;
+    private VoucherTemplateRepository voucherTemplateRepository;
 
     @Autowired
     private VoucherTierRepository voucherTierRepository;
@@ -51,11 +51,11 @@ class CustomerVoucherControllerIntegrationTest {
     @Test
     void customerCanListVouchersMatchingTheirTier() throws Exception {
         // Create vouchers
-        Voucher publicVoucher = new Voucher("PUB10", "Public 10", DiscountType.PERCENT, 10, 0, null, null, false, Instant.now().minusSeconds(3600), Instant.now().plusSeconds(3600), ActiveStatus.ACTIVE);
-        voucherRepository.saveAndFlush(publicVoucher);
+        VoucherTemplate publicVoucher = new VoucherTemplate("PUB10", "Public 10", "Desc", DiscountType.PERCENT, 10, 0, null, 0, 7, null, false, Instant.now().minusSeconds(3600), Instant.now().plusSeconds(3600), ActiveStatus.ACTIVE);
+        voucherTemplateRepository.saveAndFlush(publicVoucher);
 
-        Voucher goldVoucher = new Voucher("GOLD20", "Gold 20", DiscountType.PERCENT, 20, 0, null, null, false, Instant.now().minusSeconds(3600), Instant.now().plusSeconds(3600), ActiveStatus.ACTIVE);
-        voucherRepository.saveAndFlush(goldVoucher);
+        VoucherTemplate goldVoucher = new VoucherTemplate("GOLD20", "Gold 20", "Desc", DiscountType.PERCENT, 20, 0, null, 0, 7, null, false, Instant.now().minusSeconds(3600), Instant.now().plusSeconds(3600), ActiveStatus.ACTIVE);
+        voucherTemplateRepository.saveAndFlush(goldVoucher);
         voucherTierRepository.saveAndFlush(new VoucherTier(goldVoucher.getId(), LoyaltyTier.GOLD));
         voucherTierRepository.saveAndFlush(new VoucherTier(goldVoucher.getId(), LoyaltyTier.DIAMOND));
 

@@ -5,7 +5,7 @@ export type AdminCatalogService = {
   price: number;
   duration: number;
   status: string;
-  imageUrl?: string | null;
+  imageUrls?: string[];
 };
 
 export type AdminCatalogPackage = {
@@ -16,7 +16,8 @@ export type AdminCatalogPackage = {
   duration: number;
   category: string;
   features: string[];
-  image: string | null;
+  serviceIds: string[];
+  imageUrls?: string[];
   status: string;
   popularity: string | null;
 };
@@ -29,7 +30,7 @@ export type AdminCombo = {
   durationDays: number;
   maxServices: number;
   benefits: string[];
-  image: string | null;
+  imageUrls?: string[];
   isActive: boolean;
   canUpgrade: boolean;
   upgradePriceFrom: number;
@@ -43,7 +44,7 @@ export type AdminComboForm = {
   durationMinutes: string;
   durationDays: string;
   maxUsages: string;
-  imageUrl: string;
+  imageUrls: string[];
   status: "ACTIVE" | "INACTIVE";
   optionIds: string[];
 };
@@ -54,7 +55,7 @@ export type AdminServiceForm = {
   price: string;
   duration: string;
   status: "ACTIVE" | "INACTIVE";
-  imageUrl?: string;
+  imageUrls: string[];
 };
 
 export type AdminPackageForm = {
@@ -66,6 +67,6 @@ export type AdminPackageForm = {
   features: string;
   status: "ACTIVE" | "INACTIVE";
   serviceIds: string[];
-  imageUrl?: string;
+  imageUrls: string[];
 };
 

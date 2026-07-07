@@ -1,11 +1,10 @@
 package com.autowash.dto;
 
-
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-
 
 public record SystemSettingsRequest(
         @NotBlank(message = "Operating start time is required")
@@ -31,13 +30,8 @@ public record SystemSettingsRequest(
         @NotNull @Min(value = 1, message = "Must be at least 1")
         Integer earnPointsUnitAmount,
 
-        @NotNull @Min(value = 1, message = "Must be at least 1")
-        Integer vndPerPoint,
-
-        @NotNull @Min(value = 1, message = "Must be at least 1")
-        Integer minRedemptionPoints,
-
-        @NotNull @Min(value = 1, message = "Must be at least 1")
-        Integer maxRedemptionPoints
+        @Min(1)
+        @Max(365)
+        Integer redemptionVoucherExpirationDays
 ) {
 }

@@ -13,10 +13,12 @@ import {
   Loader2,
   Bookmark,
   Zap,
+  ChevronLeft,
 } from "lucide-react";
 import { Card } from "@/shared/ui/ui/card";
 import { Badge } from "@/shared/ui/ui/badge";
 import { Button } from "@/shared/ui/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/ui/ui/dialog";
 import { useBookingPackages, useBookingCombos } from "@/features/bookings/hooks/use-bookings";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
@@ -28,17 +30,27 @@ export default function ServiceCatalogPage() {
   const router = useRouter();
   const t = (vi: string, en: string) => translate(language, vi, en);
 
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
   const packagesQuery = useBookingPackages();
   const combosQuery = useBookingCombos();
 
-  const [activeFilter, setActiveFilter] = useState<"all" | "daily" | "detailing" | "combos">("all");
+  const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [selectedItem, setSelectedItem] = useState<typeof catalogItems[number] | null>(null);
+  const dynamicCategories = useMemo(() => {
+    const pkgCats = (packagesQuery.data ?? []).map(p => p.category).filter(Boolean);
+    const uniqueCats = Array.from(new Set(pkgCats));
+    return uniqueCats as string[];
+  }, [packagesQuery.data]);
 
-  const filterTabs = [
-    { id: "all", label: t("Tất cả", "All") },
-    { id: "daily", label: t("Rửa Hàng Ngày", "Daily Wash") },
-    { id: "detailing", label: t("Chăm Sóc Detailing", "Detailing") },
-    { id: "combos", label: t("Gói Combos", "Combos") },
-  ];
+  const filterTabs = useMemo(() => {
+    const tabs = [{ id: "all", label: t("Tất cả", "All") }];
+    dynamicCategories.forEach(cat => {
+      tabs.push({ id: cat, label: cat });
+    });
+    tabs.push({ id: "combos", label: t("Gói Combos", "Combos") });
+    return tabs;
+  }, [dynamicCategories, t]);
 
   const isLoading = packagesQuery.isLoading || combosQuery.isLoading;
 
@@ -46,31 +58,31 @@ export default function ServiceCatalogPage() {
     if (isLoading) return [];
     
     const pkgs = (packagesQuery.data ?? []).map((pkg) => {
-      // Classify as daily wash or detailing based on price/metadata
-      const isDetailing = pkg.basePrice > 250000 || pkg.name.toLowerCase().includes("detailing") || pkg.name.toLowerCase().includes("phủ");
       return {
         id: pkg.packageId,
         type: "package" as const,
-        category: isDetailing ? ("detailing" as const) : ("daily" as const),
+        category: pkg.category || "uncategorized",
         name: pkg.name,
         description: pkg.description || t("Quy trình rửa tiêu chuẩn chất lượng cao.", "High quality standard wash flow."),
         price: pkg.basePrice,
         originalPrice: pkg.basePrice,
         benefits: pkg.features || [t("Rửa bọt không chạm", "Touchless foam spray"), t("Lau khô sấy gương", "Hand dry & glass wipe")],
         duration: pkg.duration ? `${pkg.duration} mins` : "30 mins",
+        images: pkg.image ? [pkg.image] : [],
       };
     });
 
     const cmbs = (combosQuery.data ?? []).map((combo) => ({
       id: combo.comboId,
       type: "combo" as const,
-      category: "combos" as const,
+      category: "combos",
       name: combo.name,
       description: combo.description || t("Gói combo tiết kiệm cho nhiều lần sử dụng.", "Cost-saving combo for multiple usages."),
       price: combo.basePrice,
       originalPrice: combo.basePrice,
       benefits: combo.benefits || [t("Tiết kiệm lên tới 30%", "Save up to 30%"), t("Ưu tiên đặt chỗ trước", "Priority slot reservation")],
       duration: `${combo.maxServices} ${t("Lượt dùng", "Usages")}`,
+      images: combo.image ? [combo.image] : [],
     }));
 
 
@@ -122,7 +134,7 @@ export default function ServiceCatalogPage() {
 
         {/* Highlighted Featured Combo Card */}
         {featuredItem && (
-          <section className="overflow-hidden rounded-3xl border border-black/[0.04] bg-gradient-to-br from-white to-[#fdf7ff] shadow-[0_8px_30px_rgba(0,0,0,0.03)] group p-6 sm:p-8">
+          <section onClick={() => setSelectedItem(featuredItem)} className="overflow-hidden rounded-3xl border border-black/[0.04] bg-gradient-to-br from-white to-[#fdf7ff] shadow-[0_8px_30px_rgba(0,0,0,0.03)] group p-6 sm:p-8 cursor-pointer">
             <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
               <div className="space-y-4">
                 <div className="flex flex-wrap gap-2 items-center">
@@ -170,7 +182,10 @@ export default function ServiceCatalogPage() {
                   </span>
                 </div>
                 <Button 
-                  onClick={() => handleQuickBook(featuredItem)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleQuickBook(featuredItem);
+                  }}
                   className="rounded-xl bg-[#0566D9] text-white hover:bg-[#0455B6] w-full lg:w-auto px-8 py-3 font-bold shadow-md shadow-[#0566D9]/15"
                 >
                   {t("Đặt Premium Slot", "Reserve Premium Slot")}
@@ -211,7 +226,7 @@ export default function ServiceCatalogPage() {
         ) : (
           <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredItems.map((item) => (
-              <Card key={item.id} className="overflow-hidden rounded-3xl border border-black/[0.04] bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group">
+              <Card key={item.id} onClick={() => setSelectedItem(item)} className="overflow-hidden rounded-3xl border border-black/[0.04] bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group cursor-pointer">
                 <div className="space-y-4">
                   <div className="flex items-start justify-between gap-4">
                     <span className={cn(
@@ -255,7 +270,10 @@ export default function ServiceCatalogPage() {
                   </div>
 
                   <Button 
-                    onClick={() => handleQuickBook(item)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleQuickBook(item);
+                    }}
                     className="rounded-xl bg-[#0566D9]/10 text-[#0566D9] hover:bg-[#0566D9] hover:text-white px-5 py-2 text-xs font-black shadow-none transition-all duration-200"
                   >
                     {t("Quick Book", "Quick Book")}
@@ -266,6 +284,117 @@ export default function ServiceCatalogPage() {
           </section>
         )}
       </div>
+
+      {/* Detail Popup */}
+      <Dialog open={!!selectedItem} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedItem(null);
+          setActiveImageIndex(0);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md bg-white/80 backdrop-blur-xl border-white/20 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black text-slate-900">{selectedItem?.name}</DialogTitle>
+            <DialogDescription className="text-sm text-slate-600 mt-2">
+              {selectedItem?.description}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedItem && (
+            <div className="space-y-6 pt-4">
+              {selectedItem.images && selectedItem.images.length > 0 && (
+                <div className="relative w-full h-48 rounded-xl overflow-hidden shadow-sm group">
+                  <div className="w-full h-full relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                      src={selectedItem.images[activeImageIndex]} 
+                      alt={`${selectedItem.name} - ${activeImageIndex + 1}`} 
+                      className="absolute inset-0 object-cover w-full h-full transition-opacity duration-300" 
+                    />
+                  </div>
+                  {selectedItem.images.length > 1 && (
+                    <>
+                      <button
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all z-10"
+                        onClick={() => setActiveImageIndex((prev) => (prev > 0 ? prev - 1 : selectedItem.images.length - 1))}
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <button
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all z-10"
+                        onClick={() => setActiveImageIndex((prev) => (prev < selectedItem.images.length - 1 ? prev + 1 : 0))}
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                      <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 pointer-events-none z-10">
+                        {selectedItem.images.map((_, i) => (
+                          <div 
+                            key={i} 
+                            className={cn(
+                              "h-1.5 rounded-full shadow-sm transition-all duration-300",
+                              i === activeImageIndex ? "w-4 bg-white" : "w-1.5 bg-white/50"
+                            )} 
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-[#0566D9]">
+                  {t("Bao gồm các dịch vụ", "Includes")}
+                </h4>
+                <div className="grid gap-3">
+                  {selectedItem.benefits.map((benefit, idx) => (
+                    <div key={idx} className="flex items-start gap-3 text-sm font-semibold text-slate-700 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                      <CheckCircle className="h-5 w-5 text-[#0566D9] shrink-0" />
+                      <span>{benefit}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-end justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
+                    {t("Giá bán", "Price")}
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-[#0566D9]">
+                      {formatBookingCurrency(selectedItem.price)}
+                    </span>
+                    {selectedItem.originalPrice > selectedItem.price && (
+                      <span className="text-sm font-bold text-slate-400 line-through">
+                        {formatBookingCurrency(selectedItem.originalPrice)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
+                    {t("Thời gian", "Duration")}
+                  </span>
+                  <span className="text-sm font-black text-slate-700 bg-white px-2 py-1 rounded-md shadow-sm">
+                    {selectedItem.duration}
+                  </span>
+                </div>
+              </div>
+
+              <Button 
+                onClick={() => {
+                  if (selectedItem) handleQuickBook(selectedItem);
+                  setSelectedItem(null);
+                }}
+                className="w-full rounded-2xl bg-[#0566D9] text-white hover:bg-[#0455B6] h-14 text-base font-black shadow-lg shadow-[#0566D9]/20 transition-all active:scale-[0.98]"
+              >
+                <Zap className="mr-2 h-5 w-5" />
+                {t("Đặt Lịch Ngay", "Book Now")}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
