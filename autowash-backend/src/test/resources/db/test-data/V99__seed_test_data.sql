@@ -17,7 +17,13 @@ INSERT INTO "voucher_templates" ("id", "code", "name", "discount_type", "discoun
 UPDATE "voucher_templates" SET "new_customer_only" = true WHERE "code" = 'WELCOME20';
 
 INSERT INTO "promotions" ("id", "name", "description", "targeting_mode", "point_multiplier", "start_at", "end_at", "status") VALUES
-('88888888-1234-1234-1234-123456789012', 'All 10% Off', '10% off for all', 'ALL_TIERS', 1.0, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE');
+('88888888-1234-1234-1234-123456789012', 'All 10% Off', '10% off for all', 'ALL_TIERS', 1.0, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE'),
+('88888888-1234-1234-1234-000000000001', 'Bronze Welcome Bonus', 'Bonus for Bronze members', 'SPECIFIC_TIERS', 1.2, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE'),
+('88888888-1234-1234-1234-000000000002', 'Gold Loyalty Boost', 'Boost for Gold members', 'SPECIFIC_TIERS', 1.5, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE');
+
+INSERT INTO "promotion_tiers" ("promotion_id", "tier") VALUES
+('88888888-1234-1234-1234-000000000001', 'BRONZE'),
+('88888888-1234-1234-1234-000000000002', 'GOLD');
 
 INSERT INTO "package_services" ("package_id", "option_id", "option_name", "option_description", "option_price", "option_duration_minutes") VALUES ('12345678-1234-1234-1234-123456789012', '33333333-1234-1234-1234-123456789012', 'Waxing', 'Apply carnauba wax', 50000, 15);
 
