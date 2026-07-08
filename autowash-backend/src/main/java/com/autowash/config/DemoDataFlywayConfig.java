@@ -30,6 +30,7 @@ public class DemoDataFlywayConfig {
                 .baselineOnMigrate(baselineOnMigrate)
                 .validateOnMigrate(false)
                 .outOfOrder(true)
+                .ignoreMigrationPatterns("*:missing", "*:future")
                 .load();
         
         flyway.migrate();
