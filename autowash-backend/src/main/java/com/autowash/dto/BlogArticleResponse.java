@@ -14,6 +14,8 @@ public record BlogArticleResponse(
         String content,
         String status,
         int viewCount,
+        int likeCount,
+        int commentCount,
         Instant publishedAt,
         Instant createdAt,
         Instant updatedAt
