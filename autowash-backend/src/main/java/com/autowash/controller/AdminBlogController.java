@@ -105,4 +105,11 @@ public class AdminBlogController {
         blogService.deleteArticle(articleId);
         return ApiResponse.ok("Blog article deleted", null);
     }
+
+    @DeleteMapping("/comments/{commentId}")
+    @Operation(summary = "Delete blog comment for moderation")
+    public ApiResponse<Void> deleteComment(@PathVariable String commentId) {
+        blogService.deleteComment(commentId);
+        return ApiResponse.ok("Blog comment deleted", null);
+    }
 }

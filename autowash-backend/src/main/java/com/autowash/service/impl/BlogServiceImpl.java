@@ -13,6 +13,15 @@ import com.autowash.repository.BlogCategoryRepository;
 import com.autowash.service.BlogService;
 import com.autowash.service.CurrentUserService;
 import com.autowash.shared.exception.ApiException;
+import com.autowash.dto.BlogLikeResult;
+import com.autowash.dto.BlogCommentResponse;
+import com.autowash.entity.BlogLike;
+import com.autowash.entity.BlogComment;
+import com.autowash.repository.BlogLikeRepository;
+import com.autowash.repository.BlogCommentRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -24,15 +33,21 @@ public class BlogServiceImpl implements BlogService {
     private final BlogCategoryRepository blogCategoryRepository;
     private final BlogArticleRepository blogArticleRepository;
     private final CurrentUserService currentUserService;
+    private final BlogLikeRepository blogLikeRepository;
+    private final BlogCommentRepository blogCommentRepository;
 
     public BlogServiceImpl(
             BlogCategoryRepository blogCategoryRepository,
             BlogArticleRepository blogArticleRepository,
-            CurrentUserService currentUserService
+            CurrentUserService currentUserService,
+            BlogLikeRepository blogLikeRepository,
+            BlogCommentRepository blogCommentRepository
     ) {
         this.blogCategoryRepository = blogCategoryRepository;
         this.blogArticleRepository = blogArticleRepository;
         this.currentUserService = currentUserService;
+        this.blogLikeRepository = blogLikeRepository;
+        this.blogCommentRepository = blogCommentRepository;
     }
 
     @Override
@@ -187,6 +202,8 @@ public class BlogServiceImpl implements BlogService {
     }
 
     private BlogArticleResponse toArticleResponse(BlogArticle article) {
+        int likeCount = blogLikeRepository.countByArticleId(article.getId());
+        int commentCount = blogCommentRepository.countByArticleId(article.getId());
         return new BlogArticleResponse(
                 article.getId().toString(),
                 toCategoryResponse(article.getCategory()),
@@ -199,9 +216,99 @@ public class BlogServiceImpl implements BlogService {
                 article.getContent(),
                 article.getStatus().name(),
                 article.getViewCount(),
+                likeCount,
+                commentCount,
                 article.getPublishedAt(),
                 article.getCreatedAt(),
                 article.getUpdatedAt()
+        );
+    }
+
+    @Override
+    @Transactional
+    public BlogLikeResult toggleLike(String articleId) {
+        User user = currentUserService.getCurrentUser();
+        BlogArticle article = requireArticle(articleId);
+        
+        java.util.Optional<BlogLike> existingLike = blogLikeRepository.findByArticleIdAndCustomerId(article.getId(), user.getId());
+        boolean hasLiked;
+        if (existingLike.isPresent()) {
+            blogLikeRepository.delete(existingLike.get());
+            hasLiked = false;
+        } else {
+            blogLikeRepository.save(new BlogLike(article, user));
+            hasLiked = true;
+        }
+        
+        int totalLikes = blogLikeRepository.countByArticleId(article.getId());
+        return new BlogLikeResult(article.getId().toString(), totalLikes, hasLiked);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BlogLikeResult getLikeSummary(String articleId) {
+        BlogArticle article = requireArticle(articleId);
+        int totalLikes = blogLikeRepository.countByArticleId(article.getId());
+        
+        boolean hasLiked = false;
+        User user = getCurrentUserOrNull();
+        if (user != null) {
+            hasLiked = blogLikeRepository.existsByArticleIdAndCustomerId(article.getId(), user.getId());
+        }
+        
+        return new BlogLikeResult(article.getId().toString(), totalLikes, hasLiked);
+    }
+
+    @Override
+    @Transactional
+    public BlogCommentResponse addComment(String articleId, String content) {
+        if (content == null || content.trim().isBlank()) {
+            throw validationError("Comment content cannot be blank");
+        }
+        if (content.length() > 1000) {
+            throw validationError("Comment content cannot exceed 1000 characters");
+        }
+        User user = currentUserService.getCurrentUser();
+        BlogArticle article = requireArticle(articleId);
+        
+        BlogComment comment = blogCommentRepository.save(new BlogComment(article, user, content.trim()));
+        return toCommentResponse(comment);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<BlogCommentResponse> listComments(String articleId, int page, int limit) {
+        BlogArticle article = requireArticle(articleId);
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        Page<BlogComment> commentsPage = blogCommentRepository.findByArticleIdOrderByCreatedAtDesc(article.getId(), pageable);
+        return commentsPage.map(this::toCommentResponse);
+    }
+
+    @Override
+    @Transactional
+    public void deleteComment(String commentId) {
+        UUID uuid = parseUuid(commentId, "Comment not found");
+        BlogComment comment = blogCommentRepository.findById(uuid)
+                .orElseThrow(() -> notFound("Comment not found"));
+        blogCommentRepository.delete(comment);
+    }
+
+    private User getCurrentUserOrNull() {
+        try {
+            return currentUserService.getCurrentUser();
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private BlogCommentResponse toCommentResponse(BlogComment comment) {
+        return new BlogCommentResponse(
+                comment.getId().toString(),
+                comment.getArticle().getId().toString(),
+                comment.getCustomer().getFullName(),
+                comment.getCustomer().getAvatarUrl(),
+                comment.getContent(),
+                comment.getCreatedAt()
         );
     }
 }
