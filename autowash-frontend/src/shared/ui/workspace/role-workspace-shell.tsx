@@ -106,7 +106,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const { language, setLanguage } = useLanguageStore();
+  const { language, setLanguage, hydrateLanguage } = useLanguageStore();
   const { theme, setTheme } = useTheme();
 
   const t = (vi: string, en: string) => translate(language, vi, en);
@@ -167,13 +167,8 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   
   // Sync language from localStorage on mount
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("aura-lang") as "vi" | "en" | null;
-      if (stored === "vi" || stored === "en") {
-        setLanguage(stored);
-      }
-    }
-  }, [setLanguage]);
+    hydrateLanguage();
+  }, [hydrateLanguage]);
 
   useEffect(() => { setIsMounted(true); }, []);
   useEffect(() => { setMobileMenuOpen(false); }, [pathname]);
@@ -269,18 +264,17 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       {requiredRole === "CUSTOMER" && <MarqueeTicker />}
-      <div className={cn("flex flex-1 text-foreground relative overflow-hidden", requiredRole === "CUSTOMER" ? "bg-[#f7fcff]" : "bg-background")}>
+      <div className="relative flex flex-1 overflow-hidden bg-background text-foreground">
         <div 
-          className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--card))_55%,hsl(var(--muted))_100%)]" 
-          style={requiredRole === "CUSTOMER" ? { background: "radial-gradient(circle at top left, rgba(0,184,217,0.12), #f7fcff 68%)" } : undefined}
+          className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[radial-gradient(circle_at_14%_0%,rgba(45,255,238,0.12),transparent_28rem),radial-gradient(circle_at_92%_12%,rgba(13,108,107,0.10),transparent_28rem),linear-gradient(180deg,#f7feff_0%,#ffffff_48%,#f2fbfb_100%)]"
         />
 
       {/* ── Sidebar ── */}
       <aside
         className={cn(
-          "sticky top-0 z-20 hidden h-full shrink-0 flex-col border-r border-border/70 bg-card/85 backdrop-blur-xl transition-all duration-300 lg:flex",
+          "sticky top-0 z-20 hidden h-full shrink-0 flex-col border-r border-cyan-900/10 bg-white/88 shadow-[0_24px_80px_rgba(6,17,26,0.08)] backdrop-blur-xl transition-all duration-300 lg:flex",
           requiredRole === "CUSTOMER"
-            ? (sidebarCollapsed ? "w-[5.25rem] bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.02)]" : "w-64 bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.02)]")
+            ? (sidebarCollapsed ? "w-[5.25rem]" : "w-64")
             : (sidebarCollapsed ? "w-[5.25rem]" : "w-72"),
         )}
       >
@@ -313,7 +307,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               href="/customer/bookings/new"
               title={sidebarCollapsed ? t("Đặt lịch mới", "Book New Service") : undefined}
               className={cn(
-                "flex w-full items-center justify-center gap-2 rounded-xl bg-[#0566D9] text-white text-sm font-bold shadow-[0_12px_24px_rgba(5,102,217,0.22)] transition hover:-translate-y-0.5 hover:bg-[#0455B6]",
+                "flex w-full items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground text-sm font-black shadow-[0_16px_32px_rgba(45,255,238,0.20)] transition hover:-translate-y-0.5 hover:bg-cyan-200",
                 sidebarCollapsed ? "h-11 px-0" : "px-4 py-3",
               )}
             >
@@ -323,7 +317,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           )}
 
           {requiredRole !== "CUSTOMER" && !sidebarCollapsed && (
-            <div className="rounded-xl border border-border/70 bg-background/70 p-3">
+            <div className="rounded-2xl border border-cyan-900/10 bg-white/72 p-3 shadow-[0_14px_36px_rgba(6,17,26,0.05)]">
               <div className="flex items-start gap-3">
                 <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", workspaceTheme.accent)}>
                   <Phone className="h-4 w-4" />
@@ -342,7 +336,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
             type="button"
             disabled={logoutMutation.isPending}
             onClick={handleLogout}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-border/70 bg-background/80 px-3 py-2.5 text-sm font-semibold transition hover:bg-accent"
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-cyan-900/10 bg-white/76 px-3 py-2.5 text-sm font-bold transition hover:bg-cyan-50"
           >
             <LogOut className="h-4 w-4" />
             {!sidebarCollapsed && (
@@ -359,13 +353,13 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       {/* ── Main content ── */}
       <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-y-auto">
         {/* Header */}
-        <header className="sticky top-0 z-30 border-b border-border/70 bg-background/90 px-4 py-4 backdrop-blur-xl lg:px-8">
+        <header className="sticky top-0 z-30 border-b border-cyan-900/10 bg-white/84 px-4 py-4 shadow-[0_12px_40px_rgba(6,17,26,0.04)] backdrop-blur-xl lg:px-8">
           <div className="flex items-start justify-between gap-3">
             {/* Left: title */}
             <div className="flex min-w-0 items-start gap-3">
               <button
                 type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border/70 bg-card lg:hidden"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-900/10 bg-white shadow-sm lg:hidden"
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label={t("Mở menu điều hướng", "Open navigation menu")}
               >
@@ -385,14 +379,14 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
             {/* Right: actions */}
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               {/* Language switcher */}
-              <div className="inline-flex items-center rounded-xl border border-border/70 bg-card/90 p-0.5 shadow-sm backdrop-blur-sm">
+              <div className="inline-flex items-center rounded-full border border-cyan-900/10 bg-white/90 p-0.5 shadow-sm backdrop-blur-sm">
                 <button
                   type="button"
                   onClick={() => setLanguage("en")}
                   className={cn(
                     "rounded-lg px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-bold transition-all",
                     language === "en"
-                      ? "bg-teal-600 text-white shadow-sm font-black"
+                      ? "bg-primary text-primary-foreground shadow-sm font-black"
                       : "text-muted-foreground hover:text-foreground font-semibold",
                   )}
                 >
@@ -404,7 +398,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   className={cn(
                     "rounded-lg px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-bold transition-all",
                     language === "vi"
-                      ? "bg-teal-600 text-white shadow-sm font-black"
+                      ? "bg-primary text-primary-foreground shadow-sm font-black"
                       : "text-muted-foreground hover:text-foreground font-semibold",
                   )}
                 >
@@ -416,7 +410,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               <button
                 type="button"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/70 bg-card/90 transition hover:border-teal-500/30 hover:bg-card"
+                className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
                 aria-label={t("Chuyển chế độ sáng/tối", "Toggle dark/light mode")}
               >
                 {theme === "dark" ? (
@@ -432,10 +426,10 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/70 bg-card/90 transition hover:border-teal-500/30 hover:bg-card"
+                      className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
                       aria-label={t("Thông báo nghiệp vụ", "Work notifications")}
                     >
-                      <Bell className={cn("h-4 w-4", totalNotifications > 0 ? "text-teal-600" : "text-muted-foreground")} />
+                      <Bell className={cn("h-4 w-4", totalNotifications > 0 ? "text-cyan-700" : "text-muted-foreground")} />
                       {totalNotifications > 0 && (
                         <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
                           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
@@ -447,14 +441,14 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverContent
                     align="end"
                     sideOffset={10}
-                    className="w-80 rounded-2xl border-border/70 bg-card/95 p-3 shadow-[0_22px_60px_rgba(15,118,110,0.12)] backdrop-blur-xl"
+                    className="w-80 rounded-2xl border-cyan-900/10 bg-white/95 p-3 shadow-[0_22px_60px_rgba(6,17,26,0.12)] backdrop-blur-xl"
                   >
                     <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
                       <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
                         {t("Thông báo nghiệp vụ", "Work Notifications")}
                       </h3>
                       {totalNotifications > 0 && (
-                        <span className="rounded-full bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 text-[10px] font-black text-teal-700 dark:text-teal-400">
+                        <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-black text-cyan-800">
                           {totalNotifications} {t("mới", "new")}
                         </span>
                       )}
@@ -475,10 +469,10 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                               <Link
                                 key={booking.bookingId}
                                 href="/staff/check-in"
-                                className="flex flex-col gap-0.5 rounded-xl bg-teal-50/50 dark:bg-teal-900/20 hover:bg-teal-50 dark:hover:bg-teal-900/30 p-2 text-[11px] transition"
+                                className="flex flex-col gap-0.5 rounded-xl bg-cyan-50/70 hover:bg-cyan-50 p-2 text-[11px] transition"
                               >
                                 <div className="flex items-center justify-between">
-                                  <span className="font-black text-teal-950 dark:text-teal-200 font-mono">{booking.vehiclePlate}</span>
+                                  <span className="font-black text-cyan-950 font-mono">{booking.vehiclePlate}</span>
                                   <span className="font-semibold text-muted-foreground">{booking.bookingTime}</span>
                                 </div>
                                 <div className="text-[10px] text-muted-foreground truncate">
@@ -536,10 +530,10 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/70 bg-card/90 transition hover:border-teal-500/30 hover:bg-card"
+                    className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
                       aria-label={t("Thông báo", "Notifications")}
                     >
-                      <Bell className={cn("h-4 w-4", unreadCustomerNotifications > 0 ? "text-teal-600" : "text-muted-foreground")} />
+                      <Bell className={cn("h-4 w-4", unreadCustomerNotifications > 0 ? "text-cyan-700" : "text-muted-foreground")} />
                       {unreadCustomerNotifications > 0 && (
                         <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
                           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
@@ -551,14 +545,14 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverContent
                     align="end"
                     sideOffset={10}
-                    className="w-80 rounded-2xl border-border/70 bg-card/95 p-3 shadow-[0_22px_60px_rgba(15,118,110,0.12)] backdrop-blur-xl"
+                    className="w-80 rounded-2xl border-cyan-900/10 bg-white/95 p-3 shadow-[0_22px_60px_rgba(6,17,26,0.12)] backdrop-blur-xl"
                   >
                     <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
                       <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
                         {t("Thông báo", "Notifications")}
                       </h3>
                       {unreadCustomerNotifications > 0 && (
-                        <span className="rounded-full bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 text-[10px] font-black text-teal-700 dark:text-teal-400">
+                        <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-black text-cyan-800">
                           {unreadCustomerNotifications} {t("chưa đọc", "unread")}
                         </span>
                       )}
@@ -583,15 +577,15 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                               "flex w-full flex-col gap-1 rounded-xl p-2 text-left text-xs transition",
                               notification.read 
                                 ? "bg-muted/50 hover:bg-muted" 
-                                : "bg-teal-50/50 dark:bg-teal-900/20 hover:bg-teal-50 dark:hover:bg-teal-900/30"
+                                : "bg-cyan-50/70 hover:bg-cyan-50"
                             )}
                           >
                             <div className="flex items-center justify-between">
-                              <span className={cn("font-bold", notification.read ? "text-muted-foreground" : "text-teal-950 dark:text-teal-200")}>
+                              <span className={cn("font-bold", notification.read ? "text-muted-foreground" : "text-cyan-950")}>
                                 {notification.title}
                               </span>
                               {!notification.read && (
-                                <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
+                                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
                               )}
                             </div>
                             <div className={cn("line-clamp-2 text-[11px]", notification.read ? "text-muted-foreground" : "text-foreground")}>
@@ -744,7 +738,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
         {requiredRole === "STAFF" && <StaffNotificationListener />}
 
         {/* Mobile bottom nav */}
-        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/95 px-2 py-2 backdrop-blur-xl lg:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-cyan-900/10 bg-white/95 px-2 py-2 shadow-[0_-14px_44px_rgba(6,17,26,0.08)] backdrop-blur-xl lg:hidden">
           <ul className="grid grid-cols-4 gap-1">
             {mobileItems.map((item) => {
               const active = isNavActive(pathname, item);
@@ -809,7 +803,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
       {/* Staff alert popup */}
       {alertNotification.show && (
-        <div className="fixed top-20 right-6 z-[100] w-[22rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-teal-200/90 dark:border-teal-800/50 bg-card/95 p-4 shadow-[0_16px_48px_-8px_rgba(15,118,110,0.22)] backdrop-blur-xl animate-in fade-in slide-in-from-top-4 slide-in-from-right-4">
+        <div className="fixed top-20 right-6 z-[100] w-[22rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-cyan-300/50 bg-card/95 p-4 shadow-[0_16px_48px_-8px_rgba(8,145,178,0.22)] backdrop-blur-xl animate-in fade-in slide-in-from-top-4 slide-in-from-right-4">
           <button
             type="button"
             onClick={() => setAlertNotification((prev) => ({ ...prev, show: false }))}
@@ -820,19 +814,19 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           </button>
 
           <div className="flex items-start gap-3.5 pr-6">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 shadow-sm border border-teal-100 dark:border-teal-800">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-cyan-200 bg-cyan-50 text-cyan-700 shadow-sm dark:border-cyan-800 dark:bg-cyan-900/30">
               <BellRing className="h-5 w-5" />
             </div>
 
             <div className="min-w-0 flex-1">
-              <h4 className="text-xs font-black uppercase tracking-wider text-teal-700 dark:text-teal-400">
+              <h4 className="text-xs font-black uppercase tracking-wider text-cyan-800">
                 {alertNotification.title}
               </h4>
               <div className="mt-1.5 flex items-center gap-2 rounded-xl bg-muted/80 px-2.5 py-1.5 text-xs font-bold border border-border/50">
                 <span className="text-[10px] text-muted-foreground uppercase">
                   {t("Biển số", "Plate")}
                 </span>
-                <span className="font-black tracking-wide text-teal-950 dark:text-teal-200 font-mono text-sm">
+                <span className="font-black tracking-wide text-cyan-950 font-mono text-sm">
                   {alertNotification.plate}
                 </span>
               </div>
@@ -843,7 +837,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 <Link
                   href={alertNotification.path}
                   onClick={() => setAlertNotification((prev) => ({ ...prev, show: false }))}
-                  className="inline-flex items-center justify-center rounded-xl bg-teal-600 hover:bg-teal-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:-translate-y-0.5"
+                  className="inline-flex items-center justify-center rounded-xl bg-[#06111a] hover:bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:-translate-y-0.5"
                 >
                   {t("Duyệt ngay", "Review now")}
                 </Link>
