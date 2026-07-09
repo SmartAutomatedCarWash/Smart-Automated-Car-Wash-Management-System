@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.autowash.dto.BookingReviewCheckResponse;
+import org.springframework.web.bind.annotation.PathVariable;
+
 @RestController
 @Validated
 @RequestMapping("/api/v1/reviews")
@@ -42,5 +45,12 @@ public class ReviewController {
     @Operation(summary = "List featured public reviews")
     public ApiResponse<List<ReviewResponse>> getFeaturedReviews() {
         return ApiResponse.ok("Featured reviews retrieved", reviewService.getFeaturedReviews());
+    }
+
+    @GetMapping("/bookings/{bookingId}")
+    @Operation(summary = "Check if a booking has a review and get its detail")
+    @SecurityRequirement(name = "bearerAuth")
+    public ApiResponse<BookingReviewCheckResponse> checkBookingReview(@PathVariable String bookingId) {
+        return ApiResponse.ok("Booking review status retrieved", reviewService.checkBookingReview(bookingId));
     }
 }
