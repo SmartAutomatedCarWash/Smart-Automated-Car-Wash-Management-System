@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/shared/ui/ui/button";
 import { cn } from "@/shared/lib/utils";
+import { notify } from "@/shared/lib/notify";
 
 export default function GuideDetailPage() {
   const { id: slug } = useParams<{ id: string }>();
@@ -54,7 +55,7 @@ export default function GuideDetailPage() {
 
   const handleLike = () => {
     if (!user) {
-      alert(t("Vui lòng đăng nhập để thích bài viết", "Please log in to like this article"));
+      notify.info(t("Vui lòng đăng nhập để thích bài viết", "Please log in to like this article"));
       return;
     }
     toggleLikeMutation.mutate();
@@ -63,7 +64,7 @@ export default function GuideDetailPage() {
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      alert(t("Vui lòng đăng nhập để bình luận", "Please log in to comment"));
+      notify.info(t("Vui lòng đăng nhập để bình luận", "Please log in to comment"));
       return;
     }
     if (!newComment.trim()) return;

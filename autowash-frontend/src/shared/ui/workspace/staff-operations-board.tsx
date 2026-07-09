@@ -32,7 +32,7 @@ const COLUMNS: OperationColumn[] = [
   {
     id: "checked-in",
     title: "Đã check-in",
-    tone: "border-violet-200 bg-violet-50/50",
+    tone: "border-slate-200 bg-slate-50/60",
     cards: [
       { id: "WS-02", plate: "30A-11223", service: "Rửa cao cấp", meta: "Khoang 2", priority: "normal" },
       { id: "WS-03", plate: "43C-55667", service: "Combo vàng", meta: "Khoang 4", priority: "late" },
@@ -41,13 +41,13 @@ const COLUMNS: OperationColumn[] = [
   {
     id: "in-progress",
     title: "Đang rửa",
-    tone: "border-sky-200 bg-sky-50/50",
+    tone: "border-cyan-200 bg-cyan-50/60",
     cards: [{ id: "WS-04", plate: "59F-99001", service: "Nội thất và phủ sáp", meta: "Còn 18:42", priority: "normal" }],
   },
   {
     id: "completed",
     title: "Đã hoàn thành",
-    tone: "border-emerald-200 bg-emerald-50/50",
+    tone: "border-cyan-200 bg-cyan-50/45",
     cards: [{ id: "WS-05", plate: "72E-33445", service: "Rửa nhanh", meta: "Chờ nhận xe", priority: "normal" }],
   },
 ];
@@ -55,7 +55,7 @@ const COLUMNS: OperationColumn[] = [
 const PRIORITY_DOT = {
   late: "bg-rose-500",
   soon: "bg-amber-500",
-  normal: "bg-emerald-500",
+  normal: "bg-cyan-500",
 };
 
 export function StaffOperationsBoard() {
@@ -125,7 +125,7 @@ function MetricCard({
 }) {
   return (
     <Card className="flex items-center gap-4 border-border/70 bg-card/95 p-5 shadow-sm">
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-800">
         <Icon className="h-5 w-5" />
       </div>
       <div>

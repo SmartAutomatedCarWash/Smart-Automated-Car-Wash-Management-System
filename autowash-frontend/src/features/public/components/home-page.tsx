@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode, useCallback, useMemo, type FormEvent, type ChangeEvent, type KeyboardEvent } from "react";
+import dynamic from "next/dynamic";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -46,7 +48,10 @@ import {
   type HomeCombo,
   type HomeService,
 } from "./homepage-data";
-import { ModernAuthPopupModal } from "./modern-auth-popup-modal";
+const ModernAuthPopupModal = dynamic(
+  () => import("./modern-auth-popup-modal").then((mod) => mod.ModernAuthPopupModal),
+  { ssr: false },
+);
 
 const HOME_COPY = {
   vi: {
@@ -310,7 +315,7 @@ function PublicHeader({
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex min-w-0 items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/8 shadow-[0_0_28px_rgba(45,255,238,0.16)] ring-1 ring-cyan-300/25 transition-transform duration-300 hover:scale-105">
-            <img src="/logo.png" alt="AutoWash Pro" className="h-9 w-9 rounded-xl object-cover" />
+            <Image src="/logo.png" alt="AutoWash Pro" width={36} height={36} className="h-9 w-9 rounded-xl object-cover" priority />
           </div>
           <div className="min-w-0">
             <p className="truncate text-[0.64rem] font-semibold uppercase tracking-[0.22em] text-cyan-300 sm:text-[0.7rem] sm:tracking-[0.28em]">
@@ -430,7 +435,7 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
   return (
     <section className="relative overflow-hidden bg-[#05080d] px-4 pb-20 pt-8 sm:px-6 sm:pt-12 lg:px-8">
       <div className="absolute inset-0">
-        <img src="/images/detailer-side-wash.png" alt="" className="h-full w-full object-cover opacity-18" />
+        <Image src="/images/detailer-side-wash.png" alt="" fill sizes="100vw" className="object-cover opacity-18" priority />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,8,13,0.92),rgba(5,8,13,0.74)_46%,rgba(5,8,13,0.98))]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(45,255,238,0.15),transparent_28rem),radial-gradient(circle_at_82%_32%,rgba(10,116,120,0.24),transparent_32rem)]" />
       </div>
@@ -493,9 +498,13 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
             <div className="relative mx-auto max-w-5xl">
               <div className="absolute inset-x-[8%] bottom-2 h-12 rounded-[999px] border-4 border-cyan-300 shadow-[0_0_34px_rgba(45,255,238,0.62),inset_0_0_24px_rgba(45,255,238,0.28)]" />
               <div className="absolute inset-x-[12%] bottom-8 h-20 rounded-full bg-cyan-300/18 blur-3xl" />
-              <img
+              <Image
                 src={homeGallery[3].src}
                 alt={homeGallery[3].alt}
+                width={1200}
+                height={720}
+                sizes="(min-width: 1024px) 56rem, 92vw"
+                priority
                 className="relative z-10 mx-auto h-[18rem] w-full max-w-4xl rounded-[2rem] object-cover object-center shadow-[0_32px_90px_rgba(0,0,0,0.46)] [clip-path:polygon(4%_10%,96%_0,100%_88%,0_100%)] sm:h-[24rem] lg:h-[28rem]"
               />
               <div className="absolute left-4 top-1/4 z-20 hidden rounded-[1.4rem] border border-cyan-300/18 bg-[#071016]/82 p-4 shadow-[0_18px_48px_rgba(0,0,0,0.36)] backdrop-blur md:block">
@@ -503,7 +512,7 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
                 <p className="mt-1 text-sm font-semibold text-white/80">{copy.featurePromiseTitle}</p>
               </div>
               <div className="absolute right-3 top-8 z-20 hidden overflow-hidden rounded-[1.3rem] border border-cyan-300/18 bg-white/8 shadow-[0_18px_48px_rgba(0,0,0,0.36)] backdrop-blur md:block">
-                <img src="/images/soap-tail-detail.png" alt="Detailed foam wash" className="h-28 w-44 object-cover opacity-90" />
+                <Image src="/images/soap-tail-detail.png" alt="Detailed foam wash" width={176} height={112} sizes="11rem" className="h-28 w-44 object-cover opacity-90" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="flex h-11 w-11 items-center justify-center rounded-full bg-cyan-300 text-slate-950 shadow-[0_0_26px_rgba(45,255,238,0.44)]">
                     <ArrowRight className="h-5 w-5" />
@@ -528,10 +537,10 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
 
         <div className="relative z-10 mx-auto mt-14 grid max-w-5xl gap-8 lg:grid-cols-[0.9fr_1fr] lg:items-center">
           <div className="grid grid-cols-[1fr_0.62fr] gap-3">
-            <img src="/images/detailer-side-wash.png" alt="Professional hand detailing" className="h-64 rounded-[2rem] object-cover shadow-[0_24px_70px_rgba(0,0,0,0.35)]" />
+            <Image src="/images/detailer-side-wash.png" alt="Professional hand detailing" width={520} height={384} sizes="(min-width: 1024px) 32rem, 60vw" className="h-64 rounded-[2rem] object-cover shadow-[0_24px_70px_rgba(0,0,0,0.35)]" />
             <div className="grid gap-3">
-              <img src="/images/soap-tail-detail.png" alt="Foam tail detail" className="h-28 rounded-[1.4rem] object-cover shadow-[0_18px_50px_rgba(0,0,0,0.28)]" />
-              <img src="/images/wash-bay-foam-front.png" alt="Foam wash bay" className="h-32 rounded-[1.4rem] object-cover shadow-[0_18px_50px_rgba(0,0,0,0.28)]" />
+              <Image src="/images/soap-tail-detail.png" alt="Foam tail detail" width={320} height={180} sizes="14rem" className="h-28 rounded-[1.4rem] object-cover shadow-[0_18px_50px_rgba(0,0,0,0.28)]" />
+              <Image src="/images/wash-bay-foam-front.png" alt="Foam wash bay" width={320} height={200} sizes="14rem" className="h-32 rounded-[1.4rem] object-cover shadow-[0_18px_50px_rgba(0,0,0,0.28)]" />
             </div>
           </div>
           <div className="rounded-[2rem] border border-cyan-300/12 bg-white/6 p-7 shadow-[0_24px_70px_rgba(0,0,0,0.32)] backdrop-blur">
@@ -570,9 +579,12 @@ function FacilitySection({ copy }: { copy: Record<string, string> }) {
         <BeforeAfterCard image="/images/detailer-side-wash.png" title={copy.afterLabel} copy={copy} />
         <div className="overflow-hidden rounded-[2rem] border border-cyan-300/14 bg-white/7 shadow-[0_22px_60px_rgba(0,0,0,0.34)] transition-transform duration-500 hover:-translate-y-1">
           <div className="relative">
-            <img
+            <Image
               src="/images/5-star-lounge.png"
               alt="5-Star Lounge"
+              width={900}
+              height={620}
+              sizes="(min-width: 1024px) 50vw, 92vw"
               className="h-[18rem] w-full object-cover transition-transform duration-700 hover:scale-[1.03] sm:h-[24rem]"
             />
             <div className="absolute left-5 top-5 rounded-full border border-white/55 bg-slate-950/30 px-5 py-2 text-xs font-black uppercase tracking-[0.24em] text-white shadow-[0_12px_28px_rgba(15,23,42,0.28)] backdrop-blur-xl [text-shadow:0_1px_8px_rgba(15,23,42,0.42)]">
@@ -616,7 +628,7 @@ function ResultsSection({ copy }: { copy: Record<string, string> }) {
   return (
     <section className="relative overflow-hidden bg-[#05080d] py-24 text-white">
       <div className="absolute inset-0">
-        <img src="/images/detailer-side-wash.png" alt="" className="h-full w-full object-cover opacity-26" />
+        <Image src="/images/detailer-side-wash.png" alt="" fill sizes="100vw" className="object-cover opacity-26" />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,13,0.96)_0%,rgba(5,8,13,0.78)_50%,rgba(5,8,13,0.94)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(45,255,238,0.14),transparent_34%),linear-gradient(180deg,rgba(13,108,107,0.28),transparent_45%)]" />
       </div>
@@ -642,9 +654,12 @@ function ResultsSection({ copy }: { copy: Record<string, string> }) {
             </div>
           </div>
           <div className="overflow-hidden rounded-[2rem] border border-cyan-300/14 shadow-[0_24px_70px_rgba(0,0,0,0.48)]">
-            <img
+            <Image
               src="/images/wash-bay-foam-front.png"
               alt="Premium foam wash diagnostics"
+              width={920}
+              height={620}
+              sizes="(min-width: 1024px) 50vw, 92vw"
               className="h-80 w-full object-cover transition-transform duration-700 hover:scale-[1.03] sm:h-96"
             />
           </div>
@@ -669,7 +684,7 @@ function CombosSection({
   return (
     <section id="combos" className="relative overflow-hidden bg-[#05080d] px-4 py-24 text-white sm:px-6 lg:px-8">
       <div className="absolute inset-0">
-        <img src="/images/wash-bay-foam-front.png" alt="" className="h-full w-full object-cover opacity-34" />
+        <Image src="/images/wash-bay-foam-front.png" alt="" fill sizes="100vw" className="object-cover opacity-34" />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,13,0.96)_0%,rgba(5,8,13,0.78)_48%,rgba(5,8,13,0.95)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_22%,rgba(45,255,238,0.16),transparent_24rem),radial-gradient(circle_at_24%_62%,rgba(13,108,107,0.26),transparent_28rem)]" />
       </div>
@@ -758,7 +773,7 @@ function CallToActionSection({
   return (
     <section className="relative overflow-hidden bg-[#05080d] px-4 py-28 text-white sm:px-6 lg:px-8">
       <div className="absolute inset-0">
-        <img src="/images/soap-tail-detail.png" alt="" className="h-full w-full object-cover opacity-34" />
+        <Image src="/images/soap-tail-detail.png" alt="" fill sizes="100vw" className="object-cover opacity-34" />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,8,13,0.96),rgba(5,8,13,0.72)_52%,rgba(5,8,13,0.92))]" />
         <div className="absolute inset-x-0 bottom-0 h-24 bg-[#0d6c6b]/45 blur-2xl" />
         <div className="absolute left-8 top-12 h-10 w-10 rotate-45 rounded-[0.35rem] bg-cyan-300 shadow-[0_0_34px_rgba(45,255,238,0.55)]" />
@@ -793,7 +808,7 @@ function PublicFooter({ copy }: { copy: Record<string, string> }) {
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/8 shadow ring-1 ring-cyan-300/20">
-              <img src="/logo.png" alt="AutoWash Pro" className="h-7 w-7 rounded-lg object-cover" />
+              <Image src="/logo.png" alt="AutoWash Pro" width={28} height={28} className="h-7 w-7 rounded-lg object-cover" />
             </div>
             <p className="text-sm font-bold text-white">Aura Car Care</p>
           </div>
@@ -1048,9 +1063,12 @@ function BeforeAfterCard({
   return (
     <div className="overflow-hidden rounded-[2rem] border border-sky-100 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-transform duration-500 hover:-translate-y-1">
       <div className="relative">
-        <img
+        <Image
           src={image}
           alt={title}
+          width={760}
+          height={560}
+          sizes="(min-width: 1024px) 33vw, 92vw"
           className="h-[18rem] w-full object-cover transition-transform duration-700 hover:scale-[1.03] sm:h-[24rem]"
         />
         <div className="absolute left-5 top-5 rounded-full border border-white/55 bg-slate-950/30 px-5 py-2 text-xs font-black uppercase tracking-[0.22em] text-white shadow-[0_12px_28px_rgba(15,23,42,0.28)] backdrop-blur-xl [text-shadow:0_1px_8px_rgba(15,23,42,0.42)]">

@@ -1,20 +1,44 @@
 import { create } from "zustand";
 
 export type Language = "vi" | "en";
+const LANGUAGE_STORAGE_KEY = "aura-lang";
+export const DEFAULT_LANGUAGE: Language = "en";
 
 interface LanguageState {
   language: Language;
   setLanguage: (lang: Language) => void;
+  hydrateLanguage: () => void;
+}
+
+function isLanguage(value: string | null): value is Language {
+  return value === "vi" || value === "en";
+}
+
+function syncDocumentLanguage(lang: Language) {
+  if (typeof document !== "undefined") {
+    document.documentElement.lang = lang;
+  }
 }
 
 export const useLanguageStore = create<LanguageState>((set) => ({
-  language: "vi", // Default to Vietnamese
+  language: DEFAULT_LANGUAGE,
   setLanguage: (lang: Language) => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("aura-lang", lang);
-      document.documentElement.lang = lang;
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
     }
+    syncDocumentLanguage(lang);
     set({ language: lang });
+  },
+  hydrateLanguage: () => {
+    if (typeof window === "undefined") return;
+
+    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    const nextLanguage = isLanguage(stored) ? stored : DEFAULT_LANGUAGE;
+    if (!isLanguage(stored)) {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
+    }
+    syncDocumentLanguage(nextLanguage);
+    set({ language: nextLanguage });
   },
 }));
 
