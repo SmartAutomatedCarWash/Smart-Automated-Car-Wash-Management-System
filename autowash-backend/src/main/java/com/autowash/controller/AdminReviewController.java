@@ -18,6 +18,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.autowash.dto.ReviewStatsResponse;
+import com.autowash.shared.dto.PaginationMeta;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.web.bind.annotation.RequestParam;
+
 @RestController
 @Validated
 @RequestMapping("/api/v1/admin/reviews")
@@ -33,9 +41,33 @@ public class AdminReviewController {
     }
 
     @GetMapping
-    @Operation(summary = "List reviews for admin")
-    public ApiResponse<List<ReviewResponse>> listReviews() {
-        return ApiResponse.ok("Reviews retrieved", reviewService.listAdminReviews());
+    @Operation(summary = "List reviews for admin with pagination and filters")
+    public ApiResponse<List<ReviewResponse>> listReviews(
+            @RequestParam(required = false) Integer rating,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction
+    ) {
+        Sort sort = direction.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), limit, sort);
+        Page<ReviewResponse> resultPage = reviewService.listAdminReviewsPaginated(rating, pageable);
+
+        PaginationMeta meta = new PaginationMeta(
+                page,
+                limit,
+                resultPage.getTotalElements(),
+                resultPage.getTotalPages(),
+                resultPage.hasNext()
+        );
+
+        return ApiResponse.ok("Reviews retrieved", resultPage.getContent(), meta);
+    }
+
+    @GetMapping("/stats")
+    @Operation(summary = "Get review analytics/statistics for dashboard")
+    public ApiResponse<ReviewStatsResponse> getStats() {
+        return ApiResponse.ok("Review stats retrieved", reviewService.getReviewStats());
     }
 
     @PatchMapping("/{reviewId}/featured")

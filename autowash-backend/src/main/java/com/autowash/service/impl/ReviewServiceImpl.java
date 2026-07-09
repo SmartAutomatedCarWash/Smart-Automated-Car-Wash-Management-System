@@ -12,6 +12,13 @@ import com.autowash.service.CurrentUserService;
 import com.autowash.service.LoyaltyService;
 import com.autowash.service.ReviewService;
 import com.autowash.shared.exception.ApiException;
+import com.autowash.dto.BookingReviewCheckResponse;
+import com.autowash.dto.ReviewStatsResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -75,6 +82,44 @@ public class ReviewServiceImpl implements ReviewService {
         return reviewRepository.findAll().stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ReviewResponse> listAdminReviewsPaginated(Integer rating, Pageable pageable) {
+        return reviewRepository.findAllFiltered(rating, pageable).map(this::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ReviewStatsResponse getReviewStats() {
+        List<Review> reviews = reviewRepository.findAll();
+        long totalReviews = reviews.size();
+        double averageRating = totalReviews == 0 ? 0.0 :
+                reviews.stream().mapToInt(Review::getRating).average().orElse(0.0);
+
+        Map<Integer, Long> ratingDistribution = new HashMap<>();
+        for (int i = 1; i <= 5; i++) {
+            ratingDistribution.put(i, 0L);
+        }
+        for (Review r : reviews) {
+            ratingDistribution.put(r.getRating(), ratingDistribution.getOrDefault(r.getRating(), 0L) + 1);
+        }
+
+        long featuredReviewsCount = reviewRepository.countByFeaturedTrue();
+
+        return new ReviewStatsResponse(totalReviews, averageRating, ratingDistribution, featuredReviewsCount);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BookingReviewCheckResponse checkBookingReview(String bookingId) {
+        UUID bid = parseUuid(bookingId, "Invalid Booking ID");
+        Optional<Review> reviewOpt = reviewRepository.findByBookingId(bid);
+        if (reviewOpt.isPresent()) {
+            return new BookingReviewCheckResponse(true, toResponse(reviewOpt.get()));
+        }
+        return new BookingReviewCheckResponse(false, null);
     }
 
     @Override
