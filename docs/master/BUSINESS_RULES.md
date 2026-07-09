@@ -1,12 +1,18 @@
 # AutoWash Pro — Business Rules (Source of Truth)
 
+> **Cập nhật 2026‑07‑09**
+> - **Blog System**: Added BR‑BL‑01 to BR‑BL‑06 — Blog guides with likes, comments, and admin management.
+> - **Review System**: Updated BR‑151 to BR‑153 (now ✅ implemented), added BR‑RV‑01 to BR‑RV‑06 — Review stats, admin analytics, and booking review status check.
+> - **BR‑S22**: Marked as **Resolved** — reviews table and endpoints now fully implemented.
+> - **DB Schema**: Added `blog_likes`, `blog_comments` tables (V6 migration).
+
 > **Cập nhật 2026‑07‑07**
 > - **BR‑129c**: `validDaysAfterClaim` được cấu hình trên Admin UI để xác định thời gian voucher có hiệu lực sau khi khách hàng đổi điểm.
 > - **BR‑122**: Đã loại bỏ `maxDiscountAmount` trùng lặp; UI hiện chỉ hiển thị `validDaysAfterClaim` và `maxDiscountAmount` (cho PERCENT) một lần.
 > - **BR‑124**: Admin UI `Discount value` chuyển thành dropdown các mức phần trăm (5 %‑70 %) khi loại giảm là **PERCENT**.
 
 
-> **Version:** 2.0 | **Last updated:** 2026-07-06
+> **Version:** 2.1 | **Last updated:** 2026-07-09
 > **Scope:** Backend-enforced rules only. Frontend-only prototype behaviors are labelled `[Frontend]`.
 > **Status legend:**
 > - ✅ Implemented in backend
@@ -323,9 +329,30 @@
 
 | BR | Rule | Status | Implementation |
 |---|---|---|---|
-| BR-151 | Customer can submit a rating (1–5 stars) and optional comment for a booking after it reaches `COMPLETED` status. | ⚠️ | No `reviews` table or endpoint exists. See BR-S22. |
-| BR-152 | A customer can only submit one review per booking. | ⚠️ | Not enforced. See BR-S22. |
-| BR-153 | Only the customer who owns the booking can submit a review for it. | ⚠️ | Not enforced. See BR-S22. |
+| BR-151 | Customer can submit a rating (1–5 stars) and optional comment for a booking after it reaches `COMPLETED` status. | ✅ | `ReviewServiceImpl.submitReview()` validates `BookingStatus.COMPLETED`; `POST /api/v1/customers/bookings/{id}/review` |
+| BR-152 | A customer can only submit one review per booking. | ✅ | `ReviewRepository.existsByBookingId()` check in `ReviewServiceImpl.submitReview()` → `DUPLICATE_REVIEW` |
+| BR-153 | Only the customer who owns the booking can submit a review for it. | ✅ | `BookingRepository.findByIdAndCustomerId()` ownership check in `ReviewServiceImpl` |
+| BR-RV-01 | Review rating must be an integer between 1 and 5 inclusive. | ✅ | `@Min(1) @Max(5)` in `ReviewRequest` DTO |
+| BR-RV-02 | Customer earns +10 bonus loyalty points when submitting a review. | ✅ | `ReviewServiceImpl.submitReview()` calls `LoyaltyServiceImpl.postBonusTransaction()` |
+| BR-RV-03 | Admin can view aggregated review statistics: average rating, total count, and per-star distribution. | ✅ | `GET /api/v1/admin/reviews/stats` → `ReviewServiceImpl.getReviewStats()` |
+| BR-RV-04 | Admin can view paginated list of all reviews with customer and booking details. | ✅ | `GET /api/v1/admin/reviews` with `page`, `size`, `sort` params → `ReviewRepository.findAllWithDetails()` |
+| BR-RV-05 | Customer can check whether a specific booking has already been reviewed. | ✅ | `GET /api/v1/customers/bookings/{id}/review/status` → `ReviewServiceImpl.hasReviewedBooking()` |
+| BR-RV-06 | Reviews are read-only after submission — customers cannot edit or delete reviews. | ✅ | No PUT/DELETE endpoint exists for reviews |
+
+---
+
+## 16a. Blog Guides System
+
+> **New in v2.1**: Blog guides provide car care tips and washing advice to customers, with social engagement features (likes, comments).
+
+| BR | Rule | Status | Implementation |
+|---|---|---|---|
+| BR-BL-01 | Blog posts are created and managed by Admin. Each blog has a title, content, optional image, author, and timestamps. | ✅ | `Blog` entity + `AdminBlogController` CRUD endpoints |
+| BR-BL-02 | Customers can like a blog post. Each customer can only like a blog once (toggle like/unlike). | ✅ | `BlogLike` entity with `UNIQUE(blog_id, user_id)` constraint; `BlogServiceImpl.toggleLike()` |
+| BR-BL-03 | Customers can comment on a blog post. Comments require non-empty content (max 1000 chars). | ✅ | `BlogComment` entity + `POST /api/v1/blogs/{id}/comments`; `@NotBlank @Size(max=1000)` |
+| BR-BL-04 | Blog listing displays like count and comment count per blog. These counts are computed from `blog_likes` and `blog_comments` tables. | ✅ | `BlogRepository.countLikes()`, `BlogRepository.countComments()` |
+| BR-BL-05 | Admin can soft-delete (deactivate) a blog post. Deactivated blogs are hidden from customer listing but remain in the database. | ✅ | `AdminBlogController.deleteBlog()` → `blog.deactivate()` |
+| BR-BL-06 | Blog comments display commenter name and creation timestamp. Customers can only delete their own comments. | ✅ | `BlogCommentResponse` includes `userName`, `createdAt`; ownership check on delete |
 
 ---
 
@@ -356,7 +383,7 @@ These rules are **designed intent** documented in specs but **not enforced** in 
 | BR-S19 | Staff or Admin can cancel an active wash session with mandatory reason; booking reverts to `CONFIRMED` | New `DELETE /api/v1/operations/sessions/{id}` endpoint + `OperationsServiceImpl` | — |
 | BR-S20 | Auto-create in-app notification on booking events: `BOOKING_CREATED` (booking created), `BOOKING_CONFIRMED` (payment received), `WASH_CHECKED_IN` (staff check-in), `WASH_COMPLETED` (wash done). `notifications` table must have `idx_notifications_user_id` index to ensure fast poll queries. | `BookingServiceImpl`, `OperationsServiceImpl` call `NotificationService.push()` at each event point | BR-S28 |
 | BR-S21 | `@Scheduled` job runs hourly: (1) scans bookings with `scheduled_at` within next 24h and sends reminder email via `BookingEmailDeliveryService`; (2) writes `BOOKING_REMINDER` notification to `notifications` table for each affected booking. Loyalty-expiry warning notifications (points expiring soon) are also written by this job — separate from BR-145 frontend logic. | New `BookingReminderJob` (`@Scheduled`) + `BookingEmailDeliveryService` | BR-S20 |
-| BR-S22 | Customer can submit 1–5 star rating with optional comment after booking `COMPLETED`; one review per booking | New `reviews` table + `ReviewService` + `POST /api/v1/customers/bookings/{id}/review` | — |
+| BR-S22 | ~~Customer can submit 1–5 star rating with optional comment after booking `COMPLETED`; one review per booking~~ **Resolved** — fully implemented in BR-151 to BR-153 + BR-RV-01 to BR-RV-06 | `ReviewServiceImpl` + `ReviewController` + `reviews` table | — |
 | BR-S23 | Google OAuth end-to-end flow: verify authorization code with Google, create or link account, return JWT pair | `GoogleOAuthClientImpl` + `AuthServiceImpl` OAuth handler; full flow needs verification test | — |
 | BR-S24 | Admin can manually adjust a customer's point balance (positive or negative) with a mandatory reason; creates `ADJUST` transaction | New `POST /api/v1/admin/customers/{id}/points/adjust` endpoint + `LoyaltyService.adjustPoints()` | — |
 | BR-S25 | Voucher `end_at` reached: status auto-set to `INACTIVE` via scheduled job (nightly) | New `@Scheduled` job in `VoucherExpiryJob` | — |
@@ -794,7 +821,32 @@ These rules are **designed intent** documented in specs but **not enforced** in 
 
 ---
 
-### 18.9 Schema Gap — Pending Migrations
+### 18.9 Blog & Review Tables (V6 migration)
+
+#### `blog_likes`
+| Column | Type | Constraints |
+|---|---|---|
+| `id` | bigserial | PK |
+| `blog_id` | bigint | NOT NULL, FK → blogs(id) ON DELETE CASCADE |
+| `user_id` | uuid | NOT NULL, FK → users(id) ON DELETE CASCADE |
+| `created_at` | timestamptz | NOT NULL DEFAULT CURRENT_TIMESTAMP |
+
+**Constraints:** `UNIQUE(blog_id, user_id)`
+
+#### `blog_comments`
+| Column | Type | Constraints |
+|---|---|---|
+| `id` | bigserial | PK |
+| `blog_id` | bigint | NOT NULL, FK → blogs(id) ON DELETE CASCADE |
+| `user_id` | uuid | NOT NULL, FK → users(id) ON DELETE CASCADE |
+| `content` | varchar(1000) | NOT NULL |
+| `created_at` | timestamptz | NOT NULL DEFAULT CURRENT_TIMESTAMP |
+
+**Indexes:** `idx_blog_comments_blog_id`, `idx_blog_comments_user_id`
+
+---
+
+### 18.10 Schema Gap — Pending Migrations
 
 These columns/tables are referenced by `⚠️` BRs but **do not yet exist** in the DB:
 
@@ -802,7 +854,6 @@ These columns/tables are referenced by `⚠️` BRs but **do not yet exist** in 
 |---|---|---|
 | `voucher_usages(voucher_id, customer_id)` table | BR-S18 | Per-user voucher usage tracking |
 | `notifications.type` CHECK constraint | BR-S28 | Enforce `NotificationType` enum values |
-| `reviews` table | BR-S22 | Customer ratings after completed booking |
 
 
 ---
@@ -811,10 +862,10 @@ These columns/tables are referenced by `⚠️` BRs but **do not yet exist** in 
 
 | Status | Count | Description |
 |---|---:|---|
-| ✅ Implemented | 116 | Enforced in backend code or DB constraints (added BR-144f) |
-| ⚠️ Not yet implemented | 44 | BR-S01–BR-S28 + sub-BRs (BR-16a, BR-40a,b, BR-54a–d, BR-77a,b, BR-78a, BR-101a, BR-129a,b, BR-141a–c, BR-144a–e, BR-145, BR-151–153) |
+| ✅ Implemented | 131 | Enforced in backend code or DB constraints. Added BR-BL-01–06, BR-RV-01–06; updated BR-151–153 to ✅ |
+| ⚠️ Not yet implemented | 29 | BR-S01–BR-S21, BR-S23–BR-S33 (BR-S22 resolved) + sub-BRs |
 | 🔲 Frontend-only / accepted limitation | 2 | BR-17, BR-18 |
-| **Total** | **162+** | |
+| **Total** | **177+** | |
 
 ---
 
@@ -837,9 +888,10 @@ These columns/tables are referenced by `⚠️` BRs but **do not yet exist** in 
 | Admin Operations | BR-130 to BR-141 + BR-141a–c | 12 | 3 | 0 |
 | Notifications | BR-142 to BR-145 + BR-144a–f | 4 | 6 | 0 |
 | Authorization & Data Access | BR-146 to BR-150 | 5 | 0 | 0 |
-| Booking Review & Rating | BR-151 to BR-153 | 0 | 3 | 0 |
-| Suggested (not yet impl.) | BR-S01 to BR-S28 | 0 | 28 | 0 |
-| **Total** | | **134** | **64** | **4** |
+| Booking Review & Rating | BR-151 to BR-153 + BR-RV-01–06 | 9 | 0 | 0 |
+| Blog Guides System | BR-BL-01 to BR-BL-06 | 6 | 0 | 0 |
+| Suggested (not yet impl.) | BR-S01 to BR-S33 (BR-S22 resolved) | 0 | 27 | 0 |
+| **Total** | | **149** | **58** | **4** |
 
 ---
 
@@ -945,5 +997,5 @@ These are cases where the original `List_BRs.md` spec and current backend implem
 ---
 
 *This file is the **single source of truth** for AutoWash Pro business rules.*
-*For implementation work: refer to backend codebase + `V1__init_schema.sql` + V18–V20 migrations.*
+*For implementation work: refer to backend codebase + `V1__init_schema.sql` + V6, V18–V20 migrations.*
 *For spec decisions: update this file and `docs/List_BRs.md` together.*
