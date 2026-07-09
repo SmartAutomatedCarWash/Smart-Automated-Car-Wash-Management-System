@@ -32,6 +32,7 @@ export type WorkspaceTheme = {
   descriptionVi?: string;
   accent: string;
   accentSoft: string;
+  accentActive?: string;
   activeNav: string;
   mobileActive: string;
 };
@@ -89,6 +90,7 @@ const ADMIN_NAV: WorkspaceNavItem[] = [
   { href: "/admin/accounts", label: "Accounts", labelVi: "Tài khoản", icon: Users },
   { href: "/admin/services", label: "Service Management", labelVi: "Quản lý dịch vụ", icon: Layers3 },
   { href: "/admin/offers?tab=promotions", label: "Offers Management", labelVi: "Ưu đãi & Voucher", icon: Gift },
+  { href: "/admin/blog", label: "Blog Management", labelVi: "Quản lý Blog", icon: BookOpen },
   { href: "/admin/operations", label: "Operations", labelVi: "Vận hành", icon: Wrench },
   { href: "/admin/reports", label: "Reports", labelVi: "Báo cáo", icon: BarChart3 },
   { href: "/admin/settings", label: "Settings", labelVi: "Cài đặt", icon: Settings2 },
