@@ -73,10 +73,13 @@ export function BookingConfirmPage() {
   );
 
   useEffect(() => {
+    if (expired) {
+      return;
+    }
     if (!draft.vehicleId || !draft.bookingDate || !draft.bookingTime || !expiresAt || expiresAt <= Date.now()) {
       router.replace("/customer/booking");
     }
-  }, [draft.bookingDate, draft.bookingTime, draft.vehicleId, expiresAt, router]);
+  }, [draft.bookingDate, draft.bookingTime, draft.vehicleId, expired, expiresAt, router]);
 
   const releaseHeldSlot = useCallback(async () => {
     if (!draft.bookingDate || !draft.bookingTime) {
@@ -127,6 +130,10 @@ export function BookingConfirmPage() {
     if (!paymentMethod) {
       return;
     }
+    if (!expiresAt || expiresAt <= Date.now()) {
+      handleExpired();
+      return;
+    }
     const nextDraft = { ...draft, paymentMethod };
     const errors = validateBookingDraft(nextDraft, summary, { requirePaymentMethod: true });
     if (Object.keys(errors).length > 0) {
@@ -138,6 +145,7 @@ export function BookingConfirmPage() {
       updateDraft({ paymentMethod });
       const booking = await createBookingMutation.mutateAsync(nextDraft);
       setLastCreatedBooking(booking);
+      resetDraft();
       toast.success("Booking confirmed.");
       router.push(`/customer/bookings/success?bookingId=${booking.bookingId}`);
     } catch (error) {
@@ -228,7 +236,7 @@ export function BookingConfirmPage() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to edit
             </Button>
-            <Button type="button" onClick={() => void handleConfirm()} disabled={createBookingMutation.isPending}>
+            <Button type="button" onClick={() => void handleConfirm()} disabled={createBookingMutation.isPending || isReleasing}>
               {createBookingMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Confirm booking
             </Button>

@@ -137,6 +137,13 @@ export function CustomerBookingForm() {
   const [showValidation, setShowValidation] = useState(false);
   const [voucherInputError, setVoucherInputError] = useState<string | null>(null);
 
+  const resetValidatedVoucher = () => {
+    setValidatedVoucher(null);
+    setStoredValidatedVoucher(null);
+    setVoucherInputError(null);
+    voucherMutation.reset();
+  };
+
   const isLoadingCatalog =
     vehiclesQuery.isPending ||
     packagesQuery.isPending ||
@@ -273,15 +280,12 @@ export function CustomerBookingForm() {
     const formatError = getVoucherCodeFormatError(normalizedCode);
 
     if (!normalizedCode || !summary) {
-      setValidatedVoucher(null);
-      setStoredValidatedVoucher(null);
-      setVoucherInputError(null);
+      resetValidatedVoucher();
       return;
     }
 
     if (formatError) {
-      setValidatedVoucher(null);
-      setStoredValidatedVoucher(null);
+      resetValidatedVoucher();
       setVoucherInputError(formatError);
       toast.error(formatError);
       return;
@@ -299,18 +303,14 @@ export function CustomerBookingForm() {
       updateDraft({ voucherCode: result.voucherCode });
       toast.success(`Voucher ${result.voucherCode} applied.`);
     } catch (error) {
-      setValidatedVoucher(null);
-      setStoredValidatedVoucher(null);
+      resetValidatedVoucher();
       toast.error(getDisplayErrorMessage(error));
     }
   };
 
   const clearVoucher = () => {
-    setValidatedVoucher(null);
-    setStoredValidatedVoucher(null);
-    setVoucherInputError(null);
+    resetValidatedVoucher();
     updateDraft({ voucherCode: "" });
-    voucherMutation.reset();
   };
 
   const handleSubmit = async () => {
@@ -333,8 +333,7 @@ export function CustomerBookingForm() {
   };
 
   const updateMode = (mode: BookingDraft["mode"]) => {
-    setValidatedVoucher(null);
-    setStoredValidatedVoucher(null);
+    resetValidatedVoucher();
     updateDraft({
       mode,
       packageId: mode === "PACKAGE" ? (packages[0]?.packageId ?? "") : "",
@@ -469,11 +468,14 @@ export function CustomerBookingForm() {
               <CustomerBookingSelect
                 options={packageOptions}
                 value={draft.packageId}
-                onValueChange={(packageId) => updateDraft({
-                  packageId,
-                  addonIds: [],
-                  voucherCode: "",
-                })}
+                onValueChange={(packageId) => {
+                  resetValidatedVoucher();
+                  updateDraft({
+                    packageId,
+                    addonIds: [],
+                    voucherCode: "",
+                  });
+                }}
                 placeholder="Select a package"
                 searchPlaceholder="Search package name..."
                 emptyText="No packages found."
@@ -504,7 +506,10 @@ export function CustomerBookingForm() {
                       key={item.comboId}
                       type="button"
                       className={optionCardClass(active)}
-                      onClick={() => updateDraft({ comboId: item.comboId, voucherCode: "" })}
+                      onClick={() => {
+                        resetValidatedVoucher();
+                        updateDraft({ comboId: item.comboId, voucherCode: "" });
+                      }}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
@@ -578,14 +583,15 @@ export function CustomerBookingForm() {
                       key={addon.addonId}
                       type="button"
                       className={optionCardClass(active)}
-                      onClick={() =>
+                      onClick={() => {
+                        resetValidatedVoucher();
                         updateDraft({
                           addonIds: active
                             ? draft.addonIds.filter((addonId) => addonId !== addon.addonId)
                             : [...draft.addonIds, addon.addonId],
                           voucherCode: "",
-                        })
-                      }
+                        });
+                      }}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
@@ -654,8 +660,7 @@ export function CustomerBookingForm() {
                 value={draft.voucherCode}
                 onChange={(event) => {
                   const nextValue = sanitizeVoucherCodeInput(event.target.value);
-                  setValidatedVoucher(null);
-                  setStoredValidatedVoucher(null);
+                  resetValidatedVoucher();
                   setVoucherInputError(getVoucherCodeFormatError(nextValue));
                   updateDraft({ voucherCode: nextValue });
                 }}
@@ -709,9 +714,7 @@ export function CustomerBookingForm() {
                         key={voucher.code}
                         type="button"
                         onClick={() => {
-                          setValidatedVoucher(null);
-                          setStoredValidatedVoucher(null);
-                          setVoucherInputError(null);
+                          resetValidatedVoucher();
                           updateDraft({ voucherCode: voucher.code });
                           // Automatically validate after setting state in next tick
                           setTimeout(() => validateVoucher(voucher.code), 50);

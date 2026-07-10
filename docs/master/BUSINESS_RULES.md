@@ -173,7 +173,7 @@
 | BR-74 | Starting wash transitions session to `IN_PROGRESS` and booking to `IN_PROGRESS`. | ✅ | `OperationsServiceImpl.startSession()` |
 | BR-75 | Completing wash transitions session to `COMPLETED`, booking to `COMPLETED`, records `awarded_points`, and triggers point-earn. | ✅ | `OperationsServiceImpl.completeSession()` |
 | BR-76 | First wash completion marks customer as no longer new. | ✅ | `OperationsServiceImpl.markCustomerAsNotNew()` |
-| BR-77 | Check-in past the configured no-show grace window marks booking as `NO_SHOW`; no-show forfeits applied voucher, records `ViolationRecord` type `NO_SHOW`, and sends customer warning notification. | ✅ | `BookingNoShowServiceImpl.markOverdueBookingsNoShow()` scheduled scan |
+| BR-77 | Check-in past the configured no-show grace window marks booking as `NO_SHOW`; no-show forfeits applied voucher, records `ViolationRecord` type `NO_SHOW`, and sends customer warning notification. | ✅ | `NoShowDetectionJob` delegates to `BookingNoShowServiceImpl.markOverdueBookingsNoShow()` |
 | BR-77a | When booking is marked `NO_SHOW`, the associated wash session (if any) is cancelled. | ✅ | `BookingNoShowServiceImpl.cancelNotCheckedInSessions()` |
 | BR-77b | After 2 NO_SHOW events within any rolling 30-day window, customer is automatically suspended for 14 days. | ❌ | Spec error — corrected here: no auto-suspend or voucher lockout rule is applied. |
 | BR-77c | When booking is marked `NO_SHOW`, any applied voucher is forfeited (`FORFEITED`) and never refunded. | ✅ | `voucherRedemptionService.forfeitVoucherForBooking()` |

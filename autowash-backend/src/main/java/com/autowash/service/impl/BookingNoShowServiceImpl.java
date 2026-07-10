@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,10 +64,6 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
 
     @Override
     @Transactional
-    @Scheduled(
-            fixedDelayString = "${autowash.booking.no-show.scan-delay-ms:60000}",
-            initialDelayString = "${autowash.booking.no-show.initial-delay-ms:60000}"
-    )
     public int markOverdueBookingsNoShow() {
         Instant now = Instant.now();
         Instant cutoff = now.minusSeconds(noShowGraceMinutes * 60);
