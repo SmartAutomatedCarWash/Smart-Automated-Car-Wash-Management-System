@@ -12,6 +12,7 @@ import {
   Loader2,
   Mail,
   Phone,
+  Star,
   User,
   XCircle,
 } from "lucide-react";
@@ -31,6 +32,8 @@ import {
 } from "@/features/bookings/hooks/use-bookings";
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
 import { ApplyPointsPanel } from "@/features/bookings/components/apply-points-panel";
+import { BookingCompletionPopup } from "@/features/bookings/components/booking-completion-popup";
+import { useBookingReviewCheck, useSubmitBookingReview } from "@/features/bookings/hooks/use-reviews";
 import type { BookingAddonSelection, BookingDetail } from "@/entities/bookings";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
@@ -55,6 +58,13 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const cancelBookingMutation = useCancelCustomerBooking(bookingId);
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [showReviewPopup, setShowReviewPopup] = useState(false);
+
+  const submitReviewMutation = useSubmitBookingReview();
+  const reviewCheckQuery = useBookingReviewCheck(
+    bookingId,
+    bookingQuery.data?.status === "COMPLETED" || bookingQuery.data?.washStatus === "COMPLETED"
+  );
 
   if (bookingQuery.isPending) {
     return (
@@ -142,6 +152,20 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     } catch (error) {
       toast.error(getDisplayErrorMessage(error));
     }
+  };
+
+  const handleSubmitReview = async (
+    stars: number,
+    comment: string,
+    images: { beforeImageUrl?: string | null; afterImageUrl?: string | null }
+  ) => {
+    await submitReviewMutation.mutateAsync({
+      bookingId,
+      rating: stars,
+      comment,
+      ...images,
+    });
+    toast.success(translate(language, "Đánh giá đã được gửi thành công!", "Review submitted successfully!"));
   };
 
   return (
@@ -290,6 +314,46 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
               <Button asChild variant="outline" className="w-full">
                 <Link href="/customer/bookings/new">{translate(language, "Đặt dịch vụ khác", "Book another service")}</Link>
               </Button>
+
+              {/* Review section — chỉ hiện khi COMPLETED */}
+              {(booking.status === "COMPLETED" || booking.washStatus === "COMPLETED") && (
+                <>
+                  {reviewCheckQuery.data?.hasReview ? (
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-emerald-700 font-black text-xs uppercase tracking-wider">
+                        <CheckCircle2 className="h-4 w-4" />
+                        {translate(language, "Đã đánh giá", "Review submitted")}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {[1,2,3,4,5].map((s) => (
+                          <Star
+                            key={s}
+                            className={`h-4 w-4 ${s <= (reviewCheckQuery.data?.reviewDetail?.rating ?? 0) ? "fill-amber-400 text-amber-400" : "text-slate-200"}`}
+                          />
+                        ))}
+                        <span className="text-xs font-bold text-slate-600 ml-1">
+                          {reviewCheckQuery.data?.reviewDetail?.rating}/5
+                        </span>
+                      </div>
+                      {reviewCheckQuery.data?.reviewDetail?.comment && (
+                        <p className="text-xs text-slate-600 italic">
+                          "{reviewCheckQuery.data.reviewDetail.comment}"
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={() => setShowReviewPopup(true)}
+                      className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold"
+                    >
+                      <Star className="h-4 w-4 mr-2" />
+                      {translate(language, "Viết đánh giá", "Write a Review")}
+                    </Button>
+                  )}
+                </>
+              )}
+
               {canCancelBooking ? (
                 <>
                   <Button
@@ -323,6 +387,17 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
               ) : null}
             </CardContent>
           </Card>
+
+          {/* Review Popup */}
+          {showReviewPopup && (
+            <BookingCompletionPopup
+              bookingId={bookingId}
+              pointsEarned={10}
+              isOpen={showReviewPopup}
+              onClose={() => setShowReviewPopup(false)}
+              onSubmitReview={handleSubmitReview}
+            />
+          )}
         </div>
       </div>
     </div>
