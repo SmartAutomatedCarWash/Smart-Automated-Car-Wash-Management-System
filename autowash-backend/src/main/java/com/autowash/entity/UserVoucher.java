@@ -79,8 +79,12 @@ public class UserVoucher {
     }
 
     public void forfeit() {
-        this.status = UserVoucherStatus.FORFEITED;
-        this.usedAt = Instant.now();
+        if (this.status == UserVoucherStatus.USED) {
+            this.status = UserVoucherStatus.FORFEITED;
+            if (this.usedAt == null) {
+                this.usedAt = Instant.now();
+            }
+        }
     }
 
     public void expire() {

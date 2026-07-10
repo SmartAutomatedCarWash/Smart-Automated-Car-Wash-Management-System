@@ -24,6 +24,7 @@ import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/customers/bookings")
 @Tag(name = "Bookings")
 @SecurityRequirement(name = "bearerAuth")
+@PreAuthorize("hasRole('CUSTOMER')")
 public class BookingController {
 
     private final BookingService bookingService;
@@ -89,6 +91,7 @@ public class BookingController {
     }
 
     @PostMapping("/{bookingId}/pay")
+    @PreAuthorize("denyAll()")
     @Operation(summary = "Mark booking payment as paid")
     public ApiResponse<PayBookingResponse> payBooking(
             @PathVariable String bookingId,

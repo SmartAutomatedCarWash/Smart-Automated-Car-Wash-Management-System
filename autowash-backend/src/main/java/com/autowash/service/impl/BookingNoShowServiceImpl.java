@@ -13,9 +13,11 @@ import com.autowash.repository.NotificationRepository;
 import com.autowash.repository.ViolationRecordRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.BookingNoShowService;
+import com.autowash.service.LoyaltyService;
 import com.autowash.service.VoucherRedemptionService;
 import com.autowash.service.WashSessionLifecycle;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -42,6 +44,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
     private final VoucherRedemptionService voucherRedemptionService;
     private final ViolationRecordRepository violationRecordRepository;
     private final NotificationRepository notificationRepository;
+    private final LoyaltyService loyaltyService;
     private final long noShowGraceMinutes;
 
     public BookingNoShowServiceImpl(
@@ -51,6 +54,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
             VoucherRedemptionService voucherRedemptionService,
             ViolationRecordRepository violationRecordRepository,
             NotificationRepository notificationRepository,
+            LoyaltyService loyaltyService,
             @Value("${autowash.booking.no-show.grace-minutes:15}") long noShowGraceMinutes
     ) {
         this.bookingRepository = bookingRepository;
@@ -59,6 +63,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
         this.voucherRedemptionService = voucherRedemptionService;
         this.violationRecordRepository = violationRecordRepository;
         this.notificationRepository = notificationRepository;
+        this.loyaltyService = loyaltyService;
         this.noShowGraceMinutes = noShowGraceMinutes;
     }
 
@@ -76,26 +81,22 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
         for (Booking booking : bookings) {
             BookingStatus oldStatus = booking.getStatus();
             booking.markNoShow();
+            cancelNotCheckedInSessions(booking, now);
+            int penaltyPoints = applyNoShowPenalty(booking, now);
             if (booking.getVoucherId() != null) {
                 voucherRedemptionService.forfeitVoucherForBooking(booking.getId());
             }
-            violationRecordRepository.save(new ViolationRecord(
-                    booking.getCustomer(),
-                    booking,
-                    "NO_SHOW",
-                    0,
-                    "Customer did not check in within " + noShowGraceMinutes + " minutes"
-            ));
             notificationRepository.save(Notification.builder()
                     .id(UUID.randomUUID())
                     .user(booking.getCustomer())
                     .title("Booking marked no-show")
-                    .message("Your booking at " + booking.getBookingTime() + " was marked no-show because you did not check in within the grace period.")
+                    .message("Your booking at " + booking.getBookingTime()
+                            + " was marked no-show because you did not check in within the grace period. "
+                            + penaltyPoints + " loyalty points were deducted.")
                     .type("NO_SHOW")
                     .read(false)
                     .createdAt(now)
                     .build());
-            cancelNotCheckedInSessions(booking, now);
             bookingStatusHistoryRepository.save(new BookingStatusHistory(
                     booking,
                     oldStatus.name(),
@@ -105,6 +106,25 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
             ));
         }
         return bookings.size();
+    }
+
+    private int applyNoShowPenalty(Booking booking, Instant now) {
+        Instant thirtyDaysAgo = now.minus(30, ChronoUnit.DAYS);
+        long previousNoShows = violationRecordRepository.countByCustomer_IdAndTypeAndCreatedAtAfter(
+                booking.getCustomer().getId(),
+                "NO_SHOW",
+                thirtyDaysAgo
+        );
+        int penaltyPoints = previousNoShows == 0 ? 50 : 100;
+        loyaltyService.postBonusTransaction(booking.getCustomer().getId(), -penaltyPoints, "No-show penalty");
+        violationRecordRepository.save(new ViolationRecord(
+                booking.getCustomer(),
+                booking,
+                "NO_SHOW",
+                penaltyPoints,
+                "Customer did not check in within " + noShowGraceMinutes + " minutes"
+        ));
+        return penaltyPoints;
     }
 
     private void cancelNotCheckedInSessions(Booking booking, Instant cancelledAt) {

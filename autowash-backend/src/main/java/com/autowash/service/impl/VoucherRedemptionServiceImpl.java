@@ -67,7 +67,7 @@ public class VoucherRedemptionServiceImpl implements VoucherRedemptionService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found", "USER_NOT_FOUND"));
 
-        VoucherTemplate template = voucherTemplateRepository.findById(voucherTemplateId)
+        VoucherTemplate template = voucherTemplateRepository.findLockedById(voucherTemplateId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Voucher template not found", "RESOURCE_NOT_FOUND"));
 
         if (template.getStatus() != ActiveStatus.ACTIVE) {
@@ -172,6 +172,13 @@ public class VoucherRedemptionServiceImpl implements VoucherRedemptionService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher is not available or expired", "VOUCHER_UNAVAILABLE");
         }
 
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", "RESOURCE_NOT_FOUND"));
+
+        if (!booking.getCustomer().getId().equals(userVoucher.getUser().getId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Voucher does not belong to booking customer", "VOUCHER_OWNER_MISMATCH");
+        }
+
         if (userVoucher.getVoucherTemplate().isNewCustomerOnly()) {
             long bookingCount = bookingRepository.countByCustomer(userVoucher.getUser());
             // If the booking is already saved, the count includes it. So if count > 1, they are not a new customer.
@@ -186,9 +193,6 @@ public class VoucherRedemptionServiceImpl implements VoucherRedemptionService {
         if (!isVoucherApplicable(userVoucher.getVoucherTemplate(), userVoucher.getUser(), userTier, totalAmount, serviceIds, true)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher is not applicable for this order", "VOUCHER_NOT_APPLICABLE");
         }
-
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", "RESOURCE_NOT_FOUND"));
 
         long discountAmount = calculateDiscountAmount(userVoucher.getVoucherTemplate(), totalAmount, serviceIds);
         
