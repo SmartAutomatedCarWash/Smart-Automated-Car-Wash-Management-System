@@ -16,6 +16,7 @@ public interface VoucherRedemptionService {
     
     void releaseVoucher(UUID userVoucherId);
     void releaseVoucherForBooking(UUID bookingId);
+    void forfeitVoucherForBooking(UUID bookingId);
     
     UUID getTemplateIdForUserVoucher(UUID userVoucherId);
     

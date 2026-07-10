@@ -1,6 +1,7 @@
 package com.autowash.dto;
 
 import com.autowash.entity.enums.ActiveStatus;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -30,7 +31,7 @@ public record AdminPackageRequest(
 
         ActiveStatus status,
 
-        List<PackageOptionRequest> options
+        List<@Valid PackageOptionRequest> options
 ) {
     public record PackageOptionRequest(
             @NotBlank(message = "Option ID is required")

@@ -85,31 +85,10 @@ public class CustomerComboServiceImpl implements CustomerComboService {
 
     @Transactional
     public PurchaseCustomerComboResponse purchaseCombo(User customer, PurchaseCustomerComboRequest request) {
-        Combo Combo = ComboRepository.findByIdAndActiveTrue(request.comboId())
-                .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo is not available", "BUSINESS_RULE_VIOLATION"));
-
-        Instant now = Instant.now();
-        CustomerCombo combo = customerComboRepository.save(new CustomerCombo(
-                UUID.randomUUID(),
-                customer,
-                Combo.getId(),
-                Math.max(Combo.getMaxUsages() == null ? 0 : Combo.getMaxUsages(), 1),
-                now,
-                expiresAt(now, Combo)
-        ));
-
-        return new PurchaseCustomerComboResponse(
-                combo.getId().toString(),
-                Combo.getId().toString(),
-                Combo.getName(),
-                Combo.getPrice(),
-                request.paymentMethod(),
-                "PENDING",
-                combo.getTotalUsages(),
-                combo.getRemainingUsages(),
-                combo.getActivatedAt(),
-                combo.getExpiresAt(),
-                combo.getCreatedAt()
+        throw new ApiException(
+                HttpStatus.FORBIDDEN,
+                "Combo purchase requires verified payment before activation",
+                "PAYMENT_VERIFICATION_REQUIRED"
         );
     }
 
@@ -121,6 +100,15 @@ public class CustomerComboServiceImpl implements CustomerComboService {
         }
         combo.consumeUsage();
         customerComboUsageRepository.save(new CustomerComboUsage(combo.getId(), parsedBookingId));
+    }
+
+    @Transactional
+    public void releaseUsageForBooking(String bookingId) {
+        UUID parsedBookingId = UUID.fromString(bookingId);
+        customerComboUsageRepository.findByBookingId(parsedBookingId).ifPresent(usage -> {
+            customerComboRepository.findById(usage.getCustomerComboId()).ifPresent(CustomerCombo::restoreUsage);
+            customerComboUsageRepository.delete(usage);
+        });
     }
 
     @Transactional

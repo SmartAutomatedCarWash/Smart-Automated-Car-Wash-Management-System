@@ -71,6 +71,15 @@ public class CustomerCombo {
         }
     }
 
+    public void restoreUsage() {
+        if (remainingUsages < totalUsages) {
+            remainingUsages++;
+        }
+        if (status == CustomerComboStatus.USED_UP && remainingUsages > 0 && !isExpired()) {
+            status = CustomerComboStatus.ACTIVE;
+        }
+    }
+
     public void markExpired() {
         this.status = CustomerComboStatus.EXPIRED;
     }

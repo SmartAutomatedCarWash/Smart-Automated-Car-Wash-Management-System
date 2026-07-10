@@ -84,8 +84,8 @@ class BookingPayAutoAssignIntegrationTest {
 
         String bookingId = createResponse.path("data").path("bookingId").asText();
 
-        mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/pay", bookingId)
-                        .header("Authorization", "Bearer " + accessToken)
+        mockMvc.perform(post("/api/v1/operations/bookings/{bookingId}/pay", bookingId)
+                        .with(authenticatedStaff())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "transactionRef": "TEST-PAY-001" }
