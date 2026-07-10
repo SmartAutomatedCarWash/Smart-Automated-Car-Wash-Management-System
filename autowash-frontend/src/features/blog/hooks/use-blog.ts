@@ -134,12 +134,12 @@ export function useCreateAdminArticle() {
   });
 }
 
-export function useUpdateAdminArticle(articleId: string) {
+export function useUpdateAdminArticle(_articleId: string) {
   const queryClient = useQueryClient();
   return useMutation<BlogArticle, ApiErrorResponse, any>({
-    mutationFn: (payload) => updateAdminArticle(articleId, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminArticleDetailQueryKey(articleId) });
+    mutationFn: ({ articleId, ...payload }) => updateAdminArticle(articleId, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminArticleDetailQueryKey(variables.articleId) });
       queryClient.invalidateQueries({ queryKey: adminArticlesQueryKey() });
       queryClient.invalidateQueries({ queryKey: blogArticlesQueryKey() });
     },
