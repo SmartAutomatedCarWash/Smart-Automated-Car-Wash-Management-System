@@ -105,8 +105,10 @@ export function buildBookingSummary(
 export function validateBookingDraft(
   draft: BookingDraft,
   summary: BookingSummary | null,
+  options: { requirePaymentMethod?: boolean } = {},
 ): BookingDraftErrors {
   const errors: BookingDraftErrors = {};
+  const requirePaymentMethod = options.requirePaymentMethod ?? true;
 
   if (!draft.vehicleId) {
     errors.vehicleId = "Please select a vehicle.";
@@ -123,7 +125,7 @@ export function validateBookingDraft(
   if (!draft.bookingTime) {
     errors.bookingTime = "Please choose a booking time.";
   }
-  if (!draft.paymentMethod) {
+  if (requirePaymentMethod && !draft.paymentMethod) {
     errors.paymentMethod = "Please select a payment method.";
   }
   if (draft.voucherCode.trim().length > 0) {

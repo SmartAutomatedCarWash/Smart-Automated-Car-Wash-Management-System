@@ -1,5 +1,10 @@
 # AutoWash Pro — Business Rules (Source of Truth)
 
+> **Cập nhật 2026-07-10**
+> - **Booking Session**: Added two-step booking confirmation flow using slot hold `expiresAt`.
+> - **Cancellation / No-show Policy**: Removed loyalty-point cancellation penalties; voucher refund/forfeit plus `ViolationRecord` is authoritative.
+> - **Service / Package / Combo**: Clarified Package and Combo composition through Service join tables and active `options[].optionId` validation.
+
 > **Cập nhật 2026‑07‑09**
 > - **Blog System**: Added BR‑BL‑01 to BR‑BL‑06 — Blog guides with likes, comments, and admin management.
 > - **Review System**: Updated BR‑151 to BR‑153 (now ✅ implemented), added BR‑RV‑01 to BR‑RV‑06 — Review stats, admin analytics, and booking review status check.
@@ -12,7 +17,7 @@
 > - **BR‑124**: Admin UI `Discount value` chuyển thành dropdown các mức phần trăm (5 %‑70 %) khi loại giảm là **PERCENT**.
 
 
-> **Version:** 2.1 | **Last updated:** 2026-07-09
+> **Version:** 2.1 | **Last updated:** 2026-07-10
 > **Scope:** Backend-enforced rules only. Frontend-only prototype behaviors are labelled `[Frontend]`.
 > **Status legend:**
 > - ✅ Implemented in backend
@@ -142,9 +147,13 @@
 | BR | Rule | Status | Implementation |
 |---|---|---|---|
 | BR-61 | Booking confirmation status is derived: `PENDING`→`PENDING`, `CONFIRMED/IN_PROGRESS/COMPLETED`→`VERIFIED`, `CANCELLED`→`CANCELLED`, `NO_SHOW`→`EXPIRED`. | ✅ | `Booking.getConfirmationStatus()` (transient) |
-| BR-62 | Cancellation is only allowed from `PENDING` or `CONFIRMED` status. | ✅ | `CANCELLABLE_BOOKING_STATUSES` in `BookingServiceImpl` → `RESOURCE_LOCKED` |
+| BR-62 | Cancellation is only allowed from `PENDING` or `CONFIRMED` status. Cancellation policy never deducts loyalty points; it only applies voucher refund/forfeit and violation recording. | ✅ | `CANCELLABLE_BOOKING_STATUSES` and voucher-only cancellation handling in `BookingServiceImpl` |
 | BR-63 | Cancellation is blocked when booking starts in less than 2 hours. | ⚠️ | Time check not implemented. See BR-S07. |
-| BR-64 | Auto-block after repeated cancellations within rolling window. | ❌ | Out of scope per `LOYALTY_TIER_RESEARCH.md` (Bỏ logic tính phạt hủy lịch). |
+| BR-64 | Late cancellation does not deduct loyalty points. It applies voucher policy by time before appointment and records `ViolationRecord` for late cancellation. | ✅ | `BookingServiceImpl.cancelBooking()` calls `releaseVoucherForBooking()` or `forfeitVoucherForBooking()` and records `LATE_CANCEL` |
+| BR-64a | Cancellation > 24h before appointment returns applied voucher to `AVAILABLE` and records no violation. | ✅ | `BookingServiceImpl.cancelBooking()` → `voucherRedemptionService.releaseVoucherForBooking()` |
+| BR-64b | Cancellation 6-24h before appointment forfeits applied voucher and records `ViolationRecord` type `LATE_CANCEL`. | ✅ | `BookingServiceImpl.cancelBooking()` → `forfeitVoucherForBooking()` + `ViolationRecord` |
+| BR-64c | Cancellation 1-6h before appointment forfeits applied voucher and records `ViolationRecord` type `LATE_CANCEL`. | ✅ | `BookingServiceImpl.cancelBooking()` → `forfeitVoucherForBooking()` + `ViolationRecord` |
+| BR-64d | Cancellation < 1h before appointment forfeits applied voucher and records `ViolationRecord` type `LATE_CANCEL`. | ✅ | `BookingServiceImpl.cancelBooking()` → `forfeitVoucherForBooking()` + `ViolationRecord` |
 | BR-65 | Points can only be applied to a booking in `CONFIRMED` status (before check-in). | ✅ | `BookingServiceImpl.applyPoints()` |
 | BR-66 | Points can only be applied once per booking. | ✅ | Checks `pointsRedeemed > 0` → `POINTS_ALREADY_APPLIED` |
 | BR-67 | Points discount cannot exceed booking final amount. | ✅ | `BookingServiceImpl.applyPoints()` |
@@ -164,9 +173,12 @@
 | BR-74 | Starting wash transitions session to `IN_PROGRESS` and booking to `IN_PROGRESS`. | ✅ | `OperationsServiceImpl.startSession()` |
 | BR-75 | Completing wash transitions session to `COMPLETED`, booking to `COMPLETED`, records `awarded_points`, and triggers point-earn. | ✅ | `OperationsServiceImpl.completeSession()` |
 | BR-76 | First wash completion marks customer as no longer new. | ✅ | `OperationsServiceImpl.markCustomerAsNotNew()` |
-| BR-77 | Check-in past 20 minutes after scheduled time marks booking as `NO_SHOW`. | ⚠️ | No time threshold logic. See BR-S08. |
-| BR-77a | When booking is marked `NO_SHOW`, the associated wash session (if any) is cancelled. | ⚠️ | Not enforced. See BR-S08. |
-| BR-77b | After 2 NO_SHOW events within any rolling 30-day window, customer is automatically suspended for 14 days. | ⚠️ | Not enforced. See BR-S09. |
+| BR-77 | Check-in past the configured no-show grace window marks booking as `NO_SHOW`; no-show forfeits applied voucher, records `ViolationRecord` type `NO_SHOW`, and sends customer warning notification. | ✅ | `BookingNoShowServiceImpl.markOverdueBookingsNoShow()` scheduled scan |
+| BR-77a | When booking is marked `NO_SHOW`, the associated wash session (if any) is cancelled. | ✅ | `BookingNoShowServiceImpl.cancelNotCheckedInSessions()` |
+| BR-77b | After 2 NO_SHOW events within any rolling 30-day window, customer is automatically suspended for 14 days. | ❌ | Spec error — corrected here: no auto-suspend or voucher lockout rule is applied. |
+| BR-77c | When booking is marked `NO_SHOW`, any applied voucher is forfeited (`FORFEITED`) and never refunded. | ✅ | `voucherRedemptionService.forfeitVoucherForBooking()` |
+| BR-77d | When booking is marked `NO_SHOW`, system creates a `ViolationRecord` type `NO_SHOW` for the customer. | ✅ | `BookingNoShowServiceImpl` |
+| BR-77e | When booking is marked `NO_SHOW`, system sends a customer warning notification. | ✅ | `NotificationRepository.save()` in `BookingNoShowServiceImpl` |
 | BR-78 | Customer can track their active wash session in real time (status, staff, projected points, timestamps). | ✅ | `CustomerWashTrackingServiceImpl.getActiveSession()` |
 | BR-78a | Staff or Admin can cancel an active wash session (from any non-terminal status) with a mandatory reason. Booking reverts to `CONFIRMED`. | ⚠️ | No cancel-session endpoint exists. See BR-S19. |
 
@@ -219,6 +231,7 @@
 | BR | Rule | Status | Implementation |
 |---|---|---|---|
 | BR-102 | If customer already owns an active non-expired combo, booking uses it (base_amount = 0). | ✅ | `CustomerComboServiceImpl.findActiveOwnedCombo()` |
+| BR-102a | Package and Combo are both composed from Service records through join tables (`package_services`, `combo_services`). Service is not booked directly. | ✅ | `CatalogServiceImpl.requireActivePackageOptions()` / `requireActiveComboOptions()`; frontend maps `/services` only as selectable add-ons/options |
 | BR-103 | If customer has no active combo, system auto-purchases one at booking time. | ✅ | `BookingServiceImpl.createBooking()` → `customerComboService.createOwnedCombo()` |
 | BR-104 | Combo expiration = `activated_at + duration_days × 86400s`. Default duration is 30 days. | ✅ | `CustomerComboServiceImpl.expiresAt()` |
 | BR-105 | Expired combo is soft-marked `EXPIRED` on first access attempt. | ✅ | `CustomerComboServiceImpl.findActiveOwnedCombo()` → `combo.markExpired()` |
@@ -226,6 +239,7 @@
 | BR-107 | Each booking usage is recorded in `customer_combo_usages` (idempotent by `booking_id`). | ✅ | `CustomerComboServiceImpl.recordUsage()` with `existsByBookingId()` guard |
 | BR-108 | `remaining_usages` constraint: `0 ≤ remaining_usages ≤ total_usages`. | ✅ | DB CHECK constraint in `customer_combos` |
 | BR-109 | Combo options must be active, belong to the combo, and have no duplicates. | ✅ | `CatalogServiceImpl.requireActiveComboOptions()` |
+| BR-109a | `options[].optionId` in package/combo admin payloads must reference an existing active Service ID; join rows store that Service FK in `package_services` or `combo_services`. | ✅ | `AdminCatalogManagementServiceImpl` and `AdminComboServiceImpl.replaceOptions()` validate active services before persisting join rows |
 | BR-110 | Admin can deactivate a combo (soft-delete → `INACTIVE`). | ✅ | `AdminComboServiceImpl.deleteCombo()` → `combo.deactivate()` |
 | BR-111 | Duplicate service options in a combo definition are rejected. | ✅ | `AdminComboServiceImpl.replaceOptions()` with `LinkedHashSet` dedup |
 

@@ -222,6 +222,17 @@ public class VoucherRedemptionServiceImpl implements VoucherRedemptionService {
     }
 
     @Override
+    @Transactional
+    public void forfeitVoucherForBooking(UUID bookingId) {
+        userVoucherRepository.findByBookingId(bookingId).ifPresent(uv -> {
+            if (uv.getStatus() == UserVoucherStatus.USED) {
+                uv.forfeit();
+                userVoucherRepository.save(uv);
+            }
+        });
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public UUID getTemplateIdForUserVoucher(UUID userVoucherId) {
         UserVoucher userVoucher = userVoucherRepository.findById(userVoucherId)
