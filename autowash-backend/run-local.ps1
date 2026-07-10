@@ -28,4 +28,4 @@ Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue |
 Start-Sleep -Seconds 2
 
 Write-Host "Starting backend on http://localhost:8080 ..."
-cmd /c "mvn -Dspring-boot.run.profiles=local spring-boot:run"
+cmd /c "mvnw.cmd spring-boot:run"
