@@ -152,7 +152,7 @@ public class BookingServiceImpl implements BookingService {
         LocalTime requestedBookingTime = LocalTime.parse(request.bookingTime());
         SystemSettings settings = loadSettings();
         validateBookingTime(request.bookingDate(), requestedBookingTime, settings);
-        validateSlotCapacity(request.bookingDate().atTime(requestedBookingTime), settings.getMaxBookingsPerTimeSlot());
+        validateSlotCapacity(request.bookingDate().atTime(requestedBookingTime), settings.getMaxBookingsPerTimeSlot(), user);
         if (BookingRepository.countByCustomerAndStatusIn(user, ACTIVE_BOOKING_STATUSES) >= 3) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Maximum active bookings exceeded", "MAX_ACTIVE_BOOKINGS_EXCEEDED");
         }
@@ -352,7 +352,6 @@ public class BookingServiceImpl implements BookingService {
         java.time.Duration timeUntilScheduled = java.time.Duration.between(Instant.now(), booking.getScheduledAt());
         long hoursUntilScheduled = timeUntilScheduled.toHours();
         
-        int pointsPenalty = 0;
         String voucherRefundStatus = "NONE";
         
         if (hoursUntilScheduled > 24) {
@@ -362,25 +361,19 @@ public class BookingServiceImpl implements BookingService {
                 voucherRefundStatus = "REFUNDED";
             }
         } else if (hoursUntilScheduled >= 6) {
-            pointsPenalty = 5;
-            loyaltyService.postBonusTransaction(booking.getCustomer().getId(), -pointsPenalty, "Cancellation penalty (6-24h)");
-            violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", pointsPenalty, "Cancelled between 6 and 24 hours"));
+            violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled between 6 and 24 hours"));
             if (booking.getVoucherId() != null) {
                 voucherRedemptionService.forfeitVoucherForBooking(booking.getId());
                 voucherRefundStatus = "FORFEITED";
             }
         } else if (hoursUntilScheduled >= 1) {
-            pointsPenalty = 10;
-            loyaltyService.postBonusTransaction(booking.getCustomer().getId(), -pointsPenalty, "Cancellation penalty (1-6h)");
-            violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", pointsPenalty, "Cancelled between 1 and 6 hours"));
+            violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled between 1 and 6 hours"));
             if (booking.getVoucherId() != null) {
                 voucherRedemptionService.forfeitVoucherForBooking(booking.getId());
                 voucherRefundStatus = "FORFEITED";
             }
         } else {
-            pointsPenalty = 20;
-            loyaltyService.postBonusTransaction(booking.getCustomer().getId(), -pointsPenalty, "Cancellation penalty (<1h)");
-            violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", pointsPenalty, "Cancelled under 1 hour"));
+            violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled under 1 hour"));
             if (booking.getVoucherId() != null) {
                 voucherRedemptionService.forfeitVoucherForBooking(booking.getId());
                 voucherRefundStatus = "FORFEITED";
@@ -395,7 +388,7 @@ public class BookingServiceImpl implements BookingService {
                 0L,
                 "NONE",
                 voucherRefundStatus,
-                pointsPenalty > 0 ? "Refund processed with " + pointsPenalty + " points penalty." : "Refund processed with no penalty."
+                "Cancellation processed according to voucher policy."
         );
     }
 
@@ -482,7 +475,7 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private void validateSlotCapacity(LocalDateTime scheduledAt, int maxBookingsPerTimeSlot) {
+    private void validateSlotCapacity(LocalDateTime scheduledAt, int maxBookingsPerTimeSlot, User customerToExclude) {
         LocalDateTime slotStartLocal = scheduledAt.withMinute(0).withSecond(0).withNano(0);
         LocalDateTime slotEndLocal = slotStartLocal.plusHours(1);
         Instant slotStart = slotStartLocal.atZone(java.time.ZoneId.systemDefault()).toInstant();
@@ -493,7 +486,9 @@ public class BookingServiceImpl implements BookingService {
                 slotEnd,
                 Set.of(BookingStatus.CANCELLED, BookingStatus.NO_SHOW)
         );
-        long activeHolds = slotHoldRepository.countActiveHoldsForSlot(slotStart, slotEnd, Instant.now());
+        long activeHolds = customerToExclude == null
+                ? slotHoldRepository.countActiveHoldsForSlot(slotStart, slotEnd, Instant.now())
+                : slotHoldRepository.countActiveHoldsForSlotExcludingCustomer(slotStart, slotEnd, Instant.now(), customerToExclude);
         if (existingBookings + activeHolds >= maxBookingsPerTimeSlot) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking slot is full", "BOOKING_SLOT_FULL");
         }
