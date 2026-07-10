@@ -78,6 +78,11 @@ public class UserVoucher {
         this.booking = null;
     }
 
+    public void forfeit() {
+        this.status = UserVoucherStatus.FORFEITED;
+        this.usedAt = Instant.now();
+    }
+
     public void expire() {
         if (this.status == UserVoucherStatus.AVAILABLE) {
             this.status = UserVoucherStatus.EXPIRED;

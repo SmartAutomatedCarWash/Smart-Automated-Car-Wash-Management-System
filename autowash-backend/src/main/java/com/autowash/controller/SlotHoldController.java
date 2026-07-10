@@ -1,6 +1,7 @@
 package com.autowash.controller;
 
 import com.autowash.dto.HoldSlotRequest;
+import com.autowash.dto.HoldSlotResponse;
 import com.autowash.service.CurrentUserService;
 import com.autowash.service.SlotHoldService;
 import java.time.LocalDate;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/v1/bookings/hold-slot")
+@RequestMapping({"/api/v1/slots/hold", "/api/v1/bookings/hold-slot"})
 public class SlotHoldController {
 
     private final SlotHoldService slotHoldService;
@@ -30,10 +31,10 @@ public class SlotHoldController {
 
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ResponseEntity<Void> holdSlot(@RequestBody @Valid HoldSlotRequest request) {
+    public ResponseEntity<HoldSlotResponse> holdSlot(@RequestBody @Valid HoldSlotRequest request) {
         java.time.Instant slotTime = calculateSlotTime(request.bookingDate(), request.bookingTime());
-        slotHoldService.holdSlot(currentUserService.getCurrentUser().getId(), slotTime);
-        return ResponseEntity.noContent().build();
+        java.time.Instant expiresAt = slotHoldService.holdSlot(currentUserService.getCurrentUser().getId(), slotTime);
+        return ResponseEntity.ok(new HoldSlotResponse(slotTime, expiresAt));
     }
 
     @DeleteMapping

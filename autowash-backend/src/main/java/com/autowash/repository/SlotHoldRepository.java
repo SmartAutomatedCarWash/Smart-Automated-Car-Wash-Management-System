@@ -15,6 +15,14 @@ public interface SlotHoldRepository extends JpaRepository<SlotHold, UUID> {
     @Query("SELECT COUNT(s) FROM SlotHold s WHERE s.slotTime >= :slotStart AND s.slotTime < :slotEnd AND s.expiresAt > :now")
     long countActiveHoldsForSlot(@Param("slotStart") Instant slotStart, @Param("slotEnd") Instant slotEnd, @Param("now") Instant now);
 
+    @Query("SELECT COUNT(s) FROM SlotHold s WHERE s.slotTime >= :slotStart AND s.slotTime < :slotEnd AND s.expiresAt > :now AND s.customer <> :customer")
+    long countActiveHoldsForSlotExcludingCustomer(
+            @Param("slotStart") Instant slotStart,
+            @Param("slotEnd") Instant slotEnd,
+            @Param("now") Instant now,
+            @Param("customer") User customer
+    );
+
     Optional<SlotHold> findByCustomerAndSlotTime(User customer, Instant slotTime);
 
     @Modifying

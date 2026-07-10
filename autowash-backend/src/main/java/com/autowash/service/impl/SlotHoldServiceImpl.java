@@ -37,12 +37,18 @@ public class SlotHoldServiceImpl implements SlotHoldService {
 
     @Override
     @Transactional
-    public void holdSlot(UUID customerId, Instant slotTime) {
+    public Instant holdSlot(UUID customerId, Instant slotTime) {
         User customer = userRepository.findById(customerId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Customer not found", "RESOURCE_NOT_FOUND"));
 
-        if (slotHoldRepository.findByCustomerAndSlotTime(customer, slotTime).isPresent()) {
-            return; // Already holding this slot
+        Instant now = Instant.now();
+        var existingHold = slotHoldRepository.findByCustomerAndSlotTime(customer, slotTime);
+        if (existingHold.isPresent()) {
+            SlotHold hold = existingHold.get();
+            if (hold.getExpiresAt().isAfter(now)) {
+                return hold.getExpiresAt();
+            }
+            slotHoldRepository.delete(hold);
         }
 
         SystemSettings settings = systemSettingsRepository.findById(1)
@@ -50,8 +56,9 @@ public class SlotHoldServiceImpl implements SlotHoldService {
 
         validateSlotCapacity(slotTime, settings.getMaxBookingsPerTimeSlot());
 
-        SlotHold hold = new SlotHold(customer, slotTime, Instant.now().plus(15, ChronoUnit.MINUTES));
+        SlotHold hold = new SlotHold(customer, slotTime, now.plus(15, ChronoUnit.MINUTES));
         slotHoldRepository.save(hold);
+        return hold.getExpiresAt();
     }
 
     @Override
