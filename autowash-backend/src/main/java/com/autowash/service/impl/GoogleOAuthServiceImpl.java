@@ -123,7 +123,13 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
         if (existingOAuth.isPresent()) {
             // Sync profile and mark READY immediately
             User user = existingOAuth.get().getUser();
-            if (googleUser.avatarUrl() != null) user.setAvatarUrl(googleUser.avatarUrl());
+            // Only update avatar from Google if user hasn't uploaded a custom avatar (R2)
+            boolean hasCustomAvatar = user.getAvatarUrl() != null
+                    && !user.getAvatarUrl().contains("googleusercontent.com")
+                    && !user.getAvatarUrl().contains("lh3.google");
+            if (googleUser.avatarUrl() != null && !hasCustomAvatar) {
+                user.setAvatarUrl(googleUser.avatarUrl());
+            }
             ticket.markReady(googleUser.subject(), googleUser.email(),
                     googleUser.fullName(), googleUser.avatarUrl());
         } else {
