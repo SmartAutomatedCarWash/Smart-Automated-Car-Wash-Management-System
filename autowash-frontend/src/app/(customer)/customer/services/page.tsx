@@ -80,9 +80,15 @@ export default function ServiceCatalogPage() {
       description: combo.description || t("Gói combo tiết kiệm cho nhiều lần sử dụng.", "Cost-saving combo for multiple usages."),
       price: combo.basePrice,
       originalPrice: combo.basePrice,
-      benefits: combo.benefits || [t("Tiết kiệm lên tới 30%", "Save up to 30%"), t("Ưu tiên đặt chỗ trước", "Priority slot reservation")],
+      benefits: (combo.benefits && combo.benefits.length > 0)
+        ? combo.benefits
+        : ((combo as any).services?.map((s: any) => s.name) ?? [t("Tiết kiệm lên tới 30%", "Save up to 30%"), t("Ưu tiên đặt chỗ trước", "Priority slot reservation")]),
       duration: `${combo.maxServices} ${t("Lượt dùng", "Usages")}`,
-      images: combo.image ? [combo.image] : [],
+      images: combo.imageUrls && combo.imageUrls.length > 0
+        ? combo.imageUrls
+        : combo.image
+          ? [combo.image]
+          : [],
     }));
 
 
@@ -152,6 +158,16 @@ export default function ServiceCatalogPage() {
                 <p className="text-sm leading-relaxed text-slate-650 max-w-xl">
                   {featuredItem.description}
                 </p>
+                {/* Ảnh featured item */}
+                {featuredItem.images && featuredItem.images.length > 0 && (
+                  <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+                    <img
+                      src={featuredItem.images[0]}
+                      alt={featuredItem.name}
+                      className="h-48 w-full object-cover"
+                    />
+                  </div>
+                )}
                 <div className="grid gap-2 sm:grid-cols-2">
                   {featuredItem.benefits.slice(0, 4).map((benefit, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-700">
@@ -226,8 +242,18 @@ export default function ServiceCatalogPage() {
         ) : (
           <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredItems.map((item) => (
-              <Card key={item.id} onClick={() => setSelectedItem(item)} className="overflow-hidden rounded-3xl border border-black/[0.04] bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group cursor-pointer">
-                <div className="space-y-4">
+              <Card key={item.id} onClick={() => setSelectedItem(item)} className="overflow-hidden rounded-3xl border border-black/[0.04] bg-white shadow-sm hover:shadow-md transition-all duration-300 flex flex-col group cursor-pointer">
+                {/* Ảnh thumbnail */}
+                {item.images && item.images.length > 0 && (
+                  <div className="w-full aspect-video overflow-hidden bg-slate-100 shrink-0">
+                    <img
+                      src={item.images[0]}
+                      alt={item.name}
+                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                )}
+                <div className="p-6 flex flex-col flex-1 gap-4">
                   <div className="flex items-start justify-between gap-4">
                     <span className={cn(
                       "px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider text-white",
@@ -257,27 +283,26 @@ export default function ServiceCatalogPage() {
                       </div>
                     ))}
                   </div>
-                </div>
 
-                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
-                  <div className="space-y-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 block uppercase">
-                      {t("Giá bán", "Price")}
-                    </span>
-                    <span className="text-xl font-black text-slate-950">
-                      {formatBookingCurrency(item.price)}
-                    </span>
+                  <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-bold text-slate-400 block uppercase">
+                        {t("Giá bán", "Price")}
+                      </span>
+                      <span className="text-xl font-black text-slate-950">
+                        {formatBookingCurrency(item.price)}
+                      </span>
+                    </div>
+                    <Button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleQuickBook(item);
+                      }}
+                      className="rounded-xl bg-[#0566D9]/10 text-[#0566D9] hover:bg-[#0566D9] hover:text-white px-5 py-2 text-xs font-black shadow-none transition-all duration-200"
+                    >
+                      {t("Quick Book", "Quick Book")}
+                    </Button>
                   </div>
-
-                  <Button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleQuickBook(item);
-                    }}
-                    className="rounded-xl bg-[#0566D9]/10 text-[#0566D9] hover:bg-[#0566D9] hover:text-white px-5 py-2 text-xs font-black shadow-none transition-all duration-200"
-                  >
-                    {t("Quick Book", "Quick Book")}
-                  </Button>
                 </div>
               </Card>
             ))}

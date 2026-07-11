@@ -57,6 +57,7 @@ export type BookingCombo = {
   maxServices: number;
   benefits: string[];
   image: string | null;
+  imageUrls?: string[] | null;
   isActive: boolean;
   canUpgrade: boolean;
   upgradePriceFrom: number;
