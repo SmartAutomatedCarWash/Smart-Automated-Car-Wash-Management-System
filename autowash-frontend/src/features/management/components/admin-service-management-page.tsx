@@ -799,9 +799,9 @@ function LiveCombosPanel() {
                       <span className="rounded-full bg-white px-2.5 py-1">{combo.durationDays} {translate(language, "ngày", "days")}</span>
                       <span className="rounded-full bg-white px-2.5 py-1">{combo.maxServices} {translate(language, "dịch vụ", "services")}</span>
                     </div>
-                    {combo.benefits.length > 0 ? (
+                    {(combo.benefits ?? []).length > 0 ? (
                       <div className="flex flex-wrap gap-2">
-                        {combo.benefits.map((benefit) => (
+                        {(combo.benefits ?? []).map((benefit) => (
                           <span key={`${combo.comboId}-${benefit}`} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600">
                             {benefit}
                           </span>
