@@ -119,8 +119,8 @@ class WashCompletionSummaryIntegrationTest {
 
     private String createVerifiedBooking(String accessToken, String vehicleId) throws Exception {
         String bookingId = createBooking(accessToken, vehicleId).path("data").path("bookingId").asText();
-        mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/pay", bookingId)
-                        .header("Authorization", "Bearer " + accessToken)
+        mockMvc.perform(post("/api/v1/operations/bookings/{bookingId}/pay", bookingId)
+                        .with(authenticatedAdmin())
                         .contentType("application/json")
                         .content("""
         { "transactionRef": "TXN_COMPLETION" }

@@ -19,6 +19,8 @@ import type {
   VoucherValidationRequest,
   VoucherValidationResult,
   WashTrackingSession,
+  HoldSlotRequest,
+  HoldSlotResponse,
 } from "@/entities/bookings";
 import { buildCreateBookingPayload } from "@/features/bookings/lib/booking-format";
 import type { ApiSuccessResponse } from "@/shared/types/api.types";
@@ -73,6 +75,18 @@ export function createCustomerBooking(draft: BookingDraft) {
     url: "/customers/bookings",
     data: buildCreateBookingPayload(draft),
   });
+}
+
+export function holdBookingSlot(payload: HoldSlotRequest) {
+  return apiRequest<HoldSlotResponse, HoldSlotRequest>({
+    method: "POST",
+    url: "/slots/hold",
+    data: payload,
+  });
+}
+
+export function releaseBookingSlot(payload: HoldSlotRequest) {
+  return apiClient.delete("/slots/hold", { data: payload });
 }
 
 export async function purchaseCustomerCombo(payload: PurchaseCustomerComboRequest) {

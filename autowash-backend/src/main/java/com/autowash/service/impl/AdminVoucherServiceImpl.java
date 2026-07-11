@@ -213,9 +213,9 @@ public class AdminVoucherServiceImpl implements AdminVoucherService {
         if (serviceIds == null || serviceIds.isEmpty()) {
             return;
         }
-        for (UUID serviceId : serviceIds) {
-            Service service = serviceRepository.findById(serviceId)
-                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Service not found", "RESOURCE_NOT_FOUND"));
+        for (UUID serviceId : serviceIds.stream().distinct().toList()) {
+            Service service = serviceRepository.findByIdAndStatus(serviceId, ActiveStatus.ACTIVE)
+                    .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Service is not active", "BUSINESS_RULE_VIOLATION"));
             voucherApplicableServiceRepository.save(new VoucherApplicableService(voucher, service));
         }
     }

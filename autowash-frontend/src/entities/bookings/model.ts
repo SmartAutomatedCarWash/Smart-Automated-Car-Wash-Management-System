@@ -101,6 +101,16 @@ export type CreateBookingRequest = {
   paymentMethod: PaymentMethod;
 };
 
+export type HoldSlotRequest = {
+  bookingDate: string;
+  bookingTime: string;
+};
+
+export type HoldSlotResponse = {
+  slotTime: string;
+  expiresAt: string;
+};
+
 export type BookingAddonSelection = {
   addonId: string;
   addonName: string;

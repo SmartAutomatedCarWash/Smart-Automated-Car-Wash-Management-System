@@ -15,7 +15,6 @@ import {
   buildBookingSummary,
   formatBookingCurrency,
   getModeLabel,
-  getPaymentMethodLabel,
   validateBookingDraft,
 } from "@/features/bookings/lib/booking-format";
 import {
@@ -28,16 +27,14 @@ import {
   useBookingAddons,
   useBookingCombos,
   useBookingPackages,
-  useCreateCustomerBooking,
   useValidateBookingVoucher,
 } from "@/features/bookings/hooks/use-bookings";
+import { useSlotHold } from "@/features/bookings/hooks/use-slot-hold";
 import { useCustomerVehicles } from "@/features/vehicles/hooks/use-customer-vehicles";
 import { useCustomerVouchers } from "@/features/vouchers/hooks/use-customer-vouchers";
 import { useBookingStore } from "@/features/bookings/store/booking.store";
-import type { BookingDraft, PaymentMethod, VoucherValidationResult } from "@/entities/bookings";
-import { Ticket, TicketCheck } from "lucide-react";
-
-const PAYMENT_METHODS: PaymentMethod[] = ["BANK_TRANSFER", "E_WALLET", "CASH_AT_COUNTER"];
+import type { BookingDraft, VoucherValidationResult } from "@/entities/bookings";
+import { Ticket } from "lucide-react";
 
 function getTomorrowDate() {
   const next = new Date();
@@ -133,10 +130,19 @@ export function CustomerBookingForm() {
   const activeCustomerCombosQuery = useActiveCustomerCombos();
   const customerVouchersQuery = useCustomerVouchers();
   const voucherMutation = useValidateBookingVoucher();
-  const createBookingMutation = useCreateCustomerBooking();
+  const { holdSlot, isHolding, holdError } = useSlotHold();
+  const setExpiresAt = useBookingStore((state) => state.setExpiresAt);
+  const setStoredValidatedVoucher = useBookingStore((state) => state.setValidatedVoucher);
   const [validatedVoucher, setValidatedVoucher] = useState<VoucherValidationResult | null>(null);
   const [showValidation, setShowValidation] = useState(false);
   const [voucherInputError, setVoucherInputError] = useState<string | null>(null);
+
+  const resetValidatedVoucher = () => {
+    setValidatedVoucher(null);
+    setStoredValidatedVoucher(null);
+    setVoucherInputError(null);
+    voucherMutation.reset();
+  };
 
   const isLoadingCatalog =
     vehiclesQuery.isPending ||
@@ -255,7 +261,7 @@ export function CustomerBookingForm() {
     const validationSummary =
       draft.voucherCode.trim().length > 0 && !validatedVoucher ? null : summary;
 
-    return validateBookingDraft(draft, validationSummary);
+    return validateBookingDraft(draft, validationSummary, { requirePaymentMethod: false });
   }, [draft, summary, validatedVoucher]);
 
   const selectedPackageAddons =
@@ -274,13 +280,12 @@ export function CustomerBookingForm() {
     const formatError = getVoucherCodeFormatError(normalizedCode);
 
     if (!normalizedCode || !summary) {
-      setValidatedVoucher(null);
-      setVoucherInputError(null);
+      resetValidatedVoucher();
       return;
     }
 
     if (formatError) {
-      setValidatedVoucher(null);
+      resetValidatedVoucher();
       setVoucherInputError(formatError);
       toast.error(formatError);
       return;
@@ -293,20 +298,19 @@ export function CustomerBookingForm() {
         amount: summary.subtotal,
       });
       setValidatedVoucher(result);
+      setStoredValidatedVoucher(result);
       setVoucherInputError(null);
       updateDraft({ voucherCode: result.voucherCode });
       toast.success(`Voucher ${result.voucherCode} applied.`);
     } catch (error) {
-      setValidatedVoucher(null);
+      resetValidatedVoucher();
       toast.error(getDisplayErrorMessage(error));
     }
   };
 
   const clearVoucher = () => {
-    setValidatedVoucher(null);
-    setVoucherInputError(null);
+    resetValidatedVoucher();
     updateDraft({ voucherCode: "" });
-    voucherMutation.reset();
   };
 
   const handleSubmit = async () => {
@@ -316,16 +320,20 @@ export function CustomerBookingForm() {
     }
 
     try {
-      const booking = await createBookingMutation.mutateAsync(draft);
-      toast.success("Booking created successfully.");
-      router.push(`/customer/bookings/success?bookingId=${booking.bookingId}`);
+      const hold = await holdSlot({
+        bookingDate: draft.bookingDate,
+        bookingTime: draft.bookingTime,
+      });
+      setExpiresAt(new Date(hold.expiresAt).getTime());
+      toast.success("Slot held for 15 minutes.");
+      router.push("/customer/booking/confirm");
     } catch (error) {
       toast.error(getDisplayErrorMessage(error));
     }
   };
 
   const updateMode = (mode: BookingDraft["mode"]) => {
-    setValidatedVoucher(null);
+    resetValidatedVoucher();
     updateDraft({
       mode,
       packageId: mode === "PACKAGE" ? (packages[0]?.packageId ?? "") : "",
@@ -460,11 +468,14 @@ export function CustomerBookingForm() {
               <CustomerBookingSelect
                 options={packageOptions}
                 value={draft.packageId}
-                onValueChange={(packageId) => updateDraft({
-                  packageId,
-                  addonIds: [],
-                  voucherCode: "",
-                })}
+                onValueChange={(packageId) => {
+                  resetValidatedVoucher();
+                  updateDraft({
+                    packageId,
+                    addonIds: [],
+                    voucherCode: "",
+                  });
+                }}
                 placeholder="Select a package"
                 searchPlaceholder="Search package name..."
                 emptyText="No packages found."
@@ -495,7 +506,10 @@ export function CustomerBookingForm() {
                       key={item.comboId}
                       type="button"
                       className={optionCardClass(active)}
-                      onClick={() => updateDraft({ comboId: item.comboId, voucherCode: "" })}
+                      onClick={() => {
+                        resetValidatedVoucher();
+                        updateDraft({ comboId: item.comboId, voucherCode: "" });
+                      }}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
@@ -569,14 +583,15 @@ export function CustomerBookingForm() {
                       key={addon.addonId}
                       type="button"
                       className={optionCardClass(active)}
-                      onClick={() =>
+                      onClick={() => {
+                        resetValidatedVoucher();
                         updateDraft({
                           addonIds: active
                             ? draft.addonIds.filter((addonId) => addonId !== addon.addonId)
                             : [...draft.addonIds, addon.addonId],
                           voucherCode: "",
-                        })
-                      }
+                        });
+                      }}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
@@ -645,7 +660,7 @@ export function CustomerBookingForm() {
                 value={draft.voucherCode}
                 onChange={(event) => {
                   const nextValue = sanitizeVoucherCodeInput(event.target.value);
-                  setValidatedVoucher(null);
+                  resetValidatedVoucher();
                   setVoucherInputError(getVoucherCodeFormatError(nextValue));
                   updateDraft({ voucherCode: nextValue });
                 }}
@@ -699,8 +714,7 @@ export function CustomerBookingForm() {
                         key={voucher.code}
                         type="button"
                         onClick={() => {
-                          setValidatedVoucher(null);
-                          setVoucherInputError(null);
+                          resetValidatedVoucher();
                           updateDraft({ voucherCode: voucher.code });
                           // Automatically validate after setting state in next tick
                           setTimeout(() => validateVoucher(voucher.code), 50);
@@ -744,47 +758,22 @@ export function CustomerBookingForm() {
             />
           </CheckoutSection>
 
-          <CheckoutSection step="7" title="Choose payment and review">
-            <div className="grid gap-3 md:grid-cols-3">
-              {PAYMENT_METHODS.map((method) => {
-                const active = draft.paymentMethod === method;
-                return (
-                  <button
-                    key={method}
-                    type="button"
-                    className={`rounded-2xl border p-4 text-left transition-all duration-300 ${
-                      active
-                        ? "border-primary bg-primary/5 shadow-md shadow-primary/5"
-                        : "border-border bg-card hover:border-primary/50 hover:-translate-y-0.5 hover:shadow-sm"
-                    }`}
-                    onClick={() => updateDraft({ paymentMethod: method })}
-                  >
-                    <div className="font-semibold text-foreground">
-                      {getPaymentMethodLabel(method)}
-                    </div>
-                    <div className="mt-1.5 text-xs text-muted-foreground line-clamp-2">
-                      Demo checkout only. No real bank or wallet transaction is executed.
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <FieldError message={showValidation ? errors.paymentMethod : null} />
-            {createBookingMutation.isError ? (
+          <CheckoutSection step="7" title="Review and continue">
+            {holdError ? (
               <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {getDisplayErrorMessage(createBookingMutation.error)}
+                {getDisplayErrorMessage(holdError)}
               </div>
             ) : null}
             <Button
               type="button"
               className="w-full sm:w-auto"
               onClick={() => void handleSubmit()}
-              disabled={createBookingMutation.isPending}
+              disabled={isHolding}
             >
-              {createBookingMutation.isPending ? (
+              {isHolding ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              Submit booking
+              Continue to confirm
             </Button>
           </CheckoutSection>
         </div>
@@ -837,10 +826,6 @@ export function CustomerBookingForm() {
                       }
                     />
                   ) : null}
-                  <SummaryItem
-                    label="Payment method"
-                    value={draft.paymentMethod ? getPaymentMethodLabel(draft.paymentMethod) : "--"}
-                  />
                   <SummaryItem
                     label="Final amount"
                     value={formatBookingCurrency(summary.finalAmount)}

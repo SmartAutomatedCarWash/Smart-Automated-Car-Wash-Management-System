@@ -80,7 +80,7 @@ export function StaffSessionHistoryView() {
   });
 
   return (
-    <WorkspacePage className="space-y-6 rounded-[2rem] bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.10),transparent_32%),radial-gradient(circle_at_top_right,rgba(37,99,235,0.10),transparent_34%),linear-gradient(180deg,rgba(248,250,252,0.96),rgba(239,246,255,0.62))]">
+    <WorkspacePage className="space-y-6 rounded-[2rem] bg-[radial-gradient(circle_at_top_left,rgba(103,232,249,0.16),transparent_32%),radial-gradient(circle_at_top_right,rgba(15,23,42,0.06),transparent_34%),linear-gradient(180deg,rgba(248,253,255,0.96),rgba(236,254,255,0.58))]">
       <section className="flex flex-wrap items-center justify-between gap-3">
         <Button variant="outline" asChild>
           <Link href="/staff/dashboard">
@@ -104,8 +104,8 @@ export function StaffSessionHistoryView() {
         <SummaryCard label="Điểm đã cộng" value={totals.pointsAwarded} detail="Tổng điểm từ danh sách đang hiển thị" />
       </section>
 
-      <Card className="overflow-hidden rounded-[1.75rem] border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/45 to-blue-50/35 shadow-[0_18px_42px_rgba(16,185,129,0.09)] backdrop-blur">
-        <div className="border-b border-emerald-100/70 dark:border-emerald-900/30 bg-card/70 px-5 py-4">
+      <Card className="overflow-hidden rounded-[1.75rem] border-cyan-100/80 bg-gradient-to-br from-white via-cyan-50/45 to-slate-50/35 shadow-[0_18px_42px_rgba(6,182,212,0.09)] backdrop-blur">
+        <div className="border-b border-cyan-100/70 bg-card/70 px-5 py-4 dark:border-cyan-900/30">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-black text-foreground">Bộ lọc lịch sử</h2>
@@ -129,7 +129,7 @@ export function StaffSessionHistoryView() {
           </div>
         </div>
 
-        <div className="space-y-3 border-b border-emerald-100/70 p-4 lg:p-5">
+        <div className="space-y-3 border-b border-cyan-100/70 p-4 lg:p-5">
           <div className="grid items-end gap-3 xl:grid-cols-[minmax(320px,1fr)_170px_190px_190px]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
@@ -137,7 +137,7 @@ export function StaffSessionHistoryView() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Tìm mã đặt lịch, biển số, khách hàng, SĐT..."
-                className="h-11 rounded-2xl border-border/60 bg-background/85 pl-10 text-sm font-semibold shadow-sm focus:border-emerald-200 focus:bg-background"
+                className="h-11 rounded-2xl border-border/60 bg-background/85 pl-10 text-sm font-semibold shadow-sm focus:border-cyan-200 focus:bg-background"
               />
             </div>
 
@@ -235,7 +235,7 @@ function HistorySelect({
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-10 w-full rounded-2xl border border-border/60 bg-background px-3 text-sm font-semibold text-foreground shadow-sm outline-none transition focus:border-emerald-200 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900/40"
+      className="h-10 w-full rounded-2xl border border-border/60 bg-background px-3 text-sm font-semibold text-foreground shadow-sm outline-none transition focus:border-cyan-200 focus:ring-2 focus:ring-cyan-100 dark:focus:ring-cyan-900/40"
     >
       {options.map(([optionValue, optionLabel]) => (
         <option key={optionValue} value={optionValue}>
@@ -248,14 +248,14 @@ function HistorySelect({
 
 function SummaryCard({ label, value, detail }: { label: string; value: number | string; detail: string }) {
   return (
-    <Card className="rounded-3xl border-border/50 bg-gradient-to-br from-card via-card to-emerald-50/20 dark:to-emerald-950/10 p-5 shadow-[0_16px_34px_rgba(15,23,42,0.07)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(16,185,129,0.10)]">
+    <Card className="rounded-3xl border-border/50 bg-gradient-to-br from-card via-card to-cyan-50/25 p-5 shadow-[0_16px_34px_rgba(15,23,42,0.07)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(6,182,212,0.10)] dark:to-cyan-950/10">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
           <p className="mt-2 text-3xl font-black tracking-tight">{value}</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
         </div>
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 shadow-[0_0_24px_rgba(16,185,129,0.16)]">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-800 shadow-[0_0_24px_rgba(6,182,212,0.16)]">
           <CheckCircle2 className="h-5 w-5" />
         </div>
       </div>
@@ -268,11 +268,11 @@ function HistorySessionRow({ session }: { session: OperationsQueueSession }) {
   const packageName = session.servicePackage ?? session.packageId ?? "Gói rửa";
 
   return (
-    <div className="grid gap-3 rounded-3xl border border-emerald-100/80 bg-gradient-to-r from-white via-white to-emerald-50/55 px-4 py-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg xl:grid-cols-[minmax(0,1.3fr)_1fr_1.25fr] xl:items-center">
+    <div className="grid gap-3 rounded-3xl border border-cyan-100/80 bg-gradient-to-r from-white via-white to-cyan-50/55 px-4 py-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg xl:grid-cols-[minmax(0,1.3fr)_1fr_1.25fr] xl:items-center">
       <div className="min-w-0">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <p className="truncate text-sm font-black">{session.bookingId}</p>
-          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+          <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-cyan-800">
             Đã hoàn thành
           </span>
         </div>

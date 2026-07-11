@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { CustomerBookingForm } from "@/features/bookings/components/customer-booking-form";
 
 export default function CustomerBookingPage() {
-  redirect("/customer/bookings/new");
+  return <CustomerBookingForm />;
 }

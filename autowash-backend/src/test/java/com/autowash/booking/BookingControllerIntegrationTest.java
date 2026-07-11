@@ -115,12 +115,16 @@ class BookingControllerIntegrationTest {
 
         String bookingId = createResponse.path("data").path("bookingId").asText();
         payBooking(accessToken, bookingId)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("ACCESS_DENIED"));
+
+        payBookingAsOperations(bookingId)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.bookingStatus").value("CONFIRMED"));
     }
 
     @Test
-    void createComboBookingCreatesOwnedComboAndActiveComboLookup() throws Exception {
+    void createComboBookingRequiresVerifiedOwnedCombo() throws Exception {
         String accessToken = registerActivateAndLogin("0901234720");
         String vehicleId = createVehicle(accessToken, "30H-223468");
 
@@ -136,21 +140,12 @@ class BookingControllerIntegrationTest {
                                   "paymentMethod": "E_WALLET"
                                 }
                                 """.formatted(vehicleId, futureBookingDate())))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.comboId").value("55555555-1234-1234-1234-123456789012"))
-                .andExpect(jsonPath("$.data.customerComboId").isNotEmpty())
-                .andExpect(jsonPath("$.data.comboPurchased").value(true));
-
-        mockMvc.perform(get("/api/v1/customers/combos/active")
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].comboId").value("55555555-1234-1234-1234-123456789012"))
-                .andExpect(jsonPath("$.data[0].remainingUsages").value(4));
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("PAYMENT_VERIFICATION_REQUIRED"));
     }
 
     @Test
-    void activateComboCreatesOwnedCombo() throws Exception {
+    void activateComboRequiresVerifiedPayment() throws Exception {
         String accessToken = registerActivateAndLogin("0901234721");
 
         mockMvc.perform(post("/api/v1/customers/combos/{comboId}/activate", "55555555-1234-1234-1234-123456789012")
@@ -162,10 +157,8 @@ class BookingControllerIntegrationTest {
                                   "paymentMethod": "E_WALLET"
                                 }
                         """))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.comboId").value("55555555-1234-1234-1234-123456789012"))
-                .andExpect(jsonPath("$.data.paymentMethod").value("E_WALLET"))
-                .andExpect(jsonPath("$.data.paymentStatus").value("PENDING"));
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("PAYMENT_VERIFICATION_REQUIRED"));
     }
 
     @Test
@@ -532,13 +525,24 @@ class BookingControllerIntegrationTest {
 
     private String createVerifiedBooking(String accessToken, String vehicleId) throws Exception {
         String bookingId = createBooking(accessToken, vehicleId).path("data").path("bookingId").asText();
-        payBooking(accessToken, bookingId).andExpect(status().isOk());
+        payBookingAsOperations(bookingId).andExpect(status().isOk());
         return bookingId;
     }
 
     private org.springframework.test.web.servlet.ResultActions payBooking(String accessToken, String bookingId) throws Exception {
         return mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/pay", bookingId)
                 .header("Authorization", "Bearer " + accessToken)
+                .contentType("application/json")
+                .content("""
+                        {
+                          "transactionRef": "TXN_123"
+                        }
+                        """));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions payBookingAsOperations(String bookingId) throws Exception {
+        return mockMvc.perform(post("/api/v1/operations/bookings/{bookingId}/pay", bookingId)
+                .with(authenticatedAdmin())
                 .contentType("application/json")
                 .content("""
                         {

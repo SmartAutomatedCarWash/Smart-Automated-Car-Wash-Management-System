@@ -23,6 +23,7 @@ public interface BookingService {
     CancelBookingResponse cancelBooking(String bookingId, String reason);
 
     PayBookingResponse payBooking(String bookingId, String transactionRef);
+    PayBookingResponse markBookingPaidForOperations(String bookingId, String transactionRef);
     Booking requireBookingForOperations(String bookingId);
     void updateStatus(Booking booking, BookingStatus status);
     BookingDetailResponse toDetailResponse(Booking booking);

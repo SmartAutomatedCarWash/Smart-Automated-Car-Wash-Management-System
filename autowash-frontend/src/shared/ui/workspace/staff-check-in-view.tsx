@@ -25,7 +25,7 @@ export function StaffCheckInView() {
       <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <Card className="border-border/70 bg-card/95 p-6 shadow-sm">
           <div className="flex items-center gap-2 text-sm font-bold">
-            <Search className="h-4 w-4 text-violet-700" />
+            <Search className="h-4 w-4 text-cyan-800" />
             Tra cứu biển số
           </div>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -43,7 +43,7 @@ export function StaffCheckInView() {
               Xác nhận check-in
             </Button>
           </div>
-          <div className="mt-6 rounded-2xl border border-violet-200 bg-violet-50/70 p-4 text-sm text-violet-950">
+          <div className="mt-6 rounded-2xl border border-cyan-200 bg-cyan-50/70 p-4 text-sm text-cyan-950">
             Check-in sử dụng API vận hành hiện tại để đồng bộ trạng thái phiên rửa.
           </div>
         </Card>
@@ -51,7 +51,7 @@ export function StaffCheckInView() {
         <Card className="overflow-hidden border-border/70 bg-card/95 shadow-sm">
           <div className="border-b border-border/60 bg-muted/30 px-6 py-4">
             <div className="flex items-center gap-2 text-sm font-bold">
-              <CarFront className="h-4 w-4 text-violet-700" />
+              <CarFront className="h-4 w-4 text-cyan-800" />
               Thông tin khớp
             </div>
           </div>
@@ -63,7 +63,7 @@ export function StaffCheckInView() {
                     <div className="text-lg font-black tracking-tight">{plate || MATCHED_BOOKING.plate}</div>
                     <div className="mt-1 text-sm text-muted-foreground">{MATCHED_BOOKING.customer}</div>
                   </div>
-                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                  <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-800">
                     Sẵn sàng
                   </span>
                 </div>
@@ -84,7 +84,7 @@ export function StaffCheckInView() {
             </div>
           ) : (
             <div className="flex min-h-[280px] flex-col items-center justify-center px-6 py-10 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-700">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-200 bg-cyan-50 text-cyan-800">
                 <ShieldCheck className="h-5 w-5" />
               </div>
               <h2 className="mt-4 text-base font-bold">Đang chờ nhập biển số</h2>

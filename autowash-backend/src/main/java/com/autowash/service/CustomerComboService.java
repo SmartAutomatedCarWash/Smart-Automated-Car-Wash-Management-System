@@ -13,6 +13,7 @@ public interface CustomerComboService {
     CustomerCombo createOwnedCombo(User customer, String comboId, String purchaseBookingId);
     PurchaseCustomerComboResponse purchaseCombo(User customer, PurchaseCustomerComboRequest request);
     void recordUsage(CustomerCombo combo, String bookingId, java.time.LocalDate serviceDate);
+    void releaseUsageForBooking(String bookingId);
     void markExpired(CustomerCombo combo);
 }
 

@@ -24,13 +24,13 @@ import { cn } from "@/shared/lib/utils";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 const QUICK_LINKS = [
-  { href: "/admin/operations", labelVi: "Vận hành", labelEn: "Operations", icon: Droplets, color: "text-blue-600 bg-blue-50" },
-  { href: "/admin/bookings", labelVi: "Đặt lịch", labelEn: "Bookings", icon: CalendarDays, color: "text-indigo-600 bg-indigo-50" },
-  { href: "/admin/accounts", labelVi: "Tài khoản", labelEn: "Accounts", icon: Users, color: "text-emerald-600 bg-emerald-50" },
-  { href: "/admin/services", labelVi: "Dịch vụ", labelEn: "Services", icon: Package, color: "text-rose-600 bg-rose-50" },
-  { href: "/admin/offers?tab=promotions", labelVi: "Khuyến mãi", labelEn: "Promotions", icon: BadgePercent, color: "text-purple-600 bg-purple-50" },
-  { href: "/admin/offers?tab=vouchers", labelVi: "Vouchers", labelEn: "Vouchers", icon: Ticket, color: "text-pink-600 bg-pink-50" },
-  { href: "/admin/reports", labelVi: "Báo cáo", labelEn: "Reports", icon: BarChart3, color: "text-teal-600 bg-teal-50" },
+  { href: "/admin/operations", labelVi: "Vận hành", labelEn: "Operations", icon: Droplets, color: "text-cyan-800 bg-cyan-50" },
+  { href: "/admin/bookings", labelVi: "Đặt lịch", labelEn: "Bookings", icon: CalendarDays, color: "text-cyan-950 bg-cyan-100" },
+  { href: "/admin/accounts", labelVi: "Tài khoản", labelEn: "Accounts", icon: Users, color: "text-slate-800 bg-slate-100" },
+  { href: "/admin/services", labelVi: "Dịch vụ", labelEn: "Services", icon: Package, color: "text-rose-800 bg-rose-50" },
+  { href: "/admin/offers?tab=promotions", labelVi: "Khuyến mãi", labelEn: "Promotions", icon: BadgePercent, color: "text-amber-800 bg-amber-50" },
+  { href: "/admin/offers?tab=vouchers", labelVi: "Vouchers", labelEn: "Vouchers", icon: Ticket, color: "text-slate-900 bg-cyan-50" },
+  { href: "/admin/reports", labelVi: "Báo cáo", labelEn: "Reports", icon: BarChart3, color: "text-cyan-900 bg-cyan-50" },
 ];
 
 function formatRevenue(amount: number): string {
@@ -68,28 +68,28 @@ export function AdminDashboardView() {
       value: `${metrics?.totalBookings ?? 0}`,
       delta: translate(language, "Tất cả yêu cầu đặt lịch", "All booking requests"),
       icon: CalendarDays,
-      tone: "text-sky-700 bg-sky-50",
+      tone: "text-cyan-800 bg-cyan-50",
     },
     {
       label: translate(language, "Doanh thu (VNĐ)", "Revenue (VND)"),
       value: `${formatRevenue(metrics?.totalRevenue ?? 0)}`,
       delta: translate(language, "Các lịch đã thanh toán", "Paid bookings"),
       icon: DollarSign,
-      tone: "text-emerald-700 bg-emerald-50",
+      tone: "text-cyan-950 bg-cyan-100",
     },
     {
       label: translate(language, "Khách hàng", "Customers"),
       value: `${metrics?.totalCustomers ?? 0}`,
       delta: translate(language, "Tổng số tài khoản khách", "Total customer accounts"),
       icon: Users,
-      tone: "text-violet-700 bg-violet-50",
+      tone: "text-slate-800 bg-slate-100",
     },
     {
       label: translate(language, "Khuyến mãi đang chạy", "Active promotions"),
       value: `${metrics?.activePromotions ?? 0}`,
       delta: translate(language, "Các chiến dịch đang diễn ra", "Currently running campaigns"),
       icon: BadgePercent,
-      tone: "text-orange-700 bg-orange-50",
+      tone: "text-amber-800 bg-amber-50",
     },
   ];
 
@@ -99,14 +99,14 @@ export function AdminDashboardView() {
       value: `${summary.pending + summary.checkedIn + summary.inProgress}`,
       delta: translate(language, "Phiên rửa xe đang diễn ra", "Live sessions in progress"),
       icon: Droplets,
-      tone: "text-blue-700 bg-blue-50",
+      tone: "text-cyan-800 bg-cyan-50",
     },
     {
       label: translate(language, "Hoàn thành hôm nay", "Completed today"),
       value: `${summary.completed}`,
       delta: translate(language, "Các phiên đã rửa", "Live wash sessions"),
       icon: TrendingUp,
-      tone: "text-teal-700 bg-teal-50",
+      tone: "text-cyan-950 bg-cyan-100",
     },
   ];
 
