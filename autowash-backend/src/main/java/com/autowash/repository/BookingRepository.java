@@ -29,6 +29,19 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("select coalesce(sum(booking.finalAmount), 0) from Booking booking where booking.assignedStaff = :staff and booking.status = :status")
     long sumFinalAmountByAssignedStaffAndStatus(@Param("staff") User staff, @Param("status") BookingStatus status);
 
+    @Query("""
+            select coalesce(sum(b.finalAmount), 0) from Booking b
+            where b.assignedStaff = :staff
+              and b.status = 'COMPLETED'
+              and b.updatedAt >= :from
+              and b.updatedAt < :to
+            """)
+    long sumCompletedRevenueByAssignedStaffAndRange(
+            @Param("staff") User staff,
+            @Param("from") Instant from,
+            @Param("to") Instant to
+    );
+
     @EntityGraph(attributePaths = {"vehicle"})
     Optional<Booking> findByCustomerAndId(User customer, UUID id);
 
@@ -175,7 +188,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @EntityGraph(attributePaths = {"customer"})
     @Query("""
             select booking from Booking booking
-            where booking.status = :status
+            where booking.status in :statuses
               and booking.scheduledAt <= :cutoff
               and not exists (
                     select session.id from WashSession session
@@ -184,7 +197,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
               )
             """)
     List<Booking> findNoShowCandidates(
-            @Param("status") BookingStatus status,
+            @Param("statuses") Collection<BookingStatus> statuses,
             @Param("cutoff") Instant cutoff,
             @Param("checkedInStatuses") Collection<WashSessionStatus> checkedInStatuses
     );
@@ -194,7 +207,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             select booking from Booking booking
             left join LoyaltyAccount la on la.customer = booking.customer
             left join TierConfig tc on tc.tier = la.tier
-            where booking.status = :status
+            where booking.status in :statuses
               and not exists (
                     select session.id from WashSession session
                     where session.booking = booking
@@ -203,7 +216,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             order by tc.priorityScore desc, booking.scheduledAt asc, booking.createdAt desc
             """)
     List<Booking> findEligibleForOperationsSession(
-            @Param("status") BookingStatus status,
+            @Param("statuses") Collection<BookingStatus> statuses,
             @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
             Pageable pageable
     );
@@ -213,7 +226,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             select booking from Booking booking
             left join LoyaltyAccount la on la.customer = booking.customer
             left join TierConfig tc on tc.tier = la.tier
-            where booking.status = :status
+            where booking.status in :statuses
               and (booking.assignedStaff = :staff or booking.assignedStaff is null)
               and not exists (
                     select activeSession.id from WashSession activeSession
@@ -224,7 +237,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             """)
     List<Booking> findEligibleForAssignedStaffOperationsSession(
             @Param("staff") User staff,
-            @Param("status") BookingStatus status,
+            @Param("statuses") Collection<BookingStatus> statuses,
             @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
             Pageable pageable
     );

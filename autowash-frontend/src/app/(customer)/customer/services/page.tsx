@@ -44,7 +44,10 @@ export default function ServiceCatalogPage() {
   }, [packagesQuery.data]);
 
   const filterTabs = useMemo(() => {
-    const tabs = [{ id: "all", label: t("Tất cả", "All") }];
+    const tabs = [
+      { id: "all", label: t("Tất cả", "All") },
+      { id: "services", label: t("Dịch Vụ", "Services") },
+    ];
     dynamicCategories.forEach(cat => {
       tabs.push({ id: cat, label: cat });
     });
@@ -58,6 +61,11 @@ export default function ServiceCatalogPage() {
     if (isLoading) return [];
     
     const pkgs = (packagesQuery.data ?? []).map((pkg) => {
+      const imageUrls = pkg.imageUrls && pkg.imageUrls.length > 0
+        ? pkg.imageUrls
+        : pkg.image
+          ? [pkg.image]
+          : [];
       return {
         id: pkg.packageId,
         type: "package" as const,
@@ -68,7 +76,7 @@ export default function ServiceCatalogPage() {
         originalPrice: pkg.basePrice,
         benefits: pkg.features || [t("Rửa bọt không chạm", "Touchless foam spray"), t("Lau khô sấy gương", "Hand dry & glass wipe")],
         duration: pkg.duration ? `${pkg.duration} mins` : "30 mins",
-        images: pkg.image ? [pkg.image] : [],
+        images: imageUrls,
       };
     });
 
@@ -97,6 +105,7 @@ export default function ServiceCatalogPage() {
 
   const filteredItems = useMemo(() => {
     if (activeFilter === "all") return catalogItems;
+    if (activeFilter === "services") return catalogItems.filter((item) => item.type === "package");
     return catalogItems.filter((item) => item.category === activeFilter);
   }, [catalogItems, activeFilter]);
 
@@ -124,93 +133,6 @@ export default function ServiceCatalogPage() {
 
       <div className="relative mx-auto flex max-w-7xl flex-col gap-8">
         
-        {/* Title Area */}
-        <section className="space-y-3">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[#0566D9]/10 px-3.5 py-1 text-xs font-bold uppercase tracking-[0.15em] text-[#0566D9]">
-            <Sparkles className="h-3.5 w-3.5" />
-            Aura Catalog
-          </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-            {t("Danh Mục Dịch Vụ Elite", "Elite Service Catalog")}
-          </h1>
-          <p className="max-w-2xl text-sm leading-relaxed text-slate-600">
-            {t("Khám phá bảng giá niêm yết minh bạch các gói rửa xe cao cấp, chăm sóc bảo dưỡng sơn xe chuẩn showroom Aura.", "Explore transparent pricing for premium wash packages and showroom-grade paint detailing.")}
-          </p>
-        </section>
-
-        {/* Highlighted Featured Combo Card */}
-        {featuredItem && (
-          <section onClick={() => setSelectedItem(featuredItem)} className="overflow-hidden rounded-3xl border border-black/[0.04] bg-gradient-to-br from-white to-[#fdf7ff] shadow-[0_8px_30px_rgba(0,0,0,0.03)] group p-6 sm:p-8 cursor-pointer">
-            <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
-              <div className="space-y-4">
-                <div className="flex flex-wrap gap-2 items-center">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0566D9]/10 px-2.5 py-0.5 text-xs font-bold text-[#0566D9]">
-                    <Flame className="h-3.5 w-3.5 animate-pulse" />
-                    {t("Gói Nổi Bật Showroom Combo", "Showroom Featured Combo")}
-                  </span>
-                  <Badge variant="outline" className="border-[#6750A4]/30 bg-[#6750A4]/5 text-[#6750A4] rounded-full text-[10px] font-black">
-                    Save up to 30%
-                  </Badge>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-black leading-tight tracking-tight text-slate-950">
-                  {featuredItem.name}
-                </h2>
-                <p className="text-sm leading-relaxed text-slate-650 max-w-xl">
-                  {featuredItem.description}
-                </p>
-                {/* Ảnh featured item */}
-                {featuredItem.images && featuredItem.images.length > 0 && (
-                  <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
-                    <img
-                      src={featuredItem.images[0]}
-                      alt={featuredItem.name}
-                      className="h-48 w-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {featuredItem.benefits.slice(0, 4).map((benefit, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-                      <CheckCircle className="h-4 w-4 text-[#0566D9] shrink-0" />
-                      {benefit}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-center items-stretch lg:items-end gap-4 border-t lg:border-t-0 lg:border-l border-slate-100 pt-6 lg:pt-0 lg:pl-8">
-                <div className="text-left lg:text-right space-y-1">
-                  <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">
-                    {t("Giá đặc quyền", "Exclusive Price")}
-                  </span>
-                  <div className="flex items-baseline lg:justify-end gap-2">
-                    <span className="text-3xl font-black text-[#0566D9]">
-                      {formatBookingCurrency(featuredItem.price)}
-                    </span>
-                    {featuredItem.originalPrice > featuredItem.price && (
-                      <span className="text-sm text-slate-450 line-through">
-                        {formatBookingCurrency(featuredItem.originalPrice)}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-500 block">
-                    Duration: {featuredItem.duration}
-                  </span>
-                </div>
-                <Button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleQuickBook(featuredItem);
-                  }}
-                  className="rounded-xl bg-[#0566D9] text-white hover:bg-[#0455B6] w-full lg:w-auto px-8 py-3 font-bold shadow-md shadow-[#0566D9]/15"
-                >
-                  {t("Đặt Premium Slot", "Reserve Premium Slot")}
-                </Button>
-              </div>
-            </div>
-          </section>
-        )}
-
         {/* Filter Navigation */}
         <section className="flex flex-wrap gap-2 items-center overflow-x-auto pb-1 scrollbar-none">
           {filterTabs.map((tab) => (
@@ -276,7 +198,7 @@ export default function ServiceCatalogPage() {
                   </div>
 
                   <div className="space-y-2 pt-2 border-t border-slate-100">
-                    {item.benefits.slice(0, 3).map((benefit, index) => (
+                    {item.benefits.slice(0, 3).map((benefit: string, index: number) => (
                       <div key={index} className="flex items-center gap-2 text-[11px] font-semibold text-slate-650">
                         <CheckCircle className="h-3.5 w-3.5 text-[#0566D9] shrink-0" />
                         {benefit}
@@ -371,7 +293,7 @@ export default function ServiceCatalogPage() {
                   {t("Bao gồm các dịch vụ", "Includes")}
                 </h4>
                 <div className="grid gap-3">
-                  {selectedItem.benefits.map((benefit, idx) => (
+                  {selectedItem.benefits.map((benefit: string, idx: number) => (
                     <div key={idx} className="flex items-start gap-3 text-sm font-semibold text-slate-700 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
                       <CheckCircle className="h-5 w-5 text-[#0566D9] shrink-0" />
                       <span>{benefit}</span>

@@ -41,15 +41,15 @@ apiClient.interceptors.response.use(
       return Promise.reject(normalizeAxiosError(error));
     }
 
-    const isExpiredToken =
-      error.response?.status === 401 &&
-      getApiErrorCode(error.response.data) === "TOKEN_EXPIRED";
+    const is401 = error.response?.status === 401;
 
-    if (!isExpiredToken || request._retry) {
-      if (error.response?.status === 401) {
+    // Treat any 401 as a potentially expired token (backend sends plain 401 without body)
+    const shouldTryRefresh = is401 && !request._retry;
+
+    if (!shouldTryRefresh) {
+      if (is401) {
         clearAuthSession();
       }
-
       return Promise.reject(normalizeAxiosError(error));
     }
 
@@ -115,15 +115,24 @@ async function performTokenRefresh(): Promise<string | null> {
 function normalizeAxiosError(error: AxiosError<ApiErrorResponse>) {
   const payload = error.response?.data;
 
-  if (payload) {
+  if (payload && typeof payload === "object" && "success" in payload) {
     return payload;
   }
 
+  const status = error.response?.status ?? 500;
+  const defaultMessages: Record<number, string> = {
+    401: "Session expired. Please sign in again.",
+    403: "You don't have permission to perform this action.",
+    404: "Resource not found.",
+    422: "Invalid request data.",
+    500: "Server error. Please try again.",
+  };
+
   return {
     success: false,
-    statusCode: error.response?.status ?? 500,
-    message: error.message || "Request failed",
-    errorCode: "INTERNAL_SERVER_ERROR"
+    statusCode: status,
+    message: defaultMessages[status] ?? (error.message || "Request failed"),
+    errorCode: "INTERNAL_SERVER_ERROR",
   } satisfies ApiErrorResponse;
 }
 

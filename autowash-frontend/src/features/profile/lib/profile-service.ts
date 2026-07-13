@@ -44,16 +44,7 @@ export async function uploadAvatarFile(uploadUrl: string, file: File, contentTyp
     return;
   }
 
-  // MinIO local proxy
-  if (uploadUrl.startsWith("http://127.0.0.1:9000") || uploadUrl.startsWith("http://localhost:9000")) {
-    const proxyUrl = uploadUrl.replace(/^http:\/\/(127\.0\.0\.1|localhost):9000/, '/minio-api');
-    await axios.put(proxyUrl, file, {
-      headers: { "Content-Type": contentType },
-    });
-    return;
-  }
-
-  // Cloudflare R2 hoặc AWS S3 presigned URL — upload thẳng
+  // Cloudflare R2 / AWS S3 presigned URL — upload directly
   await axios.put(uploadUrl, file, {
     headers: { "Content-Type": contentType },
   });

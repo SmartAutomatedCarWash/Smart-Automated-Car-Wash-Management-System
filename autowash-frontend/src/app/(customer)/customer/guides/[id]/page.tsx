@@ -187,9 +187,10 @@ export default function GuideDetailPage() {
         <div className="grid gap-8 lg:grid-cols-[1fr_280px] mt-2">
           <article className="space-y-6">
 
-            <div className="text-sm leading-relaxed text-slate-700 space-y-4 whitespace-pre-wrap font-semibold">
-              {guide.content}
-            </div>
+            <div
+              className="text-sm leading-relaxed text-slate-700 space-y-4 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-slate-800 [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:mt-4 [&_h3]:mb-2 [&_p]:mb-3 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:ml-5 [&_ul]:mb-3 [&_li]:mb-1 [&_ol]:list-decimal [&_ol]:ml-5 [&_strong]:font-bold [&_em]:italic [&_img]:rounded-xl [&_img]:my-4 [&_img]:w-full [&_img]:object-cover"
+              dangerouslySetInnerHTML={{ __html: guide.content }}
+            />
 
             {/* CTA */}
             <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-primary p-6 text-white shadow-lg">

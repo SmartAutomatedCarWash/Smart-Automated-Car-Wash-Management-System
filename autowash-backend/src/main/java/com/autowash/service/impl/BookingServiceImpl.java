@@ -231,7 +231,7 @@ public class BookingServiceImpl implements BookingService {
                 Package == null ? null : Package.getId(),
                 Combo == null ? null : Combo.getId(),
                 userVoucherId == null ? null : voucherRedemptionService.getTemplateIdForUserVoucher(userVoucherId),
-                scheduledAt.toInstant(java.time.ZoneOffset.UTC),
+                scheduledAt.atZone(java.time.ZoneId.systemDefault()).toInstant(),
                 requestedBookingTime,
                 request.paymentMethod(),
                 basePrice,

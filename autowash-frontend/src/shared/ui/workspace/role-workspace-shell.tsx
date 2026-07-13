@@ -7,6 +7,7 @@ import {
   ArrowRightFromLine,
   Bell,
   BellRing,
+  Car,
   ChevronDown,
   ClipboardList,
   History,
@@ -880,9 +881,10 @@ function getProfileQuickActions(role: UserRole) {
     ];
   }
   return [
-    { href: "/customer/home",     label: "Customer home",   labelVi: "Trang khách hàng",    icon: LayoutDashboard },
-    { href: "/customer/bookings", label: "My bookings",     labelVi: "Lịch đặt của tôi",    icon: ClipboardList },
-    { href: "/customer/settings", label: "Account settings",labelVi: "Cài đặt tài khoản",   icon: Settings2 },
+    { href: "/customer/home",          label: "Customer home",   labelVi: "Trang khách hàng",    icon: LayoutDashboard },
+    { href: "/customer/bookings",      label: "My bookings",     labelVi: "Lịch đặt của tôi",    icon: ClipboardList },
+    { href: "/customer/vehicles/add",  label: "Add a vehicle",   labelVi: "Thêm xe mới",          icon: Car },
+    { href: "/customer/settings",      label: "Account settings",labelVi: "Cài đặt tài khoản",   icon: Settings2 },
   ];
 }
 

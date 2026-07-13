@@ -43,8 +43,8 @@ const ROUTE_META: Array<{
   {
     match: (pathname) => pathname.startsWith("/customer/bookings") || pathname === "/customer/booking",
     meta: {
-      title: "Bookings",
-      subtitle: "Create and track wash appointments",
+      title: "History",
+      subtitle: "Active bookings, completed sessions and combo purchase history",
       workspace: "CUSTOMER",
     },
   },

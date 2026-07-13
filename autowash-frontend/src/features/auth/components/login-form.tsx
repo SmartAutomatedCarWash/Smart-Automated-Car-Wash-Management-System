@@ -75,7 +75,7 @@ export function LoginForm() {
             name="email"
             value={email}
             onChange={(event) => setEmail(event.target.value.replace(/\s/g, ""))}
-            placeholder="you@gmail.com"
+            placeholder="Enter email"
             className="h-12 rounded-xl border-slate-200 bg-slate-50/70 pl-10 text-base shadow-none transition focus:border-sky-400 focus:bg-white focus:ring-sky-200"
           />
         </div>

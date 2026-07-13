@@ -24,6 +24,7 @@ public interface AdminReportingService {
     AdminAccountResponse updateStaffStatus(UUID staffId, String status);
     AdminAccountResponse deleteStaff(UUID staffId);
     AdminStaffWorkloadResponse getStaffWorkload(UUID staffId);
+    List<com.autowash.dto.StaffKpiItem> listStaffKpi(String range);
     AdminAccountResponse updateCustomerStatus(UUID customerId, String status);
     AdminOperationsDashboardResponse getOperationsDashboard();
     AccountPage listAccounts(String role, String status, String searchQuery, int page, int limit);

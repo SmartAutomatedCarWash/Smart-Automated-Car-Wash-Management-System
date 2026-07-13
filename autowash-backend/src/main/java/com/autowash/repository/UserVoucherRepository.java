@@ -23,4 +23,6 @@ public interface UserVoucherRepository extends JpaRepository<UserVoucher, UUID> 
     List<UserVoucher> findByStatusAndExpiredAtBefore(UserVoucherStatus status, Instant now);
     
     List<UserVoucher> findByStatusAndExpiredAtBetween(UserVoucherStatus status, Instant start, Instant end);
+
+    long countByStatus(UserVoucherStatus status);
 }
