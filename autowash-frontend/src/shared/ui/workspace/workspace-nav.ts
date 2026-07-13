@@ -76,7 +76,7 @@ const CUSTOMER_NAV: WorkspaceNavItem[] = [
   { href: "/customer/home", label: "Home Feed", labelVi: "Bản tin", icon: LayoutDashboard, exact: true },
   { href: "/customer/guides", label: "Guides", labelVi: "Bài viết", icon: BookOpen },
   { href: "/customer/services", label: "Service Catalog", labelVi: "Danh mục dịch vụ", icon: Wrench },
-  { href: "/customer/bookings", label: "Booking Tracker", labelVi: "Theo dõi đơn đặt", icon: ClipboardList },
+  { href: "/customer/bookings", label: "History", labelVi: "Lịch sử", icon: History },
   { href: "/customer/loyalty", label: "Member Lounge", labelVi: "Phòng chờ thành viên", icon: Gift },
 ];
 

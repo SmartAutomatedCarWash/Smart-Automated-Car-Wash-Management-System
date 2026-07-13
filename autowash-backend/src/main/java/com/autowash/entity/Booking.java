@@ -163,11 +163,11 @@ public class Booking {
 
 
     public LocalDate getBookingDate() {
-        return scheduledAt == null ? null : scheduledAt.atZone(java.time.ZoneOffset.UTC).toLocalDate();
+        return scheduledAt == null ? null : scheduledAt.atZone(java.time.ZoneId.systemDefault()).toLocalDate();
     }
 
     public LocalTime getBookingTime() {
-        return scheduledAt == null ? null : scheduledAt.atZone(java.time.ZoneOffset.UTC).toLocalTime();
+        return scheduledAt == null ? null : scheduledAt.atZone(java.time.ZoneId.systemDefault()).toLocalTime();
     }
 
     public long getBasePrice() {

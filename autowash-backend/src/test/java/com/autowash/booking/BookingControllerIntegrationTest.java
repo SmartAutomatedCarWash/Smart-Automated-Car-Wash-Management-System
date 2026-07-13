@@ -145,9 +145,10 @@ class BookingControllerIntegrationTest {
     }
 
     @Test
-    void activateComboRequiresVerifiedPayment() throws Exception {
+    void purchaseComboSucceedsWithValidCombo() throws Exception {
         String accessToken = registerActivateAndLogin("0901234721");
 
+        // Combo 55555555-1234-1234-1234-123456789012 is seeded in test-data (Monthly Basic Combo)
         mockMvc.perform(post("/api/v1/customers/combos/{comboId}/activate", "55555555-1234-1234-1234-123456789012")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType("application/json")
@@ -157,8 +158,9 @@ class BookingControllerIntegrationTest {
                                   "paymentMethod": "E_WALLET"
                                 }
                         """))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.errorCode").value("PAYMENT_VERIFICATION_REQUIRED"));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.comboId").value("55555555-1234-1234-1234-123456789012"))
+                .andExpect(jsonPath("$.data.paymentStatus").value("COMPLETED"));
     }
 
     @Test

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertCircle,
   Calendar,
@@ -15,6 +15,9 @@ import {
   Star,
   User,
   XCircle,
+  ClipboardCheck,
+  Droplets,
+  PartyPopper,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
@@ -31,11 +34,11 @@ import {
   useCustomerBookingDetail,
 } from "@/features/bookings/hooks/use-bookings";
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
-import { ApplyPointsPanel } from "@/features/bookings/components/apply-points-panel";
 import { BookingCompletionPopup } from "@/features/bookings/components/booking-completion-popup";
 import { useBookingReviewCheck, useSubmitBookingReview } from "@/features/bookings/hooks/use-reviews";
 import type { BookingAddonSelection, BookingDetail } from "@/entities/bookings";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
+import { cn } from "@/shared/lib/utils";
 
 function formatShortDate(date: string, lang: "vi" | "en") {
   const [year, month, day] = date.split("-").map(Number);
@@ -51,6 +54,73 @@ function getBookingOptions(booking: BookingDetail): BookingAddonSelection[] {
   return booking.addons ?? booking.options ?? [];
 }
 
+// ── Status timeline config ───────────────────────────────────────────────────
+type TimelineStep = {
+  key: string;
+  labelVi: string;
+  labelEn: string;
+  icon: React.ElementType;
+};
+
+const TIMELINE_STEPS: TimelineStep[] = [
+  { key: "PENDING",     labelVi: "Chờ xác nhận",  labelEn: "Pending",         icon: Clock3 },
+  { key: "CONFIRMED",   labelVi: "Đã xác nhận",   labelEn: "Confirmed",       icon: ClipboardCheck },
+  { key: "CHECKED_IN",  labelVi: "Đã nhận xe",    labelEn: "Checked In",      icon: Car },
+  { key: "IN_PROGRESS", labelVi: "Đang rửa",      labelEn: "In Progress",     icon: Droplets },
+  { key: "COMPLETED",   labelVi: "Hoàn thành",    labelEn: "Completed",       icon: PartyPopper },
+];
+
+const STATUS_ORDER = ["PENDING", "CONFIRMED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED"];
+
+function getStepIndex(status: string) {
+  return STATUS_ORDER.indexOf(status.toUpperCase());
+}
+
+// ── Countdown to appointment ─────────────────────────────────────────────────
+function useCountdown(bookingDate: string, bookingTime: string) {
+  const [diff, setDiff] = useState<number | null>(null);
+
+  useEffect(() => {
+    const target = new Date(`${bookingDate}T${bookingTime}:00`).getTime();
+    const tick = () => {
+      const now = Date.now();
+      setDiff(target - now);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [bookingDate, bookingTime]);
+
+  return diff;
+}
+
+function CountdownBadge({ bookingDate, bookingTime, language }: { bookingDate: string; bookingTime: string; language: "vi" | "en" }) {
+  const diff = useCountdown(bookingDate, bookingTime);
+  if (diff === null) return null;
+  if (diff <= 0) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+        {translate(language, "Đã đến giờ hẹn", "Appointment time")}
+      </span>
+    );
+  }
+  const totalSec = Math.floor(diff / 1000);
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+  const label = days > 0
+    ? `${days}d ${String(hours).padStart(2, "0")}h ${String(mins).padStart(2, "0")}m`
+    : `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-700">
+      <Clock3 className="h-3.5 w-3.5" />
+      {translate(language, "Còn lại", "In")} {label}
+    </span>
+  );
+}
+
 export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) {
   const { language } = useLanguageStore();
   const bookingQuery = useCustomerBookingDetail(bookingId);
@@ -59,12 +129,24 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showReviewPopup, setShowReviewPopup] = useState(false);
+  const [autoReviewShown, setAutoReviewShown] = useState(false);
 
   const submitReviewMutation = useSubmitBookingReview();
-  const reviewCheckQuery = useBookingReviewCheck(
-    bookingId,
-    bookingQuery.data?.status === "COMPLETED" || bookingQuery.data?.washStatus === "COMPLETED"
-  );
+  const isCompleted = bookingQuery.data?.status === "COMPLETED" || bookingQuery.data?.washStatus === "COMPLETED";
+  const reviewCheckQuery = useBookingReviewCheck(bookingId, isCompleted);
+
+  // Auto-show review popup when booking is COMPLETED and not yet reviewed
+  useEffect(() => {
+    if (
+      isCompleted &&
+      !autoReviewShown &&
+      reviewCheckQuery.data &&
+      !reviewCheckQuery.data.hasReview
+    ) {
+      setAutoReviewShown(true);
+      setShowReviewPopup(true);
+    }
+  }, [isCompleted, autoReviewShown, reviewCheckQuery.data]);
 
   if (bookingQuery.isPending) {
     return (
@@ -187,6 +269,62 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
             </div>
           </div>
 
+          {/* ── Booking status timeline ── */}
+          {booking.status !== "CANCELLED" && booking.status !== "NO_SHOW" && (
+            <Card className="border-slate-200 bg-white shadow-md">
+              <CardHeader className="pb-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <CardTitle>{translate(language, "Tiến trình đặt lịch", "Booking progress")}</CardTitle>
+                    <CardDescription>{translate(language, "Theo dõi trạng thái từng bước của lịch đặt.", "Track each step of your booking session.")}</CardDescription>
+                  </div>
+                  {booking.status !== "COMPLETED" && (
+                    <CountdownBadge
+                      bookingDate={booking.scheduling.bookingDate}
+                      bookingTime={booking.scheduling.bookingTime}
+                      language={language}
+                    />
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="relative flex items-start justify-between gap-1 overflow-x-auto pb-2">
+                  {/* connector line */}
+                  <div className="absolute left-0 right-0 top-5 h-0.5 bg-slate-200 mx-6 hidden sm:block" />
+                  {TIMELINE_STEPS.map((step, idx) => {
+                    const currentIdx = getStepIndex(booking.washStatus ?? booking.status);
+                    const isDone = idx < currentIdx;
+                    const isActive = idx === currentIdx;
+                    const Icon = step.icon;
+                    return (
+                      <div key={step.key} className="relative z-10 flex min-w-[80px] flex-1 flex-col items-center gap-2 text-center">
+                        <div className={cn(
+                          "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300",
+                          isDone  ? "border-emerald-500 bg-emerald-500 text-white shadow-md shadow-emerald-100" :
+                          isActive ? "border-sky-500 bg-sky-500 text-white shadow-md shadow-sky-100 animate-pulse" :
+                          "border-slate-200 bg-white text-slate-400"
+                        )}>
+                          {isDone ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+                        </div>
+                        <span className={cn(
+                          "text-[10px] font-bold leading-tight",
+                          isDone ? "text-emerald-600" : isActive ? "text-sky-700" : "text-slate-400"
+                        )}>
+                          {language === "vi" ? step.labelVi : step.labelEn}
+                        </span>
+                        {isActive && (
+                          <span className="text-[9px] font-semibold text-sky-500 uppercase tracking-wider">
+                            {translate(language, "Hiện tại", "Current")}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="border-emerald-200 bg-emerald-50 shadow-md">
             <CardHeader>
               <div className="flex items-center gap-3 text-emerald-800">
@@ -241,15 +379,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
               ]}
             />
           </div>
-
-          <ApplyPointsPanel
-            bookingId={booking.bookingId}
-            finalAmount={booking.pricing.finalAmount}
-            pointsRedeemed={booking.pricing.pointsRedeemed}
-            pointsDiscount={booking.pricing.pointsDiscount}
-            disabled={booking.status !== "CONFIRMED"}
-            language={language}
-          />
         </div>
 
         <div className="space-y-6">

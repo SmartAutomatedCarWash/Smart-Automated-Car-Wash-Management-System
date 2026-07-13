@@ -32,6 +32,7 @@ export type BookingPackage = {
   category: string;
   features: string[];
   image: string | null;
+  imageUrls?: string[] | null;
   status: string;
   popularity: string | null;
 };

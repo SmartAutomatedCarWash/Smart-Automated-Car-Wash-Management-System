@@ -13,7 +13,26 @@ import type {
 } from "../../../entities/bookings/index.ts";
 import { getVoucherCodeFormatError, sanitizeVoucherCodeInput } from "../../../shared/lib/validators.ts";
 
+/** @deprecated Use generateTimeSlotsFromRange() with operating hours from API instead */
 export const BOOKING_TIME_SLOTS = ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"] as const;
+
+/**
+ * Generate hourly time slots between openTime and closeTime (exclusive).
+ * e.g. openTime="08:00", closeTime="20:00" → ["08:00","09:00",...,"19:00"]
+ */
+export function generateTimeSlotsFromRange(openTime: string, closeTime: string): string[] {
+  const [openH, openM] = openTime.split(":").map(Number);
+  const [closeH, closeM] = closeTime.split(":").map(Number);
+  const openMinutes = openH * 60 + (openM ?? 0);
+  const closeMinutes = closeH * 60 + (closeM ?? 0);
+  const slots: string[] = [];
+  for (let m = openMinutes; m < closeMinutes; m += 60) {
+    const h = Math.floor(m / 60);
+    const min = m % 60;
+    slots.push(`${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`);
+  }
+  return slots;
+}
 
 export function buildCreateBookingPayload(draft: BookingDraft): CreateBookingRequest {
   const payload: CreateBookingRequest = {

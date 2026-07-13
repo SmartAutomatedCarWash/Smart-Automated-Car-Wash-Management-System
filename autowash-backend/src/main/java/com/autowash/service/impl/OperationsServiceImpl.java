@@ -42,6 +42,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class OperationsServiceImpl implements OperationsService {
 
+    private static final Set<BookingStatus> ELIGIBLE_BOOKING_STATUSES = Set.of(
+            BookingStatus.PENDING,
+            BookingStatus.CONFIRMED
+    );
+
     private static final Set<WashSessionStatus> ACTIVE_SESSION_STATUSES = Set.of(
             WashSessionStatus.PENDING,
             WashSessionStatus.QUEUED,
@@ -81,10 +86,10 @@ public class OperationsServiceImpl implements OperationsService {
     @Transactional
     public CreateWashSessionResponse createSession(CreateWashSessionRequest request) {
         Booking booking = bookingService.requireBookingForOperations(request.bookingId());
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Booking must be CONFIRMED to create a wash session",
+                    "Booking must be CONFIRMED or PENDING to create a wash session",
                     "BUSINESS_RULE_VIOLATION"
             );
         }
@@ -151,11 +156,11 @@ public class OperationsServiceImpl implements OperationsService {
         List<Booking> bookings = currentUser.getRole() == UserRole.STAFF
                 ? BookingRepository.findEligibleForAssignedStaffOperationsSession(
                         currentUser,
-                        BookingStatus.CONFIRMED,
+                        ELIGIBLE_BOOKING_STATUSES,
                         ACTIVE_SESSION_STATUSES,
                         PageRequest.of(0, safeLimit))
                 : BookingRepository.findEligibleForOperationsSession(
-                        BookingStatus.CONFIRMED,
+                        ELIGIBLE_BOOKING_STATUSES,
                         ACTIVE_SESSION_STATUSES,
                         PageRequest.of(0, safeLimit));
         return bookings

@@ -77,12 +77,10 @@ export function createCustomerBooking(draft: BookingDraft) {
   });
 }
 
-export function holdBookingSlot(payload: HoldSlotRequest) {
-  return apiRequest<HoldSlotResponse, HoldSlotRequest>({
-    method: "POST",
-    url: "/slots/hold",
-    data: payload,
-  });
+export async function holdBookingSlot(payload: HoldSlotRequest): Promise<HoldSlotResponse> {
+  // Backend returns the response directly (not wrapped in ApiSuccessResponse)
+  const res = await apiClient.post<HoldSlotResponse>("/slots/hold", payload);
+  return res.data;
 }
 
 export function releaseBookingSlot(payload: HoldSlotRequest) {

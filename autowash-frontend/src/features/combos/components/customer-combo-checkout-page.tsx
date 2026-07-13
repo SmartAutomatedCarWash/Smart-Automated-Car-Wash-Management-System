@@ -15,6 +15,8 @@ import {
   CreditCard,
   CarFront,
   Star,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/shared/ui/ui/badge";
@@ -22,12 +24,13 @@ import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import {
-  BOOKING_TIME_SLOTS,
+  generateTimeSlotsFromRange,
   formatBookingCurrency,
   formatLocalDateInput,
   getAvailableBookingTimeSlots,
   getPaymentMethodLabel,
 } from "@/features/bookings/lib/booking-format";
+import { usePublicSettings } from "@/features/settings/hooks/use-public-settings";
 import { useActiveCustomerCombos, useBookingCombos, useCreateCustomerBooking, usePurchaseCustomerCombo } from "@/features/bookings/hooks/use-bookings";
 import { useCustomerVehicles } from "@/features/vehicles/hooks/use-customer-vehicles";
 import { cn } from "@/shared/lib/utils";
@@ -100,11 +103,22 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
   const vehiclesQuery = useCustomerVehicles();
   const createBookingMutation = useCreateCustomerBooking();
   const purchaseComboMutation = usePurchaseCustomerCombo();
+  const publicSettingsQuery = usePublicSettings();
   const [vehicleId, setVehicleId] = useState("");
   const [bookingDate, setBookingDate] = useState(formatLocalDateInput(0));
-  const [bookingTime, setBookingTime] = useState<string>(BOOKING_TIME_SLOTS[0] ?? "09:00");
+  const [bookingTime, setBookingTime] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("BANK_TRANSFER");
   const [showValidation, setShowValidation] = useState(false);
+  const [slideIndex, setSlideIndex] = useState(0);
+
+  // Dynamic time slots from admin operating hours, fallback to legacy hardcode
+  const timeSlots = useMemo(() => {
+    const s = publicSettingsQuery.data;
+    if (s?.operatingStartTime && s?.operatingEndTime) {
+      return generateTimeSlotsFromRange(s.operatingStartTime, s.operatingEndTime);
+    }
+    return ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
+  }, [publicSettingsQuery.data]);
 
   const selectedCombo = useMemo(
     () => combosQuery.data?.find((combo) => combo.comboId === comboId) ?? null,
@@ -118,27 +132,37 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
     [activeCombosQuery.data, comboId],
   );
   const availableTimeSlots = useMemo(
-    () => getAvailableBookingTimeSlots(bookingDate, BOOKING_TIME_SLOTS),
-    [bookingDate],
+    () => getAvailableBookingTimeSlots(bookingDate, timeSlots),
+    [bookingDate, timeSlots],
   );
   const firstAvailableTimeSlot = availableTimeSlots.find((slot) => !slot.disabled)?.time ?? "";
 
+  // Set initial booking time once slots are loaded
   useEffect(() => {
-    if (!bookingDate) {
-      setBookingDate(formatLocalDateInput(0));
-    }
-  }, [bookingDate]);
-
-  useEffect(() => {
-    if (!firstAvailableTimeSlot) {
-      return;
-    }
-
-    const selectedTimeSlot = availableTimeSlots.find((slot) => slot.time === bookingTime);
-    if (!bookingTime || selectedTimeSlot?.disabled) {
+    if (!bookingTime && firstAvailableTimeSlot) {
       setBookingTime(firstAvailableTimeSlot);
     }
-  }, [availableTimeSlots, bookingTime, firstAvailableTimeSlot]);
+  }, [bookingTime, firstAvailableTimeSlot]);
+
+  // Derive combo images (multi or fallback)
+  const comboImages = useMemo(() => {
+    if (!selectedCombo) return [];
+    const urls = selectedCombo.imageUrls && selectedCombo.imageUrls.length > 0
+      ? selectedCombo.imageUrls
+      : selectedCombo.image
+        ? [selectedCombo.image]
+        : [];
+    return urls;
+  }, [selectedCombo]);
+
+  // Auto-advance slideshow every 3 seconds
+  useEffect(() => {
+    if (comboImages.length <= 1) return;
+    const timer = setInterval(() => {
+      setSlideIndex((prev) => (prev + 1) % comboImages.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [comboImages.length]);
 
   if (combosQuery.isPending || activeCombosQuery.isPending || vehiclesQuery.isPending) {
     return (
@@ -193,12 +217,16 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
     );
   }
 
-  const combo = selectedCombo as BookingCombo & { services?: string[] };
+  const combo = selectedCombo as BookingCombo & { services?: any[] };
   const originalPrice = combo.upgradePriceFrom && combo.upgradePriceFrom > combo.basePrice
     ? combo.upgradePriceFrom
     : combo.basePrice;
   const savings = Math.max(0, originalPrice - combo.basePrice);
-  const comboBenefits = combo.benefits ?? combo.services ?? [];
+  // services may be objects {serviceId, name, ...} or plain strings
+  const rawBenefits: any[] = combo.benefits ?? combo.services ?? [];
+  const comboBenefits: string[] = rawBenefits.map((b) =>
+    typeof b === "string" ? b : (b?.name ?? b?.optionName ?? JSON.stringify(b))
+  );
   const heroImageSrc = buildComboHeroImage(combo);
   const vehicles = vehiclesQuery.data?.items ?? [];
   const selectedVehicle = vehicles.find((item) => item.vehicleId === vehicleId) ?? null;
@@ -267,7 +295,7 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
         });
 
         toast.success("Đã dùng combo sẵn có và tạo lịch thành công.");
-        router.push(`/customer/bookings/success?bookingId=${booking.bookingId}`);
+        router.push(`/customer/bookings/${booking.bookingId}`);
         return;
       }
 
@@ -284,391 +312,238 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
   };
 
   return (
-    <div className="min-h-[calc(100vh-72px)] bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_25%),linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
+    <div className="min-h-[calc(100vh-72px)] bg-background px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-5xl flex-col gap-6">
+
+        {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
-              <Sparkles className="h-3.5 w-3.5" />
-              Combo checkout
-            </div>
-            <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
-              Thanh toán combo
-            </h1>
-          </div>
-          <Button asChild variant="outline" className="rounded-full">
-            <Link href="/customer/home">Quay lại trang chủ</Link>
+          <h1 className="text-2xl font-black tracking-tight text-foreground">Combo Checkout</h1>
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link href="/customer/home">Back to home</Link>
           </Button>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card className="overflow-hidden border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
-            <div className="bg-[linear-gradient(135deg,rgba(14,165,233,0.16),rgba(37,99,235,0.18),rgba(255,255,255,0.92))] px-6 py-6 sm:px-8">
-              <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
-                <div>
-                  <Badge className="rounded-full bg-white/85 text-sky-700 hover:bg-white/85">
-                    Gói combo nổi bật
-                  </Badge>
-                  <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-                    {combo.name}
-                  </h2>
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-                    {combo.description}
-                  </p>
+        <div className="grid gap-6 lg:grid-cols-[1fr,380px]">
 
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    <Badge variant="outline" className="rounded-full border-sky-200 bg-white/80 text-sky-700">
-                      {combo.durationDays} ngày sử dụng
-                    </Badge>
-                    <Badge variant="outline" className="rounded-full border-sky-200 bg-white/80 text-sky-700">
-                      Tối đa {combo.maxServices} lượt
-                    </Badge>
-                    <Badge variant="outline" className="rounded-full border-sky-200 bg-white/80 text-sky-700">
-                      {combo.isActive ? "Đang mở bán" : "Tạm dừng"}
-                    </Badge>
-                  </div>
-                </div>
+          {/* ── Left: Combo info + booking form ── */}
+          <div className="space-y-4">
 
-                <div className="overflow-hidden rounded-[1.75rem] border border-white/70 bg-white/70 p-3 shadow-sm backdrop-blur">
-                  <div className="relative h-56 overflow-hidden rounded-[1.25rem] bg-slate-900">
-                    <img
-                      src={heroImageSrc}
-                      alt={combo.name}
-                      className="h-full w-full object-cover opacity-90 transition-opacity duration-300 hover:opacity-100"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/20 to-transparent" />
-                    
-                    <div className="absolute left-4 top-4 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-white backdrop-blur-md">
-                      Visual riêng cho gói
-                    </div>
-                    
-                    <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
-                      <div>
-                        <div className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-200 drop-shadow-md">
-                          Aura Car Care
-                        </div>
-                        <div className="mt-1 text-2xl font-black tracking-tight text-white drop-shadow-lg">
-                          {combo.name}
-                        </div>
-                      </div>
-                      <div className="rounded-2xl border border-white/20 bg-white/10 p-2.5 shadow-lg backdrop-blur-md">
-                        <img src="/logo.png" alt="Aura Car Care" className="h-9 w-9 rounded-xl drop-shadow-sm" />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                    {demoVisualBenefits.map((item) => (
-                      <div
-                        key={item}
-                        className="rounded-2xl border border-white bg-white/90 px-3 py-3 text-xs font-medium leading-5 text-slate-600"
-                      >
-                        {item}
-                      </div>
+            {/* Combo summary card */}
+            <Card className="border-border/70 bg-card shadow-sm">
+              <CardContent className="p-5 space-y-4">
+                {/* Image slideshow */}
+                {comboImages.length > 0 && (
+                  <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-100 group">
+                    {comboImages.map((src, i) => (
+                      <img
+                        key={src}
+                        src={src}
+                        alt={`${combo.name} - ${i + 1}`}
+                        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${i === slideIndex ? "opacity-100" : "opacity-0"}`}
+                      />
                     ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <CardContent className="space-y-6 p-6 sm:p-8">
-              <div className="grid gap-4 sm:grid-cols-3">
-                <InfoBox
-                  icon={Clock3}
-                  label="Thời hạn"
-                  value={`${combo.durationDays} ngày`}
-                  helper={`${combo.maxServices} lượt tối đa`}
-                />
-                <InfoBox
-                  icon={ShieldCheck}
-                  label="Trạng thái"
-                  value={combo.isActive ? "Đang mở bán" : "Tạm dừng"}
-                  helper={combo.canUpgrade ? "Có thể nâng cấp" : "Không nâng cấp"}
-                />
-                <InfoBox
-                  icon={Wallet}
-                  label="Tiết kiệm"
-                  value={formatBookingCurrency(savings)}
-                  helper="So với giá gốc"
-                />
-              </div>
-
-              <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-5">
-                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.24em] text-slate-400">
-                    <BadgeCheck className="h-4 w-4 text-sky-700" />
-                    Quyền lợi trong gói
-                  </div>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    {comboBenefits.length > 0 ? (
-                      comboBenefits.map((benefit) => (
-                        <div
-                          key={benefit}
-                          className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm"
-                        >
-                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                          <span className="text-sm leading-6 text-slate-700">{benefit}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 text-sm text-slate-500">
-                        Chưa có danh sách quyền lợi chi tiết.
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.24em] text-slate-400">
-                    <CarFront className="h-4 w-4 text-sky-700" />
-                    Mô tả trải nghiệm
-                  </div>
-                  <div className="mt-4 space-y-3">
-                    <DetailRow label="Combo ID" value={combo.comboId} mono />
-                    <DetailRow label="Loại gói" value="Combo chăm xe định kỳ" />
-                    <DetailRow label="Mức ưu đãi" value={formatBookingCurrency(savings)} />
-                    <DetailRow label="Phù hợp" value="Khách hàng muốn tối ưu chi phí nhiều lần rửa" />
-                  </div>
-
-                  <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/70 p-4">
-                    <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                      <Star className="h-4 w-4 text-amber-500" />
-                      Ghi chú sử dụng
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">
-                      Gói này phù hợp để dùng liên tục trong thời gian ngắn. Bạn có thể theo dõi lượt còn lại
-                      và ngày hết hạn trực tiếp tại trang chủ khách hàng sau khi mua thành công.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {ownedCombo ? (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-900">
-                  <div className="font-bold">Bạn đã có combo này</div>
-                  <div className="mt-1">
-                    Còn {ownedCombo.remainingUsages} lượt, hết hạn vào{" "}
-                    {new Date(ownedCombo.expiresAt).toLocaleDateString("vi-VN")}.
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-sky-200 bg-sky-50/80 p-4 text-sm leading-6 text-sky-900">
-                  Khi xác nhận thanh toán, hệ thống sẽ gọi backend
-                  <span className="mx-1 font-mono">POST /customers/combos/{comboId}/activate</span>
-                  để mua combo độc lập. Sau khi mua xong, gói sẽ xuất hiện ở trang chủ để bạn dùng cho booking kế tiếp.
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="h-fit border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
-            <CardHeader>
-              <CardTitle>Thanh toán combo</CardTitle>
-              <CardDescription>Thông tin tổng quan, phương thức dự kiến và trạng thái xử lý hiện tại.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="rounded-[1.75rem] bg-[linear-gradient(180deg,#f8fafc_0%,#eef6ff_100%)] p-5">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <div className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
-                      Giá gốc
-                    </div>
-                    <div className="text-sm font-semibold text-slate-400 line-through">
-                      {formatBookingCurrency(originalPrice)}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
-                      Giá combo
-                    </div>
-                    <div className="text-3xl font-black tracking-tight text-sky-700">
-                      {formatBookingCurrency(combo.basePrice)}
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-sm">
-                  <span className="text-sm font-semibold text-slate-600">Tiết kiệm ngay</span>
-                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">
-                    {formatBookingCurrency(savings)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
-                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.24em] text-slate-400">
-                  <CreditCard className="h-4 w-4 text-sky-700" />
-                  Phương thức thanh toán
-                </div>
-                <div className="mt-3 grid gap-3">
-                  {paymentMethods.map((item) => (
-                    <div
-                      key={item.label}
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-semibold text-slate-800">{item.label}</span>
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-500">
-                          DEMO
-                        </span>
-                      </div>
-                      <div className="mt-1 text-xs leading-5 text-slate-500">{item.note}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
-                <div className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">
-                  {ownedCombo ? "Thông tin tạo booking" : "Thông tin thanh toán combo"}
-                </div>
-
-                <div className="mt-4 space-y-4">
-                  {ownedCombo ? (
-                    <>
-                      <div>
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">Xe sử dụng</label>
-                        <select
-                          value={vehicleId}
-                          onChange={(event) => setVehicleId(event.target.value)}
-                          className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900"
-                        >
-                          <option value="">Chọn xe của bạn</option>
-                          {vehicles.map((vehicle) => (
-                            <option key={vehicle.vehicleId} value={vehicle.vehicleId}>
-                              {vehicle.plate} · {vehicle.brand} {vehicle.model}
-                            </option>
-                          ))}
-                        </select>
-                        {showValidation && fieldErrors.vehicleId ? (
-                          <p className="mt-2 text-sm text-rose-600">{fieldErrors.vehicleId}</p>
-                        ) : null}
-                      </div>
-
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold text-slate-700">Ngày đặt lịch</label>
-                          <input
-                            type="date"
-                            min={formatLocalDateInput(0)}
-                            value={bookingDate}
-                            onChange={(event) => setBookingDate(event.target.value)}
-                            className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900"
-                          />
-                          {showValidation && fieldErrors.bookingDate ? (
-                            <p className="mt-2 text-sm text-rose-600">{fieldErrors.bookingDate}</p>
-                          ) : null}
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold text-slate-700">Khung giờ</label>
-                          <select
-                            value={bookingTime}
-                            onChange={(event) => setBookingTime(event.target.value)}
-                            className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900"
-                          >
-                            {availableTimeSlots.map(({ time, disabled }) => (
-                              <option key={time} value={time} disabled={disabled}>
-                                {time}
-                              </option>
-                            ))}
-                          </select>
-                          {availableTimeSlots.every((slot) => slot.disabled) ? (
-                            <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                              No time slots are available for today. Please choose a later date.
-                            </p>
-                          ) : null}
-                          {showValidation && fieldErrors.bookingTime ? (
-                            <p className="mt-2 text-sm text-rose-600">{fieldErrors.bookingTime}</p>
-                          ) : null}
-                        </div>
-                      </div>
-                    </>
-                  ) : null}
-
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">Phương thức thanh toán</label>
-                    <div className="grid gap-2">
-                      {PAYMENT_METHODS.map((method) => {
-                        const active = paymentMethod === method;
-                        return (
-                          <button
-                            key={method}
-                            type="button"
-                            onClick={() => setPaymentMethod(method)}
-                            className={cn(
-                              "rounded-2xl border px-4 py-3 text-left transition",
-                              active
-                                ? "border-slate-900 bg-slate-900 text-white"
-                                : "border-slate-200 bg-white text-slate-800 hover:border-slate-400",
-                            )}
-                          >
-                            <div className="font-semibold">{getPaymentMethodLabel(method)}</div>
-                            <div className={cn("mt-1 text-xs", active ? "text-slate-200" : "text-slate-500")}>
-                              Dùng payload booking thật để backend xử lý mua combo / áp lượt còn lại.
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-sm leading-6 text-slate-600">
-                    {ownedCombo ? (
-                      selectedVehicle ? (
-                        <>
-                          Booking sẽ tạo cho xe <span className="font-semibold text-slate-900">{selectedVehicle.plate}</span>
-                          {" "}vào ngày <span className="font-semibold text-slate-900">{bookingDate || "--"}</span>
-                          {" "}lúc <span className="font-semibold text-slate-900">{bookingTime || "--"}</span>.
-                        </>
-                      ) : (
-                        <>Chọn xe, ngày và giờ để tạo booking combo thật qua backend.</>
-                      )
-                    ) : (
+                    {comboImages.length > 1 && (
                       <>
-                        Sau khi thanh toán thành công, combo sẽ được kích hoạt ngay với{" "}
-                        <span className="font-semibold text-slate-900">{combo.maxServices} lượt</span> và thời hạn{" "}
-                        <span className="font-semibold text-slate-900">{combo.durationDays} ngày</span>.
+                        <button
+                          type="button"
+                          className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/30 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/50"
+                          onClick={() => setSlideIndex((prev) => (prev > 0 ? prev - 1 : comboImages.length - 1))}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/30 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/50"
+                          onClick={() => setSlideIndex((prev) => (prev < comboImages.length - 1 ? prev + 1 : 0))}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                        <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
+                          {comboImages.map((_, i) => (
+                            <div
+                              key={i}
+                              className={`h-1.5 rounded-full transition-all duration-300 shadow-sm ${i === slideIndex ? "w-4 bg-white" : "w-1.5 bg-white/50"}`}
+                            />
+                          ))}
+                        </div>
                       </>
                     )}
                   </div>
-                </div>
-              </div>
+                )}
 
-              {Boolean(createBookingMutation.isError || purchaseComboMutation.isError) ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  {getDisplayErrorMessage(createBookingMutation.error ?? purchaseComboMutation.error ?? null)}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <h2 className="text-lg font-bold text-foreground">{combo.name}</h2>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className="rounded-full text-xs">{combo.durationDays} days</Badge>
+                      <Badge variant="outline" className="rounded-full text-xs">Max {combo.maxServices} uses</Badge>
+                      <Badge variant="outline" className={`rounded-full text-xs ${combo.isActive ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 text-slate-500"}`}>
+                        {combo.isActive ? "Available" : "Unavailable"}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-muted-foreground">Price</p>
+                    <p className="text-2xl font-black text-primary">{formatBookingCurrency(combo.basePrice)}</p>
+                    {savings > 0 && (
+                      <p className="text-xs text-emerald-600 font-semibold">Save {formatBookingCurrency(savings)}</p>
+                    )}
+                  </div>
                 </div>
-              ) : null}
 
-              <div className="flex flex-col gap-3">
-                <Button
-                  type="button"
-                  className="h-12 rounded-full bg-slate-900 text-white hover:bg-slate-800"
-                  onClick={handleConfirm}
-                  disabled={
-                    createBookingMutation.isPending ||
-                    purchaseComboMutation.isPending ||
-                    combo.isActive === false ||
-                    Boolean(ownedCombo && vehicles.length === 0)
-                  }
-                >
-                  {createBookingMutation.isPending || purchaseComboMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      {ownedCombo ? "Đang tạo booking combo" : "Đang thanh toán combo"}
-                    </>
-                  ) : (
-                    <>
-                      {ownedCombo ? "Dùng combo và tạo lịch" : "Mua combo ngay"}
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-                <Button asChild variant="outline" className="h-12 rounded-full">
-                  <Link href="/customer/combos">Chọn combo khác</Link>
-                </Button>
+                {/* Services included */}
+                {comboBenefits.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Services included</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {comboBenefits.map((benefit) => (
+                        <div key={benefit} className="flex items-center gap-2 text-sm text-foreground">
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                          {benefit}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Owned combo notice */}
+                {ownedCombo && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                    <span className="font-bold">You already own this combo</span> — {ownedCombo.remainingUsages} uses left, expires {new Date(ownedCombo.expiresAt).toLocaleDateString("en-GB")}.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Booking form (only when using owned combo) */}
+            {ownedCombo && (
+              <Card className="border-border/70 bg-card shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-bold">Schedule your appointment</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-0">
+                  {/* Vehicle */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground">Vehicle</label>
+                    <select
+                      value={vehicleId}
+                      onChange={(e) => setVehicleId(e.target.value)}
+                      className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="">Select a vehicle</option>
+                      {vehicles.map((v) => (
+                        <option key={v.vehicleId} value={v.vehicleId}>{v.plate} · {v.brand} {v.model}</option>
+                      ))}
+                    </select>
+                    {showValidation && fieldErrors.vehicleId && <p className="text-xs text-rose-600">{fieldErrors.vehicleId}</p>}
+                  </div>
+
+                  {/* Date + Time */}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Date</label>
+                      <input
+                        type="date"
+                        min={formatLocalDateInput(0)}
+                        value={bookingDate}
+                        onChange={(e) => setBookingDate(e.target.value)}
+                        className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      />
+                      {showValidation && fieldErrors.bookingDate && <p className="text-xs text-rose-600">{fieldErrors.bookingDate}</p>}
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Time</label>
+                      <select
+                        value={bookingTime}
+                        onChange={(e) => setBookingTime(e.target.value)}
+                        className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {availableTimeSlots.map(({ time, disabled }) => (
+                          <option key={time} value={time} disabled={disabled}>{time}</option>
+                        ))}
+                      </select>
+                      {showValidation && fieldErrors.bookingTime && <p className="text-xs text-rose-600">{fieldErrors.bookingTime}</p>}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* ── Right: Payment + confirm ── */}
+          <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+            <Card className="border-border/70 bg-card shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold">Payment method</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 pt-0">
+                {PAYMENT_METHODS.map((method) => {
+                  const active = paymentMethod === method;
+                  return (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={() => setPaymentMethod(method)}
+                      className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-semibold transition-all ${
+                        active ? "border-primary bg-primary/5 text-primary" : "border-border bg-card text-foreground hover:border-primary/40"
+                      }`}
+                    >
+                      <span>{getPaymentMethodLabel(method)}</span>
+                      {active && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                    </button>
+                  );
+                })}
+                {showValidation && fieldErrors.paymentMethod && <p className="text-xs text-rose-600">{fieldErrors.paymentMethod}</p>}
+              </CardContent>
+            </Card>
+
+            {/* Order summary */}
+            <Card className="border-border/70 bg-card shadow-sm">
+              <CardContent className="p-5 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Base price</span>
+                  <span className="font-medium">{formatBookingCurrency(originalPrice)}</span>
+                </div>
+                {savings > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Discount</span>
+                    <span className="font-semibold text-emerald-600">−{formatBookingCurrency(savings)}</span>
+                  </div>
+                )}
+                <div className="border-t border-border pt-3 flex justify-between">
+                  <span className="font-bold text-foreground">Total</span>
+                  <span className="text-lg font-black text-primary">{formatBookingCurrency(combo.basePrice)}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Error */}
+            {(createBookingMutation.isError || purchaseComboMutation.isError) && (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {getDisplayErrorMessage(createBookingMutation.error ?? purchaseComboMutation.error ?? null)}
               </div>
-            </CardContent>
-          </Card>
+            )}
+
+            {/* Actions */}
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                className="h-11 rounded-xl font-bold gap-2"
+                onClick={handleConfirm}
+                disabled={createBookingMutation.isPending || purchaseComboMutation.isPending || !combo.isActive || Boolean(ownedCombo && vehicles.length === 0)}
+              >
+                {createBookingMutation.isPending || purchaseComboMutation.isPending ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" />{ownedCombo ? "Booking..." : "Processing..."}</>
+                ) : (
+                  <>{ownedCombo ? "Use combo & book" : "Purchase combo"}<ArrowRight className="h-4 w-4" /></>
+                )}
+              </Button>
+              <Button asChild variant="outline" className="h-11 rounded-xl">
+                <Link href="/customer/combos">Browse other combos</Link>
+              </Button>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

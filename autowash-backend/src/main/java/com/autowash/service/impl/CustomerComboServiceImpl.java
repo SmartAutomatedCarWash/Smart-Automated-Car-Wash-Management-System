@@ -85,10 +85,39 @@ public class CustomerComboServiceImpl implements CustomerComboService {
 
     @Transactional
     public PurchaseCustomerComboResponse purchaseCombo(User customer, PurchaseCustomerComboRequest request) {
-        throw new ApiException(
-                HttpStatus.FORBIDDEN,
-                "Combo purchase requires verified payment before activation",
-                "PAYMENT_VERIFICATION_REQUIRED"
+        Combo combo = ComboRepository.findByIdAndActiveTrue(request.comboId())
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Combo is not available",
+                        "BUSINESS_RULE_VIOLATION"
+                ));
+
+        Instant now = Instant.now();
+        Instant expiresAt = expiresAt(now, combo);
+        int totalUsages = Math.max(combo.getMaxUsages() == null ? 0 : combo.getMaxUsages(), 1);
+
+        CustomerCombo owned = new CustomerCombo(
+                UUID.randomUUID(),
+                customer,
+                combo.getId(),
+                totalUsages,
+                now,
+                expiresAt
+        );
+        owned = customerComboRepository.save(owned);
+
+        return new PurchaseCustomerComboResponse(
+                owned.getId().toString(),
+                combo.getId().toString(),
+                combo.getName(),
+                combo.getPrice(),
+                request.paymentMethod(),
+                "COMPLETED",
+                owned.getTotalUsages(),
+                owned.getRemainingUsages(),
+                owned.getActivatedAt(),
+                owned.getExpiresAt(),
+                now
         );
     }
 

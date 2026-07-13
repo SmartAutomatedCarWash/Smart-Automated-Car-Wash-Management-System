@@ -1307,7 +1307,6 @@ function nextAction(status: WashSessionStatus): { type: ActionType; label: strin
 
 function getBlockedReason(action: ActionType, status: WashSessionStatus) {
   if (action === "queue" && status !== "PENDING") return "Chỉ phiên chờ duyệt mới được duyệt";
-  if (action === "check-in" && status === "PENDING") return "Cần duyệt phiên trước";
   if (action === "check-in" && (status === "CHECKED_IN" || status === "IN_PROGRESS" || status === "COMPLETED")) {
     return "Phiên này đã check-in";
   }
@@ -1323,7 +1322,13 @@ async function runAction(action: ActionType, session: OperationsQueueSession): P
     await queueWashSession(session.sessionId);
     return checkInWashSession(session.sessionId);
   }
-  if (action === "check-in") return checkInWashSession(session.sessionId);
+  if (action === "check-in") {
+    // If still PENDING, auto-queue first then check-in
+    if (session.status === "PENDING") {
+      await queueWashSession(session.sessionId);
+    }
+    return checkInWashSession(session.sessionId);
+  }
   if (action === "start") return startWashSession(session.sessionId);
   return completeWashSession(session.sessionId);
 }

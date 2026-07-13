@@ -79,4 +79,12 @@ public class AdminStaffController {
     public ApiResponse<AdminStaffWorkloadResponse> getStaffWorkload(@PathVariable UUID staffId) {
         return ApiResponse.ok("Staff workload retrieved", adminReportingService.getStaffWorkload(staffId));
     }
+
+    @GetMapping("/kpi")
+    @Operation(summary = "List all staff KPI for admin dashboard")
+    public ApiResponse<List<com.autowash.dto.StaffKpiItem>> listStaffKpi(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "TODAY") String range
+    ) {
+        return ApiResponse.ok("Staff KPI retrieved", adminReportingService.listStaffKpi(range));
+    }
 }

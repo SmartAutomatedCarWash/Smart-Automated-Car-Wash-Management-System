@@ -1,5 +1,18 @@
 # AutoWash Pro — Business Rules (Source of Truth)
 
+> **Cập nhật 2026-07-13**
+> - **Combo Purchase**: BR-103 cập nhật — `purchaseCombo()` giờ hoạt động trực tiếp, không còn throw `PAYMENT_VERIFICATION_REQUIRED`. Customer có thể mua combo trực tiếp qua `POST /customers/combos/{id}/purchase` (✅ implemented).
+> - **Booking → History redirect**: Sau khi xác nhận booking, customer được chuyển thẳng đến `/customer/bookings/{id}` thay vì trang success trung gian.
+> - **Staff KPI Dashboard**: Admin dashboard có section "Staff Performance" mới — `GET /admin/staff/kpi?range=TODAY|WEEK|MONTH` trả về KPI từng nhân viên: booking hoàn thành, doanh thu, active sessions, KPI progress bar (target 5M/period).
+> - **Timezone Fix**: `scheduled_at` booking giờ được lưu đúng với `ZoneId.systemDefault()` (Asia/Ho_Chi_Minh), thay vì `ZoneOffset.UTC` sai. V25 migration fix retroactive cho booking cũ.
+> - **Check-in from PENDING**: Staff có thể check-in thẳng từ trạng thái PENDING (không cần qua bước duyệt riêng). `runAction("check-in")` tự động queue → check-in trong 1 bước.
+> - **No-show scope mở rộng**: `findNoShowCandidates` và `listEligibleSessionBookings` giờ xét cả booking PENDING (chưa OTP confirm) lẫn CONFIRMED.
+> - **Booking Tracker → History**: Menu "Booking Tracker" đổi tên thành "History". Trang `/customer/bookings` chia 3 sections: active bookings (với timeline + countdown), owned combos, booking history.
+> - **Booking Detail Timeline**: Trang `/customer/bookings/{id}` hiển thị 5-bước progress timeline (Pending → Confirmed → Checked In → In Progress → Completed) với countdown đếm ngược đến giờ hẹn.
+> - **Payment method ẩn khi dùng combo**: Trang confirm booking ẩn payment method selector khi booking dùng combo đã thanh toán.
+> - **Auto review popup**: Tự động hiện review popup khi booking COMPLETED và chưa được review.
+> - **Multiple images per package/combo**: `image_url` column (TEXT) lưu comma-separated Pexels URLs cho packages và combos (per V16 migration).
+
 > **Cập nhật 2026-07-10**
 > - **Booking Session**: Added two-step booking confirmation flow using slot hold `expiresAt`.
 > - **Cancellation / No-show Policy**: Removed loyalty-point cancellation penalties; voucher refund/forfeit plus `ViolationRecord` is authoritative.
@@ -17,7 +30,7 @@
 > - **BR‑124**: Admin UI `Discount value` chuyển thành dropdown các mức phần trăm (5 %‑70 %) khi loại giảm là **PERCENT**.
 
 
-> **Version:** 2.1 | **Last updated:** 2026-07-10
+> **Version:** 2.2 | **Last updated:** 2026-07-13
 > **Scope:** Backend-enforced rules only. Frontend-only prototype behaviors are labelled `[Frontend]`.
 > **Status legend:**
 > - ✅ Implemented in backend
@@ -105,8 +118,8 @@
 | BR-38 | Only `ACTIVE` packages can be booked. | ✅ | `CatalogServiceImpl.requireActivePackage()` |
 | BR-39 | Only `ACTIVE` combos can be booked. | ✅ | `CatalogServiceImpl.requireActiveCombo()` |
 | BR-40 | Booking date must be today or in the future (not in the past). | ✅ | `@FutureOrPresent` on `CreateBookingRequest.bookingDate` |
-| BR-40a | Booking time must be within business hours: 08:00–20:00 inclusive. | ⚠️ | Not enforced. See BR-S16. |
-| BR-40b | Booking date must not exceed 30 days from today. | ⚠️ | Not enforced. See BR-S17. |
+| BR-40a | Booking time must be within configurable business hours (default 08:00–20:00). | ✅ | `BookingServiceImpl.validateBookingTime()` checks `operatingStartTime` / `operatingEndTime` from `SystemSettings` |
+| BR-40b | Booking date must not exceed configurable max advance days from today (default 30 days). | ✅ | `BookingServiceImpl.validateBookingTime()` checks `maxAdvanceBookingDays` from `SystemSettings` |
 | BR-41 | Booking time must be in `HH:mm` format. | ✅ | `@Pattern(^([01]\d\|2[0-3]):[0-5]\d$)` in `CreateBookingRequest` |
 | BR-42 | Customer can hold at most 3 active bookings (CONFIRMED + CHECKED_IN + IN_PROGRESS). | ✅ | `BookingRepository.countByCustomerAndStatusIn() >= 3` → `MAX_ACTIVE_BOOKINGS_EXCEEDED` |
 | BR-43 | A new booking is created with status `PENDING`. | ✅ | `Booking` constructor sets `BookingStatus.PENDING` |
@@ -165,7 +178,7 @@
 
 | BR | Rule | Status | Implementation |
 |---|---|---|---|
-| BR-69 | Wash session can only be created for a `CONFIRMED` booking. | ✅ | `OperationsServiceImpl.createSession()` |
+| BR-69 | Wash session can only be created for a `CONFIRMED` or `PENDING` booking. | ✅ | `OperationsServiceImpl.createSession()` — `ELIGIBLE_BOOKING_STATUSES = {PENDING, CONFIRMED}` |
 | BR-70 | Only one active wash session per booking. | ✅ | `washSessionRepository.existsByBooking_IdAndStatusIn()` → `DUPLICATE_ACTIVE_SESSION` |
 | BR-71 | New wash session is created with status `PENDING`. | ✅ | `WashSession.create()` sets `PENDING` |
 | BR-72 | Valid wash session transitions: `PENDING`→`QUEUED`→`CHECKED_IN`→`IN_PROGRESS`→`COMPLETED`. Cancellation from any non-terminal state. | ✅ | `WashSessionLifecycle.validateTransition()` |
@@ -173,7 +186,7 @@
 | BR-74 | Starting wash transitions session to `IN_PROGRESS` and booking to `IN_PROGRESS`. | ✅ | `OperationsServiceImpl.startSession()` |
 | BR-75 | Completing wash transitions session to `COMPLETED`, booking to `COMPLETED`, records `awarded_points`, and triggers point-earn. | ✅ | `OperationsServiceImpl.completeSession()` |
 | BR-76 | First wash completion marks customer as no longer new. | ✅ | `OperationsServiceImpl.markCustomerAsNotNew()` |
-| BR-77 | Check-in past the configured no-show grace window marks booking as `NO_SHOW`; no-show forfeits applied voucher, records `ViolationRecord` type `NO_SHOW`, and sends customer warning notification. | ✅ | `NoShowDetectionJob` delegates to `BookingNoShowServiceImpl.markOverdueBookingsNoShow()` |
+| BR-77 | Check-in past the configured no-show grace window marks booking as `NO_SHOW`; no-show forfeits applied voucher, records `ViolationRecord` type `NO_SHOW`, and sends customer warning notification. Applies to both `CONFIRMED` and `PENDING` bookings. | ✅ | `NoShowDetectionJob` → `BookingNoShowServiceImpl.markOverdueBookingsNoShow()` — `statuses = {CONFIRMED, PENDING}` |
 | BR-77a | When booking is marked `NO_SHOW`, the associated wash session (if any) is cancelled. | ✅ | `BookingNoShowServiceImpl.cancelNotCheckedInSessions()` |
 | BR-77b | After 2 NO_SHOW events within any rolling 30-day window, customer is automatically suspended for 14 days. | ❌ | Spec error — corrected here: no auto-suspend or voucher lockout rule is applied. |
 | BR-77c | When booking is marked `NO_SHOW`, any applied voucher is forfeited (`FORFEITED`) and never refunded. | ✅ | `voucherRedemptionService.forfeitVoucherForBooking()` |
@@ -192,7 +205,7 @@
 | BR-80 | Staff can only view and operate wash sessions assigned to them. | ✅ | `OperationsServiceImpl.requireSessionForCurrentUser()` |
 | BR-81 | Staff assignment uses only `ACTIVE` staff members. | ✅ | `StaffAssignmentServiceImpl.pickLeastLoadedActiveStaff()` |
 | BR-82 | Auto-assignment picks the staff with the fewest active bookings (least-loaded). | ✅ | `StaffAssignmentServiceImpl` sorts by active booking count |
-| BR-83 | Staff KPI target revenue is 5,000,000 VND per period. | ✅ | `OperationsServiceImpl.getStaffSummary()` hardcoded constant |
+| BR-83 | Staff KPI target revenue is 5,000,000 VND per period (TODAY/WEEK/MONTH). Admin can view KPI per staff via `GET /admin/staff/kpi?range=TODAY\|WEEK\|MONTH`: completed bookings count, revenue in range, active sessions, progress % vs target. | ✅ | `AdminReportingServiceImpl.listStaffKpi()` + `StaffKpiItem` DTO. Staff with ≥2 active sessions flagged as overloaded. |
 | BR-84 | Staff cannot modify loyalty points directly. | ✅ | No staff-accessible endpoint to `ADJUST` point transactions |
 | BR-85 | Eligible session bookings list is capped at 50 per query. | ✅ | `OperationsServiceImpl.listEligibleSessionBookings()` `Math.min(limit, 50)` |
 | BR-85a | Eligible session list displays Priority Queue badges: GOLD, PLATINUM, DIAMOND. | ⚠️ | Not implemented. See `LOYALTY_TIER_RESEARCH.md` |
@@ -232,7 +245,7 @@
 |---|---|---|---|
 | BR-102 | If customer already owns an active non-expired combo, booking uses it (base_amount = 0). | ✅ | `CustomerComboServiceImpl.findActiveOwnedCombo()` |
 | BR-102a | Package and Combo are both composed from Service records through join tables (`package_services`, `combo_services`). Service is not booked directly. | ✅ | `CatalogServiceImpl.requireActivePackageOptions()` / `requireActiveComboOptions()`; frontend maps `/services` only as selectable add-ons/options |
-| BR-103 | If customer has no active combo, system auto-purchases one at booking time. | ✅ | `BookingServiceImpl.createBooking()` → `customerComboService.createOwnedCombo()` |
+| BR-103 | Customer can directly purchase a combo via `POST /customers/combos/{id}/purchase`. System creates `CustomerCombo` with status `ACTIVE` immediately — no payment gateway required for demo. If customer has no active combo at booking time, booking is blocked. | ✅ | `CustomerComboServiceImpl.purchaseCombo()` — implemented 2026-07-13. Previously threw `PAYMENT_VERIFICATION_REQUIRED`. |
 | BR-104 | Combo expiration = `activated_at + duration_days × 86400s`. Default duration is 30 days. | ✅ | `CustomerComboServiceImpl.expiresAt()` |
 | BR-105 | Expired combo is soft-marked `EXPIRED` on first access attempt. | ✅ | `CustomerComboServiceImpl.findActiveOwnedCombo()` → `combo.markExpired()` |
 | BR-106 | Combo with `remaining_usages = 0` is soft-marked `USED_UP`. | ✅ | `CustomerCombo.consumeUsage()` |
@@ -290,7 +303,7 @@
 | BR | Rule | Status | Implementation |
 |---|---|---|---|
 | BR-130 | Only `ADMIN` role can access admin endpoints. | ✅ | `@PreAuthorize("hasRole('ADMIN')")` on all admin controllers |
-| BR-131 | Admin dashboard KPI cards: total bookings, total revenue (CONFIRMED bookings), total customers, active promotions. | ✅ | `AdminDashboardMetricsServiceImpl.getMetrics()` from live DB |
+| BR-131 | Admin dashboard KPI cards: total bookings, total revenue (COMPLETED bookings), total customers, active promotions. Full dashboard (`/admin/dashboard/full`) includes booking trend, status distribution, peak hours, live ops, loyalty tier distribution, voucher stats, top services, customer insights, no-show alerts, recent bookings, review summary, and **staff performance KPI section**. | ✅ | `AdminDashboardMetricsServiceImpl.getMetrics()`, `AdminDashboardFullServiceImpl.getDashboardFull()`, `AdminReportingServiceImpl.listStaffKpi()` |
 | BR-132 | Admin can search and filter bookings by status, date range, customer ID, and free-text. | ✅ | `AdminReportingServiceImpl.listBookings()` with `bookingRepository.searchAdmin()` |
 | BR-133 | Admin can view full booking detail including wash session, payment, and assigned staff. | ✅ | `AdminReportingServiceImpl.getBookingDetail()` |
 | BR-134 | Admin can create staff accounts with unique phone and email; password stored hashed. | ✅ | `AdminReportingServiceImpl.createStaff()` |
@@ -301,9 +314,9 @@
 | BR-139 | Admin customer detail tabs: vehicles, bookings, wash history, point transactions, tier history. | ✅ | Separate endpoints in `AdminCustomerController` |
 | BR-140 | Admin business health report is computed from live DB: revenue trends, service breakdowns, cancellation rate, promotion attribution. | ✅ | `AdminReportingServiceImpl.getBusinessHealthReport()` |
 | BR-141 | Admin can filter accounts by role, status, and free-text search. | ✅ | `AdminReportingServiceImpl.listAccounts()` with `UserRepository.searchAccounts()` |
-| BR-141a | Admin can create, update, and deactivate/reactivate `Package` (wash packages). | ⚠️ | No Admin Package management endpoint exists. See BR-S26. |
-| BR-141b | Admin can create, update, and deactivate/reactivate `Service` (add-on services). | ⚠️ | No Admin Service management endpoint exists. See BR-S27. |
-| BR-141c | Admin can manually adjust a customer's loyalty point balance with a mandatory reason. | ⚠️ | No endpoint exists. Duplicate reference to BR-101a / BR-S24 for traceability. |
+| BR-141a | Admin can create, update, and deactivate/reactivate `Package` (wash packages). | ✅ | `AdminCatalogManagementController` + `AdminServiceManagementServiceImpl`. Fully implemented with image upload. |
+| BR-141b | Admin can create, update, and deactivate/reactivate `Service` (add-on services). | ✅ | `AdminCatalogManagementController` + `AdminServiceManagementServiceImpl`. Fully implemented. |
+| BR-141c | Admin can manually adjust a customer's loyalty point balance with a mandatory reason. | ✅ | `PUT /admin/customers/{id}/points` → `LoyaltyServiceImpl.adjustActivePoints()`. See BR-101a. |
 
 ---
 
@@ -383,7 +396,7 @@ These rules are **designed intent** documented in specs but **not enforced** in 
 | BR-S05 | Enforce shop slot capacity per time slot (configurable) | `BookingServiceImpl.createBooking()` | — |
 | BR-S06 | Reserve last slot per time slot for PLATINUM and DIAMOND customers | `BookingServiceImpl.createBooking()` | BR-S05 |
 | BR-S07 | Block cancellation within 2 hours of scheduled time | `BookingServiceImpl.cancelBooking()` | — |
-| BR-S08 | Mark booking `NO_SHOW` when check-in is more than 20 min late (triggered by scheduled job or at check-in attempt) | `OperationsServiceImpl.checkInSession()` or scheduled job | — |
+| BR-S08 | ~~Mark booking `NO_SHOW` when check-in is more than 20 min late~~ **Resolved** — `NoShowDetectionJob` runs every 60s using configurable `noShowGraceMinutes` (default 15 min). Applies to `PENDING` and `CONFIRMED` bookings. `scheduled_at` stored in correct local timezone (UTC+7) after V25 migration. | `BookingNoShowServiceImpl.markOverdueBookingsNoShow()` | — |
 | BR-S09 | Auto-suspend customer after 2 no-shows in 30 days (14-day suspension) | Triggered after BR-S08 | BR-S02, BR-S08 |
 | BR-S10 | Align tier recalculation: decide between lifetime points (current) vs rolling 12-month (spec intent) | `LoyaltyServiceImpl.evaluateTierUpgrade()` | — |
 | BR-S11 | Block points redemption for BLOCKED customers | `LoyaltyServiceImpl.redeemPoints()`, `applyPointsToBooking()` | — |
@@ -391,24 +404,39 @@ These rules are **designed intent** documented in specs but **not enforced** in 
 | BR-S13 | ~~Validate plate format~~ **Resolved** — already enforced via `@Pattern` in `CreateVehicleRequest` | — | — |
 | BR-S14 | Cap active redemption vouchers at 3 per customer | `LoyaltyServiceImpl.redeemPoints()` | — |
 | BR-S15 | Auto-block customer after N cancellations in 30 days (configurable threshold) | ❌ Out of Scope | `LOYALTY_TIER_RESEARCH.md` |
-| BR-S16 | Validate booking time within business hours 08:00–20:00 (configurable) | `BookingServiceImpl.createBooking()` | — |
-| BR-S17 | Validate booking date does not exceed 30 days from today (configurable) | `BookingServiceImpl.createBooking()` | — |
+| BR-S16 | ~~Validate booking time within business hours 08:00–20:00 (configurable)~~ **Resolved** — see BR-40a | `BookingServiceImpl.validateBookingTime()` | — |
+| BR-S17 | ~~Validate booking date does not exceed 30 days from today (configurable)~~ **Resolved** — see BR-40b | `BookingServiceImpl.validateBookingTime()` | — |
 | BR-S18 | One customer can use one voucher code only once per lifetime | `CatalogServiceImpl.validateVoucherOrThrow()` + new `voucher_usages` table or unique index | — |
 | BR-S19 | Staff or Admin can cancel an active wash session with mandatory reason; booking reverts to `CONFIRMED` | New `DELETE /api/v1/operations/sessions/{id}` endpoint + `OperationsServiceImpl` | — |
 | BR-S20 | Auto-create in-app notification on booking events: `BOOKING_CREATED` (booking created), `BOOKING_CONFIRMED` (payment received), `WASH_CHECKED_IN` (staff check-in), `WASH_COMPLETED` (wash done). `notifications` table must have `idx_notifications_user_id` index to ensure fast poll queries. | `BookingServiceImpl`, `OperationsServiceImpl` call `NotificationService.push()` at each event point | BR-S28 |
 | BR-S21 | `@Scheduled` job runs hourly: (1) scans bookings with `scheduled_at` within next 24h and sends reminder email via `BookingEmailDeliveryService`; (2) writes `BOOKING_REMINDER` notification to `notifications` table for each affected booking. Loyalty-expiry warning notifications (points expiring soon) are also written by this job — separate from BR-145 frontend logic. | New `BookingReminderJob` (`@Scheduled`) + `BookingEmailDeliveryService` | BR-S20 |
 | BR-S22 | ~~Customer can submit 1–5 star rating with optional comment after booking `COMPLETED`; one review per booking~~ **Resolved** — fully implemented in BR-151 to BR-153 + BR-RV-01 to BR-RV-06 | `ReviewServiceImpl` + `ReviewController` + `reviews` table | — |
 | BR-S23 | Google OAuth end-to-end flow: verify authorization code with Google, create or link account, return JWT pair | `GoogleOAuthClientImpl` + `AuthServiceImpl` OAuth handler; full flow needs verification test | — |
-| BR-S24 | Admin can manually adjust a customer's point balance (positive or negative) with a mandatory reason; creates `ADJUST` transaction | New `POST /api/v1/admin/customers/{id}/points/adjust` endpoint + `LoyaltyService.adjustPoints()` | — |
+| BR-S24 | ~~Admin can manually adjust a customer's point balance (positive or negative) with a mandatory reason~~ **Resolved** — see BR-141c / BR-101a | `AdminCustomerController` + `LoyaltyService.adjustActivePoints()` | — |
 | BR-S25 | Voucher `end_at` reached: status auto-set to `INACTIVE` via scheduled job (nightly) | New `@Scheduled` job in `VoucherExpiryJob` | — |
-| BR-S26 | Admin can create, update, and deactivate/reactivate Packages (wash package catalog) | New `AdminPackageController` + `AdminPackageService` + `AdminPackageServiceImpl` | — |
-| BR-S27 | Admin can create, update, and deactivate/reactivate Services (add-on service catalog) | New `AdminServiceController` + `AdminServiceService` + `AdminServiceServiceImpl` | — |
+| BR-S26 | ~~Admin can create, update, and deactivate/reactivate Packages~~ **Resolved** — see BR-141a | `AdminCatalogManagementController` | — |
+| BR-S27 | ~~Admin can create, update, and deactivate/reactivate Services~~ **Resolved** — see BR-141b | `AdminCatalogManagementController` | — |
 | BR-S28 | `notifications.type` must match a controlled enum (`BOOKING_CREATED`, `BOOKING_CONFIRMED`, `WASH_CHECKED_IN`, `WASH_COMPLETED`, `BOOKING_REMINDER`); enforced at application layer | New `NotificationType` enum + DB CHECK constraint via migration | BR-S20 |
 | BR-S29 | Registration bonus: Award +20 points when a user registers a new account | `AuthServiceImpl` | — |
 | BR-S30 | Referral bonus: Award +100 points when a user successfully refers a friend | New `ReferralService` | — |
 | BR-S31 | Birthday bonus: Award +50 points on the user's birthday | New `@Scheduled` job | — |
 | BR-S32 | Auto-distribute tier-exclusive vouchers (Birthday Voucher, Monthly 50K/100K) to eligible loyalty tiers | New `@Scheduled` job | — |
 | BR-S33 | Anti-fraud: Limit voucher redemption per day/month, limit birthday voucher to one per year | `CatalogServiceImpl.validateVoucherOrThrow()` + usage history tracking | — |
+
+### New BRs (2026-07-13)
+
+| ID | Rule | Scope | Status |
+|---|---|---|---|
+| BR-NEW-01 | `scheduled_at` is stored using server local timezone (`Asia/Ho_Chi_Minh` / `ZoneId.systemDefault()`), not `ZoneOffset.UTC`. All booking creation and retrieval uses consistent timezone. | `BookingServiceImpl.createBooking()`, `Booking.getBookingDate()`, `Booking.getBookingTime()` | ✅ Fixed in V25 migration + `BookingServiceImpl` |
+| BR-NEW-02 | Staff can check-in a booking directly from `PENDING` status without a separate "approve" step. The system auto-queues then checks in in one atomic call. | `OperationsServiceImpl` / `staff-operations-flow.tsx` `runAction("check-in")` | ✅ Implemented |
+| BR-NEW-03 | Eligible session bookings list includes both `PENDING` and `CONFIRMED` bookings (previously only `CONFIRMED`), allowing staff to create sessions for bookings awaiting OTP confirmation. | `OperationsServiceImpl.listEligibleSessionBookings()` — `ELIGIBLE_BOOKING_STATUSES = {PENDING, CONFIRMED}` | ✅ Implemented |
+| BR-NEW-04 | When a customer uses an already-purchased combo to book (not purchasing a new one), the booking confirm screen hides the payment method selector and shows a "Combo already paid" notice. | `BookingConfirmPage` — `isComboBooking = draft.mode === 'COMBO' && Boolean(selectedCustomerCombo)` | ✅ Frontend |
+| BR-NEW-05 | After booking confirmation, customer is redirected directly to `/customer/bookings/{id}` (booking detail page), not an intermediate success page. | `BookingConfirmPage.handleConfirm()` | ✅ Frontend |
+| BR-NEW-06 | Customer booking history page (`/customer/bookings`) displays three sections: (1) Active bookings with 5-step status timeline and countdown to appointment; (2) Owned combos with progress bar; (3) Completed/cancelled booking history. | `CustomerBookingListPage` | ✅ Frontend |
+| BR-NEW-07 | Booking detail page (`/customer/bookings/{id}`) shows a 5-step progress timeline (Pending → Confirmed → Checked In → In Progress → Completed) with current step highlighted and countdown to appointment. Review popup auto-appears when booking reaches COMPLETED and no review exists. | `CustomerBookingDetailPage` — `BookingTimelineStrip`, `CountdownBadge`, auto review hook | ✅ Frontend |
+| BR-NEW-08 | Admin dashboard includes a Staff Performance section with per-staff KPI: completed bookings, revenue, active sessions, KPI progress bar (5M VND target per period). Staff with ≥2 active sessions flagged as overloaded. Top 3 staff by completions shown with 🥇🥈🥉 medals. | `GET /api/v1/admin/staff/kpi?range=TODAY\|WEEK\|MONTH` → `AdminReportingServiceImpl.listStaffKpi()` | ✅ Implemented |
+| BR-NEW-09 | Package and combo catalog items support multiple images (comma-separated URLs in `image_url` TEXT column, per V16 migration). Each package has 3–6 images, each combo has 2–4 images, all sourced from Pexels. | V108 demo migration seeds image URLs. `BookingPackage.imageUrls`, `BookingCombo.imageUrls` | ✅ Implemented |
+| BR-NEW-10 | Combo checkout page (`/customer/combos/{id}/checkout`) displays an auto-advancing image slideshow (interval 3s) with manual prev/next navigation and dot indicators. | `CustomerComboCheckoutPage` — `comboImages`, `slideIndex`, `setInterval` | ✅ Frontend |
 
 ---
 

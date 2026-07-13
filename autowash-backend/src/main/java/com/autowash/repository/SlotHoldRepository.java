@@ -28,4 +28,7 @@ public interface SlotHoldRepository extends JpaRepository<SlotHold, UUID> {
     @Modifying
     @Query("DELETE FROM SlotHold s WHERE s.expiresAt <= :now")
     int deleteExpiredHolds(@Param("now") Instant now);
+
+    @Query("SELECT COUNT(s) FROM SlotHold s WHERE s.expiresAt > :now")
+    long countActiveHolds(@Param("now") Instant now);
 }

@@ -18,11 +18,33 @@ import {
 import { cn } from "@/shared/lib/utils";
 import { type CustomerVehicleFormErrors, type CustomerVehicleFormValues } from "@/entities/vehicles";
 
-const BRAND_OPTIONS = ["Toyota", "Honda", "Ford", "VinFast", "Mazda", "Kia", "Hyundai", "Mercedes-Benz", "BMW", "Audi", "Other"];
-const MODEL_OPTIONS = ["Vios", "City", "Ranger", "VF8", "CX-5", "Sorento", "Santa Fe", "C-Class", "X5", "A4", "Sedan", "SUV", "Hatchback", "Crossover", "Pickup", "Minivan", "Other"];
+const CAR_BRANDS_MAP: Record<string, string[]> = {
+  Toyota:      ["Camry", "Corolla", "Vios", "Fortuner", "Innova", "Hilux", "Rush", "Raize", "Yaris", "Land Cruiser", "Other"],
+  Honda:       ["City", "Civic", "CR-V", "HR-V", "Accord", "Jazz", "BR-V", "Pilot", "Odyssey", "Other"],
+  Hyundai:     ["Accent", "Elantra", "Tucson", "Santa Fe", "i10", "Creta", "Ioniq", "Kona", "Grand i10", "Other"],
+  Kia:         ["Morning", "Seltos", "Sportage", "Sorento", "K3", "K5", "Carnival", "Cerato", "Other"],
+  Mazda:       ["2", "3", "6", "CX-3", "CX-5", "CX-8", "CX-30", "BT-50", "MX-5", "Other"],
+  Ford:        ["Ranger", "Everest", "Territory", "Explorer", "Escape", "Focus", "Mondeo", "Other"],
+  Mitsubishi:  ["Xpander", "Outlander", "Pajero Sport", "Triton", "Eclipse Cross", "Attrage", "Other"],
+  Suzuki:      ["Swift", "Ertiga", "XL7", "Vitara", "Ciaz", "Jimny", "Alto", "Other"],
+  Nissan:      ["Almera", "Terra", "X-Trail", "Navara", "Sunny", "Kicks", "Other"],
+  VinFast:     ["Fadil", "Lux A2.0", "Lux SA2.0", "VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "VF e34", "Other"],
+  Mercedes:    ["C-Class", "E-Class", "S-Class", "GLC", "GLE", "A-Class", "CLA", "GLA", "GLB", "Other"],
+  BMW:         ["3 Series", "5 Series", "7 Series", "X1", "X3", "X5", "X7", "2 Series", "Other"],
+  Audi:        ["A4", "A6", "A8", "Q3", "Q5", "Q7", "Q8", "e-tron", "Other"],
+  Chevrolet:   ["Trailblazer", "Colorado", "Trax", "Spark", "Captiva", "Other"],
+  Peugeot:     ["2008", "3008", "5008", "408", "508", "Other"],
+  Other:       ["Other model"],
+};
+
+const BRAND_OPTIONS = Object.keys(CAR_BRANDS_MAP);
 const currentYear = new Date().getFullYear();
-const YEAR_OPTIONS = Array.from({ length: 20 }, (_, i) => String(currentYear - i)).concat(["Older"]);
-const COLOR_OPTIONS = ["White", "Black", "Silver", "Gray", "Red", "Blue", "Brown", "Yellow", "Green", "Other"];
+const YEAR_OPTIONS = Array.from({ length: currentYear - 1989 }, (_, i) => String(currentYear - i));
+const COLOR_OPTIONS = [
+  "White", "Black", "Silver", "Gray", "Red", "Blue", "Brown",
+  "Green", "Yellow", "Orange", "Gold", "Beige", "Navy Blue",
+  "Champagne", "Pearl White", "Midnight Black", "Other",
+];
 
 export function CustomerVehicleFormCard({
   title,
@@ -77,7 +99,11 @@ export function CustomerVehicleFormCard({
           <VehicleSelectField
             label="Brand"
             value={form.brand}
-            onChange={(value) => onChange("brand", value)}
+            onChange={(value) => {
+              onChange("brand", value);
+              // Reset model when brand changes
+              if (form.model) onChange("model", "");
+            }}
             placeholder="Select a brand"
             options={BRAND_OPTIONS}
             error={errors.brand ?? null}
@@ -86,9 +112,10 @@ export function CustomerVehicleFormCard({
             label="Model"
             value={form.model}
             onChange={(value) => onChange("model", value)}
-            placeholder="Select a model"
-            options={MODEL_OPTIONS}
+            placeholder={form.brand ? "Select a model" : "Select brand first"}
+            options={form.brand ? (CAR_BRANDS_MAP[form.brand] ?? ["Other model"]) : []}
             error={errors.model ?? null}
+            disabled={!form.brand}
           />
           <div className="grid gap-5 sm:grid-cols-2">
             <VehicleSelectField
