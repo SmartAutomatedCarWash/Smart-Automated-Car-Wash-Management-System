@@ -1,12 +1,28 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    async rewrites() {
-        return [
+    images: {
+        remotePatterns: [
             {
-                source: '/minio-api/:path*',
-                destination: 'http://127.0.0.1:9000/:path*'
-            }
-        ];
+                protocol: 'https',
+                hostname: 'pub-53125d1cbb7b41ea8e7c431698de4b92.r2.dev',
+            },
+            {
+                protocol: 'https',
+                hostname: '**.r2.dev',
+            },
+            {
+                protocol: 'https',
+                hostname: '**.cloudflarestorage.com',
+            },
+            {
+                protocol: 'https',
+                hostname: 'images.unsplash.com',
+            },
+            {
+                protocol: 'https',
+                hostname: 'images.pexels.com',
+            },
+        ],
     },
 };
 

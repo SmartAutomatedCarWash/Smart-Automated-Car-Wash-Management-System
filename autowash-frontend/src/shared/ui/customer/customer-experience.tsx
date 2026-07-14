@@ -347,7 +347,7 @@ export function BookingLiveSessionCard({
                 {translate(language, "Phiên đang hoạt động", "Live session")}
               </p>
               <h3 className="mt-1 truncate text-lg font-black text-[#102A43] dark:text-white">{serviceName || translate(language, "Lịch rửa xe của bạn", "Your wash booking")}</h3>
-              <p className="text-xs font-bold text-[#627D98]">{bookingCode || "AURA-LIVE"}</p>
+              <p className="text-xs font-bold text-[#627D98]">{bookingCode ? `#${bookingCode.slice(0, 8).toUpperCase()}` : "AURA-LIVE"}</p>
             </div>
             <span className="rounded-full bg-[#06D6A0]/15 px-3 py-1 text-xs font-black text-[#058B69]">
               {liveSessionLabels[language][status]}

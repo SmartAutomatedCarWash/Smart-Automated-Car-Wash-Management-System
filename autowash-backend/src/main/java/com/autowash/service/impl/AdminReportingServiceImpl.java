@@ -205,6 +205,65 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     }
 
     @Transactional(readOnly = true)
+    public List<com.autowash.dto.StaffKpiItem> listStaffKpi(String range) {
+        java.time.ZoneId zone = java.time.ZoneId.systemDefault();
+        java.time.Instant rangeStart = resolveRangeStart(range, zone);
+
+        Set<WashSessionStatus> ACTIVE_SESSION_STATUSES = Set.of(
+                WashSessionStatus.PENDING,
+                WashSessionStatus.QUEUED,
+                WashSessionStatus.CHECKED_IN,
+                WashSessionStatus.IN_PROGRESS
+        );
+        long KPI_TARGET = 5_000_000L;
+
+        return UserRepository.findByRoleOrderByFullNameAsc(UserRole.STAFF).stream()
+                .map(staff -> {
+                    // Completed sessions in range
+                    long completedInRange = washSessionRepository.countByAssignedStaffAndStatusAndCompletedAtBetween(
+                            staff, WashSessionStatus.COMPLETED, rangeStart, java.time.Instant.now());
+
+                    // Revenue from completed bookings in range
+                    long revenueInRange = bookingRepository
+                            .sumCompletedRevenueByAssignedStaffAndRange(staff, rangeStart, java.time.Instant.now());
+
+                    // Currently active sessions
+                    long activeSessions = washSessionRepository.countByAssignedStaffAndStatusIn(staff, ACTIVE_SESSION_STATUSES);
+
+                    // All-time assigned bookings
+                    long totalAssigned = bookingRepository.countByAssignedStaffAndStatusIn(staff, REVENUE_STATUSES);
+
+                    int progress = KPI_TARGET == 0 ? 100
+                            : (int) Math.min(100, Math.round(revenueInRange * 100.0 / KPI_TARGET));
+
+                    boolean isOnline = activeSessions > 0;
+
+                    return new com.autowash.dto.StaffKpiItem(
+                            staff.getId(),
+                            staff.getFullName(),
+                            staff.getStatus().name(),
+                            completedInRange,
+                            revenueInRange,
+                            activeSessions,
+                            totalAssigned,
+                            progress,
+                            KPI_TARGET,
+                            isOnline
+                    );
+                })
+                .sorted(java.util.Comparator.comparingLong(com.autowash.dto.StaffKpiItem::completedBookings).reversed())
+                .toList();
+    }
+
+    private java.time.Instant resolveRangeStart(String range, java.time.ZoneId zone) {
+        return switch (range == null ? "TODAY" : range.toUpperCase()) {
+            case "WEEK" -> java.time.LocalDate.now(zone).with(java.time.DayOfWeek.MONDAY).atStartOfDay(zone).toInstant();
+            case "MONTH" -> java.time.LocalDate.now(zone).withDayOfMonth(1).atStartOfDay(zone).toInstant();
+            default -> java.time.LocalDate.now(zone).atStartOfDay(zone).toInstant(); // TODAY
+        };
+    }
+
+    @Transactional(readOnly = true)
     public AdminStaffWorkloadResponse getStaffWorkload(UUID staffId) {
         User staff = UserRepository.findById(staffId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", "RESOURCE_NOT_FOUND"));

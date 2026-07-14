@@ -32,6 +32,7 @@ export type BookingPackage = {
   category: string;
   features: string[];
   image: string | null;
+  imageUrls?: string[] | null;
   status: string;
   popularity: string | null;
 };
@@ -57,6 +58,7 @@ export type BookingCombo = {
   maxServices: number;
   benefits: string[];
   image: string | null;
+  imageUrls?: string[] | null;
   isActive: boolean;
   canUpgrade: boolean;
   upgradePriceFrom: number;

@@ -145,7 +145,7 @@ const AUTH_COPY = {
     loginTitle: "Sign In",
     loginDescription: "Welcome back. Continue your vehicle care journey.",
     identifierLabel: "Phone number or email",
-    identifierPlaceholder: "0901234567 or you@gmail.com",
+    identifierPlaceholder: "Enter email",
     passwordLabel: "Password",
     passwordPlaceholder: "Enter your password",
     forgotPassword: "Forgot password?",
@@ -636,7 +636,7 @@ export function ModernAuthPopupModal({
                   <input
                     value={loginEmail}
                     onChange={(event) => setLoginEmail(event.target.value.replace(/\s/g, ""))}
-                    placeholder="you@gmail.com"
+                    placeholder="Enter email"
                     className={inputCls}
                     inputMode="email"
                   />

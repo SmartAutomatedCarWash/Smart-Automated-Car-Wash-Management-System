@@ -73,7 +73,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
         Instant now = Instant.now();
         Instant cutoff = now.minusSeconds(noShowGraceMinutes * 60);
         List<Booking> bookings = bookingRepository.findNoShowCandidates(
-                BookingStatus.CONFIRMED,
+                List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING),
                 cutoff,
                 CHECKED_IN_OR_BETTER
         );

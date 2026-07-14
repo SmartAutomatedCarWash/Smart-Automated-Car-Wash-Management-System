@@ -162,7 +162,7 @@ public class BookingServiceImpl implements BookingService {
         SystemSettings settings = loadSettings();
         validateBookingTime(request.bookingDate(), requestedBookingTime, settings);
         LocalDateTime scheduledLocalDateTime = request.bookingDate().atTime(requestedBookingTime);
-        Instant scheduledAt = scheduledLocalDateTime.toInstant(java.time.ZoneOffset.UTC);
+        Instant scheduledAt = scheduledLocalDateTime.atZone(java.time.ZoneId.systemDefault()).toInstant();
         validateSlotCapacity(scheduledLocalDateTime, settings.getMaxBookingsPerTimeSlot(), user);
         if (BookingRepository.countByCustomerAndStatusIn(user, ACTIVE_BOOKING_STATUSES) >= 3) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Maximum active bookings exceeded", "MAX_ACTIVE_BOOKINGS_EXCEEDED");

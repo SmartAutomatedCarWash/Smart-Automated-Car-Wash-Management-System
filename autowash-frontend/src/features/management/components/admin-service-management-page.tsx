@@ -159,7 +159,7 @@ function LiveServicesPanel() {
             <FormField label={translate(language, "Giá dịch vụ (VND)", "Price")} value={form.price} onChange={(value) => setForm((current) => ({ ...current, price: value }))} onBlur={() => touchField("price")} error={visibleErrors.price} />
             <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
           </div>
-          <FormField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
+          <RichDescriptionField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
           <ImageUploadField label={translate(language, "Ảnh dịch vụ", "Service image")} value={form.imageUrls || []} onChange={(value) => setForm((current) => ({ ...current, imageUrls: value }))} language={language as "vi" | "en"} />
           <label className="grid gap-2">
             <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
@@ -383,30 +383,17 @@ function LivePackagesPanel() {
             <FormField label={translate(language, "Giá gói (VND)", "Base price")} value={form.basePrice} onChange={(value) => setForm((current) => ({ ...current, basePrice: value }))} onBlur={() => touchField("basePrice")} error={visibleErrors.basePrice} />
             <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
           </div>
-          <label className="grid gap-2">
-            <span className="text-sm font-semibold text-slate-800">
-              {translate(language, "Danh mục", "Category")}
-            </span>
-            <input
-              type="text"
-              list="package-categories"
-              value={form.category}
-              onChange={(e) => setForm(current => ({ ...current, category: e.target.value }))}
-              onBlur={() => touchField("category")}
-              className={cn(
-                "h-11 rounded-xl border bg-white px-3 text-sm text-slate-900 outline-none transition-colors",
-                visibleErrors.category ? "border-red-500 focus:border-red-500" : "border-slate-200 focus:border-[#0566D9]"
-              )}
-            />
-            <datalist id="package-categories">
-              {Array.from(new Set(packagesQuery.data?.map(p => p.category).filter(Boolean))).map(cat => (
-                <option key={cat as string} value={cat as string} />
-              ))}
-            </datalist>
-            {visibleErrors.category && <span className="text-xs text-red-500">{visibleErrors.category}</span>}
-          </label>
+          <CategorySelectField
+            label={translate(language, "Danh mục", "Category")}
+            value={form.category}
+            existingCategories={Array.from(new Set(packagesQuery.data?.map(p => p.category).filter(Boolean) as string[]))}
+            onChange={(value) => setForm(current => ({ ...current, category: value }))}
+            onBlur={() => touchField("category")}
+            error={visibleErrors.category}
+            language={language as "vi" | "en"}
+          />
           <FormField label={translate(language, "Tính năng nổi bật (cách nhau bởi dấu phẩy)", "Features (comma separated)")} value={form.features} onChange={(value) => setForm((current) => ({ ...current, features: value }))} placeholder={translate(language, "Hút bụi, Rửa tay, Làm bóng lốp", "Vacuuming, Hand wash, Tire shine")} />
-          <FormField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
+          <RichDescriptionField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
           <ImageUploadField label={translate(language, "Ảnh gói dịch vụ", "Package image")} value={form.imageUrls || []} onChange={(value) => setForm((current) => ({ ...current, imageUrls: value }))} language={language as "vi" | "en"} />
 
           {/* Services multi-select dropdown */}
@@ -649,7 +636,7 @@ function LiveCombosPanel() {
             <FormField label={translate(language, "Thời hạn áp dụng (ngày)", "Duration days")} value={form.durationDays} onChange={(value) => setForm((current) => ({ ...current, durationDays: value }))} onBlur={() => touchField("durationDays")} error={visibleErrors.durationDays} />
             <FormField label={translate(language, "Số lần rửa tối đa", "Max usages")} value={form.maxUsages} onChange={(value) => setForm((current) => ({ ...current, maxUsages: value }))} onBlur={() => touchField("maxUsages")} error={visibleErrors.maxUsages} />
           </div>
-          <FormField
+          <RichDescriptionField
             label={translate(language, "Mô tả", "Description")}
             value={form.description}
             onChange={(value) => setForm((current) => ({ ...current, description: value }))}
@@ -799,9 +786,9 @@ function LiveCombosPanel() {
                       <span className="rounded-full bg-white px-2.5 py-1">{combo.durationDays} {translate(language, "ngày", "days")}</span>
                       <span className="rounded-full bg-white px-2.5 py-1">{combo.maxServices} {translate(language, "dịch vụ", "services")}</span>
                     </div>
-                    {combo.benefits.length > 0 ? (
+                    {(combo.benefits ?? []).length > 0 ? (
                       <div className="flex flex-wrap gap-2">
-                        {combo.benefits.map((benefit) => (
+                        {(combo.benefits ?? []).map((benefit) => (
                           <span key={`${combo.comboId}-${benefit}`} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600">
                             {benefit}
                           </span>
@@ -1029,6 +1016,177 @@ function FormField({
       />
       {error ? <span className="text-sm text-rose-600">{error}</span> : null}
     </label>
+  );
+}
+
+// Category dropdown with inline "Add new" option
+function CategorySelectField({
+  label,
+  value,
+  existingCategories,
+  onChange,
+  onBlur,
+  error,
+  language,
+}: {
+  label: string;
+  value: string;
+  existingCategories: string[];
+  onChange: (value: string) => void;
+  onBlur?: () => void;
+  error?: string;
+  language: "vi" | "en";
+}) {
+  const ADD_NEW = "__add_new__";
+  const [showInput, setShowInput] = useState(false);
+  const [newCat, setNewCat] = useState("");
+
+  const handleSelect = (v: string) => {
+    if (v === ADD_NEW) {
+      setShowInput(true);
+    } else {
+      onChange(v);
+      onBlur?.();
+    }
+  };
+
+  const handleConfirm = () => {
+    const trimmed = newCat.trim();
+    if (trimmed) {
+      onChange(trimmed);
+      onBlur?.();
+    }
+    setShowInput(false);
+    setNewCat("");
+  };
+
+  return (
+    <div className="grid gap-2">
+      <span className="text-sm font-semibold text-slate-800">{label}</span>
+      {!showInput ? (
+        <select
+          value={existingCategories.includes(value) ? value : value ? ADD_NEW : ""}
+          onChange={(e) => handleSelect(e.target.value)}
+          onBlur={onBlur}
+          className={cn(
+            "h-11 rounded-xl border bg-white px-3 text-sm text-slate-900 outline-none transition-colors",
+            error ? "border-red-500 focus:border-red-500" : "border-slate-200 focus:border-[#0566D9]"
+          )}
+        >
+          <option value="" disabled>
+            {language === "vi" ? "Chọn danh mục..." : "Select category..."}
+          </option>
+          {existingCategories.map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+          {value && !existingCategories.includes(value) && (
+            <option value={value}>{value}</option>
+          )}
+          <option value={ADD_NEW}>
+            + {language === "vi" ? "Thêm danh mục mới" : "Add new category"}
+          </option>
+        </select>
+      ) : (
+        <div className="flex gap-2">
+          <input
+            autoFocus
+            value={newCat}
+            onChange={(e) => setNewCat(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleConfirm(); } if (e.key === "Escape") { setShowInput(false); setNewCat(""); } }}
+            placeholder={language === "vi" ? "Tên danh mục mới..." : "New category name..."}
+            className="h-11 flex-1 rounded-xl border border-[#0566D9] bg-white px-3 text-sm text-slate-900 outline-none"
+          />
+          <button type="button" onClick={handleConfirm} className="h-11 rounded-xl bg-teal-600 px-4 text-xs font-bold text-white hover:bg-teal-700 transition">
+            {language === "vi" ? "Xác nhận" : "Confirm"}
+          </button>
+          <button type="button" onClick={() => { setShowInput(false); setNewCat(""); }} className="h-11 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">
+            {language === "vi" ? "Hủy" : "Cancel"}
+          </button>
+        </div>
+      )}
+      {value && !showInput && (
+        <span className="text-xs text-slate-500">
+          {language === "vi" ? "Đang chọn" : "Selected"}: <strong>{value}</strong>
+        </span>
+      )}
+      {error ? <span className="text-sm text-rose-600">{error}</span> : null}
+    </div>
+  );
+}
+function RichDescriptionField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  function insertTag(open: string, close: string) {
+    const el = ref.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = value.slice(start, end);
+    const newVal = value.slice(0, start) + open + selected + close + value.slice(end);
+    onChange(newVal);
+    setTimeout(() => {
+      el.focus();
+      el.setSelectionRange(start + open.length, start + open.length + selected.length);
+    }, 0);
+  }
+
+  function insertImageUrl() {
+    const url = prompt("Image URL:");
+    if (!url) return;
+    const el = ref.current;
+    if (!el) return;
+    const pos = el.selectionStart;
+    const img = `<img src="${url}" alt="image" style="width:100%;border-radius:8px;margin:8px 0;" />`;
+    onChange(value.slice(0, pos) + img + value.slice(pos));
+  }
+
+  return (
+    <div className="grid gap-2">
+      <span className="text-sm font-semibold text-slate-800">{label}</span>
+      <div>
+        <div className="flex flex-wrap gap-1 border border-slate-200 border-b-0 rounded-t-xl bg-slate-50 px-2 py-1.5">
+          {[
+            { label: "B", open: "<strong>", close: "</strong>", cls: "font-black" },
+            { label: "I", open: "<em>", close: "</em>", cls: "italic" },
+            { label: "P", open: "<p>", close: "</p>", cls: "" },
+            { label: "• List", open: "<ul><li>", close: "</li></ul>", cls: "" },
+          ].map((btn) => (
+            <button
+              key={btn.label}
+              type="button"
+              onClick={() => insertTag(btn.open, btn.close)}
+              className={`px-2 py-0.5 text-xs hover:bg-white rounded border border-transparent hover:border-slate-200 transition ${btn.cls}`}
+            >
+              {btn.label}
+            </button>
+          ))}
+          <div className="w-px bg-slate-200 mx-0.5" />
+          <button
+            type="button"
+            onClick={insertImageUrl}
+            className="px-2 py-0.5 text-xs hover:bg-white rounded border border-transparent hover:border-slate-200 transition"
+          >
+            🖼 Ảnh
+          </button>
+        </div>
+        <textarea
+          ref={ref}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={4}
+          className="w-full rounded-b-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none resize-y font-mono min-h-[90px] focus:border-primary focus:ring-1 focus:ring-primary/20 transition"
+          placeholder="<p>Mô tả dịch vụ...</p>"
+        />
+      </div>
+    </div>
   );
 }
 
