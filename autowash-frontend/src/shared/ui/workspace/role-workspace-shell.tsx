@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
 import { useCustomerLogout } from "@/features/auth/hooks/use-auth";
 import { getAuthRedirectPath } from "@/features/auth/lib/auth-session";
 import { cn } from "@/shared/lib/utils";
@@ -149,6 +150,26 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     return customerNotificationsQuery.data.filter((n) => !n.read).length;
   }, [isCustomer, customerNotificationsQuery.data]);
 
+  const [prevUnreadCount, setPrevUnreadCount] = useState<number | null>(null);
+
+  // Monitor customer notifications for toast alerts
+  useEffect(() => {
+    if (!isCustomer || !isMounted || !customerNotificationsQuery.data) return;
+    const currentUnread = unreadCustomerNotifications;
+    if (prevUnreadCount !== null && currentUnread > prevUnreadCount) {
+      // Find the latest unread notification
+      const latestUnread = customerNotificationsQuery.data.find(n => !n.read);
+      if (latestUnread) {
+        toast.info(latestUnread.title, {
+          description: latestUnread.message,
+          position: "bottom-right",
+          duration: 5000,
+        });
+      }
+    }
+    setPrevUnreadCount(currentUnread);
+  }, [unreadCustomerNotifications, customerNotificationsQuery.data, isCustomer, isMounted, prevUnreadCount]);
+
   const eligibleCount = eligibleQuery.data?.length ?? 0;
   const pendingSessions = useMemo(() => {
     if (!queueQuery.data) return [];
@@ -175,7 +196,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   useEffect(() => { setMobileMenuOpen(false); }, [pathname]);
   useEffect(() => { fetchTiers(); }, [fetchTiers]);
 
-  // Staff notification tracking
+  // Staff/Admin notifications -> Sonner toast alerts
   useEffect(() => {
     if (!isStaff || !isMounted) return;
 
@@ -195,22 +216,26 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
     if (newBookings.length > 0) {
       const target = newBookings[0];
-      setAlertNotification({
-        show: true,
-        title: t("Lịch hẹn mới chờ duyệt!", "New booking awaiting approval!"),
-        message: `${target.customerName} - ${target.customerPhone}`,
-        plate: target.vehiclePlate,
-        path: "/staff/check-in",
+      toast.warning(t("Lịch hẹn mới chờ duyệt!", "New booking awaiting approval!"), {
+        description: `${target.customerName} - ${target.vehiclePlate}`,
+        action: {
+          label: t("Duyệt ngay", "Approve"),
+          onClick: () => router.push("/staff/check-in"),
+        },
+        position: "bottom-right",
+        duration: 8000,
       });
       setLastBookingIds(currentBookingIds);
     } else if (newSessions.length > 0) {
       const target = newSessions[0];
-      setAlertNotification({
-        show: true,
-        title: t("Phiên rửa xe chờ duyệt!", "Wash session awaiting approval!"),
-        message: `${target.customerName} - ${target.customerPhone}`,
-        plate: target.vehiclePlate,
-        path: `/staff/check-in?sessionId=${target.sessionId}`,
+      toast.warning(t("Phiên rửa xe chờ duyệt!", "Wash session awaiting approval!"), {
+        description: `${target.customerName} - ${target.vehiclePlate}`,
+        action: {
+          label: t("Xem ngay", "View"),
+          onClick: () => router.push(`/staff/check-in?sessionId=${target.sessionId}`),
+        },
+        position: "bottom-right",
+        duration: 8000,
       });
       setLastSessionIds(currentSessionIds);
     } else {
@@ -549,13 +574,30 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                     className="w-80 rounded-2xl border-cyan-900/10 bg-white/95 p-3 shadow-[0_22px_60px_rgba(6,17,26,0.12)] backdrop-blur-xl"
                   >
                     <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
-                      <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-                        {t("Thông báo", "Notifications")}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                          {t("Thông báo", "Notifications")}
+                        </h3>
+                        {unreadCustomerNotifications > 0 && (
+                          <span className="rounded-full bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 text-[9px] font-black text-cyan-800 dark:text-cyan-400">
+                            {unreadCustomerNotifications}
+                          </span>
+                        )}
+                      </div>
                       {unreadCustomerNotifications > 0 && (
-                        <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-black text-cyan-800">
-                          {unreadCustomerNotifications} {t("chưa đọc", "unread")}
-                        </span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const unread = customerNotificationsQuery.data?.filter(n => !n.read) ?? [];
+                            try {
+                              await Promise.all(unread.map(item => markCustomerNotificationAsReadMutation.mutateAsync(item.notificationId)));
+                              toast.success(t("Đã đọc tất cả thông báo", "All notifications marked as read"));
+                            } catch (e) {}
+                          }}
+                          className="text-[10px] font-bold text-[#0566D9] dark:text-sky-400 hover:underline"
+                        >
+                          {t("Đọc tất cả", "Mark all read")}
+                        </button>
                       )}
                     </div>
 
@@ -568,28 +610,22 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                         {customerNotificationsQuery.data.slice(0, 5).map((notification) => (
                           <button
                             key={notification.notificationId}
-                            type="button"
-                            onClick={() => {
-                              if (!notification.read) {
-                                markCustomerNotificationAsReadMutation.mutate(notification.notificationId);
-                              }
-                            }}
-                            className={cn(
+                                    className={cn(
                               "flex w-full flex-col gap-1 rounded-xl p-2 text-left text-xs transition",
                               notification.read 
-                                ? "bg-muted/50 hover:bg-muted" 
-                                : "bg-cyan-50/70 hover:bg-cyan-50"
+                                ? "bg-muted/30 dark:bg-slate-900/40 hover:bg-muted/50 dark:hover:bg-slate-800/40" 
+                                : "bg-cyan-50/70 dark:bg-cyan-950/20 hover:bg-cyan-50 dark:hover:bg-cyan-950/30"
                             )}
                           >
                             <div className="flex items-center justify-between">
-                              <span className={cn("font-bold", notification.read ? "text-muted-foreground" : "text-cyan-950")}>
+                              <span className={cn("font-bold", notification.read ? "text-muted-foreground" : "text-cyan-955 dark:text-cyan-200")}>
                                 {notification.title}
                               </span>
                               {!notification.read && (
                                 <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
                               )}
                             </div>
-                            <div className={cn("line-clamp-2 text-[11px]", notification.read ? "text-muted-foreground" : "text-foreground")}>
+                            <div className={cn("line-clamp-2 text-[11px]", notification.read ? "text-muted-foreground" : "text-foreground dark:text-slate-300")}>
                               {notification.message}
                             </div>
                           </button>
@@ -597,7 +633,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                         <div className="pt-2 border-t border-border/50">
                           <Link
                             href="/customer/notifications"
-                            className="flex w-full items-center justify-center rounded-xl bg-muted py-2 text-center text-[11px] font-bold text-foreground hover:bg-accent transition"
+                            className="flex w-full items-center justify-center rounded-xl bg-muted dark:bg-slate-900 py-2 text-center text-[11px] font-bold text-foreground dark:text-slate-350 hover:bg-accent dark:hover:bg-slate-800 transition"
                           >
                             {t("Xem tất cả", "View all")}
                           </Link>
