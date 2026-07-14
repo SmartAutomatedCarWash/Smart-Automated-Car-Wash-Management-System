@@ -13,6 +13,7 @@ import com.autowash.dto.CreateBookingResponse;
 import com.autowash.dto.PayBookingResponse;
 import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.enums.BookingStatus;
+import com.autowash.entity.enums.UserStatus;
 import com.autowash.dto.ValidateVoucherRequest;
 import com.autowash.dto.ValidateVoucherResponse;
 import com.autowash.entity.Booking;
@@ -55,6 +56,7 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Instant;
+import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
@@ -75,6 +77,12 @@ public class BookingServiceImpl implements BookingService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BookingServiceImpl.class);
 
     private static final Set<BookingStatus> ACTIVE_BOOKING_STATUSES = Set.of(
+            BookingStatus.CONFIRMED,
+            BookingStatus.CHECKED_IN,
+            BookingStatus.IN_PROGRESS
+    );
+    private static final Set<BookingStatus> DUPLICATE_BOOKING_STATUSES = Set.of(
+            BookingStatus.PENDING,
             BookingStatus.CONFIRMED,
             BookingStatus.CHECKED_IN,
             BookingStatus.IN_PROGRESS
@@ -149,10 +157,13 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public CreateBookingResponse createBooking(CreateBookingRequest request, Object metadata) {
         User user = currentUserService.getCurrentUser();
+        validateCustomerCanCreateBooking(user);
         LocalTime requestedBookingTime = LocalTime.parse(request.bookingTime());
         SystemSettings settings = loadSettings();
         validateBookingTime(request.bookingDate(), requestedBookingTime, settings);
-        validateSlotCapacity(request.bookingDate().atTime(requestedBookingTime), settings.getMaxBookingsPerTimeSlot(), user);
+        LocalDateTime scheduledLocalDateTime = request.bookingDate().atTime(requestedBookingTime);
+        Instant scheduledAt = scheduledLocalDateTime.atZone(java.time.ZoneId.systemDefault()).toInstant();
+        validateSlotCapacity(scheduledLocalDateTime, settings.getMaxBookingsPerTimeSlot(), user);
         if (BookingRepository.countByCustomerAndStatusIn(user, ACTIVE_BOOKING_STATUSES) >= 3) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Maximum active bookings exceeded", "MAX_ACTIVE_BOOKINGS_EXCEEDED");
         }
@@ -163,6 +174,7 @@ public class BookingServiceImpl implements BookingService {
                         VehicleStatus.ACTIVE
                 )
                 .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Vehicle not found or not owned", "RESOURCE_NOT_FOUND"));
+        validateNoDuplicateBooking(vehicle, scheduledAt);
 
         Package Package = null;
         Combo Combo = null;
@@ -223,7 +235,6 @@ public class BookingServiceImpl implements BookingService {
                     options.stream().map(CatalogService.CatalogOption::optionId).toList());
         }
 
-        LocalDateTime scheduledAt = request.bookingDate().atTime(requestedBookingTime);
         Booking booking = new Booking(
                 UUID.randomUUID(),
                 user,
@@ -231,7 +242,7 @@ public class BookingServiceImpl implements BookingService {
                 Package == null ? null : Package.getId(),
                 Combo == null ? null : Combo.getId(),
                 userVoucherId == null ? null : voucherRedemptionService.getTemplateIdForUserVoucher(userVoucherId),
-                scheduledAt.atZone(java.time.ZoneId.systemDefault()).toInstant(),
+                scheduledAt,
                 requestedBookingTime,
                 request.paymentMethod(),
                 basePrice,
@@ -263,7 +274,7 @@ public class BookingServiceImpl implements BookingService {
             voucherRedemptionService.applyVoucher(userVoucherId, booking.getId(), subtotal, options.stream().map(CatalogService.CatalogOption::optionId).toList());
         }
         
-        slotHoldRepository.findByCustomerAndSlotTime(user, scheduledAt.atZone(java.time.ZoneId.systemDefault()).toInstant())
+        slotHoldRepository.findByCustomerAndSlotTime(user, scheduledLocalDateTime.atZone(java.time.ZoneId.systemDefault()).toInstant())
                 .ifPresent(slotHoldRepository::delete);
 
         recordStatusHistory(booking, null, booking.getStatus(), user, "Booking created");
@@ -346,10 +357,17 @@ public class BookingServiceImpl implements BookingService {
         if (!CANCELLABLE_BOOKING_STATUSES.contains(booking.getStatus())) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking cannot be cancelled", "RESOURCE_LOCKED");
         }
+        java.time.Duration timeUntilScheduled = java.time.Duration.between(Instant.now(), booking.getScheduledAt());
+        if (timeUntilScheduled.compareTo(Duration.ofHours(2)) < 0) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Booking cannot be cancelled less than 2 hours before start time",
+                    "CANCELLATION_WINDOW_CLOSED"
+            );
+        }
         BookingStatus oldStatus = booking.getStatus();
         booking.cancel(reason);
 
-        java.time.Duration timeUntilScheduled = java.time.Duration.between(Instant.now(), booking.getScheduledAt());
         long hoursUntilScheduled = timeUntilScheduled.toHours();
         
         String voucherRefundStatus = "NONE";
@@ -491,6 +509,28 @@ public class BookingServiceImpl implements BookingService {
                 : slotHoldRepository.countActiveHoldsForSlotExcludingCustomer(slotStart, slotEnd, Instant.now(), customerToExclude);
         if (existingBookings + activeHolds >= maxBookingsPerTimeSlot) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking slot is full", "BOOKING_SLOT_FULL");
+        }
+    }
+
+    private void validateCustomerCanCreateBooking(User user) {
+        if (user.getStatus() == UserStatus.BLOCKED) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Blocked accounts cannot create bookings", "ACCOUNT_BLOCKED");
+        }
+        if (user.getStatus() == UserStatus.SUSPENDED) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Suspended accounts cannot create bookings", "ACCOUNT_SUSPENDED");
+        }
+        if (user.getBookingSuspendedUntil() != null && user.getBookingSuspendedUntil().isAfter(Instant.now())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Booking is suspended until " + user.getBookingSuspendedUntil(), "ACCOUNT_SUSPENDED");
+        }
+    }
+
+    private void validateNoDuplicateBooking(Vehicle vehicle, Instant scheduledAt) {
+        if (BookingRepository.countDuplicateVehicleSlot(vehicle, scheduledAt, DUPLICATE_BOOKING_STATUSES) > 0) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Duplicate booking for the same vehicle and time slot",
+                    "DUPLICATE_BOOKING"
+            );
         }
     }
 

@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -14,6 +15,7 @@ import com.autowash.entity.VoucherTier;
 import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.enums.LoyaltyTier;
+import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.VoucherTemplateRepository;
@@ -78,6 +80,39 @@ class CustomerVoucherControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[*].code", hasItem("PUB10")))
                 .andExpect(jsonPath("$.data[*].code", hasItem("GOLD20")));
+    }
+
+    @Test
+    void blockedCustomerCannotClaimPointsVoucher() throws Exception {
+        VoucherTemplate pointsVoucher = new VoucherTemplate(
+                "BLOCKED50",
+                "Blocked Claim Test",
+                "Desc",
+                DiscountType.FIXED_AMOUNT,
+                50_000,
+                0,
+                null,
+                100,
+                7,
+                null,
+                false,
+                Instant.now().minusSeconds(3600),
+                Instant.now().plusSeconds(3600),
+                ActiveStatus.ACTIVE
+        );
+        voucherTemplateRepository.saveAndFlush(pointsVoucher);
+
+        User customer = createActiveCustomer("0901777993");
+        LoyaltyAccount account = loyaltyAccountRepository.findByCustomerId(customer.getId()).orElseThrow();
+        account.addPoints(150);
+        loyaltyAccountRepository.saveAndFlush(account);
+        customer.updateStatus(UserStatus.BLOCKED);
+        userRepository.saveAndFlush(customer);
+
+        mockMvc.perform(post("/api/v1/vouchers/{voucherTemplateId}/claim", pointsVoucher.getId())
+                        .with(authenticatedCustomer(customer)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("ACCOUNT_BLOCKED"));
     }
 
     private User createActiveCustomer(String phone) {
