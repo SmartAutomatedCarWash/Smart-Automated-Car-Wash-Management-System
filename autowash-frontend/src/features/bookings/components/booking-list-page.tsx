@@ -85,7 +85,7 @@ function BookingTimelineStrip({ status, washStatus, language }: { status: string
   const effectiveStatus = washStatus ?? status;
   const currentIdx = getStepIndex(effectiveStatus);
   return (
-    <div className="flex items-center justify-between gap-1 pt-3 mt-3 border-t border-slate-100 dark:border-slate-800">
+    <div className="flex items-center justify-between gap-1 pt-3 mt-3 border-t border-slate-100">
       {TIMELINE_STEPS.map((step, idx) => {
         const isDone   = idx < currentIdx;
         const isActive = idx === currentIdx;
@@ -96,13 +96,13 @@ function BookingTimelineStrip({ status, washStatus, language }: { status: string
               "flex h-7 w-7 items-center justify-center rounded-full border-2 transition-all",
               isDone   ? "border-emerald-500 bg-emerald-500 text-white" :
               isActive ? "border-sky-500 bg-sky-500 text-white animate-pulse" :
-                         "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-300 dark:text-slate-700"
+                         "border-slate-200 bg-white text-slate-300"
             )}>
               {isDone ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
             </div>
             <span className={cn(
               "text-[9px] font-bold leading-tight",
-              isDone ? "text-emerald-600 dark:text-emerald-450" : isActive ? "text-sky-700 dark:text-sky-300" : "text-slate-300 dark:text-slate-700"
+              isDone ? "text-emerald-600" : isActive ? "text-sky-700" : "text-slate-300"
             )}>
               {language === "vi" ? step.labelVi : step.labelEn}
             </span>
@@ -149,7 +149,7 @@ function ActiveBookingCard({ booking, language }: { booking: BookingListItem; la
   const t = (vi: string, en: string) => translate(language, vi, en);
   return (
     <Link href={`/customer/bookings/${booking.bookingId}`}>
-      <Card className="cursor-pointer border-sky-200/80 dark:border-slate-800 bg-gradient-to-br from-sky-50/60 to-white dark:from-[#071016]/90 dark:to-[#071016]/90 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+      <Card className="cursor-pointer border-sky-200/80 bg-gradient-to-br from-sky-50/60 to-white shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
         <CardContent className="p-4 space-y-0">
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-1 min-w-0">
@@ -161,8 +161,8 @@ function ActiveBookingCard({ booking, language }: { booking: BookingListItem; la
                   language={language}
                 />
               </div>
-              <p className="text-sm font-black text-slate-900 dark:text-slate-100 truncate mt-1">{booking.packageName ?? t("Combo", "Combo")}</p>
-              <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-sm font-black text-slate-900 truncate mt-1">{booking.packageName ?? t("Combo", "Combo")}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-500">
                 <span className="flex items-center gap-1">
                   <Car className="h-3 w-3" />{booking.vehiclePlate}
                 </span>
@@ -172,7 +172,7 @@ function ActiveBookingCard({ booking, language }: { booking: BookingListItem; la
               </div>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-base font-black text-slate-900 dark:text-slate-100">{formatBookingCurrency(booking.finalAmount)}</p>
+              <p className="text-base font-black text-slate-900">{formatBookingCurrency(booking.finalAmount)}</p>
               <ChevronRight className="h-4 w-4 text-slate-400 ml-auto mt-1" />
             </div>
           </div>
@@ -188,18 +188,18 @@ function HistoryBookingRow({ booking, language }: { booking: BookingListItem; la
   const t = (vi: string, en: string) => translate(language, vi, en);
   return (
     <Link href={`/customer/bookings/${booking.bookingId}`}>
-      <div className="flex items-center gap-3 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-white dark:bg-[#071016]/90 px-4 py-3 hover:border-slate-200 dark:hover:border-slate-750 hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-colors cursor-pointer">
+      <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 hover:border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
         <div className="flex-1 min-w-0 space-y-0.5">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={booking.status} language={language} />
-            <span className="text-xs text-slate-500 dark:text-slate-400">{booking.bookingDate} · {booking.bookingTime}</span>
+            <span className="text-xs text-slate-500">{booking.bookingDate} · {booking.bookingTime}</span>
           </div>
-          <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{booking.packageName ?? t("Combo", "Combo")}</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500">{booking.vehiclePlate}</p>
+          <p className="text-sm font-semibold text-slate-800 truncate">{booking.packageName ?? t("Combo", "Combo")}</p>
+          <p className="text-xs text-slate-400">{booking.vehiclePlate}</p>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{formatBookingCurrency(booking.finalAmount)}</p>
-          <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600 ml-auto mt-0.5" />
+          <p className="text-sm font-bold text-slate-900">{formatBookingCurrency(booking.finalAmount)}</p>
+          <ChevronRight className="h-4 w-4 text-slate-300 ml-auto mt-0.5" />
         </div>
       </div>
     </Link>
@@ -214,62 +214,38 @@ export function CustomerBookingListPage() {
   const bookingsQuery = useCustomerBookings({ limit: 50 });
   const combosQuery   = useActiveCustomerCombos();
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [historyStatusFilter, setHistoryStatusFilter] = useState<string>("ALL");
-
   const { activeBookings, historyBookings } = useMemo(() => {
     const items = bookingsQuery.data?.items ?? [];
-    
-    // Filter active bookings
-    const active = items.filter((b) => ACTIVE_STATUSES.has(b.status));
-    
-    // Filter and search history bookings
-    let history = items.filter((b) => DONE_STATUSES.has(b.status));
-    
-    if (historyStatusFilter !== "ALL") {
-      history = history.filter((b) => b.status === historyStatusFilter);
-    }
-    
-    if (searchQuery.trim() !== "") {
-      const q = searchQuery.toLowerCase().trim();
-      history = history.filter(
-        (b) =>
-          b.packageName?.toLowerCase().includes(q) ||
-          b.vehiclePlate?.toLowerCase().includes(q) ||
-          b.bookingId.toLowerCase().includes(q)
-      );
-    }
-
     return {
-      activeBookings: active,
-      historyBookings: history,
+      activeBookings:  items.filter((b) => ACTIVE_STATUSES.has(b.status)),
+      historyBookings: items.filter((b) => DONE_STATUSES.has(b.status)),
     };
-  }, [bookingsQuery.data, historyStatusFilter, searchQuery]);
+  }, [bookingsQuery.data]);
 
   const ownedCombos = combosQuery.data ?? [];
 
   return (
-    <div className="min-h-[calc(100vh-72px)] bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_30%)] bg-slate-50 dark:bg-[#05080d] px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-72px)] bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_30%),linear-gradient(180deg,#f8fbff,#fff)] px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-4xl flex-col gap-8">
 
         {/* ── Active bookings ── */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-black text-slate-900 dark:text-slate-100">{t("Đang diễn ra", "Active bookings")}</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{t("Theo dõi tiến trình rửa xe", "Track your wash progress")}</p>
+              <h2 className="text-base font-black text-slate-900">{t("Đang diễn ra", "Active bookings")}</h2>
+              <p className="text-xs text-slate-500">{t("Theo dõi tiến trình rửa xe", "Track your wash progress")}</p>
             </div>
-            <Button size="sm" variant="outline" className="rounded-full h-8 text-xs border-slate-200 dark:border-slate-800" onClick={() => bookingsQuery.refetch()}>
+            <Button size="sm" variant="outline" className="rounded-full h-8 text-xs" onClick={() => bookingsQuery.refetch()}>
               <RefreshCcw className="h-3.5 w-3.5 mr-1" />{t("Làm mới", "Refresh")}
             </Button>
           </div>
 
           {bookingsQuery.isPending ? (
             <div className="space-y-3">
-              {[1,2].map(i => <div key={i} className="h-32 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900" />)}
+              {[1,2].map(i => <div key={i} className="h-32 animate-pulse rounded-2xl bg-slate-100" />)}
             </div>
           ) : activeBookings.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-[#071016]/80 px-6 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-8 text-center text-sm text-slate-400">
               {t("Không có lịch đặt đang diễn ra.", "No active bookings.")}
             </div>
           ) : (
@@ -283,33 +259,33 @@ export function CustomerBookingListPage() {
         {ownedCombos.length > 0 && (
           <section className="space-y-3">
             <div>
-              <h2 className="text-base font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-violet-500" />
                 {t("Combo đang sở hữu", "Active combos")}
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{t("Các gói combo bạn đã mua và còn hiệu lực", "Purchased combo packages still valid")}</p>
+              <p className="text-xs text-slate-500">{t("Các gói combo bạn đã mua và còn hiệu lực", "Purchased combo packages still valid")}</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {ownedCombos.map(combo => (
-                <div key={combo.customerComboId} className="rounded-2xl border border-violet-200/80 dark:border-violet-900/40 bg-gradient-to-br from-violet-50/60 to-white dark:from-violet-950/20 dark:to-[#071016]/90 p-4 space-y-2">
+                <div key={combo.customerComboId} className="rounded-2xl border border-violet-200/80 bg-gradient-to-br from-violet-50/60 to-white p-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-sm font-black text-slate-900 dark:text-slate-100">{combo.comboName}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        {t("Còn lại", "Remaining")}: <span className="font-bold text-violet-700 dark:text-violet-400">{combo.remainingUsages}</span>/{combo.totalUsages} {t("lượt", "uses")}
+                      <p className="text-sm font-black text-slate-900">{combo.comboName}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {t("Còn lại", "Remaining")}: <span className="font-bold text-violet-700">{combo.remainingUsages}</span>/{combo.totalUsages} {t("lượt", "uses")}
                       </p>
                     </div>
-                    <Badge variant="outline" className="text-[10px] border-violet-200 dark:border-violet-900/60 text-violet-700 dark:text-violet-450 bg-violet-50 dark:bg-violet-950/40 rounded-full">
+                    <Badge variant="outline" className="text-[10px] border-violet-200 text-violet-700 bg-violet-50 rounded-full">
                       {t("Đang dùng", "Active")}
                     </Badge>
                   </div>
-                  <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-900 overflow-hidden">
+                  <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-violet-500 to-purple-400 transition-all"
                       style={{ width: `${(combo.remainingUsages / combo.totalUsages) * 100}%` }}
                     />
                   </div>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                  <p className="text-[10px] text-slate-400">
                     {t("Hết hạn", "Expires")}: {new Date(combo.expiresAt).toLocaleDateString(language === "vi" ? "vi-VN" : "en-GB")}
                   </p>
                 </div>
@@ -320,45 +296,24 @@ export function CustomerBookingListPage() {
 
         {/* ── History ── */}
         <section className="space-y-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-black text-slate-900 dark:text-slate-100">{t("Lịch sử đặt lịch", "Booking history")}</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{t("Các đơn đã hoàn thành, huỷ hoặc vắng mặt", "Completed, cancelled or no-show bookings")}</p>
-            </div>
-
-            {/* Client-side Filter Toolbar */}
-            <div className="flex flex-wrap gap-2">
-              <input
-                type="text"
-                placeholder={t("Tìm biển số, combo...", "Search plate, combo...")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
-              />
-              <select
-                value={historyStatusFilter}
-                onChange={(e) => setHistoryStatusFilter(e.target.value)}
-                className="h-8 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs text-slate-700 dark:text-slate-350 focus:outline-none"
-              >
-                <option value="ALL">{t("Tất cả trạng thái", "All Statuses")}</option>
-                <option value="COMPLETED">{t("Hoàn thành", "Completed")}</option>
-                <option value="CANCELLED">{t("Đã huỷ", "Cancelled")}</option>
-                <option value="NO_SHOW">{t("Vắng mặt", "No Show")}</option>
-              </select>
+              <h2 className="text-base font-black text-slate-900">{t("Lịch sử đặt lịch", "Booking history")}</h2>
+              <p className="text-xs text-slate-500">{t("Các đơn đã hoàn thành, huỷ hoặc vắng mặt", "Completed, cancelled or no-show bookings")}</p>
             </div>
           </div>
 
           {bookingsQuery.isPending ? (
             <div className="space-y-2">
-              {[1,2,3].map(i => <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900" />)}
+              {[1,2,3].map(i => <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-100" />)}
             </div>
           ) : bookingsQuery.isError ? (
             <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
               {getDisplayErrorMessage(bookingsQuery.error)}
             </div>
           ) : historyBookings.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-[#071016]/80 px-6 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
-              {t("Không tìm thấy kết quả phù hợp.", "No matching history bookings.")}
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-8 text-center text-sm text-slate-400">
+              {t("Chưa có lịch sử đặt lịch.", "No booking history yet.")}
             </div>
           ) : (
             <div className="space-y-2">
