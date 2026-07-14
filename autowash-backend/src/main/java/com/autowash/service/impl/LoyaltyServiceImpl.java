@@ -13,6 +13,7 @@ import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.PointTransaction;
 import com.autowash.entity.TierHistory;
 import com.autowash.entity.enums.PointTransactionType;
+import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.BookingPromotionRepository;
 import com.autowash.repository.PointTransactionRepository;
@@ -192,6 +193,9 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     @Transactional
     public RedeemPointsResponse redeemPoints(UUID customerId, int pointsToRedeem, String referenceId) {
         User customer = requireCustomer(customerId);
+        if (customer.getStatus() == UserStatus.BLOCKED) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Blocked accounts cannot redeem points", "ACCOUNT_BLOCKED");
+        }
         LoyaltyAccount account = getOrCreateAccountForUpdate(customer);
         if (account.getCurrentPoints() < pointsToRedeem) {
             throw new ApiException(

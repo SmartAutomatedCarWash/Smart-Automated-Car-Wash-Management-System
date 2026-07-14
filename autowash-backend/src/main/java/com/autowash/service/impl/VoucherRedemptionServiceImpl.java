@@ -9,6 +9,7 @@ import com.autowash.entity.VoucherTemplate;
 import com.autowash.entity.VoucherTier;
 import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.DiscountType;
+import com.autowash.entity.enums.UserStatus;
 import com.autowash.entity.enums.UserVoucherStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.LoyaltyAccountRepository;
@@ -66,6 +67,9 @@ public class VoucherRedemptionServiceImpl implements VoucherRedemptionService {
     public UserVoucher redeemVoucher(UUID userId, UUID voucherTemplateId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found", "USER_NOT_FOUND"));
+        if (user.getStatus() == UserStatus.BLOCKED) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Blocked accounts cannot redeem vouchers", "ACCOUNT_BLOCKED");
+        }
 
         VoucherTemplate template = voucherTemplateRepository.findLockedById(voucherTemplateId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Voucher template not found", "RESOURCE_NOT_FOUND"));

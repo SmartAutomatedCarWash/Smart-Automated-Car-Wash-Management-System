@@ -7,10 +7,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.autowash.entity.User;
+import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.UserRole;
+import com.autowash.entity.enums.UserStatus;
+import com.autowash.entity.enums.VehicleType;
+import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.repository.UserRepository;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.repository.BookingRepository;
+import com.autowash.repository.VehicleRepository;
 import com.autowash.shared.security.UserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,7 +30,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -44,6 +51,9 @@ class BookingControllerIntegrationTest {
 
     @Autowired
     private UserRepository UserRepository;
+
+    @Autowired
+    private VehicleRepository VehicleRepository;
 
     @BeforeEach
     void ensureActiveStaffExists() {
@@ -245,6 +255,55 @@ class BookingControllerIntegrationTest {
                                 """.formatted(vehicleId, LocalDate.now().plusDays(31))))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.errorCode").value("BUSINESS_RULE_VIOLATION"));
+    }
+
+    @Test
+    void createBookingRejectsBlockedAccount() throws Exception {
+        User customer = createDirectCustomer("0901234730");
+        Vehicle vehicle = createDirectVehicle(customer, "30H-223480");
+        customer.updateStatus(UserStatus.BLOCKED);
+        UserRepository.saveAndFlush(customer);
+
+        mockMvc.perform(post("/api/v1/customers/bookings")
+                        .with(authenticatedCustomer(customer))
+                        .contentType("application/json")
+                        .content(createBookingPayload(vehicle.getId().toString(), futureBookingDate(), "14:00")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("ACCOUNT_BLOCKED"));
+    }
+
+    @Test
+    void createBookingRejectsActiveBookingSuspensionWindow() throws Exception {
+        User customer = createDirectCustomer("0901234731");
+        Vehicle vehicle = createDirectVehicle(customer, "30H-223481");
+        customer.suspendBookingsUntil(Instant.now().plusSeconds(86_400));
+        UserRepository.saveAndFlush(customer);
+
+        mockMvc.perform(post("/api/v1/customers/bookings")
+                        .with(authenticatedCustomer(customer))
+                        .contentType("application/json")
+                        .content(createBookingPayload(vehicle.getId().toString(), futureBookingDate(), "14:00")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("ACCOUNT_SUSPENDED"));
+    }
+
+    @Test
+    void createBookingRejectsDuplicateVehicleDateAndTimeSlot() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234732");
+        String vehicleId = createVehicle(accessToken, "30H-223482");
+
+        mockMvc.perform(post("/api/v1/customers/bookings")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content(createBookingPayload(vehicleId, futureBookingDate(), "14:00")))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/customers/bookings")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content(createBookingPayload(vehicleId, futureBookingDate(), "14:00")))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errorCode").value("DUPLICATE_BOOKING"));
     }
 
     @Test
@@ -491,6 +550,41 @@ class BookingControllerIntegrationTest {
     }
 
     @Test
+    void cancelBookingRejectsWhenStartTimeIsUnderTwoHoursAway() throws Exception {
+        User customer = createDirectCustomer("0901234733");
+        Vehicle vehicle = createDirectVehicle(customer, "30H-223483");
+        com.autowash.entity.Booking booking = new com.autowash.entity.Booking(
+                java.util.UUID.randomUUID(),
+                customer,
+                vehicle,
+                java.util.UUID.fromString("12345678-1234-1234-1234-123456789012"),
+                null,
+                null,
+                Instant.now().plusSeconds(90 * 60),
+                LocalTime.now().plusMinutes(90).withSecond(0).withNano(0),
+                PaymentMethod.E_WALLET,
+                120000,
+                0,
+                0,
+                120000,
+                30
+        );
+        booking.confirmByOtp();
+        BookingRepository.saveAndFlush(booking);
+
+        mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/cancel", booking.getId())
+                        .with(authenticatedCustomer(customer))
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "reason": "Too late to cancel"
+                                }
+                                """))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errorCode").value("CANCELLATION_WINDOW_CLOSED"));
+    }
+
+    @Test
     void openApiDocumentsBookingAndCatalogSchemas() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
@@ -577,6 +671,32 @@ class BookingControllerIntegrationTest {
         return authentication(token);
     }
 
+    private RequestPostProcessor authenticatedCustomer(User user) {
+        UserPrincipal principal = new UserPrincipal(user);
+        UsernamePasswordAuthenticationToken token =
+                new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
+        return authentication(token);
+    }
+
+    private User createDirectCustomer(String phone) {
+        User user = new User("Booking Rule Customer", phone, phone + "@example.com", "hash");
+        user.activate();
+        return UserRepository.saveAndFlush(user);
+    }
+
+    private Vehicle createDirectVehicle(User customer, String plate) {
+        return VehicleRepository.saveAndFlush(new Vehicle(
+                customer,
+                plate,
+                VehicleType.CAR,
+                "Toyota",
+                "Camry",
+                2023,
+                "Silver",
+                true
+        ));
+    }
+
     private String uniquePhone(String prefix) {
         String digits = java.util.UUID.randomUUID().toString().replaceAll("\\D", "");
         while (digits.length() < 6) {
@@ -606,6 +726,18 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn();
         return readJson(result).path("data").path("vehicleId").asText();
+    }
+
+    private String createBookingPayload(String vehicleId, String bookingDate, String bookingTime) {
+        return """
+                {
+                  "vehicleId": "%s",
+                  "packageId": "12345678-1234-1234-1234-123456789012",
+                  "bookingDate": "%s",
+                  "bookingTime": "%s",
+                  "paymentMethod": "E_WALLET"
+                }
+                """.formatted(vehicleId, bookingDate, bookingTime);
     }
 
     private void setBookingStatus(String bookingId, BookingStatus status) {

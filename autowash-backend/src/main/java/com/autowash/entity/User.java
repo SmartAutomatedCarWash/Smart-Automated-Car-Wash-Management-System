@@ -51,6 +51,9 @@ public class User {
     @Column(name = "birthday_locked", nullable = false)
     private boolean birthdayLocked;
 
+    @Column(name = "booking_suspended_until")
+    private Instant bookingSuspendedUntil;
+
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private UserPreference preference;
 
@@ -135,6 +138,16 @@ public class User {
 
     public void updateStatus(UserStatus status) {
         this.status = status;
+        this.updatedAt = Instant.now();
+    }
+
+    public void suspendBookingsUntil(Instant suspendedUntil) {
+        this.bookingSuspendedUntil = suspendedUntil;
+        this.updatedAt = Instant.now();
+    }
+
+    public void clearBookingSuspension() {
+        this.bookingSuspendedUntil = null;
         this.updatedAt = Instant.now();
     }
 
