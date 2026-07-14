@@ -548,12 +548,10 @@ export function ModernAuthPopupModal({
   const inputCls = [
     "h-12 w-full rounded-2xl border px-4 text-sm font-semibold transition-all duration-200 outline-none",
     "border-sky-200/70 bg-white/90 text-slate-900 placeholder:text-slate-400 shadow-sm",
-    "dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-100 dark:placeholder:text-slate-500",
     "focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-400/15 focus:shadow-[0_12px_30px_rgba(37,99,235,0.10)]",
-    "dark:focus:border-blue-500 dark:focus:bg-slate-950 dark:focus:ring-blue-500/20"
   ].join(" ");
-  const labelCls = "mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400";
-  const errorCls = "mt-1 text-[10px] font-semibold leading-tight text-rose-500 dark:text-rose-455";
+  const labelCls = "mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500";
+  const errorCls = "mt-1 text-[10px] font-semibold leading-tight text-rose-500";
   const primaryBtn = [
     "h-12 w-full rounded-2xl text-sm font-black text-white transition-all duration-200",
     "bg-gradient-to-r from-blue-600 to-sky-500",
@@ -570,7 +568,7 @@ export function ModernAuthPopupModal({
       }}
     >
       <div
-        className="relative flex w-full overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-500 ease-out border border-white/10 bg-white/82 dark:bg-[#071016]/90"
+        className="relative flex w-full overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-500 ease-out"
         style={{
           maxWidth: mode === "register" || mode === "forgot-password" ? "1040px" : "940px",
           minHeight:
@@ -580,14 +578,16 @@ export function ModernAuthPopupModal({
                 ? "580px"
                 : "600px",
           borderRadius: "2rem",
+          border: "0",
           boxShadow: "0 34px 100px rgba(15,23,42,0.30)",
+          background: "rgba(255,255,255,0.82)",
           animation: "authCardIn 560ms cubic-bezier(0.16, 1, 0.3, 1) both",
         }}
       >
         <BrandPanel copy={copy} />
 
         <section
-          className="relative flex flex-1 flex-col justify-center border-l border-white/20 dark:border-slate-800/40 bg-gradient-to-b from-white/96 to-slate-50/94 dark:from-slate-900/96 dark:to-slate-950/94"
+          className="relative flex flex-1 flex-col justify-center"
           style={{
             padding:
               mode === "register" || mode === "forgot-password"
@@ -595,11 +595,13 @@ export function ModernAuthPopupModal({
                 : mode === "otp"
                   ? "2.4rem 3rem"
                   : "2.35rem 3rem",
+            background: "linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,247,255,0.94))",
             backdropFilter: "blur(28px) saturate(1.9)",
+            borderLeft: "1px solid rgba(255,255,255,0.75)",
           }}
         >
           <div className="absolute right-5 top-5 z-30 flex items-center gap-2">
-            <div className="flex rounded-full border border-sky-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 p-1 shadow-sm">
+            <div className="flex rounded-full border border-sky-100 bg-white/80 p-1 shadow-sm">
               {(["vi", "en"] as const).map((item) => (
                 <button
                   key={item}
@@ -607,7 +609,7 @@ export function ModernAuthPopupModal({
                   onClick={() => setLanguage(item)}
                   className={cn(
                     "rounded-full px-3 py-1 text-[11px] font-black uppercase transition",
-                    language === item ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100",
+                    language === item ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900",
                   )}
                   aria-label={`${copy.language}: ${item.toUpperCase()}`}
                 >
@@ -618,7 +620,8 @@ export function ModernAuthPopupModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-slate-550 dark:text-slate-400 transition-all duration-200 hover:scale-105 hover:rotate-90"
+              className="flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 hover:scale-105 hover:rotate-90"
+              style={{ background: "rgba(15,23,42,0.06)", border: "1px solid rgba(15,23,42,0.10)", color: "#64748b" }}
               aria-label={copy.close}
             >
               <X className="h-4 w-4" />
@@ -686,15 +689,15 @@ export function ModernAuthPopupModal({
               <button
                 type="button"
                 onClick={handleContinueWithGoogle}
-                className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-sm transition hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:shadow-md active:scale-[0.99]"
+                className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
               >
                 <GoogleIcon />
                 {copy.googleLoginButton}
               </button>
 
-              <div className="flex items-center justify-center gap-1.5 border-t border-slate-200/70 dark:border-slate-800/60 pt-4">
-                <span className="text-sm text-slate-500 dark:text-slate-400">{copy.noAccount}</span>
-                <button type="button" onClick={() => setMode("register")} className="text-sm font-bold text-blue-600 dark:text-blue-500 transition-colors hover:text-blue-700 dark:hover:text-blue-400 hover:underline">
+              <div className="flex items-center justify-center gap-1.5 border-t border-slate-200/70 pt-4">
+                <span className="text-sm text-slate-500">{copy.noAccount}</span>
+                <button type="button" onClick={() => setMode("register")} className="text-sm font-bold text-blue-600 transition-colors hover:text-blue-700 hover:underline">
                   {copy.registerLink}
                 </button>
               </div>
@@ -762,29 +765,29 @@ export function ModernAuthPopupModal({
 
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300/70 dark:via-slate-800 to-transparent" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300/70 to-transparent" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                       {copy.orContinueWith}
                     </span>
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300/70 dark:via-slate-800 to-transparent" />
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300/70 to-transparent" />
                   </div>
 
                   <button
                     type="button"
                     onClick={handleContinueWithGoogle}
-                    className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-sm transition hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:shadow-md active:scale-[0.99]"
+                    className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
                   >
                     <GoogleIcon />
                     {copy.googleRegisterButton}
                   </button>
                 </div>
 
-                <div className="flex items-center justify-center gap-1.5 border-t border-slate-200/70 dark:border-slate-800/60 pt-3">
-                  <span className="text-sm text-slate-500 dark:text-slate-400">{copy.hasAccount}</span>
-                  <button type="button" onClick={() => setMode("login")} className="text-sm font-bold text-blue-600 dark:text-blue-500 transition-colors hover:text-blue-700 dark:hover:text-blue-400 hover:underline">
-                    {copy.backToLogin}
-                  </button>
-                </div>
+                <div className="flex items-center justify-center gap-1.5 border-t border-slate-200/70 pt-3">
+                  <span className="text-sm text-slate-500">{copy.hasAccount}</span>
+                  <button type="button" onClick={() => setMode("login")} className="text-sm font-bold text-blue-600 transition-colors hover:text-blue-700 hover:underline">
+                  {copy.backToLogin}
+                </button>
+              </div>
             </div>
           ) : null}
 
@@ -829,7 +832,7 @@ export function ModernAuthPopupModal({
                       resetForgotPasswordState();
                       setMode("login");
                     }}
-                    className="text-sm font-bold text-blue-600 dark:text-blue-500 transition-colors hover:text-blue-700 dark:hover:text-blue-400 hover:underline"
+                    className="text-sm font-bold text-blue-600 transition-colors hover:text-blue-700 hover:underline"
                   >
                     {copy.forgotBackToLogin}
                   </button>
@@ -838,15 +841,15 @@ export function ModernAuthPopupModal({
 
               {forgotStep === "verify" ? (
                 <div className="space-y-4">
-                  <div className="rounded-2xl border border-sky-100 dark:border-sky-950/40 bg-sky-50 dark:bg-sky-950/20 px-4 py-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                  <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm leading-6 text-slate-600">
                     {copy.forgotOtpDescription}{" "}
-                    <strong className="text-slate-900 dark:text-slate-200">{forgotMaskedEmail || normalizedForgotEmail}</strong>.
+                    <strong className="text-slate-900">{forgotMaskedEmail || normalizedForgotEmail}</strong>.
                     {forgotSecondsLeft > 0 ? (
                       <span className="ml-1">
-                        {copy.otpExpires} <strong className="text-slate-900 dark:text-slate-200">{forgotSecondsLeft}s</strong>.
+                        {copy.otpExpires} <strong className="text-slate-900">{forgotSecondsLeft}s</strong>.
                       </span>
                     ) : (
-                      <span className="ml-1 font-semibold text-rose-600 dark:text-rose-450">{copy.forgotOtpCanResend}</span>
+                      <span className="ml-1 font-semibold text-rose-600">{copy.forgotOtpCanResend}</span>
                     )}
                   </div>
 
@@ -868,8 +871,8 @@ export function ModernAuthPopupModal({
                           className={cn(
                             "h-14 w-12 rounded-2xl border text-center text-lg font-black shadow-sm transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-400/20",
                             digit
-                              ? "border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shadow-[0_0_0_3px_rgba(59,130,246,0.10)]"
-                              : "border-sky-200/70 dark:border-slate-800 bg-white/90 dark:bg-slate-900 text-slate-700 dark:text-slate-300",
+                              ? "border-blue-400 bg-blue-50 text-blue-600 shadow-[0_0_0_3px_rgba(59,130,246,0.10)]"
+                              : "border-sky-200/70 bg-white/90 text-slate-700",
                           )}
                         />
                       ))}
@@ -884,7 +887,8 @@ export function ModernAuthPopupModal({
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-12 rounded-2xl text-sm font-bold transition-all hover:scale-[1.01] border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300"
+                      className="h-12 rounded-2xl text-sm font-bold transition-all hover:scale-[1.01]"
+                      style={{ borderColor: "rgba(186,230,255,0.8)", background: "rgba(240,249,255,0.8)", color: "#475569" }}
                       onClick={() => setForgotStep("email")}
                     >
                       <ArrowLeft className="mr-1 h-4 w-4" />
@@ -906,7 +910,7 @@ export function ModernAuthPopupModal({
                     type="button"
                     onClick={() => void handleForgotResendOtp()}
                     disabled={forgotRequestMutation.isPending || !emailPattern.test(normalizedForgotEmail)}
-                    className="text-sm font-bold text-blue-600 dark:text-blue-500 transition-colors hover:text-blue-700 dark:hover:text-blue-400 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                    className="text-sm font-bold text-blue-600 transition-colors hover:text-blue-700 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {forgotRequestMutation.isPending ? copy.otpSending : copy.forgotOtpResend}
                   </button>
@@ -915,7 +919,7 @@ export function ModernAuthPopupModal({
 
               {forgotStep === "reset" ? (
                 <form onSubmit={handleForgotResetSubmit} className="space-y-4">
-                  <div className="rounded-2xl border border-emerald-100 dark:border-emerald-950/40 bg-emerald-50 dark:bg-emerald-950/20 px-4 py-3 text-sm leading-6 text-emerald-800 dark:text-emerald-400">
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-800">
                     {copy.forgotResetDescription} <strong>{forgotMaskedEmail || normalizedForgotEmail}</strong>.
                   </div>
 
@@ -949,7 +953,8 @@ export function ModernAuthPopupModal({
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-12 rounded-2xl text-sm font-bold transition-all hover:scale-[1.01] border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300"
+                      className="h-12 rounded-2xl text-sm font-bold transition-all hover:scale-[1.01]"
+                      style={{ borderColor: "rgba(186,230,255,0.8)", background: "rgba(240,249,255,0.8)", color: "#475569" }}
                       onClick={() => setForgotStep("verify")}
                     >
                       <ArrowLeft className="mr-1 h-4 w-4" />
@@ -971,12 +976,12 @@ export function ModernAuthPopupModal({
 
               {forgotStep === "done" ? (
                 <div className="space-y-5 text-center">
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 shadow-sm">
-                    <ShieldCheck className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-emerald-200 bg-emerald-50 shadow-[0_14px_32px_rgba(16,185,129,0.14)]">
+                    <ShieldCheck className="h-8 w-8 text-emerald-600" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-3xl font-black tracking-tight text-slate-950 dark:text-slate-100">{copy.forgotSuccessTitle}</h3>
-                    <p className="text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">{forgotSuccessMessage || copy.forgotSuccessDescription}</p>
+                    <h3 className="text-3xl font-black tracking-tight text-slate-950">{copy.forgotSuccessTitle}</h3>
+                    <p className="text-sm font-medium leading-6 text-slate-500">{forgotSuccessMessage || copy.forgotSuccessDescription}</p>
                   </div>
                   <button
                     type="button"
@@ -996,15 +1001,15 @@ export function ModernAuthPopupModal({
           {mode === "otp" ? (
             <div className="mx-auto w-full max-w-[500px] space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-400 ease-out">
               <div className="flex justify-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-sky-200 dark:border-sky-850 bg-sky-50 dark:bg-sky-950/20 shadow-sm">
-                  <ShieldCheck className="h-8 w-8 text-sky-500 dark:text-sky-400" />
+                <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-sky-200 bg-sky-50 shadow-[0_14px_32px_rgba(14,165,233,0.14)]">
+                  <ShieldCheck className="h-8 w-8 text-sky-500" />
                 </div>
               </div>
 
               <div className="space-y-2 text-center">
-                <h3 className="text-3xl font-black tracking-tight text-slate-950 dark:text-slate-100">{copy.otpTitle}</h3>
-                <p className="text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">
-                  {copy.otpDescription} <span className="font-bold text-slate-800 dark:text-slate-200">{otpEmail}</span>
+                <h3 className="text-3xl font-black tracking-tight text-slate-950">{copy.otpTitle}</h3>
+                <p className="text-sm font-medium leading-6 text-slate-500">
+                  {copy.otpDescription} <span className="font-bold text-slate-800">{otpEmail}</span>
                 </p>
               </div>
 
@@ -1024,30 +1029,30 @@ export function ModernAuthPopupModal({
                       className={cn(
                         "h-14 w-12 rounded-2xl border text-center text-lg font-black shadow-sm transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-400/20",
                         digit
-                          ? "border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shadow-[0_0_0_3px_rgba(59,130,246,0.10)]"
-                          : "border-sky-200/70 dark:border-slate-800 bg-white/90 dark:bg-slate-900 text-slate-700 dark:text-slate-300",
+                          ? "border-blue-400 bg-blue-50 text-blue-600 shadow-[0_0_0_3px_rgba(59,130,246,0.10)]"
+                          : "border-sky-200/70 bg-white/90 text-slate-700",
                       )}
                     />
                   ))}
                 </div>
-                {otpVerifyError ? <p className="text-center text-xs font-semibold text-rose-500 dark:text-rose-455">{otpVerifyError}</p> : null}
+                {otpVerifyError ? <p className="text-center text-xs font-semibold text-rose-500">{otpVerifyError}</p> : null}
               </div>
 
-              <div className="flex items-center justify-between gap-3 rounded-2xl border border-sky-100 dark:border-sky-950/40 bg-sky-50/80 dark:bg-sky-950/20 px-4 py-3 text-sm">
-                <span className="font-medium text-slate-600 dark:text-slate-400">
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-sky-100 bg-sky-50/80 px-4 py-3 text-sm">
+                <span className="font-medium text-slate-600">
                   {secondsLeft > 0 ? (
                     <>
-                      {copy.otpExpires} <span className="font-bold text-slate-800 dark:text-slate-200">{secondsLeft}s</span>
+                      {copy.otpExpires} <span className="font-bold text-slate-800">{secondsLeft}s</span>
                     </>
                   ) : (
-                    <span className="text-slate-400 dark:text-slate-550">{copy.otpCanResend}</span>
+                    <span className="text-slate-400">{copy.otpCanResend}</span>
                   )}
                 </span>
                 <button
                   type="button"
                   onClick={() => void handleSendOtp()}
                   disabled={sendOtpMutation.isPending || !emailPattern.test(otpEmail)}
-                  className="font-bold text-blue-600 dark:text-blue-500 transition-colors hover:text-blue-700 dark:hover:text-blue-400 disabled:opacity-40"
+                  className="font-bold text-blue-600 transition-colors hover:text-blue-700 disabled:opacity-40"
                 >
                   {sendOtpMutation.isPending ? copy.otpSending : copy.otpSendAgain}
                 </button>
@@ -1057,7 +1062,8 @@ export function ModernAuthPopupModal({
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-12 rounded-2xl text-sm font-bold transition-all hover:scale-[1.01] border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300"
+                  className="h-12 rounded-2xl text-sm font-bold transition-all hover:scale-[1.01]"
+                  style={{ borderColor: "rgba(186,230,255,0.8)", background: "rgba(240,249,255,0.8)", color: "#475569" }}
                   onClick={() => setMode("register")}
                 >
                   <ArrowLeft className="mr-1 h-4 w-4" />
@@ -1178,12 +1184,12 @@ function AuthHeader({
 }) {
   return (
     <div className="space-y-2">
-      <div className="inline-flex items-center gap-2 rounded-full border border-sky-100 dark:border-sky-950/45 bg-sky-50 dark:bg-sky-950/20 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300">
+      <div className="inline-flex items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-sky-700">
         <Icon className="h-3.5 w-3.5" />
         {eyebrow}
       </div>
-      <h3 className="text-4xl font-black tracking-tight text-slate-950 dark:text-slate-100">{title}</h3>
-      {description ? <p className="text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">{description}</p> : null}
+      <h3 className="text-4xl font-black tracking-tight text-slate-950">{title}</h3>
+      {description ? <p className="text-sm font-medium leading-6 text-slate-500">{description}</p> : null}
     </div>
   );
 }
@@ -1202,20 +1208,20 @@ function Field({
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between gap-3">
-        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500">
           {label}
         </label>
         {action}
       </div>
       <div className="relative">{children}</div>
-      {error ? <p className="mt-1 text-[10px] font-semibold leading-tight text-rose-500 dark:text-rose-455">{error}</p> : null}
+      {error ? <p className="mt-1 text-[10px] font-semibold leading-tight text-rose-500">{error}</p> : null}
     </div>
   );
 }
 
 function ErrorBox({ message }: { message: string }) {
   return (
-    <div className="rounded-2xl border border-rose-100 dark:border-rose-950/40 bg-rose-50/80 dark:bg-rose-950/20 px-3 py-2.5 text-center text-xs font-semibold text-rose-600 dark:text-rose-400">
+    <div className="rounded-2xl border border-rose-100 bg-rose-50/80 px-3 py-2.5 text-center text-xs font-semibold text-rose-600">
       {message}
     </div>
   );
