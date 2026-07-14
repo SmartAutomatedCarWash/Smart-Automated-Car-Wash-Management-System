@@ -19,10 +19,10 @@ type WorkspacePlaceholderProps = {
 };
 
 const WORKSPACE_BADGE: Record<WorkspacePlaceholderProps["workspace"], string> = {
-  Customer: "border-sky-200 bg-sky-50 text-sky-700",
-  Staff: "border-violet-200 bg-violet-50 text-violet-700",
-  Admin: "border-orange-200 bg-orange-50 text-orange-700",
-  Auth: "border-slate-200 bg-slate-50 text-slate-700",
+  Customer: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800/40 dark:bg-sky-950/30 dark:text-sky-300",
+  Staff: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800/40 dark:bg-violet-950/30 dark:text-violet-300",
+  Admin: "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800/40 dark:bg-orange-950/30 dark:text-orange-300",
+  Auth: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800/40 dark:bg-slate-950/30 dark:text-slate-300",
 };
 
 export function WorkspacePlaceholder({
@@ -36,8 +36,8 @@ export function WorkspacePlaceholder({
 }: WorkspacePlaceholderProps) {
   return (
     <WorkspacePage>
-      <Card className="overflow-hidden border-border/70 bg-card/95 shadow-sm">
-        <div className="border-b border-border/60 bg-muted/30 px-6 py-5">
+      <Card className="overflow-hidden border-border/70 bg-card/95 dark:bg-[#071016]/50 dark:border-cyan-500/20 dark:text-white shadow-sm">
+        <div className="border-b border-border/60 bg-muted/30 dark:bg-muted/10 px-6 py-5">
           <span
             className={cn(
               "inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
@@ -62,7 +62,7 @@ export function WorkspacePlaceholder({
                 {endpoints.map((endpoint) => (
                   <li
                     key={endpoint}
-                    className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 font-mono text-xs text-muted-foreground"
+                    className="rounded-lg border border-border/60 dark:border-cyan-900/30 bg-muted/20 dark:bg-[#05080d]/50 px-3 py-2 font-mono text-xs text-muted-foreground"
                   >
                     {endpoint}
                   </li>
@@ -77,7 +77,7 @@ export function WorkspacePlaceholder({
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="inline-flex h-10 items-center gap-2 rounded-full border border-border/70 bg-background px-4 text-sm font-semibold text-foreground transition hover:border-primary/30 hover:text-primary"
+                  className="inline-flex h-10 items-center gap-2 rounded-full border border-border/70 dark:border-cyan-900/50 bg-background dark:bg-[#0c1922]/90 px-4 text-sm font-semibold text-foreground transition hover:border-primary/30 hover:text-primary dark:text-white dark:hover:text-primary"
                 >
                   {link.label}
                   <ArrowRight className="h-3.5 w-3.5" />

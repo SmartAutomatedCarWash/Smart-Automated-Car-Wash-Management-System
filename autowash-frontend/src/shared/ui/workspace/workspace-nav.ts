@@ -46,9 +46,9 @@ export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
     description: "Detailing Customer Portal",
     descriptionVi: "Cổng khách hàng Detailing",
     accent: "bg-cyan-300 text-slate-950 shadow-cyan-300/25",
-    accentSoft: "border-cyan-300/30 bg-cyan-50 text-cyan-950",
+    accentSoft: "border-cyan-300/30 bg-cyan-950/30 text-cyan-200",
     activeNav: "bg-[#06111a] text-cyan-100 shadow-[0_16px_34px_rgba(8,145,178,0.18)] ring-1 ring-cyan-300/30",
-    mobileActive: "bg-cyan-50 text-cyan-800",
+    mobileActive: "bg-cyan-950/40 text-cyan-300",
   },
   STAFF: {
     label: "Staff Operations",
@@ -56,9 +56,9 @@ export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
     description: "Check-in and wash flow",
     descriptionVi: "Duyệt check-in & Quy trình",
     accent: "bg-cyan-300 text-slate-950 shadow-cyan-300/25",
-    accentSoft: "border-cyan-300/30 bg-cyan-50 text-cyan-950",
+    accentSoft: "border-cyan-300/30 bg-cyan-950/30 text-cyan-200",
     activeNav: "bg-[#06111a] text-cyan-100 shadow-[0_16px_34px_rgba(8,145,178,0.18)] ring-1 ring-cyan-300/30",
-    mobileActive: "bg-cyan-50 text-cyan-800",
+    mobileActive: "bg-cyan-950/40 text-cyan-300",
   },
   ADMIN: {
     label: "Admin Dashboard",
@@ -66,9 +66,9 @@ export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
     description: "System control center",
     descriptionVi: "Trung tâm quản trị hệ thống",
     accent: "bg-cyan-300 text-slate-950 shadow-cyan-300/25",
-    accentSoft: "border-cyan-300/30 bg-cyan-50 text-cyan-950",
+    accentSoft: "border-cyan-300/30 bg-cyan-950/30 text-cyan-200",
     activeNav: "bg-[#06111a] text-cyan-100 shadow-[0_16px_34px_rgba(8,145,178,0.18)] ring-1 ring-cyan-300/30",
-    mobileActive: "bg-cyan-50 text-cyan-800",
+    mobileActive: "bg-cyan-950/40 text-cyan-300",
   },
 };
 

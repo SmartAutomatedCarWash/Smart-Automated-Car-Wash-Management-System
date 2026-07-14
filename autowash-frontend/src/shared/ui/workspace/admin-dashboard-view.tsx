@@ -2,10 +2,25 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from "recharts";
+import dynamic from "next/dynamic";
+
+const BookingTrendChart = dynamic(
+  () => import("./dashboard-charts").then((mod) => mod.BookingTrendChart),
+  { ssr: false, loading: () => <div className="h-48 animate-pulse bg-muted/20 rounded-2xl" /> }
+);
+const BookingStatusChart = dynamic(
+  () => import("./dashboard-charts").then((mod) => mod.BookingStatusChart),
+  { ssr: false, loading: () => <div className="h-[160px] w-[160px] animate-pulse bg-muted/20 rounded-full" /> }
+);
+const PeakHoursChart = dynamic(
+  () => import("./dashboard-charts").then((mod) => mod.PeakHoursChart),
+  { ssr: false, loading: () => <div className="h-48 animate-pulse bg-muted/20 rounded-2xl" /> }
+);
+const VoucherStatsChart = dynamic(
+  () => import("./dashboard-charts").then((mod) => mod.VoucherStatsChart),
+  { ssr: false, loading: () => <div className="h-[140px] w-[140px] animate-pulse bg-muted/20 rounded-full" /> }
+);
+
 import {
   CalendarDays, Users, Award, TrendingUp, TrendingDown,
   Droplets, Star, AlertTriangle, Clock, BadgePercent,
@@ -252,22 +267,7 @@ export function AdminDashboardView() {
             </CardHeader>
             <CardContent>
               {isLoading ? <Skeleton className="h-48" /> : (
-                <ResponsiveContainer width="100%" height={200}>
-                  <AreaChart data={trend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="bookingGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                    <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                    <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12 }} />
-                    <Area type="monotone" dataKey="bookings" stroke="#06b6d4" strokeWidth={2}
-                      fill="url(#bookingGrad)" dot={false} activeDot={{ r: 4 }} />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <BookingTrendChart trend={trend} />
               )}
             </CardContent>
           </Card>
@@ -287,17 +287,7 @@ export function AdminDashboardView() {
             <CardContent>
               {isLoading ? <Skeleton className="h-48" /> : (
                 <div className="flex items-center gap-4">
-                  <ResponsiveContainer width={160} height={160}>
-                    <PieChart>
-                      <Pie data={statusChartData} cx="50%" cy="50%" innerRadius={45}
-                        outerRadius={72} paddingAngle={2} dataKey="value">
-                        {statusChartData.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip contentStyle={{ borderRadius: 12, fontSize: 11 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <BookingStatusChart data={statusChartData} />
                   <div className="flex-1 space-y-1.5">
                     {statusChartData.map((s) => (
                       <div key={s.name} className="flex items-center justify-between text-xs">
@@ -334,16 +324,7 @@ export function AdminDashboardView() {
             </CardHeader>
             <CardContent>
               {isLoading ? <Skeleton className="h-48" /> : (
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={peakHours} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                    <XAxis dataKey="hour" tick={{ fontSize: 10, fill: "#94a3b8" }}
-                      tickFormatter={(v: string) => v.replace(":00", "")} />
-                    <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} />
-                    <Tooltip contentStyle={{ borderRadius: 12, fontSize: 11 }} />
-                    <Bar dataKey="bookings" fill="#06b6d4" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <PeakHoursChart data={peakHours} />
               )}
             </CardContent>
           </Card>
@@ -436,17 +417,7 @@ export function AdminDashboardView() {
             <CardContent>
               {isLoading ? <Skeleton className="h-40" /> : (
                 <div className="flex items-center gap-4">
-                  <ResponsiveContainer width={140} height={140}>
-                    <PieChart>
-                      <Pie data={voucherChartData} cx="50%" cy="50%" innerRadius={38}
-                        outerRadius={65} paddingAngle={3} dataKey="value">
-                        {voucherChartData.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip contentStyle={{ borderRadius: 12, fontSize: 11 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <VoucherStatsChart data={voucherChartData} />
                   <div className="flex-1 space-y-2">
                     {voucherChartData.map((v) => (
                       <div key={v.name} className="flex items-center justify-between text-xs">

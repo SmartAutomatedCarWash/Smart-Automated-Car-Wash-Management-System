@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import NextImage from "next/image";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import {
   useAdminReviews,
@@ -325,8 +326,8 @@ export function AdminReviewManagementPage() {
                               rel="noreferrer"
                               className="relative h-10 w-10 overflow-hidden rounded-lg border border-slate-200 block shrink-0 hover:scale-105 transition-transform"
                             >
-                              <img src={rev.beforeImageUrl} alt="before" className="h-full w-full object-cover" />
-                              <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] font-black text-white text-center py-0.5 uppercase tracking-wider">
+                              <NextImage src={rev.beforeImageUrl} alt="before" fill sizes="40px" className="object-cover" />
+                              <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] font-black text-white text-center py-0.5 uppercase tracking-wider z-10">
                                 Before
                               </span>
                             </a>
@@ -338,8 +339,8 @@ export function AdminReviewManagementPage() {
                               rel="noreferrer"
                               className="relative h-10 w-10 overflow-hidden rounded-lg border border-slate-200 block shrink-0 hover:scale-105 transition-transform"
                             >
-                              <img src={rev.afterImageUrl} alt="after" className="h-full w-full object-cover" />
-                              <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] font-black text-white text-center py-0.5 uppercase tracking-wider">
+                              <NextImage src={rev.afterImageUrl} alt="after" fill sizes="40px" className="object-cover" />
+                              <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] font-black text-white text-center py-0.5 uppercase tracking-wider z-10">
                                 After
                               </span>
                             </a>

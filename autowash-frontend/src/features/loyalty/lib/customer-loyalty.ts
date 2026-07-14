@@ -11,6 +11,7 @@ import type { TierConfig } from "@/features/settings/lib/admin-tiers-service";
 
 
 export function formatTierLabel(tier: LoyaltyTier) {
+  if (!tier || typeof tier !== "string") return "";
   return tier.charAt(0) + tier.slice(1).toLowerCase();
 }
 
