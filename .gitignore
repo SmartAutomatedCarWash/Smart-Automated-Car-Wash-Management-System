@@ -23,3 +23,15 @@ mc.exe
 minio.exe
 minio.license
 minio-data/
+
+# MSW / Mock Data (local testing)
+autowash-frontend/src/mocks/
+autowash-frontend/public/mockServiceWorker.js
+autowash-frontend/ensure-mocks.js
+
+# Local runtime crash/replay logs
+hs_err_pid*.log
+replay_pid*.log
+
+# Workspace-local scratch files
+.local/

@@ -46,6 +46,7 @@ import {
   getVoucherCodeFormatError,
   sanitizeVoucherCodeInput,
 } from "@/shared/lib/validators";
+import { cn } from "@/shared/lib/utils";
 import {
   useActiveCustomerCombos,
   useBookingAddons,
@@ -243,26 +244,6 @@ function AmPmTimePicker({
   /** Selected booking date "YYYY-MM-DD" — used to filter past slots when today */
   bookingDate?: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [ampm, setAmpm] = useState<"AM" | "PM">(() => {
-    if (!value) return "AM";
-    const [h] = value.split(":").map(Number);
-    return h >= 12 ? "PM" : "AM";
-  });
-
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return;
-    function handleOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [open]);
-
   const availableSet = useMemo(() => new Set(timeSlots), [timeSlots]);
 
   // When booking date is today, hide time slots that have already passed
@@ -277,18 +258,13 @@ function AmPmTimePicker({
     });
   }, [timeSlots, bookingDate]);
 
-  // All slots for current AM/PM period
-  const periodSlots = useMemo(() => {
-    return visibleSlots
-      .filter((t) => {
-        const h = Number(t.split(":")[0]);
-        return ampm === "AM" ? h < 12 : h >= 12;
-      })
-      .map((t) => {
-        const { time: label } = to12hLabel(t);
-        return { slot24: t, label };
-      });
-  }, [visibleSlots, ampm]);
+  const groupedSlots = useMemo(() => {
+    const mapSlot = (slot24: string) => ({ slot24, label: to12hLabel(slot24).time });
+    return {
+      AM: visibleSlots.filter((t) => Number(t.split(":")[0]) < 12).map(mapSlot),
+      PM: visibleSlots.filter((t) => Number(t.split(":")[0]) >= 12).map(mapSlot),
+    };
+  }, [visibleSlots]);
 
   // If the currently selected time has become past (today), clear it
   useEffect(() => {
@@ -300,32 +276,19 @@ function AmPmTimePicker({
   function selectSlot(slot24: string) {
     if (availableSet.has(slot24)) {
       onChange(slot24);
-      setOpen(false);
     }
-  }
-
-  function toggleAmpm(ap: "AM" | "PM") {
-    setAmpm(ap);
-    onChange("");
   }
 
   const startLabel = value ? to12hLabel(value) : null;
   const endLabel = endTime ? to12hLabel(endTime) : null;
+  const availableCount = visibleSlots.filter((slot) => availableSet.has(slot)).length;
 
   return (
-    <div ref={containerRef} className="relative space-y-0">
+    <div className="relative space-y-3">
       {/* ── Two trigger buttons row ── */}
       <div className="grid grid-cols-2 gap-3">
         {/* Start with — active/clickable */}
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all ${
-            open
-              ? "border-primary bg-primary/5 shadow-sm"
-              : "border-border bg-background hover:border-primary/50"
-          }`}
-        >
+        <div className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-left shadow-sm">
           <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground leading-none mb-0.5">
@@ -335,8 +298,7 @@ function AmPmTimePicker({
               {startLabel ? `${startLabel.time} ${startLabel.period}` : "Select time"}
             </p>
           </div>
-          <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
-        </button>
+        </div>
 
         {/* End with — read-only, auto-calculated */}
         <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/30 px-4 py-3 cursor-default">
@@ -353,57 +315,59 @@ function AmPmTimePicker({
         </div>
       </div>
 
-      {/* ── Dropdown — floats above other content via absolute positioning ── */}
-      {open && (
-        <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-full rounded-2xl border border-border bg-background shadow-xl overflow-hidden">
-          {/* AM/PM toggle inside dropdown header */}
-          <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-            <span className="text-xs font-semibold text-muted-foreground">Select start time</span>
-            <div className="flex rounded-lg border border-border bg-muted/40 p-0.5 gap-0.5">
-              {(["AM", "PM"] as const).map((ap) => (
-                <button
-                  key={ap}
-                  type="button"
-                  onClick={() => toggleAmpm(ap)}
-                  className={`rounded-md px-3 py-1 text-xs font-bold transition-all ${
-                    ampm === ap
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {ap}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Scrollable time list */}
-          <div className="max-h-52 overflow-y-auto">
-            {periodSlots.length === 0 ? (
-              <p className="py-4 text-center text-xs text-muted-foreground">No time slots available</p>
-            ) : (
-              periodSlots.map(({ slot24, label }) => {
-                const active = value === slot24;
-                return (
-                  <button
-                    key={slot24}
-                    type="button"
-                    onClick={() => selectSlot(slot24)}
-                    className={`flex w-full items-center justify-between px-5 py-2.5 text-sm transition-colors ${
-                      active
-                        ? "bg-primary/8 font-bold text-primary"
-                        : "text-foreground hover:bg-muted/50"
-                    }`}
-                  >
-                    <span className="tabular-nums font-semibold">{label}</span>
-                    {active && <span className="h-2 w-2 rounded-full bg-primary" />}
-                  </button>
-                );
-              })
-            )}
-          </div>
+      <div className="rounded-3xl border border-border bg-card/70 p-3 shadow-sm">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">Available slots</p>
+          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">
+            {availableCount} open
+          </span>
         </div>
-      )}
+        <div className="grid gap-3 sm:grid-cols-2">
+          {(["AM", "PM"] as const).map((period) => (
+            <div key={period} className="rounded-2xl border border-border/80 bg-background/70 p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-black text-foreground">{period === "AM" ? "Morning" : "Afternoon"}</p>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{period}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {groupedSlots[period].length === 0 ? (
+                  <p className="col-span-2 rounded-xl border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+                    No slots
+                  </p>
+                ) : (
+                  groupedSlots[period].map(({ slot24, label }) => {
+                    const active = value === slot24;
+                    const available = availableSet.has(slot24);
+                    return (
+                      <button
+                        key={slot24}
+                        type="button"
+                        disabled={!available}
+                        onClick={() => selectSlot(slot24)}
+                        className={cn(
+                          "rounded-xl border px-3 py-2 text-sm font-black tabular-nums transition duration-200",
+                          active
+                            ? "border-primary bg-primary text-primary-foreground shadow-[0_10px_24px_rgba(0,184,217,0.22)]"
+                            : available
+                              ? "border-border bg-card text-foreground hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5"
+                              : "cursor-not-allowed border-border bg-muted/40 text-muted-foreground/45 line-through",
+                        )}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        {value && endLabel ? (
+          <div className="mt-3 rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-3 text-sm font-bold text-foreground">
+            Estimated completion: {endLabel.time} {endLabel.period}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

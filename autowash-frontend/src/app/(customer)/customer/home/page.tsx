@@ -41,10 +41,10 @@ import { useCustomerBookings, useActiveWashTracking } from "@/features/bookings/
 import { useBookingPackages, useBookingCombos } from "@/features/bookings/hooks/use-bookings";
 import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
 import {
-  BookingLiveSessionCard,
   CustomerExperienceStyles,
   FeatureSection,
   FloatingBookingButton,
+  FloatingWashSessionBubble,
   MembershipFloatingCard,
 } from "@/shared/ui/customer/customer-experience";
 
@@ -373,18 +373,6 @@ export default function CustomerHomePage() {
             </div>
           </div>
         </section>
-
-        {displayBooking ? (
-          <BookingLiveSessionCard
-            language={language}
-            bookingCode={displayBooking.bookingId}
-            serviceName={("serviceName" in displayBooking ? displayBooking.serviceName : null) || ("packageName" in displayBooking ? displayBooking.packageName : null) || t("Dịch vụ rửa xe", "Car wash service")}
-            status={toLiveSessionStatus(displayBooking.status)}
-            imageUrl="/images/gallery1.jpg"
-            scheduledAt={toBookingDateTime(displayBooking.bookingDate, displayBooking.bookingTime)}
-            timestamps={washTimestamps}
-          />
-        ) : null}
 
         {/* Hero Slider & Info */}
         <section className="relative mt-2 overflow-hidden rounded-3xl border border-[#BDEEFF] dark:border-slate-800 bg-[#F5FBFF] dark:bg-slate-950/40 shadow-[0_18px_48px_rgba(47,128,237,0.12)]">
@@ -847,6 +835,17 @@ export default function CustomerHomePage() {
       <div className="hidden lg:block">
         <FloatingBookingButton language={language} />
       </div>
+      {displayBooking ? (
+        <FloatingWashSessionBubble
+          language={language}
+          bookingCode={displayBooking.bookingId}
+          serviceName={("serviceName" in displayBooking ? displayBooking.serviceName : null) || ("packageName" in displayBooking ? displayBooking.packageName : null) || t("Dịch vụ rửa xe", "Car wash service")}
+          status={toLiveSessionStatus(displayBooking.status)}
+          imageUrl="/images/gallery1.jpg"
+          scheduledAt={toBookingDateTime(displayBooking.bookingDate, displayBooking.bookingTime)}
+          timestamps={washTimestamps}
+        />
+      ) : null}
     </div>
   );
 }

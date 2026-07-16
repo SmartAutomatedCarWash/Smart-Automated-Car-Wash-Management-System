@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { QueryProvider } from "@/shared/ui/providers/query-provider";
 import { ThemeProvider } from "@/shared/ui/providers/theme-provider";
-import { MswProvider } from "@/shared/ui/providers/msw-provider";
 import { Toaster } from "@/shared/ui/ui/sonner";
 import "./globals.css";
 
@@ -31,12 +30,10 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <MswProvider>
-            <QueryProvider>
-              {children}
-              <Toaster />
-            </QueryProvider>
-          </MswProvider>
+          <QueryProvider>
+            {children}
+            <Toaster />
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>
