@@ -76,11 +76,17 @@ public class Booking {
     @Column(name = "final_amount", nullable = false)
     private long finalAmount;
 
+    @Column(name = "reminder_sent", nullable = false)
+    private boolean reminderSent;
+
     @Column(name = "estimated_duration_minutes", nullable = false)
     private int estimatedDurationMinutes;
 
     @Column(name = "voucher_discount", nullable = false)
     private long voucherDiscount;
+
+    @Column(name = "promotion_discount", nullable = false)
+    private long promotionDiscount;
 
     @Column(name = "note")
     private String note;
@@ -106,7 +112,27 @@ public class Booking {
             com.autowash.entity.enums.PaymentMethod paymentMethod,
             long baseAmount,
             long optionsAmount,
-            long discountAmount,
+            long voucherDiscount,
+            long finalAmount,
+            int estimatedDurationMinutes
+    ) {
+        this(id, customer, vehicle, packageId, comboId, voucherId, scheduledAt, bookingTime, paymentMethod, baseAmount, optionsAmount, voucherDiscount, 0L, finalAmount, estimatedDurationMinutes);
+    }
+
+    public Booking(
+            UUID id,
+            User customer,
+            Vehicle vehicle,
+            UUID packageId,
+            UUID comboId,
+            UUID voucherId,
+            Instant scheduledAt,
+            java.time.LocalTime bookingTime,
+            com.autowash.entity.enums.PaymentMethod paymentMethod,
+            long baseAmount,
+            long optionsAmount,
+            long voucherDiscount,
+            long promotionDiscount,
             long finalAmount,
             int estimatedDurationMinutes
     ) {
@@ -122,10 +148,11 @@ public class Booking {
         this.scheduledAt = scheduledAt;
         this.baseAmount = baseAmount;
         this.optionsAmount = optionsAmount;
-        this.discountAmount = discountAmount;
+        this.discountAmount = voucherDiscount + promotionDiscount;
+        this.voucherDiscount = voucherDiscount;
+        this.promotionDiscount = promotionDiscount;
         this.finalAmount = finalAmount;
         this.estimatedDurationMinutes = estimatedDurationMinutes;
-        this.voucherDiscount = 0;
         this.createdAt = now;
         this.updatedAt = now;
     }
@@ -144,6 +171,11 @@ public class Booking {
     public Instant getConfirmationExpiresAt() {
         return null;
     }
+
+    public void markReminderSent() {
+        this.reminderSent = true;
+    }
+
 
     public void updateStatus(BookingStatus status) {
         this.status = status;
@@ -178,13 +210,7 @@ public class Booking {
         return optionsAmount;
     }
 
-    public long getVoucherDiscount() {
-        return discountAmount;
-    }
 
-    public long getFinalAmount() {
-        return finalAmount;
-    }
 
     public int getEstimatedDurationMinutes() {
         return estimatedDurationMinutes;

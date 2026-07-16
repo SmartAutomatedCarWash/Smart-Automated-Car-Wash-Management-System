@@ -10,7 +10,13 @@ import type { TierConfig } from "@/features/settings/lib/admin-tiers-service";
 
 
 
-export function formatTierLabel(tier: LoyaltyTier) {
+export function formatTierLabel(tier: LoyaltyTier, configs?: TierConfig[]) {
+  if (configs && configs.length > 0) {
+    const config = configs.find((c) => c.tier === tier);
+    if (config?.name) {
+      return config.name;
+    }
+  }
   return tier.charAt(0) + tier.slice(1).toLowerCase();
 }
 

@@ -80,6 +80,7 @@ export function BookingConfirmPage() {
   const updateDraft = useBookingStore((state) => state.updateDraft);
   const resetDraft = useBookingStore((state) => state.resetDraft);
   const setExpiresAt = useBookingStore((state) => state.setExpiresAt);
+  const lastCreatedBooking = useBookingStore((state) => state.lastCreatedBooking);
   const setLastCreatedBooking = useBookingStore((state) => state.setLastCreatedBooking);
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(draft.paymentMethod);
@@ -117,11 +118,11 @@ export function BookingConfirmPage() {
   );
 
   useEffect(() => {
-    if (expired) return;
+    if (expired || lastCreatedBooking) return;
     if (!draft.vehicleId || !draft.bookingDate || !draft.bookingTime || !expiresAt || expiresAt <= Date.now()) {
       router.replace("/customer/booking");
     }
-  }, [draft.bookingDate, draft.bookingTime, draft.vehicleId, expired, expiresAt, router]);
+  }, [draft.bookingDate, draft.bookingTime, draft.vehicleId, expired, expiresAt, lastCreatedBooking, router]);
 
   const releaseHeldSlot = useCallback(async () => {
     if (!draft.bookingDate || !draft.bookingTime) return;

@@ -494,186 +494,6 @@ function AdminBusinessHealthReportView({
 }) {
   const { language } = useLanguageStore();
   
-  // Chatbot State
-  const [messages, setMessages] = useState<Array<{
-    id: string;
-    sender: "ai" | "user";
-    text: React.ReactNode;
-    timestamp: Date;
-    title?: string;
-    tone?: string;
-  }>>([]);
-  const [inputValue, setInputValue] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Reset messages with a greeting
-    const greetingText = language === "vi" 
-      ? "Dưới đây là tổng quan dữ liệu về tình hình kinh doanh của bạn:" 
-      : "Here is the data overview of your business performance:";
-    
-    const initialMsgs = [
-      {
-        id: "greeting",
-        sender: "ai" as const,
-        text: greetingText,
-        timestamp: new Date(),
-      }
-    ];
-    setMessages(initialMsgs);
-
-    // Simulate AI typing and adding each insight one by one
-    setIsTyping(true);
-    let timeoutIds: NodeJS.Timeout[] = [];
-
-    report.insights.forEach((insight, idx) => {
-      const tId = setTimeout(() => {
-        const translated = translateInsight(insight.title, insight.summary, language);
-        setMessages(prev => [
-          ...prev,
-          {
-            id: `insight-${idx}-${Date.now()}`,
-            sender: "ai" as const,
-            title: translated.title,
-            text: highlightSummaryText(translated.summary),
-            timestamp: new Date(),
-            tone: insight.tone,
-          }
-        ]);
-        
-        // If it's the last insight, turn off typing and show concluding message
-        if (idx === report.insights.length - 1) {
-          const concludeTId = setTimeout(() => {
-            const concludingText = language === "vi"
-              ? "Hãy cho tôi biết nếu bạn cần phân tích sâu hơn về bất kỳ chỉ số nào ở trên!"
-              : "Let me know if you need a deeper analysis of any metrics above!";
-            setMessages(prev => [
-              ...prev,
-              {
-                id: "conclusion",
-                sender: "ai" as const,
-                text: concludingText,
-                timestamp: new Date(),
-              }
-            ]);
-            setIsTyping(false);
-          }, 1000);
-          timeoutIds.push(concludeTId);
-        }
-      }, (idx + 1) * 1200); // 1.2s delay per message to feel like real typing
-      timeoutIds.push(tId);
-    });
-
-    return () => {
-      timeoutIds.forEach(clearTimeout);
-    };
-  }, [report.insights, language]);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
-
-  const handleSendMessage = (textToSend?: string) => {
-    const text = textToSend || inputValue.trim();
-    if (!text) return;
-
-    // Add user message
-    const userMsg = {
-      id: `user-${Date.now()}`,
-      sender: "user" as const,
-      text: text,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMsg]);
-    if (!textToSend) setInputValue("");
-    setIsTyping(true);
-
-    // Simulate AI typing response
-    setTimeout(() => {
-      let responseText: React.ReactNode = "";
-      const lower = text.toLowerCase();
-
-      if (language === "vi") {
-        if (lower.includes("doanh thu") || lower.includes("revenue")) {
-          responseText = (
-            <span>
-              Dựa vào dữ liệu thực tế, doanh thu kỳ này là {formatCurrency(report.kpis.revenueThisPeriod)},{" "}
-              {report.kpis.revenueGrowthRate >= 0 ? "tăng" : "giảm"} {formatGrowth(report.kpis.revenueGrowthRate)} so với kỳ trước. Sự tăng trưởng này chủ yếu nhờ vào dịch vụ {translateText(report.topItems.services[0]?.label ?? "", "vi")}.
-            </span>
-          );
-        } else if (lower.includes("hủy") || lower.includes("cancel")) {
-          const cancelRate = report.kpis.cancellationRate ?? 0;
-          responseText = (
-            <span>
-              Tỷ lệ hủy lịch hiện tại là {formatPercent(cancelRate)}.{" "}
-              {cancelRate > 0.1 
-                ? "Mức độ hủy lịch đang ở mức cao. Bạn nên rà soát lại các khung giờ cao điểm và chính sách hoàn tiền để giảm thiểu tình trạng này."
-                : "Mức độ hủy lịch đang được kiểm soát rất tốt so với mặt bằng chung."}
-            </span>
-          );
-        } else if (lower.includes("dịch vụ") || lower.includes("service")) {
-          const topService = report.topItems.services[0];
-          responseText = (
-            <span>
-              Dịch vụ đắt khách nhất là {translateText(topService?.label ?? "", "vi")} đóng góp {formatCurrency(topService?.revenue ?? 0)} với {topService?.bookings ?? 0} lịch đặt (chiếm {formatPercent(topService?.share ?? 0)} tổng doanh thu).
-            </span>
-          );
-        } else {
-          responseText = (
-            <span>
-              Mình đã nhận được câu hỏi 💖 Hệ thống đang phân tích dữ liệu sâu hơn. Bạn có thể kiểm tra các biểu đồ ở dưới để có cái nhìn trực quan nhất nhé!
-            </span>
-          );
-        }
-      } else {
-        if (lower.includes("revenue") || lower.includes("doanh thu")) {
-          responseText = (
-            <span>
-              Based on real data, revenue this period is {formatCurrency(report.kpis.revenueThisPeriod)},{" "}
-              {report.kpis.revenueGrowthRate >= 0 ? "up" : "down"} {formatGrowth(report.kpis.revenueGrowthRate)}. This is largely driven by {report.topItems.services[0]?.label ?? "top service"}.
-            </span>
-          );
-        } else if (lower.includes("cancel") || lower.includes("hủy")) {
-          const cancelRate = report.kpis.cancellationRate ?? 0;
-          responseText = (
-            <span>
-              The current cancellation rate is {formatPercent(cancelRate)}.{" "}
-              {cancelRate > 0.1 
-                ? "This is relatively high. You should inspect peak wash hours and refund policies."
-                : "Cancellation is currently well-controlled."}
-            </span>
-          );
-        } else if (lower.includes("service") || lower.includes("dịch vụ")) {
-          const topService = report.topItems.services[0];
-          responseText = (
-            <span>
-              The top performing service is {topService?.label ?? ""} bringing in {formatCurrency(topService?.revenue ?? 0)} across {topService?.bookings ?? 0} bookings ({formatPercent(topService?.share ?? 0)} share).
-            </span>
-          );
-        } else {
-          responseText = (
-            <span>
-              Understood 💖 I am compiling deeper metrics for you. Please check the charts below for instant visual correlation.
-            </span>
-          );
-        }
-      }
-
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `ai-${Date.now()}`,
-          sender: "ai" as const,
-          text: responseText,
-          timestamp: new Date(),
-        }
-      ]);
-      setIsTyping(false);
-    }, 1500);
-  };
-
   const selectedBreakdown = breakdownForGroup(analysisGroup, report.breakdowns);
 
   const chartConfig = useMemo(() => ({
@@ -860,128 +680,39 @@ function AdminBusinessHealthReportView({
           </CardContent>
         </Card>
 
-        <Card className="border-teal-100 bg-white text-slate-900 shadow-xl shadow-teal-100/50 overflow-hidden flex flex-col h-[520px] rounded-[24px]">
-          {/* Header */}
-          <div className="pb-3 pt-4 px-5 border-b border-teal-50 bg-gradient-to-r from-teal-50/80 to-emerald-50/80 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-400 to-emerald-400 text-white shadow-sm shadow-teal-200">
-                  <Sparkles className="h-5 w-5" />
-                </div>
-                <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-400 ring-2 ring-white animate-bounce" />
-              </div>
-              <div>
-                <CardTitle className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5 leading-none">
-                  {language === "vi" ? "Tổng quan dữ liệu" : "Data Overview"}
-                </CardTitle>
-              </div>
-            </div>
-            <button 
-              onClick={() => {
-                const greetingText = language === "vi" 
-                  ? "Dưới đây là tổng quan dữ liệu về tình hình kinh doanh của bạn:" 
-                  : "Here is the data overview of your business performance:";
-                setMessages([{ id: "greeting", sender: "ai", text: greetingText, timestamp: new Date() }]);
-              }}
-              className="text-teal-400 hover:text-teal-600 transition-colors p-2 rounded-xl hover:bg-teal-100/50"
-              title="Reset Chat"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Chat messages */}
-          <div className="flex-1 p-5 overflow-y-auto space-y-5 scrollbar-thin scrollbar-thumb-teal-200 scrollbar-track-transparent flex flex-col bg-slate-50/30">
-            {messages.map((msg) => {
-              const isAi = msg.sender === "ai";
+        <div className="flex flex-col gap-3">
+          <SectionHeading title={translateText("Business insights", language)} />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+            {report.insights.map((insight, idx) => {
+              const translated = translateInsight(insight.title, insight.summary, language);
+              const meta = getInsightMeta(insight.title, insight.tone);
+              const Icon = meta.Icon;
 
               return (
-                <div
-                  key={msg.id}
-                  className={cn(
-                    "flex gap-3 max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300",
-                    isAi ? "self-start" : "self-end flex-row-reverse ml-auto"
-                  )}
-                >
-                  {isAi && (
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-300 to-emerald-300 text-white shadow-sm">
-                      <Sparkles className="h-4 w-4" />
+                <Card key={idx} className={cn("border overflow-hidden group", meta.cardBg, meta.borderColor)}>
+                  <CardContent className="p-5 flex flex-col h-full justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", meta.iconBg)}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="space-y-1.5 flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-bold text-slate-100">{translated.title}</h3>
+                          <Badge variant="outline" className={cn("text-[10px] uppercase tracking-wider font-bold border", meta.badgeBg)}>
+                            {language === "vi" ? meta.badgeText : insight.tone}
+                          </Badge>
+                        </div>
+                        <p className="text-xs leading-relaxed text-slate-300 font-medium">
+                          {translated.summary}
+                        </p>
+                      </div>
                     </div>
-                  )}
-                  
-                  <div className="space-y-1">
-                    <div
-                      className={cn(
-                        "p-4 text-sm leading-relaxed shadow-sm",
-                        isAi 
-                          ? "bg-white border border-teal-100 text-slate-700 rounded-[24px] rounded-tl-none" 
-                          : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-[24px] rounded-tr-none font-medium"
-                      )}
-                    >
-                      <div>{msg.text}</div>
-                    </div>
-                    
-                    <span className={cn("text-[10px] text-slate-400 block px-2", isAi ? "text-left" : "text-right")}>
-                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               );
             })}
-
-            {isTyping && (
-              <div className="flex gap-3 max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-300 to-emerald-300 text-white shadow-sm">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <div className="bg-white border border-teal-100 text-teal-500 px-4 py-3 rounded-[24px] rounded-tl-none flex items-center gap-2 shadow-sm">
-                  <span className="text-xs font-medium italic">{language === "vi" ? "Hệ thống đang xử lý" : "System is processing"}</span>
-                  <div className="flex space-x-1 items-center h-4 ml-1">
-                    <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                    <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                    <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce"></div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div ref={chatEndRef} />
           </div>
-
-          {/* Quick suggestions */}
-          <div className="px-5 pb-3 pt-3 flex flex-wrap gap-2 bg-white border-t border-teal-50">
-            {(language === "vi" 
-              ? ["Phân tích doanh thu 💰", "Tỷ lệ hủy lịch ⚠️", "Dịch vụ bán chạy nhất 🏆"]
-              : ["Analyze revenue 💰", "Cancellation status ⚠️", "Best selling services 🏆"]
-            ).map((phrase) => (
-              <button
-                key={phrase}
-                onClick={() => handleSendMessage(phrase)}
-                className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-600 border border-teal-100 hover:border-teal-200 transition-all duration-200"
-              >
-                {phrase}
-              </button>
-            ))}
-          </div>
-
-          {/* Input Area */}
-          <div className="p-4 bg-white flex items-center gap-3">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-              placeholder={language === "vi" ? "Nhập câu hỏi để xem chi tiết..." : "Enter a question for details..."}
-              className="flex-1 bg-slate-50 border border-slate-100 rounded-full px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-300 focus:ring-2 focus:ring-teal-100 transition-all"
-            />
-            <button
-              onClick={() => handleSendMessage()}
-              className="h-10 w-10 flex items-center justify-center rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white transition-all shadow-md shadow-teal-200 hover:shadow-lg hover:-translate-y-0.5"
-            >
-              <Send className="h-4 w-4 ml-0.5" />
-            </button>
-          </div>
-        </Card>
+        </div>
       </section>
 
       <section className="space-y-3">

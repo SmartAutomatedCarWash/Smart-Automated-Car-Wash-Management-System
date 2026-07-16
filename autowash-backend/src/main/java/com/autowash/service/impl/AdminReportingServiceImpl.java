@@ -506,11 +506,12 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 packageName,
                 optionSelections,
                 new com.autowash.dto.BookingDetailResponse.Pricing(
-                        booking.getBasePrice(),
-                        booking.getOptionsTotal(),
-                        booking.getBasePrice() + booking.getOptionsTotal(),
-                        booking.getVoucherCode(),
+                        booking.getBaseAmount(),
+                        booking.getOptionsAmount(),
+                        booking.getBaseAmount() + booking.getOptionsAmount(),
+                        booking.getVoucherId() != null ? booking.getVoucherId().toString() : null,
                         booking.getVoucherDiscount(),
+                        booking.getPromotionDiscount(),
                         booking.getFinalAmount(),
                         "VND"
                 ),

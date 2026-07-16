@@ -3,7 +3,7 @@
 > **Version:** 2.2 | **Last updated:** 2026-07-13
 > **Scope:** Backend-enforced rules only. Frontend-only prototype behaviors are labelled `[Frontend]`.
 > **Status legend:**
-> - ✅ Implemented in backend
+> - ✅ in backend
 > - ⚠️ Designed, not yet implemented
 > - 🔲 Frontend-only (no backend equivalent)
 > - ❌ Spec error — corrected here
@@ -15,26 +15,26 @@
 
 | BR | Rule | Status | Implementation |
 |---|---|---|---|
-| BR-01 | Each customer must have a unique phone number. | ✅ | `users.phone UNIQUE`, `AuthServiceImpl` throws `DUPLICATE_PHONE` |
-| BR-02 | One phone number cannot create multiple active accounts. | ✅ | `UserRepository.existsByPhone()` checked on register |
-| BR-03 | Customer must provide full name, phone number, **email**, password, and confirm password. | ✅ | `RegisterRequest`: all five `@NotBlank` |
-| BR-04 | Phone number must follow Vietnamese format `^0[0-9]{9}$`. | ✅ | `@Pattern` in `RegisterRequest`, `AuthServiceImpl.PHONE_PATTERN` |
-| BR-05 | New customer starts at tier `BRONZE` with 0 points and `PENDING` status. | ✅ | `User` constructor, `LoyaltyAccount` constructor |
-| BR-06 | Account activates only after OTP verification. | ✅ | `AuthServiceImpl.verifyRegistrationOtp()` → `user.activate()` |
-| BR-07 | Password must be 8–128 characters with uppercase, lowercase, digit, and special character. | ✅ | `@Pattern` regex in `RegisterRequest` |
-| BR-08 | Staff password must be 8–72 characters. | ✅ | `@Size(min=8, max=72)` in `ResetPasswordRequest` |
-| BR-09 | OTP code must be exactly 6 digits. | ✅ | `@Pattern(^[0-9]{6}$)` in `VerifyOtpRequest` |
-| BR-10 | OTP resend is rate-limited to 3 requests per hour per account. | ✅ | `AuthServiceImpl.enforceResendLimit()` |
-| BR-11 | OTP has a configurable expiration window (default 10 min). | ✅ | `AuthServiceImpl.otpExpirationSeconds` from `application.properties` |
-| BR-12 | Max OTP verification attempts enforced (configurable). | ✅ | `AuthServiceImpl.otpMaxAttempts` → `RATE_LIMIT_EXCEEDED` |
-| BR-13 | Blocked account cannot log in. | ✅ | `AuthServiceImpl.login()` checks `UserStatus.BLOCKED` |
-| BR-14 | Password reset requires active (non-blocked) account, email or phone lookup, and OTP verification. | ✅ | `AuthServiceImpl.requestForgotPassword()`, `resetForgotPassword()` |
-| BR-15 | Confirm password must match password on reset. | ✅ | `AuthServiceImpl.resetForgotPassword()` |
-| BR-16 | Refresh token expiry and revocation are enforced. | ✅ | `AuthServiceImpl.refresh()` checks `isRevoked()` and `expiresAt` |
-| BR-17 | Login identifier can be phone or email; system auto-detects by format. | ✅ | `AuthServiceImpl.resolveLoginUser()` |
-| BR-18 | Google OAuth login flow: exchange authorization code for user info, create or link account, return JWT. | ⚠️ | Config and `GoogleOAuthClientImpl` exist but end-to-end flow is unverified. See BR-S23. |
-| BR-19 | User role home paths: customer → `/customer/home`, staff → `/staff/dashboard`, admin → `/admin/dashboard`. | 🔲 | Frontend routing only |
-| BR-20 | Protected routes redirect unauthenticated users to login. | 🔲 | Frontend routing only |
+| BR-001 | Each customer must have a unique phone number. | ✅ | `users.phone UNIQUE`, `AuthServiceImpl` throws `DUPLICATE_PHONE` |
+| BR-002 | One phone number cannot create multiple active accounts. | ✅ | `UserRepository.existsByPhone()` checked on register |
+| BR-003 | Customer must provide full name, phone number, **email**, password, and confirm password. | ✅ | `RegisterRequest`: all five `@NotBlank` |
+| BR-004 | Phone number must follow Vietnamese format `^0[0-9]{9}$`. | ✅ | `@Pattern` in `RegisterRequest`, `AuthServiceImpl.PHONE_PATTERN` |
+| BR-005 | New customer starts at tier `BRONZE` with 0 points and `PENDING` status. | ✅ | `User` constructor, `LoyaltyAccount` constructor |
+| BR-006 | Account activates only after OTP verification. | ✅ | `AuthServiceImpl.verifyRegistrationOtp()` → `user.activate()` |
+| BR-007 | Password must be 8–128 characters with uppercase, lowercase, digit, and special character. | ✅ | `@Pattern` regex in `RegisterRequest` |
+| BR-008 | Staff password must be 8–72 characters. | ✅ | `@Size(min=8, max=72)` in `ResetPasswordRequest` |
+| BR-009 | OTP code must be exactly 6 digits. | ✅ | `@Pattern(^[0-9]{6}$)` in `VerifyOtpRequest` |
+| BR-010 | OTP resend is rate-limited to 3 requests per hour per account. | ✅ | `AuthServiceImpl.enforceResendLimit()` |
+| BR-011 | OTP has a configurable expiration window (default 10 min). | ✅ | `AuthServiceImpl.otpExpirationSeconds` from `application.properties` |
+| BR-012 | Max OTP verification attempts enforced (configurable). | ✅ | `AuthServiceImpl.otpMaxAttempts` → `RATE_LIMIT_EXCEEDED` |
+| BR-013 | Blocked account cannot log in. | ✅ | `AuthServiceImpl.login()` checks `UserStatus.BLOCKED` |
+| BR-014 | Password reset requires active (non-blocked) account, email or phone lookup, and OTP verification. | ✅ | `AuthServiceImpl.requestForgotPassword()`, `resetForgotPassword()` |
+| BR-015 | Confirm password must match password on reset. | ✅ | `AuthServiceImpl.resetForgotPassword()` |
+| BR-016 | Refresh token expiry and revocation are enforced. | ✅ | `AuthServiceImpl.refresh()` checks `isRevoked()` and `expiresAt` |
+| BR-017 | Login identifier can be phone or email; system auto-detects by format. | ✅ | `AuthServiceImpl.resolveLoginUser()` |
+| BR-018 | Google OAuth login flow: exchange authorization code for user info, create or link account, return JWT. | ⚠️ | Config and `GoogleOAuthClientImpl` exist but end-to-end flow is unverified. See BR-S23. |
+| BR-019 | User role home paths: customer → `/customer/home`, staff → `/staff/dashboard`, admin → `/admin/dashboard`. | 🔲 | Frontend routing only |
+| BR-020 | Protected routes redirect unauthenticated users to login. | 🔲 | Frontend routing only |
 
 ---
 
@@ -42,12 +42,12 @@
 
 | BR | Rule | Status | Implementation |
 |---|---|---|---|
-| BR-21 | Profile update requires non-empty full name (max 100 chars), optional valid email, and Vietnamese phone. | ✅ | `@NotBlank @Size @Pattern` in `UpdateUserProfileRequest` |
-| BR-22 | Phone must be unique across all users when updated. | ✅ | `UserRepository.existsByPhoneAndIdNot()` in `UserProfileServiceImpl` |
-| BR-23 | Email must be unique (case-insensitive) across all users when updated. | ✅ | `UserRepository.existsByEmailIgnoreCaseAndIdNot()` |
-| BR-24 | Updating profile marks customer as no longer new (`isNewCustomer = false`). | ✅ | `UserProfileServiceImpl.updateProfile()` → `user.markNotNewCustomer()` |
-| BR-25 | User preferences (language, theme, notifications) are stored per user. | ✅ | `user_preferences` table, `UserPreference` entity |
-| BR-26 | Default preferences: language=`VI`, theme=`LIGHT`, notifications=`true`, SMS=`true`, email=`false`. | ✅ | `UserPreference` constructor defaults |
+| BR-021 | Profile update requires non-empty full name (max 100 chars), optional valid email, and Vietnamese phone. | ✅ | `@NotBlank @Size @Pattern` in `UpdateUserProfileRequest` |
+| BR-022 | Phone must be unique across all users when updated. | ✅ | `UserRepository.existsByPhoneAndIdNot()` in `UserProfileServiceImpl` |
+| BR-023 | Email must be unique (case-insensitive) across all users when updated. | ✅ | `UserRepository.existsByEmailIgnoreCaseAndIdNot()` |
+| BR-024 | Updating profile marks customer as no longer new (`isNewCustomer = false`). | ✅ | `UserProfileServiceImpl.updateProfile()` → `user.markNotNewCustomer()` |
+| BR-025 | User preferences (language, theme, notifications) are stored per user. | ✅ | `user_preferences` table, `UserPreference` entity |
+| BR-026 | Default preferences: language=`VI`, theme=`LIGHT`, notifications=`true`, SMS=`true`, email=`false`. | ✅ | `UserPreference` constructor defaults |
 
 ---
 
@@ -55,16 +55,16 @@
 
 | BR | Rule | Status | Implementation |
 |---|---|---|---|
-| BR-27 | Vehicle creation requires plate, type, brand, model, and year. Color is optional. | ✅ | `@NotBlank/@NotNull` in `CreateVehicleRequest` |
-| BR-28 | Plate must match Vietnamese format `^[0-9]{2}[A-Z]-[0-9]{6}$` (e.g. `30H-123456`). | ✅ | `@Pattern` in `CreateVehicleRequest` |
-| BR-29 | Plate is normalized to uppercase and trimmed before storage. | ✅ | `VehicleServiceImpl.normalizePlate()` |
-| BR-30 | Plate must be globally unique. | ✅ | `vehicles.plate UNIQUE`, `VehicleServiceImpl` throws `DUPLICATE_PLATE` |
-| BR-31 | Vehicle type must be one of: `CAR`, `SUV`, `TRUCK`, `MOTORBIKE`, `VAN`. | ✅ | `VehicleType` enum in `CreateVehicleRequest` |
-| BR-32 | Vehicle year must be between 1900 and 2100. | ✅ | `@Min(1900) @Max(2100)` in `CreateVehicleRequest` and `UpdateVehicleRequest` |
-| BR-33 | First vehicle added for a customer automatically becomes the primary vehicle. | ✅ | `VehicleServiceImpl.createVehicle()` counts active vehicles |
-| BR-34 | Setting a vehicle as primary unsets the previous primary. | ✅ | `VehicleServiceImpl.setPrimaryVehicle()` |
-| BR-35 | Soft-deleting the primary vehicle promotes the next oldest active vehicle to primary. | ✅ | `VehicleServiceImpl.deleteVehicle()` |
-| BR-36 | Vehicles are soft-deleted (status → `DELETED`), never hard-deleted. | ✅ | `Vehicle.softDelete()` |
+| BR-027 | Vehicle creation requires plate, type, brand, model, and year. Color is optional. | ✅ | `@NotBlank/@NotNull` in `CreateVehicleRequest` |
+| BR-028 | Plate must match Vietnamese format `^[0-9]{2}[A-Z]-[0-9]{6}$` (e.g. `30H-123456`). | ✅ | `@Pattern` in `CreateVehicleRequest` |
+| BR-029 | Plate is normalized to uppercase and trimmed before storage. | ✅ | `VehicleServiceImpl.normalizePlate()` |
+| BR-030 | Plate must be globally unique. | ✅ | `vehicles.plate UNIQUE`, `VehicleServiceImpl` throws `DUPLICATE_PLATE` |
+| BR-031 | Vehicle type must be one of: `CAR`, `SUV`, `TRUCK`, `MOTORBIKE`, `VAN`. | ✅ | `VehicleType` enum in `CreateVehicleRequest` |
+| BR-032 | Vehicle year must be between 1900 and 2100. | ✅ | `@Min(1900) @Max(2100)` in `CreateVehicleRequest` and `UpdateVehicleRequest` |
+| BR-033 | First vehicle added for a customer automatically becomes the primary vehicle. | ✅ | `VehicleServiceImpl.createVehicle()` counts active vehicles |
+| BR-034 | Setting a vehicle as primary unsets the previous primary. | ✅ | `VehicleServiceImpl.setPrimaryVehicle()` |
+| BR-035 | Soft-deleting the primary vehicle promotes the next oldest active vehicle to primary. | ✅ | `VehicleServiceImpl.deleteVehicle()` |
+| BR-036 | Vehicles are soft-deleted (status → `DELETED`), never hard-deleted. | ✅ | `Vehicle.softDelete()` |
 
 ---
 
@@ -72,21 +72,21 @@
 
 | BR | Rule | Status | Implementation |
 |---|---|---|---|
-| BR-37 | Booking requires a vehicle owned by the customer (status `ACTIVE`). | ✅ | `VehicleRepository.findByOwnerAndIdAndStatus()` in `BookingServiceImpl` |
-| BR-38 | Booking must specify either a package or a combo, not both. | ✅ | `@AssertTrue hasPackageOrCombo()` in `CreateBookingRequest`; DB CHECK constraint |
-| BR-39 | Only `ACTIVE` packages can be booked. | ✅ | `CatalogServiceImpl.requireActivePackage()` |
-| BR-40 | Only `ACTIVE` combos can be booked. | ✅ | `CatalogServiceImpl.requireActiveCombo()` |
-| BR-41 | Booking date must be today or in the future (not in the past). | ✅ | `@FutureOrPresent` on `CreateBookingRequest.bookingDate` |
-| BR-42 | Booking time must be within configurable business hours (default 08:00–20:00). | ✅ | `BookingServiceImpl.validateBookingTime()` checks `operatingStartTime` / `operatingEndTime` from `SystemSettings` |
-| BR-43 | Booking date must not exceed configurable max advance days from today (default 30 days). | ✅ | `BookingServiceImpl.validateBookingTime()` checks `maxAdvanceBookingDays` from `SystemSettings` |
-| BR-44 | Booking time must be in `HH:mm` format. | ✅ | `@Pattern(^([01]\d\|2[0-3]):[0-5]\d$)` in `CreateBookingRequest` |
-| BR-45 | Customer can hold at most 3 active bookings (CONFIRMED + CHECKED_IN + IN_PROGRESS). | ✅ | `BookingRepository.countByCustomerAndStatusIn() >= 3` → `MAX_ACTIVE_BOOKINGS_EXCEEDED` |
-| BR-46 | A new booking is created with status `PENDING`. | ✅ | `Booking` constructor sets `BookingStatus.PENDING` |
-| BR-47 | Booking creation is blocked for BLOCKED customers. | ⚠️ | `createBooking()` does not check `user.getStatus()`. See BR-S01. |
-| BR-48 | Booking creation is blocked during active suspension. | ⚠️ | No suspension mechanism exists. See BR-S02. |
-| BR-49 | Duplicate booking for same vehicle + date + time slot is blocked. | ⚠️ | No check exists. See BR-S04. |
-| BR-50 | `scheduled_at` is stored using server local timezone (`Asia/Ho_Chi_Minh` / `ZoneId.systemDefault()`), not `ZoneOffset.UTC`. All booking creation and retrieval uses consistent timezone. | ✅ Fixed in V25 migration + `BookingServiceImpl` | `BookingServiceImpl.createBooking()`, `Booking.getBookingDate()`, `Booking.getBookingTime()` |
-| BR-51 | After booking confirmation, customer is redirected directly to `/customer/bookings/{id}` (booking detail page), not an intermediate success page. | ✅ Frontend | `BookingConfirmPage.handleConfirm()` |
+| BR-037 | Booking requires a vehicle owned by the customer (status `ACTIVE`). | ✅ | `VehicleRepository.findByOwnerAndIdAndStatus()` in `BookingServiceImpl` |
+| BR-038 | Booking must specify either a package or a combo, not both. | ✅ | `@AssertTrue hasPackageOrCombo()` in `CreateBookingRequest`; DB CHECK constraint |
+| BR-039 | Only `ACTIVE` packages can be booked. | ✅ | `CatalogServiceImpl.requireActivePackage()` |
+| BR-040 | Only `ACTIVE` combos can be booked. | ✅ | `CatalogServiceImpl.requireActiveCombo()` |
+| BR-041 | Booking date must be today or in the future (not in the past). | ✅ | `@FutureOrPresent` on `CreateBookingRequest.bookingDate` |
+| BR-042 | Booking time must be within configurable business hours (default 08:00–20:00). | ✅ | `BookingServiceImpl.validateBookingTime()` checks `operatingStartTime` / `operatingEndTime` from `SystemSettings` |
+| BR-043 | Booking date must not exceed configurable max advance days from today (default 30 days). | ✅ | `BookingServiceImpl.validateBookingTime()` checks `maxAdvanceBookingDays` from `SystemSettings` |
+| BR-044 | Booking time must be in `HH:mm` format. | ✅ | `@Pattern(^([01]\d\|2[0-3]):[0-5]\d$)` in `CreateBookingRequest` |
+| BR-045 | Customer can hold at most 3 active bookings (CONFIRMED + CHECKED_IN + IN_PROGRESS). | ✅ | `BookingRepository.countByCustomerAndStatusIn() >= 3` → `MAX_ACTIVE_BOOKINGS_EXCEEDED` |
+| BR-046 | A new booking is created with status `PENDING`. | ✅ | `Booking` constructor sets `BookingStatus.PENDING` |
+| BR-047 | Booking creation is blocked for BLOCKED customers. | ⚠️ | `createBooking()` does not check `user.getStatus()`. See BR-S01. |
+| BR-048 | Booking creation is blocked during active suspension. | ⚠️ | No suspension mechanism exists. See BR-S02. |
+| BR-049 | Duplicate booking for same vehicle + date + time slot is blocked. | ⚠️ | No check exists. See BR-S04. |
+| BR-050 | `scheduled_at` is stored using server local timezone (`Asia/Ho_Chi_Minh` / `ZoneId.systemDefault()`), not `ZoneOffset.UTC`. All booking creation and retrieval uses consistent timezone. | ✅ Fixed in V25 migration + `BookingServiceImpl` | `BookingServiceImpl.createBooking()`, `Booking.getBookingDate()`, `Booking.getBookingTime()` |
+| BR-051 | After booking confirmation, customer is redirected directly to `/customer/bookings/{id}` (booking detail page), not an intermediate success page. | ✅ Frontend | `BookingConfirmPage.handleConfirm()` |
 
 ---
 
@@ -94,23 +94,23 @@
 
 | BR | Rule | Status | Implementation |
 |---|---|---|---|
-| BR-52 | `final_amount = base_price + options_total - voucher_discount - points_discount`. All amounts ≥ 0. | ✅ | `Booking` constructor + DB CHECK constraints |
-| BR-53 | Add-on service options must be active and belong to the selected package or combo. Duplicate options are rejected. | ✅ | `CatalogServiceImpl.requireActivePackageOptions()` / `requireActiveComboOptions()` |
-| BR-54 | Estimated duration = base duration + sum of selected option durations. | ✅ | `BookingServiceImpl.createBooking()` |
-| BR-55 | One voucher per booking. Customer selects from their active `UserVoucher` list (status `AVAILABLE`). | ✅ | `CreateBookingRequest` receives `voucherCode`; `VoucherRedemptionServiceImpl.getUserVoucherByCode()` resolves it. |
-| BR-56 | Voucher must be: `AVAILABLE` status, not expired, min order met, tier-eligible, new-customer valid if flagged. | ✅ | `VoucherRedemptionServiceImpl.isVoucherApplicable()` |
-| BR-57 | Voucher `new_customer_only = true` is blocked for customers who have at least one completed booking. When evaluating during a new booking creation, the new booking itself is skipped from the count. | ✅ | `VoucherRedemptionServiceImpl.isVoucherApplicable()` uses `skipNewCustomerCheck` |
-| BR-58 | Customer redeems points for a Voucher Template to receive a User Voucher (`AVAILABLE`). Each User Voucher can be applied once. Points are deducted via `REDEEM` transaction. | ✅ | `VoucherRedemptionServiceImpl.redeemVoucher()` |
-| BR-59 | Tier-restricted vouchers (`voucher_tiers`) are only redeemable/usable by customers whose loyalty tier is in the allowed tier set. | ✅ | `VoucherRedemptionServiceImpl.redeemVoucher()` + `isVoucherApplicable()` with `VoucherTier` lookup |
-| BR-60 | Voucher restricted to specific services (`voucher_applicable_services`) is only applicable if the booking contains that service. `FREE_SERVICE` type uses this to determine which service to discount. | ✅ | `VoucherRedemptionServiceImpl.calculateDiscountAmount()` |
-| BR-61 | Validate-voucher endpoint (`POST /customers/bookings/validate-voucher`) checks voucher eligibility and returns discount amount without applying it. | ✅ | `BookingController.validateVoucher()` → `BookingServiceImpl.validateVoucher()` |
-| BR-62 | `UserVoucher` status transitions from `AVAILABLE` to `USED` via `markAsUsed(booking)`. If booking is cancelled, `release()` restores `AVAILABLE`. | ✅ | `VoucherRedemptionServiceImpl.applyVoucher()`, `UserVoucher.release()` |
-| BR-63 | Payment method: `CASH_AT_COUNTER` → initial status `UNPAID`; `BANK_TRANSFER` / `E_WALLET` → `PENDING_PAYMENT`. | ✅ | `BookingServiceImpl.initialPaymentStatus()` |
-| BR-64 | Paying a booking marks payment as `PAID` and transitions `PENDING` booking to `CONFIRMED`. | ✅ | `BookingServiceImpl.payBooking()` |
-| BR-65 | Payment is blocked for `CANCELLED` or `NO_SHOW` bookings. | ✅ | `BookingServiceImpl.payBooking()` |
-| BR-66 | Combo booking sets `base_amount = 0` when customer already owns an active combo. Options surcharges still apply. | ✅ | `BookingServiceImpl.createBooking()` |
-| BR-67 | Active promotions for the customer's tier are linked to the booking at creation (`booking_promotions`). | ✅ | `PromotionServiceImpl.listActiveForCustomer()` |
-| BR-68 | When a customer uses an already-purchased combo to book (not purchasing a new one), the booking confirm screen hides the payment method selector and shows a "Combo already paid" notice. | ✅ Frontend | `BookingConfirmPage` — `isComboBooking = draft.mode === 'COMBO' && Boolean(selectedCustomerCombo)` |
+| BR-052 | `final_amount = base_price + options_total - voucher_discount - points_discount`. All amounts ≥ 0. | ✅ | `Booking` constructor + DB CHECK constraints |
+| BR-053 | Add-on service options must be active and belong to the selected package or combo. Duplicate options are rejected. | ✅ | `CatalogServiceImpl.requireActivePackageOptions()` / `requireActiveComboOptions()` |
+| BR-054 | Estimated duration = base duration + sum of selected option durations. | ✅ | `BookingServiceImpl.createBooking()` |
+| BR-055 | One voucher per booking. Customer selects from their active `UserVoucher` list (status `AVAILABLE`). | ✅ | `CreateBookingRequest` receives `voucherCode`; `VoucherRedemptionServiceImpl.getUserVoucherByCode()` resolves it. |
+| BR-056 | Voucher must be: `AVAILABLE` status, not expired, min order met, tier-eligible, new-customer valid if flagged. | ✅ | `VoucherRedemptionServiceImpl.isVoucherApplicable()` |
+| BR-057 | Voucher `new_customer_only = true` is blocked for customers who have at least one completed booking. When evaluating during a new booking creation, the new booking itself is skipped from the count. | ✅ | `VoucherRedemptionServiceImpl.isVoucherApplicable()` uses `skipNewCustomerCheck` |
+| BR-058 | Customer redeems points for a Voucher Template to receive a User Voucher (`AVAILABLE`). Each User Voucher can be applied once. Points are deducted via `REDEEM` transaction. | ✅ | `VoucherRedemptionServiceImpl.redeemVoucher()` |
+| BR-059 | Tier-restricted vouchers (`voucher_tiers`) are only redeemable/usable by customers whose loyalty tier is in the allowed tier set. | ✅ | `VoucherRedemptionServiceImpl.redeemVoucher()` + `isVoucherApplicable()` with `VoucherTier` lookup |
+| BR-060 | Voucher restricted to specific services (`voucher_applicable_services`) is only applicable if the booking contains that service. `FREE_SERVICE` type uses this to determine which service to discount. | ✅ | `VoucherRedemptionServiceImpl.calculateDiscountAmount()` |
+| BR-061 | Validate-voucher endpoint (`POST /customers/bookings/validate-voucher`) checks voucher eligibility and returns discount amount without applying it. | ✅ | `BookingController.validateVoucher()` → `BookingServiceImpl.validateVoucher()` |
+| BR-062 | `UserVoucher` status transitions from `AVAILABLE` to `USED` via `markAsUsed(booking)`. If booking is cancelled, `release()` restores `AVAILABLE`. | ✅ | `VoucherRedemptionServiceImpl.applyVoucher()`, `UserVoucher.release()` |
+| BR-063 | Payment method: `CASH_AT_COUNTER` → initial status `UNPAID`; `BANK_TRANSFER` / `E_WALLET` → `PENDING_PAYMENT`. | ✅ | `BookingServiceImpl.initialPaymentStatus()` |
+| BR-064 | Paying a booking marks payment as `PAID` and transitions `PENDING` booking to `CONFIRMED`. | ✅ | `BookingServiceImpl.payBooking()` |
+| BR-065 | Payment is blocked for `CANCELLED` or `NO_SHOW` bookings. | ✅ | `BookingServiceImpl.payBooking()` |
+| BR-066 | Combo booking sets `base_amount = 0` when customer already owns an active combo. Options surcharges still apply. | ✅ | `BookingServiceImpl.createBooking()` |
+| BR-067 | Active promotions for the customer's tier are linked to the booking at creation (`booking_promotions`). | ✅ | `PromotionServiceImpl.listActiveForCustomer()` |
+| BR-068 | When a customer uses an already-purchased combo to book (not purchasing a new one), the booking confirm screen hides the payment method selector and shows a "Combo already paid" notice. | ✅ Frontend | `BookingConfirmPage` — `isComboBooking = draft.mode === 'COMBO' && Boolean(selectedCustomerCombo)` |
 
 ---
 
@@ -118,20 +118,20 @@
 
 | BR | Rule | Status | Implementation |
 |---|---|---|---|
-| BR-69 | Booking confirmation status is derived: `PENDING`→`PENDING`, `CONFIRMED/IN_PROGRESS/COMPLETED`→`VERIFIED`, `CANCELLED`→`CANCELLED`, `NO_SHOW`→`EXPIRED`. | ✅ | `Booking.getConfirmationStatus()` (transient) |
-| BR-70 | Cancellation is only allowed from `PENDING` or `CONFIRMED` status. Cancellation policy never deducts loyalty points; it only applies voucher refund/forfeit and violation recording. | ✅ | `CANCELLABLE_BOOKING_STATUSES` and voucher-only cancellation handling in `BookingServiceImpl` |
-| BR-71 | Cancellation is blocked when booking starts in less than 2 hours. | ⚠️ | Time check not implemented. See BR-S07. |
-| BR-72 | Late cancellation does not deduct loyalty points. It applies voucher policy by time before appointment and records `ViolationRecord` for late cancellation. | ✅ | `BookingServiceImpl.cancelBooking()` calls `releaseVoucherForBooking()` or `forfeitVoucherForBooking()` and records `LATE_CANCEL` |
-| BR-73 | Cancellation > 24h before appointment returns applied voucher to `AVAILABLE` and records no violation. | ✅ | `BookingServiceImpl.cancelBooking()` → `voucherRedemptionService.releaseVoucherForBooking()` |
-| BR-74 | Cancellation 6-24h before appointment forfeits applied voucher and records `ViolationRecord` type `LATE_CANCEL`. | ✅ | `BookingServiceImpl.cancelBooking()` → `forfeitVoucherForBooking()` + `ViolationRecord` |
-| BR-75 | Cancellation 1-6h before appointment forfeits applied voucher and records `ViolationRecord` type `LATE_CANCEL`. | ✅ | `BookingServiceImpl.cancelBooking()` → `forfeitVoucherForBooking()` + `ViolationRecord` |
-| BR-76 | Cancellation < 1h before appointment forfeits applied voucher and records `ViolationRecord` type `LATE_CANCEL`. | ✅ | `BookingServiceImpl.cancelBooking()` → `forfeitVoucherForBooking()` + `ViolationRecord` |
-| BR-77 | Points can only be applied to a booking in `CONFIRMED` status (before check-in). | ✅ | `BookingServiceImpl.applyPoints()` |
-| BR-78 | Points can only be applied once per booking. | ✅ | Checks `pointsRedeemed > 0` → `POINTS_ALREADY_APPLIED` |
-| BR-79 | Points discount cannot exceed booking final amount. | ✅ | `BookingServiceImpl.applyPoints()` |
-| BR-80 | All booking status transitions are recorded in `booking_status_histories`. | ✅ | `BookingServiceImpl.recordStatusHistory()` |
-| BR-81 | Customer booking history page (`/customer/bookings`) displays three sections: (1) Active bookings with 5-step status timeline and countdown to appointment; (2) Owned combos with progress bar; (3) Completed/cancelled booking history. | ✅ Frontend | `CustomerBookingListPage` |
-| BR-82 | Booking detail page (`/customer/bookings/{id}`) shows a 5-step progress timeline (Pending → Confirmed → Checked In → In Progress → Completed) with current step highlighted and countdown to appointment. Review popup auto-appears when booking reaches COMPLETED and no review exists. | ✅ Frontend | `CustomerBookingDetailPage` — `BookingTimelineStrip`, `CountdownBadge`, auto review hook |
+| BR-069 | Booking confirmation status is derived: `PENDING`→`PENDING`, `CONFIRMED/IN_PROGRESS/COMPLETED`→`VERIFIED`, `CANCELLED`→`CANCELLED`, `NO_SHOW`→`EXPIRED`. | ✅ | `Booking.getConfirmationStatus()` (transient) |
+| BR-070 | Cancellation is only allowed from `PENDING` or `CONFIRMED` status. Cancellation policy never deducts loyalty points; it only applies voucher refund/forfeit and violation recording. | ✅ | `CANCELLABLE_BOOKING_STATUSES` and voucher-only cancellation handling in `BookingServiceImpl` |
+| BR-071 | Cancellation is blocked when booking starts in less than 2 hours. | ⚠️ | Time check not implemented. See BR-S07. |
+| BR-072 | Late cancellation does not deduct loyalty points. It applies voucher policy by time before appointment and records `ViolationRecord` for late cancellation. | ✅ | `BookingServiceImpl.cancelBooking()` calls `releaseVoucherForBooking()` or `forfeitVoucherForBooking()` and records `LATE_CANCEL` |
+| BR-073 | Cancellation > 24h before appointment returns applied voucher to `AVAILABLE` and records no violation. | ✅ | `BookingServiceImpl.cancelBooking()` → `voucherRedemptionService.releaseVoucherForBooking()` |
+| BR-074 | Cancellation 6-24h before appointment forfeits applied voucher and records `ViolationRecord` type `LATE_CANCEL`. | ✅ | `BookingServiceImpl.cancelBooking()` → `forfeitVoucherForBooking()` + `ViolationRecord` |
+| BR-075 | Cancellation 1-6h before appointment forfeits applied voucher and records `ViolationRecord` type `LATE_CANCEL`. | ✅ | `BookingServiceImpl.cancelBooking()` → `forfeitVoucherForBooking()` + `ViolationRecord` |
+| BR-076 | Cancellation < 1h before appointment forfeits applied voucher and records `ViolationRecord` type `LATE_CANCEL`. | ✅ | `BookingServiceImpl.cancelBooking()` → `forfeitVoucherForBooking()` + `ViolationRecord` |
+| BR-077 | Points can only be applied to a booking in `CONFIRMED` status (before check-in). | ✅ | `BookingServiceImpl.applyPoints()` |
+| BR-078 | Points can only be applied once per booking. | ✅ | Checks `pointsRedeemed > 0` → `POINTS_ALREADY_APPLIED` |
+| BR-079 | Points discount cannot exceed booking final amount. | ✅ | `BookingServiceImpl.applyPoints()` |
+| BR-080 | All booking status transitions are recorded in `booking_status_histories`. | ✅ | `BookingServiceImpl.recordStatusHistory()` |
+| BR-081 | Customer booking history page (`/customer/bookings`) displays three sections: (1) Active bookings with 5-step status timeline and countdown to appointment; (2) Owned combos with progress bar; (3) Completed/cancelled booking history. | ✅ Frontend | `CustomerBookingListPage` |
+| BR-082 | Booking detail page (`/customer/bookings/{id}`) shows a 5-step progress timeline (Pending → Confirmed → Checked In → In Progress → Completed) with current step highlighted and countdown to appointment. Review popup auto-appears when booking reaches COMPLETED and no review exists. | ✅ Frontend | `CustomerBookingDetailPage` — `BookingTimelineStrip`, `CountdownBadge`, auto review hook |
 
 ---
 
@@ -139,23 +139,23 @@
 
 | BR | Rule | Status | Implementation |
 |---|---|---|---|
-| BR-83 | Wash session can only be created for a `CONFIRMED` or `PENDING` booking. | ✅ | `OperationsServiceImpl.createSession()` — `ELIGIBLE_BOOKING_STATUSES = {PENDING, CONFIRMED}` |
-| BR-84 | Only one active wash session per booking. | ✅ | `washSessionRepository.existsByBooking_IdAndStatusIn()` → `DUPLICATE_ACTIVE_SESSION` |
-| BR-85 | New wash session is created with status `PENDING`. | ✅ | `WashSession.create()` sets `PENDING` |
-| BR-86 | Valid wash session transitions: `PENDING`→`QUEUED`→`CHECKED_IN`→`IN_PROGRESS`→`COMPLETED`. Cancellation from any non-terminal state. | ✅ | `WashSessionLifecycle.validateTransition()` |
-| BR-87 | Check-in records `checked_in_at`, `fee_amount`, and `projected_points`. Booking transitions to `CHECKED_IN`. | ✅ | `OperationsServiceImpl.checkInSession()` |
-| BR-88 | Starting wash transitions session to `IN_PROGRESS` and booking to `IN_PROGRESS`. | ✅ | `OperationsServiceImpl.startSession()` |
-| BR-89 | Completing wash transitions session to `COMPLETED`, booking to `COMPLETED`, records `awarded_points`, and triggers point-earn. | ✅ | `OperationsServiceImpl.completeSession()` |
-| BR-90 | First wash completion marks customer as no longer new. | ✅ | `OperationsServiceImpl.markCustomerAsNotNew()` |
-| BR-91 | Check-in past the configured no-show grace window marks booking as `NO_SHOW`; no-show forfeits applied voucher, records `ViolationRecord` type `NO_SHOW`, and sends customer warning notification. Applies to both `CONFIRMED` and `PENDING` bookings. | ✅ | `NoShowDetectionJob` → `BookingNoShowServiceImpl.markOverdueBookingsNoShow()` — `statuses = {CONFIRMED, PENDING}` |
-| BR-92 | When booking is marked `NO_SHOW`, the associated wash session (if any) is cancelled. | ✅ | `BookingNoShowServiceImpl.cancelNotCheckedInSessions()` |
-| BR-93 | When booking is marked `NO_SHOW`, any applied voucher is forfeited (`FORFEITED`) and never refunded. | ✅ | `voucherRedemptionService.forfeitVoucherForBooking()` |
-| BR-94 | When booking is marked `NO_SHOW`, system creates a `ViolationRecord` type `NO_SHOW` for the customer. | ✅ | `BookingNoShowServiceImpl` |
-| BR-95 | When booking is marked `NO_SHOW`, system sends a customer warning notification. | ✅ | `NotificationRepository.save()` in `BookingNoShowServiceImpl` |
-| BR-96 | Customer can track their active wash session in real time (status, staff, projected points, timestamps). | ✅ | `CustomerWashTrackingServiceImpl.getActiveSession()` |
-| BR-97 | Staff or Admin can cancel an active wash session (from any non-terminal status) with a mandatory reason. Booking reverts to `CONFIRMED`. | ⚠️ | No cancel-session endpoint exists. See BR-S19. |
-| BR-98 | Staff can check-in a booking directly from `PENDING` status without a separate "approve" step. The system auto-queues then checks in in one atomic call. | ✅ Implemented | `OperationsServiceImpl` / `staff-operations-flow.tsx` `runAction("check-in")` |
-| BR-99 | Eligible session bookings list includes both `PENDING` and `CONFIRMED` bookings (previously only `CONFIRMED`), allowing staff to create sessions for bookings awaiting OTP confirmation. | ✅ Implemented | `OperationsServiceImpl.listEligibleSessionBookings()` — `ELIGIBLE_BOOKING_STATUSES = {PENDING, CONFIRMED}` |
+| BR-083 | Wash session can only be created for a `CONFIRMED` or `PENDING` booking. | ✅ | `OperationsServiceImpl.createSession()` — `ELIGIBLE_BOOKING_STATUSES = {PENDING, CONFIRMED}` |
+| BR-084 | Only one active wash session per booking. | ✅ | `washSessionRepository.existsByBooking_IdAndStatusIn()` → `DUPLICATE_ACTIVE_SESSION` |
+| BR-085 | New wash session is created with status `PENDING`. | ✅ | `WashSession.create()` sets `PENDING` |
+| BR-086 | Valid wash session transitions: `PENDING`→`QUEUED`→`CHECKED_IN`→`IN_PROGRESS`→`COMPLETED`. Cancellation from any non-terminal state. | ✅ | `WashSessionLifecycle.validateTransition()` |
+| BR-087 | Check-in records `checked_in_at`, `fee_amount`, and `projected_points`. Booking transitions to `CHECKED_IN`. | ✅ | `OperationsServiceImpl.checkInSession()` |
+| BR-088 | Starting wash transitions session to `IN_PROGRESS` and booking to `IN_PROGRESS`. | ✅ | `OperationsServiceImpl.startSession()` |
+| BR-089 | Completing wash transitions session to `COMPLETED`, booking to `COMPLETED`, records `awarded_points`, and triggers point-earn. | ✅ | `OperationsServiceImpl.completeSession()` |
+| BR-090 | First wash completion marks customer as no longer new. | ✅ | `OperationsServiceImpl.markCustomerAsNotNew()` |
+| BR-091 | Check-in past the configured no-show grace window marks booking as `NO_SHOW`; no-show forfeits applied voucher, records `ViolationRecord` type `NO_SHOW`, and sends customer warning notification. Applies to both `CONFIRMED` and `PENDING` bookings. | ✅ | `NoShowDetectionJob` → `BookingNoShowServiceImpl.markOverdueBookingsNoShow()` — `statuses = {CONFIRMED, PENDING}` |
+| BR-092 | When booking is marked `NO_SHOW`, the associated wash session (if any) is cancelled. | ✅ | `BookingNoShowServiceImpl.cancelNotCheckedInSessions()` |
+| BR-093 | When booking is marked `NO_SHOW`, any applied voucher is forfeited (`FORFEITED`) and never refunded. | ✅ | `voucherRedemptionService.forfeitVoucherForBooking()` |
+| BR-094 | When booking is marked `NO_SHOW`, system creates a `ViolationRecord` type `NO_SHOW` for the customer. | ✅ | `BookingNoShowServiceImpl` |
+| BR-095 | When booking is marked `NO_SHOW`, system sends a customer warning notification. | ✅ | `NotificationRepository.save()` in `BookingNoShowServiceImpl` |
+| BR-096 | Customer can track their active wash session in real time (status, staff, projected points, timestamps). | ✅ | `CustomerWashTrackingServiceImpl.getActiveSession()` |
+| BR-097 | Staff or Admin can cancel an active wash session with a mandatory reason and fault type. If session is `PENDING`/`QUEUED`: Booking reverts to `CONFIRMED`. If `CHECKED_IN`/`IN_PROGRESS`: If Customer Fault -> Booking `CANCELLED` & `LATE_CANCEL` penalty; If CarWash Fault -> Booking `CANCELLED` (pending resolution). | ⚠️ | Designed |
+| BR-098 | Staff can check-in a booking directly from `PENDING` status without a separate "approve" step. The system auto-queues then checks in in one atomic call. | ✅ | `OperationsServiceImpl` / `staff-operations-flow.tsx` `runAction("check-in")` |
+| BR-099 | Eligible session bookings list includes both `PENDING` and `CONFIRMED` bookings (previously only `CONFIRMED`), allowing staff to create sessions for bookings awaiting OTP confirmation. | ✅ | `OperationsServiceImpl.listEligibleSessionBookings()` — `ELIGIBLE_BOOKING_STATUSES = {PENDING, CONFIRMED}` |
 
 ---
 
@@ -278,8 +278,8 @@
 | BR-175 | Admin can create, update, and deactivate/reactivate `Package` (wash packages). | ✅ | `AdminCatalogManagementController` + `AdminServiceManagementServiceImpl`. Fully implemented with image upload. |
 | BR-176 | Admin can create, update, and deactivate/reactivate `Service` (add-on services). | ✅ | `AdminCatalogManagementController` + `AdminServiceManagementServiceImpl`. Fully implemented. |
 | BR-177 | Admin can manually adjust a customer's loyalty point balance with a mandatory reason. | ✅ | `PUT /admin/customers/{id}/points` → `LoyaltyServiceImpl.adjustActivePoints()`. See BR-123. |
-| BR-178 | Admin dashboard includes a Staff Performance section with per-staff KPI: completed bookings, revenue, active sessions, KPI progress bar (5M VND target per period). Staff with >=2 active sessions flagged as overloaded. Top 3 staff by completions shown with 🥇🥈🥉 medals. | ✅ Implemented | `GET /api/v1/admin/staff/kpi?range=TODAY\|WEEK\|MONTH` → `AdminReportingServiceImpl.listStaffKpi()` |
-| BR-179 | Package and combo catalog items support multiple images (comma-separated URLs in `image_url` TEXT column, per V16 migration). Each package has 3–6 images, each combo has 2–4 images, all sourced from Pexels. | ✅ Implemented | V108 demo migration seeds image URLs. `BookingPackage.imageUrls`, `BookingCombo.imageUrls` |
+| BR-178 | Admin dashboard includes a Staff Performance section with per-staff KPI: completed bookings, revenue, active sessions, KPI progress bar (5M VND target per period). Staff with >=2 active sessions flagged as overloaded. Top 3 staff by completions shown with 🥇🥈🥉 medals. | ✅ | `GET /api/v1/admin/staff/kpi?range=TODAY\|WEEK\|MONTH` → `AdminReportingServiceImpl.listStaffKpi()` |
+| BR-179 | Package and combo catalog items support multiple images (comma-separated URLs in `image_url` TEXT column, per V16 migration). Each package has 3–6 images, each combo has 2–4 images, all sourced from Pexels. | ✅ | V108 demo migration seeds image URLs. `BookingPackage.imageUrls`, `BookingCombo.imageUrls` |
 
 ---
 
@@ -293,7 +293,7 @@
 | BR-183 | A notification is created and stored when a booking is successfully created. | ⚠️ | `notifications` table not auto-populated on booking events. See BR-S20. |
 | BR-184 | A notification is created and stored when a booking is confirmed (payment received). | ⚠️ | Not implemented. See BR-S20. |
 | BR-185 | A notification is created and stored when staff checks in or completes a wash session. | ⚠️ | Not implemented. See BR-S20. |
-| BR-186 | A reminder notification (email) is sent 24 hours before the scheduled booking time. | ⚠️ | Not implemented. Requires scheduled job. See BR-S21. |
+| BR-186 | A reminder notification (email) is sent 24 hours before the scheduled booking time. | ✅ | `BookingReminderJob` creates in-app notification and sends email via `BookingEmailDeliveryService`. Duplicate prevention via `reminder_sent`. |
 | BR-187 | Notification `type` must be one of a defined enum set (e.g. `BOOKING_CREATED`, `BOOKING_CONFIRMED`, `WASH_CHECKED_IN`, `WASH_COMPLETED`, `BOOKING_REMINDER`). Free-form string is not allowed. | ⚠️ | `type VARCHAR(50)` in DB with no constraint. See BR-S28. |
 | BR-188 | Real-time or push delivery of notifications (WebSocket or SSE) is not supported. Client polls `GET /api/v1/notifications` every 30 seconds. Poll must pause when browser tab is hidden (`visibilitychange`). After key actions (create booking, payment), frontend calls notification API immediately without waiting for the next cycle. | ✅ | Accepted limitation — pull-only model by design. `idx_notifications_user_id` index exists to ensure fast poll queries. |
 | BR-189 | Frontend and backend collaborate on notifications. **Frontend:** poll every 30s, pause on tab hidden, call immediately after key actions, render badge/toast/reminder UI. **Backend:** write to `notifications` table on booking events (see BR-S20), write loyalty-expiry warning via scheduled job (see BR-S21). | ⚠️ | Backend write-on-event and scheduled job not yet implemented. See BR-S20, BR-S21. |

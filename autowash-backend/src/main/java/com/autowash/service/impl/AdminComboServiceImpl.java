@@ -152,7 +152,7 @@ public class AdminComboServiceImpl implements AdminComboService {
             combo.getPrice(),
             combo.getOriginalPrice(),
             combo.getDurationDays() == null ? 0 : combo.getDurationDays(),
-            rows.stream().mapToInt(ComboService::getQuantity).sum(),
+            combo.getMaxUsages() == null ? 0 : combo.getMaxUsages(),
             services,
             split(combo.getImageUrl()),
             combo.getStatus() == ActiveStatus.ACTIVE,

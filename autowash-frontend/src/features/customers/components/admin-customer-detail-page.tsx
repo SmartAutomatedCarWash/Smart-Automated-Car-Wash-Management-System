@@ -16,7 +16,9 @@ import {
   TimerReset,
   UserCircle2,
   Loader2,
+  Copy,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/shared/ui/ui/badge";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
@@ -210,6 +212,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
           <CustomerProfilePanel
             query={detailQuery}
             language={language as "vi" | "en"}
+            customerId={customerId}
           />
 
           <Card className="rounded-md border-slate-200 bg-white shadow-sm">
@@ -393,9 +396,11 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
 function CustomerProfilePanel({
   query,
   language,
+  customerId,
 }: {
   query: ReturnType<typeof useAdminCustomerDetail>;
   language: "vi" | "en";
+  customerId: string;
 }) {
   if (query.isPending) {
     return (
@@ -436,10 +441,24 @@ function CustomerProfilePanel({
           <ArrowLeft className="h-4 w-4" />
         </Link>
       </Button>
+      <button
+        onClick={() => {
+          navigator.clipboard.writeText(customerId);
+          toast.success(translate(language, "Đã sao chép ID!", "Copied ID!"));
+        }}
+        className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-sky-600 hover:bg-slate-100 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium"
+        title={translate(language, "Sao chép ID người dùng", "Copy User ID")}
+      >
+        <Copy className="h-4 w-4" />
+        <span className="sr-only">Copy ID</span>
+      </button>
+
       <CardContent className="space-y-5 p-5">
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-500 mt-1">
-            <UserCircle2 className="h-9 w-9" />
+          <div className="relative inline-block mt-1">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+              <UserCircle2 className="h-9 w-9" />
+            </div>
           </div>
           <h2 className="mt-3 text-lg font-semibold text-slate-950">{profile.fullName}</h2>
           <p className="text-sm text-slate-500">{profile.phone}</p>

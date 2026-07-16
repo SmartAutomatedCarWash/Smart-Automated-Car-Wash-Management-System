@@ -1,6 +1,6 @@
 import type { LoyaltyTier } from "@/entities/loyalty";
 
-export type PromotionDiscountType = "PERCENT" | "FIXED";
+export type PromotionDiscountType = "NONE" | "PERCENT" | "FIXED_AMOUNT";
 export type PromotionTargetingMode = "ALL_TIERS" | "SELECTED_TIERS";
 export type PromotionStatus = "ACTIVE" | "INACTIVE";
 
@@ -13,7 +13,7 @@ export type Promotion = {
   pointMultiplier?: number | null;
   startDate: string;
   endDate: string;
-  targetingMode: PromotionTargetingMode;
+  targetingMode: "ALL_TIERS" | "SPECIFIC_TIERS" | PromotionTargetingMode;
   applicableTiers: LoyaltyTier[];
   maxUsagePerCustomer: number | null;
   status: PromotionStatus;
@@ -37,9 +37,10 @@ export type PromotionRequest = {
   description: string | null;
   discountType: PromotionDiscountType;
   discountValue: number;
+  pointMultiplier: number;
   startDate: string;
   endDate: string;
-  targetingMode: PromotionTargetingMode;
+  targetingMode: "ALL_TIERS" | "SPECIFIC_TIERS";
   applicableTiers: LoyaltyTier[] | null;
   maxUsagePerCustomer: number | null;
   status: PromotionStatus;

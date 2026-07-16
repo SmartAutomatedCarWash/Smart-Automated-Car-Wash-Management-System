@@ -9,6 +9,8 @@ public record PromotionResponse(
         String name,
         String description,
         Double pointMultiplier,
+        String discountType,
+        Long discountValue,
         Instant startDate,
         Instant endDate,
         String targetingMode,

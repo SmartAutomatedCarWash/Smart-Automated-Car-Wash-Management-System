@@ -22,7 +22,7 @@ public interface OperationsService {
     CheckInWashSessionResponse checkInSession(UUID sessionId);
     StartWashSessionResponse startSession(UUID sessionId);
     CompleteWashSessionResponse completeSession(UUID sessionId);
-    CancelWashSessionResponse cancelSession(UUID sessionId, String reason);
+    CancelWashSessionResponse cancelSession(UUID sessionId, String reason, String faultType);
     StaffDashboardSummaryResponse getStaffSummary();
     List<StaffOptionResponse> listActiveStaff();
     OperationsQueueResponse getOperationsQueue();

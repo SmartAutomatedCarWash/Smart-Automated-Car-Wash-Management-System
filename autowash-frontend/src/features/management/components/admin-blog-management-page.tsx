@@ -35,11 +35,15 @@ import {
   Megaphone,
   ImageUp,
   Loader2,
+  Star,
+  Send,
 } from "lucide-react";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { Input } from "@/shared/ui/ui/input";
 import { uploadCatalogImage } from "@/features/management/lib/admin-service-management-service";
+import { AdminReviewManagementPage } from "@/features/management/components/admin-reviews-management-page";
+import { AdminNotificationCampaignsPage } from "@/features/notifications/components/admin-notification-campaigns-page";
 
 // BlogThumbnailUpload: upload to R2 cloud via /admin/uploads/images
 function BlogThumbnailUpload({
@@ -262,8 +266,8 @@ export function AdminBlogManagementPage() {
     }
   };
 
-  // Active tab — articles and announcements only (categories merged into article form)
-  const [activeTab, setActiveTab] = useState<"articles" | "announcements">("articles");
+  // Active tab — articles, announcements, reviews, campaigns
+  const [activeTab, setActiveTab] = useState<"articles" | "announcements" | "reviews" | "campaigns">("articles");
 
   // Category filter for articles list
   const [articleCategoryFilter, setArticleCategoryFilter] = useState<string>("all");
@@ -435,6 +439,18 @@ export function AdminBlogManagementPage() {
           className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all ${activeTab === "announcements" ? "border-teal-600 text-teal-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
         >
           <Megaphone className="h-4 w-4" />{t("Thông báo", "Announcements")}
+        </button>
+        <button
+          onClick={() => setActiveTab("reviews")}
+          className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all ${activeTab === "reviews" ? "border-teal-600 text-teal-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
+        >
+          <Star className="h-4 w-4" />{t("Quản lý Đánh giá", "Reviews")}
+        </button>
+        <button
+          onClick={() => setActiveTab("campaigns")}
+          className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all ${activeTab === "campaigns" ? "border-teal-600 text-teal-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
+        >
+          <Send className="h-4 w-4" />{t("Gửi Thông báo", "Send Notifications")}
         </button>
 
         {/* Action button pushed to the far right */}
@@ -628,6 +644,18 @@ export function AdminBlogManagementPage() {
             ))
           )}
         </div>
+      )}
+
+      {/* Tab 3: Reviews Management */}
+      {activeTab === "reviews" && (
+        <div className="-mx-6 -my-6">
+          <AdminReviewManagementPage />
+        </div>
+      )}
+
+      {/* Tab 4: Notification Campaigns */}
+      {activeTab === "campaigns" && (
+        <AdminNotificationCampaignsPage />
       )}
 
       {/* Modal 1: Article Form */}

@@ -6,8 +6,8 @@ describe("getWorkspaceHeaderMeta", () => {
   it("describes the customer booking workspace route", () => {
     const meta = getWorkspaceHeaderMeta("/customer/bookings/new");
 
-    assert.equal(meta.title, "Bookings");
-    assert.equal(meta.subtitle, "Create and track wash appointments");
+    assert.equal(meta.title, "History");
+    assert.equal(meta.subtitle, "Active bookings, completed sessions and combo purchase history");
     assert.equal(meta.workspace, "CUSTOMER");
   });
 

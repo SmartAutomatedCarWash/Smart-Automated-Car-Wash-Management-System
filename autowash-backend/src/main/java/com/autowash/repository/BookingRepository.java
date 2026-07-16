@@ -20,6 +20,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
+    @Query("SELECT b.packageId FROM Booking b WHERE b.packageId IS NOT NULL AND b.status IN ('COMPLETED', 'CONFIRMED') GROUP BY b.packageId ORDER BY COUNT(b.id) DESC LIMIT 1")
+    Optional<UUID> findTopPackageId();
+
     long countByCustomerAndStatusIn(User customer, Collection<BookingStatus> statuses);
 
     long countByAssignedStaffAndStatusIn(User assignedStaff, Collection<BookingStatus> statuses);
@@ -196,6 +199,11 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     @Query("select coalesce(sum(b.finalAmount), 0) from Booking b where b.status = :status")
     long sumFinalAmountByStatus(@Param("status") BookingStatus status);
+
+    List<Booking> findByScheduledAtBetweenAndStatusIn(Instant from, Instant to, Collection<BookingStatus> statuses);
+
+    @Query("SELECT b FROM Booking b WHERE b.scheduledAt BETWEEN :from AND :to AND b.status IN :statuses AND b.reminderSent = false")
+    List<Booking> findByScheduledAtBetweenAndStatusInAndReminderSentFalse(Instant from, Instant to, Collection<BookingStatus> statuses);
 
     @EntityGraph(attributePaths = {"customer"})
     @Query("""

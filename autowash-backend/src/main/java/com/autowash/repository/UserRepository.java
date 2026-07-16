@@ -25,6 +25,12 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     List<User> findByRoleAndStatusOrderByFullNameAsc(UserRole role, UserStatus status);
     List<User> findByRoleOrderByFullNameAsc(UserRole role);
 
+    @Query("SELECT u FROM User u JOIN LoyaltyAccount la ON u.id = la.customer.id WHERE u.role = 'CUSTOMER' AND u.status = 'ACTIVE' AND la.tier = :tier")
+    List<User> findActiveCustomersByLoyaltyTier(@Param("tier") String tier);
+
+    @Query("SELECT u FROM User u WHERE u.role = 'CUSTOMER' AND u.status = 'ACTIVE'")
+    List<User> findAllActiveCustomers();
+
     @Query("""
             SELECT account FROM User account
             WHERE (:#{#role == null} = true OR account.role = :role)

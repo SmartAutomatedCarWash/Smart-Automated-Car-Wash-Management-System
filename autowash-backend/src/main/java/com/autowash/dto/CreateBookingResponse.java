@@ -16,6 +16,7 @@ public record CreateBookingResponse(
         long basePrice,
         long optionsTotal,
         long voucherDiscount,
+        long promotionDiscount,
         long finalAmount,
         LocalDate bookingDate,
         String bookingTime,
