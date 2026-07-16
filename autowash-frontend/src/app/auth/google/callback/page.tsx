@@ -73,7 +73,7 @@ function GoogleAuthCallbackContent() {
     void exchangeGoogleAuthTicket(state)
       .then((response) => {
         setAuthSession(buildAuthSession(response));
-        const nextPath = response.isNewCustomer ? "/customer/profile" : getAuthRedirectPath(response.role);
+        const nextPath = getAuthRedirectPath(response.role);
         window.location.replace(nextPath);
       })
       .catch((error) => {
@@ -91,7 +91,7 @@ function GoogleAuthCallbackContent() {
     try {
       const response = await confirmGoogleAuthLink(state);
       setAuthSession(buildAuthSession(response));
-      const nextPath = response.isNewCustomer ? "/customer/profile" : getAuthRedirectPath(response.role);
+      const nextPath = getAuthRedirectPath(response.role);
       window.location.replace(nextPath);
     } catch (error) {
       setErrorMessage(getDisplayErrorMessage(error));
