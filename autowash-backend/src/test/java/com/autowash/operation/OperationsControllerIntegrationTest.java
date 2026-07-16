@@ -133,7 +133,8 @@ class OperationsControllerIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "reason": "Bay equipment unavailable"
+                                  "reason": "Bay equipment unavailable",
+                                  "faultType": "CARWASH_FAULT"
                                 }
                                 """))
                 .andExpect(status().isOk())

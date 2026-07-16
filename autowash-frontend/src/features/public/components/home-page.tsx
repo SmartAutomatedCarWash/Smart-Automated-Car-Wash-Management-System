@@ -241,6 +241,7 @@ export function HomePageView() {
     }
   }, [accessToken, user, router]);
 
+
   const handleOpenAuth = (mode: "login" | "register") => {
     setAuthMode(mode);
   };
@@ -551,29 +552,23 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
 
           <FadeIn delay={320} className="relative z-10 mt-8">
             <div className="relative mx-auto max-w-5xl">
-              <div className="absolute inset-x-[10%] bottom-[-10px] h-20 -rotate-[1.5deg] rounded-[2.5rem] border-4 border-cyan-300 shadow-[0_0_40px_rgba(45,255,238,0.72),inset_0_0_24px_rgba(45,255,238,0.35)] z-0" />
+              <div className="absolute inset-x-[8%] bottom-2 h-12 rounded-[999px] border-4 border-cyan-300 shadow-[0_0_34px_rgba(45,255,238,0.62),inset_0_0_24px_rgba(45,255,238,0.28)]" />
               <div className="absolute inset-x-[12%] bottom-8 h-20 rounded-full bg-cyan-300/18 blur-3xl" />
-              
-              {/* Main rotated image with premium round corners */}
-              <div className="relative z-10 mx-auto max-w-4xl -rotate-[1.5deg] overflow-hidden rounded-[2.5rem] border border-cyan-300/25 shadow-[0_32px_90px_rgba(0,0,0,0.50)] transition-transform duration-500 hover:scale-[1.01]">
-                <Image
-                  src={homeGallery[3].src}
-                  alt={homeGallery[3].alt}
-                  width={1200}
-                  height={720}
-                  sizes="(min-width: 1024px) 56rem, 92vw"
-                  priority
-                  className="h-[18rem] w-full object-cover object-center sm:h-[24rem] lg:h-[28rem]"
-                />
-              </div>
-
-              <div className="absolute left-4 top-1/4 z-20 hidden rounded-[2rem] border border-cyan-300/18 bg-[#071016]/82 p-4 shadow-[0_18px_48px_rgba(0,0,0,0.36)] backdrop-blur md:block">
+              <Image
+                src={homeGallery[3].src}
+                alt={homeGallery[3].alt}
+                width={1200}
+                height={720}
+                sizes="(min-width: 1024px) 56rem, 92vw"
+                priority
+                className="relative z-10 mx-auto h-[18rem] w-full max-w-4xl rounded-[2rem] object-cover object-center shadow-[0_32px_90px_rgba(0,0,0,0.46)] [clip-path:polygon(4%_10%,96%_0,100%_88%,0_100%)] sm:h-[24rem] lg:h-[28rem]"
+              />
+              <div className="absolute left-4 top-1/4 z-20 hidden rounded-[1.4rem] border border-cyan-300/18 bg-[#071016]/82 p-4 shadow-[0_18px_48px_rgba(0,0,0,0.36)] backdrop-blur md:block">
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">Aura Care</p>
                 <p className="mt-1 text-sm font-semibold text-white/80">{copy.featurePromiseTitle}</p>
               </div>
-
-              <div className="absolute right-3 top-8 z-20 hidden overflow-hidden rounded-[2rem] border border-cyan-300/18 bg-white/8 shadow-[0_18px_48px_rgba(0,0,0,0.36)] backdrop-blur md:block">
-                <Image src="/images/soap-tail-detail.png" alt="Detailed foam wash" width={176} height={112} sizes="11rem" className="h-28 w-44 rounded-[1.8rem] object-cover opacity-90" />
+              <div className="absolute right-3 top-8 z-20 hidden overflow-hidden rounded-[1.3rem] border border-cyan-300/18 bg-white/8 shadow-[0_18px_48px_rgba(0,0,0,0.36)] backdrop-blur md:block">
+                <Image src="/images/soap-tail-detail.png" alt="Detailed foam wash" width={176} height={112} sizes="11rem" className="h-28 w-44 object-cover opacity-90" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="flex h-11 w-11 items-center justify-center rounded-full bg-cyan-300 text-slate-950 shadow-[0_0_26px_rgba(45,255,238,0.44)]">
                     <ArrowRight className="h-5 w-5" />

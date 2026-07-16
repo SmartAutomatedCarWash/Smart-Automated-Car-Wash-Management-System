@@ -24,6 +24,8 @@ minio.exe
 minio.license
 minio-data/
 
+node_modules/
+
 # MSW / Mock Data (local testing)
 autowash-frontend/src/mocks/
 autowash-frontend/public/mockServiceWorker.js

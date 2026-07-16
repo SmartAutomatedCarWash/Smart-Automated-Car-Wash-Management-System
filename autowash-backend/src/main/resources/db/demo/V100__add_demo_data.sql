@@ -45,26 +45,4 @@ BEGIN
         SELECT id INTO v_vehicle_id FROM vehicles WHERE customer_id = v_customer_id AND plate = '30A-999.99' LIMIT 1;
     END IF;
 
-    -- Booking 1: Completed
-    INSERT INTO bookings (id, customer_id, vehicle_id, booking_type, package_id, assigned_staff_id, status, scheduled_at, base_amount, final_amount, estimated_duration_minutes)
-    VALUES (gen_random_uuid(), v_customer_id, v_vehicle_id, 'PACKAGE', 'PKG05', v_staff_id, 'COMPLETED', CURRENT_TIMESTAMP - INTERVAL '2 days', 219000, 219000, 50)
-    RETURNING id INTO v_booking_1_id;
-
-    INSERT INTO payments (booking_id, method, status, amount, paid_at)
-    VALUES (v_booking_1_id, 'CASH_AT_COUNTER', 'PAID', 219000, CURRENT_TIMESTAMP - INTERVAL '2 days');
-
-    INSERT INTO wash_sessions (booking_id, assigned_staff_id, status, fee_amount, started_at, completed_at)
-    VALUES (v_booking_1_id, v_staff_id, 'COMPLETED', 219000, CURRENT_TIMESTAMP - INTERVAL '2 days', CURRENT_TIMESTAMP - INTERVAL '2 days' + INTERVAL '50 minutes');
-
-    INSERT INTO point_transactions (loyalty_account_id, booking_id, type, points, balance_after, reason)
-    VALUES (v_loyalty_account_id, v_booking_1_id, 'EARN', 150, 150, 'Earned from Standard Wash');
-
-    -- Booking 2: Pending
-    INSERT INTO bookings (id, customer_id, vehicle_id, booking_type, package_id, assigned_staff_id, status, scheduled_at, base_amount, final_amount, estimated_duration_minutes)
-    VALUES (gen_random_uuid(), v_customer_id, v_vehicle_id, 'PACKAGE', 'PKG06', v_staff_id, 'PENDING', CURRENT_TIMESTAMP + INTERVAL '1 day', 1950000, 1950000, 270)
-    RETURNING id INTO v_booking_2_id;
-
-    INSERT INTO payments (booking_id, method, status, amount)
-    VALUES (v_booking_2_id, 'BANK_TRANSFER', 'UNPAID', 1950000);
-
 END $$;

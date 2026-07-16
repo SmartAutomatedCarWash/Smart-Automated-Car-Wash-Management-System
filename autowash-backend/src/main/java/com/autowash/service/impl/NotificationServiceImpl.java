@@ -55,7 +55,7 @@ public class NotificationServiceImpl implements NotificationService {
             .map(n -> new NotificationTickerItem(
                     n.getId().toString(),
                     n.getMessage(),
-                    n.getType(),
+                    n.getType().name(),
                     n.getCreatedAt()
             ))
             .toList();
@@ -67,7 +67,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .notificationId(notification.getId())
                 .title(notification.getTitle())
                 .message(notification.getMessage())
-                .type(notification.getType())
+                .type(notification.getType().name())
                 .read(notification.isRead())
                 .createdAt(notification.getCreatedAt())
                 .build();

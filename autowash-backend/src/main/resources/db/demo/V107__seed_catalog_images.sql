@@ -1,13 +1,15 @@
 -- V108: Seed images for packages and services (multi-image support)
 -- image_url stores comma-separated Pexels URLs (per V16 schema — TEXT column)
 -- Images sourced from car-wash-image-bank.md (Pexels license — pexels.com/license)
+-- Updated to match revised V106 package compositions
 
 -- ── PACKAGES (multiple images per package) ───────────────────────────────────
 
--- PKG01 — Express Wash
+-- PKG01 — Express Wash (Touchless Foam Wash + Interior Vacuum — revised V106)
+-- Changed: lead image now uses touchless foam wash (6872171) instead of manual wash (6872591)
 UPDATE packages SET image_url =
-  'https://images.pexels.com/photos/6872591/pexels-photo-6872591.jpeg?auto=compress&cs=tinysrgb&w=800,'
-  'https://images.pexels.com/photos/6872174/pexels-photo-6872174.jpeg?auto=compress&cs=tinysrgb&w=800,'
+  'https://images.pexels.com/photos/6872171/pexels-photo-6872171.jpeg?auto=compress&cs=tinysrgb&w=800,'
+  'https://images.pexels.com/photos/29504462/pexels-photo-29504462.jpeg?auto=compress&cs=tinysrgb&w=800,'
   'https://images.pexels.com/photos/32667420/pexels-photo-32667420.jpeg?auto=compress&cs=tinysrgb&w=800,'
   'https://images.pexels.com/photos/6003/man-hand-car-black.jpg?auto=compress&cs=tinysrgb&w=800'
 WHERE id = 'bb000002-0000-0000-0000-000000000001';
@@ -77,11 +79,12 @@ UPDATE packages SET image_url =
   'https://images.pexels.com/photos/9145477/pexels-photo-9145477.jpeg?auto=compress&cs=tinysrgb&w=800'
 WHERE id = 'bb000002-0000-0000-0000-000000000009';
 
--- PKG10 — Engine Bay & Undercarriage Care
+-- PKG10 — Engine Bay & Undercarriage Care (Deep detailing only — Basic Engine Bay Cleaning removed in V106)
+-- Changed: removed generic engine wash image (6872591), now all 4 images show deep/professional engine work
 UPDATE packages SET image_url =
+  'https://images.pexels.com/photos/14021836/pexels-photo-14021836.jpeg?auto=compress&cs=tinysrgb&w=800,'
   'https://images.pexels.com/photos/32107428/pexels-photo-32107428.jpeg?auto=compress&cs=tinysrgb&w=800,'
   'https://images.pexels.com/photos/6873181/pexels-photo-6873181.jpeg?auto=compress&cs=tinysrgb&w=800,'
-  'https://images.pexels.com/photos/14021836/pexels-photo-14021836.jpeg?auto=compress&cs=tinysrgb&w=800,'
   'https://images.pexels.com/photos/20042048/pexels-photo-20042048.jpeg?auto=compress&cs=tinysrgb&w=800'
 WHERE id = 'bb000002-0000-0000-0000-000000000010';
 

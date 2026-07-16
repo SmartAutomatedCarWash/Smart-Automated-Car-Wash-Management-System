@@ -1,4 +1,4 @@
-
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -34,24 +34,24 @@
   }
 
   .dark {
-    --background: 216 44% 4%;
+    --background: 222 64% 7%;
     --foreground: 210 40% 98%;
-    --card: 206 53% 6%;
+    --card: 218 46% 10%;
     --card-foreground: 210 40% 98%;
-    --popover: 206 53% 6%;
+    --popover: 218 46% 10%;
     --popover-foreground: 210 40% 98%;
     --primary: 184 91% 61%;
-    --primary-foreground: 216 44% 4%;
-    --secondary: 206 40% 12%;
+    --primary-foreground: 222 64% 7%;
+    --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 206 40% 12%;
+    --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 206 40% 12%;
+    --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 174 100% 57.5% / 0.1;
-    --input: 174 100% 57.5% / 0.1;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
     --ring: 184 91% 61%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -153,7 +153,6 @@
     background-size: 240% 100%;
     animation: tierBorderTrace 3.8s ease-in-out infinite;
     filter: drop-shadow(0 0 8px color-mix(in srgb, var(--tier-glow, rgba(20, 184, 166, 0.45)) 52%, transparent));
-    will-change: background-position, filter;
   }
 
   .tier-metal-sparkle::after {
@@ -170,14 +169,6 @@
     mix-blend-mode: screen;
     opacity: 0.48;
     animation: tierSubtleSparkle 5.6s ease-in-out infinite;
-    will-change: transform, opacity;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .tier-metal-border::before,
-    .tier-metal-sparkle::after {
-      animation: none !important;
-    }
   }
 
   ::-webkit-scrollbar {
@@ -197,33 +188,5 @@
 
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(20, 184, 166, 0.48);
-  }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: transform, opacity;
-}
-
-.smooth-transition {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-fade-in-up {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
   }
 }

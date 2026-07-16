@@ -38,6 +38,7 @@ import {
   queueWashSession,
   startWashSession,
   transferWashSession,
+  cancelWashSession,
 } from "@/features/operations/lib/operations-service";
 import { toast } from "sonner";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
@@ -49,6 +50,7 @@ import type {
   OperationsQueueSession,
   StaffOption,
   WashSessionStatus,
+  CancelFaultType,
 } from "@/entities/operations";
 
 type StaffOperationsFlowProps = {
@@ -56,9 +58,30 @@ type StaffOperationsFlowProps = {
   sessionId?: string;
 };
 
-type ActionType = "queue" | "check-in" | "approve-check-in" | "start" | "complete";
+type ActionType = "queue" | "check-in" | "approve-check-in" | "start" | "complete" | "cancel";
 type BoardStatus = "PENDING" | "CHECKED_IN" | "IN_PROGRESS" | "COMPLETED";
 type TimeBucket = "ALL" | "morning" | "afternoon" | "evening";
+
+const PRIORITY_TIERS = new Set(["GOLD", "PLATINUM", "DIAMOND"]);
+const TIER_COLORS: Record<string, string> = {
+  GOLD: "from-amber-400 to-yellow-500 text-white shadow-[0_0_12px_rgba(245,158,11,0.4)]",
+  PLATINUM: "from-slate-300 to-slate-500 text-white shadow-[0_0_12px_rgba(148,163,184,0.4)]",
+  DIAMOND: "from-cyan-400 to-blue-500 text-white shadow-[0_0_12px_rgba(34,211,238,0.4)]",
+};
+
+function TierBadge({ tier }: { tier: string | null | undefined }) {
+  if (!tier || !PRIORITY_TIERS.has(tier)) return null;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full bg-gradient-to-r px-2 py-0.5 text-[10px] font-black uppercase tracking-wider",
+        TIER_COLORS[tier]
+      )}
+    >
+      ★ {tier}
+    </span>
+  );
+}
 
 type LifecycleActionResponse = {
   sessionId: string;
@@ -209,6 +232,11 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
   const [blockedActionMessage, setBlockedActionMessage] = useState<string | null>(null);
   const [plateConfirmed, setPlateConfirmed] = useState(false);
 
+  // Cancel Dialog State
+  const [cancellingSession, setCancellingSession] = useState<OperationsQueueSession | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelFaultType, setCancelFaultType] = useState<CancelFaultType | "">("");
+
   const queueQuery = useQuery({
     queryKey: QUEUE_QUERY_KEY,
     queryFn: getOperationsQueue,
@@ -259,6 +287,22 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
     },
   });
 
+  const cancelSessionMutation = useMutation({
+    mutationFn: ({ sessionId, reason, faultType }: { sessionId: string; reason: string; faultType?: string }) =>
+      cancelWashSession(sessionId, reason, faultType),
+    onSuccess: (response) => {
+      setNotice(`Đã hủy phiên ${response.sessionId} thành công.`);
+      setCancellingSession(null);
+      setCancelReason("");
+      setCancelFaultType("");
+      void queryClient.invalidateQueries({ queryKey: QUEUE_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: ["staff-operations", "eligible-bookings"] });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast.error(error.message || "Không thể hủy phiên rửa.");
+    },
+  });
+
   const createSessionMutation = useMutation({
     mutationFn: (bookingId: string) => createWashSession(bookingId),
     onSuccess: () => {
@@ -272,12 +316,36 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
   });
 
   const handleAction = (action: ActionType, session: OperationsQueueSession) => {
+    if (action === "cancel") {
+      setCancellingSession(session);
+      setCancelReason("");
+      setCancelFaultType("");
+      return;
+    }
     const blockedReason = getBlockedReason(action, session.status);
     if (blockedReason) {
       setBlockedActionMessage(blockedReason);
       return;
     }
     actionMutation.mutate({ action, session });
+  };
+
+  const handleCancelSubmit = () => {
+    if (!cancellingSession) return;
+    if (!cancelReason.trim()) {
+      toast.error("Vui lòng nhập lý do hủy.");
+      return;
+    }
+    const needsFaultType = cancellingSession.status === "CHECKED_IN" || cancellingSession.status === "IN_PROGRESS";
+    if (needsFaultType && !cancelFaultType) {
+      toast.error("Vui lòng chọn người chịu trách nhiệm.");
+      return;
+    }
+    cancelSessionMutation.mutate({
+      sessionId: cancellingSession.sessionId,
+      reason: cancelReason,
+      faultType: needsFaultType ? cancelFaultType : undefined,
+    });
   };
 
   const handleApproveCheckIn = (session: OperationsQueueSession) => {
@@ -403,6 +471,76 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
           />
         </div>
       ) : null}
+
+      <Dialog open={Boolean(cancellingSession)} onOpenChange={(open) => !open && setCancellingSession(null)}>
+        <DialogContent className="rounded-3xl border-slate-200 bg-white shadow-2xl sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-rose-600">Huỷ phiên rửa</DialogTitle>
+            <DialogDescription>
+              Vui lòng nhập lý do để huỷ phiên này. Hành động này không thể hoàn tác.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="cancel-reason" className="text-sm font-bold text-slate-700">Lý do huỷ <span className="text-rose-500">*</span></Label>
+              <textarea
+                id="cancel-reason"
+                className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Nhập lý do huỷ..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+              />
+            </div>
+            {(cancellingSession?.status === "CHECKED_IN" || cancellingSession?.status === "IN_PROGRESS") && (
+              <div className="grid gap-2">
+                <Label className="text-sm font-bold text-slate-700">Người chịu trách nhiệm <span className="text-rose-500">*</span></Label>
+                <div className="flex gap-4 mt-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="fault-type"
+                      value="CUSTOMER_FAULT"
+                      checked={cancelFaultType === "CUSTOMER_FAULT"}
+                      onChange={() => setCancelFaultType("CUSTOMER_FAULT")}
+                      className="accent-slate-900"
+                    />
+                    <span className="text-sm text-slate-700">Khách hàng</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="fault-type"
+                      value="CARWASH_FAULT"
+                      checked={cancelFaultType === "CARWASH_FAULT"}
+                      onChange={() => setCancelFaultType("CARWASH_FAULT")}
+                      className="accent-slate-900"
+                    />
+                    <span className="text-sm text-slate-700">Cửa hàng / Hệ thống</span>
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+            <Button
+              variant="outline"
+              className="rounded-xl border-slate-200 font-bold"
+              onClick={() => setCancellingSession(null)}
+              disabled={cancelSessionMutation.isPending}
+            >
+              Quay lại
+            </Button>
+            <Button
+              className="rounded-xl bg-rose-600 font-bold text-white hover:bg-rose-700"
+              onClick={handleCancelSubmit}
+              disabled={cancelSessionMutation.isPending}
+            >
+              {cancelSessionMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Xác nhận huỷ
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
@@ -679,7 +817,10 @@ function EligibleBookingsPanel({
             <div key={booking.bookingId} className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-slate-950">{booking.bookingId}</p>
+                  <p className="flex items-center gap-2 truncate text-sm font-black text-slate-950">
+                    {booking.bookingId}
+                    <TierBadge tier={booking.customerTier} />
+                  </p>
                   <p className="mt-1 truncate text-xs font-semibold text-slate-600">
                     {booking.customerName} · {booking.vehiclePlate}
                   </p>
@@ -1026,6 +1167,20 @@ function SessionCard({
             {primaryAction.label}
           </Button>
         ) : null}
+        {onAction && canAct && session.status !== "COMPLETED" && session.status !== "CANCELLED" ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 flex-none rounded-xl border-rose-200 bg-rose-50 text-rose-600 font-bold shadow-sm transition hover:-translate-y-0.5 hover:bg-rose-100 hover:text-rose-700"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAction("cancel", session);
+            }}
+          >
+            Huỷ
+          </Button>
+        ) : null}
       </div>
     </article>
   );
@@ -1126,7 +1281,17 @@ function DialogActions({
   const tone = sessionTone[session.status] ?? sessionTone.PENDING;
 
   return (
-    <div className="flex justify-end border-t border-slate-100 pt-4">
+    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+      {canAct && session.status !== "COMPLETED" && session.status !== "CANCELLED" ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 rounded-2xl border-rose-200 bg-rose-50 text-rose-600 font-bold shadow-sm transition hover:bg-rose-100 hover:text-rose-700"
+          onClick={() => onAction("cancel", session)}
+        >
+          Huỷ phiên
+        </Button>
+      ) : null}
       <Button
         disabled={!canAct || Boolean(getBlockedReason(primaryAction.type, session.status))}
         title={getBlockedReason(primaryAction.type, session.status) ?? primaryAction.label}

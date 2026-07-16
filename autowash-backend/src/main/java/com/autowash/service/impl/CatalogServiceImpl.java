@@ -11,10 +11,12 @@ import com.autowash.entity.ComboService;
 import com.autowash.entity.Package;
 import com.autowash.entity.PackageService;
 import com.autowash.repository.ServiceRepository;
+import com.autowash.repository.BookingRepository;
 import com.autowash.repository.ComboRepository;
 import com.autowash.repository.ComboServiceRepository;
 import com.autowash.repository.PackageRepository;
 import com.autowash.repository.PackageServiceRepository;
+import com.autowash.repository.ReviewRepository;
 import com.autowash.service.CatalogService;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
@@ -41,19 +43,25 @@ public class CatalogServiceImpl implements CatalogService {
     private final ComboRepository ComboRepository;
     private final PackageServiceRepository packageServiceRepository;
     private final ComboServiceRepository comboServiceRepository;
+    private final ReviewRepository reviewRepository;
+    private final BookingRepository bookingRepository;
 
     public CatalogServiceImpl(
             PackageRepository PackageRepository,
             ServiceRepository serviceRepository,
             ComboRepository ComboRepository,
             PackageServiceRepository packageServiceRepository,
-            ComboServiceRepository comboServiceRepository
+            ComboServiceRepository comboServiceRepository,
+            ReviewRepository reviewRepository,
+            BookingRepository bookingRepository
     ) {
         this.PackageRepository = PackageRepository;
         this.serviceRepository = serviceRepository;
         this.ComboRepository = ComboRepository;
         this.packageServiceRepository = packageServiceRepository;
         this.comboServiceRepository = comboServiceRepository;
+        this.reviewRepository = reviewRepository;
+        this.bookingRepository = bookingRepository;
     }
 
     @Transactional(readOnly = true)
@@ -179,6 +187,16 @@ public ComboResponse getComboById(String comboId) {
         List<String> features = packageServiceRepository.findByPackageIdOrderBySortOrderAsc(pkg.getId()).stream()
                 .map(PackageService::getOptionName)
                 .toList();
+
+        Double avgRating = reviewRepository.getAverageRatingByPackageId(pkg.getId());
+        Long reviewCount = reviewRepository.getReviewCountByPackageId(pkg.getId());
+
+        String popularity = null;
+        UUID topPackageId = bookingRepository.findTopPackageId().orElse(null);
+        if (pkg.getId().equals(topPackageId)) {
+            popularity = "BEST_SELLER";
+        }
+
         return new PackageResponse(
                 pkg.getId().toString(),
                 pkg.getName(),
@@ -190,7 +208,9 @@ public ComboResponse getComboById(String comboId) {
                 null,
                 split(pkg.getImageUrl()),
                 pkg.getStatus().name(),
-                null
+                popularity,
+                avgRating != null ? avgRating : 0.0,
+                reviewCount != null ? reviewCount : 0L
         );
     }
 
@@ -226,7 +246,7 @@ public ComboResponse getComboById(String comboId) {
             combo.getPrice(),
             combo.getOriginalPrice(),
             combo.getDurationDays() == null ? 0 : combo.getDurationDays(),
-            rows.stream().mapToInt(ComboService::getQuantity).sum(),
+            combo.getMaxUsages() == null ? 0 : combo.getMaxUsages(),
             services,
             split(combo.getImageUrl()),
             combo.getStatus() == ActiveStatus.ACTIVE,

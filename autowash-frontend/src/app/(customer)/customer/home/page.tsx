@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState, useEffect, useMemo } from "react";
 import {
   ArrowRight,
@@ -37,6 +36,7 @@ import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
 import { TierBadge } from "@/shared/ui/customer/customer-experience";
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
+import { useBlogArticles, useBlogCategories } from "@/features/blog/hooks/use-blog";
 import { useCustomerBookings, useActiveWashTracking } from "@/features/bookings/hooks/use-bookings";
 import { useBookingPackages, useBookingCombos } from "@/features/bookings/hooks/use-bookings";
 import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
@@ -159,7 +159,11 @@ export default function CustomerHomePage() {
     };
   }, [activeWash]);
 
-  const [activeTab, setActiveTab] = useState<"all" | "tips" | "knowledge" | "stories" | "promo">("all");
+  const [activeTab, setActiveTab] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data: articles = [] } = useBlogArticles();
+  const { data: categories = [] } = useBlogCategories();
+  
   const [likes, setLikes] = useState<Record<string, number>>({ post1: 24, post2: 12 });
   const [hasLiked, setHasLiked] = useState<Record<string, boolean>>({});
 
@@ -209,38 +213,40 @@ export default function CustomerHomePage() {
     return () => clearInterval(timer);
   }, []);
 
-  const blogTags = [
-    { id: "all", label: t("Tất cả", "All") },
-    { id: "tips", label: t("Mẹo chăm sóc xe", "Car Care Tips") },
-    { id: "knowledge", label: t("Kiến thức Ceramic/Detailing", "Ceramic & Detailing") },
-    { id: "stories", label: t("Câu chuyện khách hàng", "Customer Stories") },
-    { id: "promo", label: t("Khuyến mãi & Ưu đãi", "Promotions & Offers") },
-  ];
+  const blogTags = useMemo(() => {
+    const allTag = { id: "all", label: t("Tất cả", "All") };
+    const apiTags = categories.map((cat: any) => ({
+      id: cat.id,
+      label: cat.name,
+    }));
+    return [allTag, ...apiTags];
+  }, [categories, language]);
 
-  const blogPosts = [
-    {
-      id: "post1",
-      category: "tips",
-      categoryLabel: t("Mẹo chăm sóc xe", "Car Care Tips"),
-      title: t("Bí quyết giữ màu sơn xe luôn như mới trong mùa mưa", "Secrets to keeping your car paint brand new in the rainy season"),
-      excerpt: t("Mùa mưa kéo dài mang theo axit và bụi bẩn làm tàn phá lớp sơn bóng của bạn. Hãy bảo vệ bề mặt sơn ngay hôm nay bằng các bước đơn giản này...", "Continuous rain carries acids and dirt that ruin your gloss coat. Protect your paint surface today with these simple steps..."),
-      author: "Aura Detailing Expert",
-      readTime: "3 min read",
-      image: "/images/rainy-care.jpg",
-      comments: 5,
-    },
-    {
-      id: "post2",
-      category: "knowledge",
-      categoryLabel: t("Kiến thức Detailing", "Detailing Knowledge"),
-      title: t("Tại sao rửa xe thông thường tại nhà có thể làm xước sơn?", "Why standard home washing might scratch your paint?"),
-      excerpt: t("Sử dụng khăn lau không đạt chuẩn và xà phòng rửa chén sẽ làm mòn lớp bảo vệ ceramic và tạo ra vết xước xoáy mất thẩm mỹ...", "Using sub-standard cloths and dish soap degrades ceramic coatings and creates micro swirl scratches..."),
-      author: "Technical Lead",
-      readTime: "5 min read",
-      image: "/images/scratch-care.jpg",
-      comments: 8,
-    },
-  ];
+  const blogPosts = useMemo(() => {
+    return articles.map((article: any) => ({
+      id: article.slug,
+      category: article.category.id,
+      categoryLabel: article.category.name,
+      title: article.title,
+      excerpt: article.excerpt,
+      author: article.authorName,
+      readTime: "5 min read", // API doesn't provide read time yet
+      image: article.thumbnailUrl || "/images/placeholder.jpg",
+      comments: article.commentCount || 0,
+      likes: article.likeCount || 0,
+      views: article.viewCount || 0,
+    }));
+  }, [articles]);
+
+  const filteredPosts = useMemo(() => {
+    return blogPosts.filter((post) => activeTab === "all" || post.category === activeTab);
+  }, [blogPosts, activeTab]);
+
+  const itemsPerPage = 2;
+  const totalPages = Math.ceil(filteredPosts.length / itemsPerPage);
+  const paginatedPosts = useMemo(() => {
+    return filteredPosts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  }, [filteredPosts, currentPage, itemsPerPage]);
 
   // Map backend packages dynamically or fallback to mock
   const servicesList = useMemo(() => {
@@ -251,8 +257,8 @@ export default function CustomerHomePage() {
         description: p.description,
         price: formatBookingCurrency(p.basePrice),
         duration: `${p.duration} ${t("phút", "mins")}`,
-        rating: 4.8 + (idx * 0.1),
-        reviews: `${120 - (idx * 30)}+ reviews`,
+        rating: p.averageRating ? Number(p.averageRating).toFixed(1) : "5.0",
+        reviews: `${p.reviewCount || 0} reviews`,
         badge: idx === 1 ? { label: t("Bán chạy", "Best Seller"), tone: "amber" } : undefined,
         feedback: idx === 0 
           ? t("Xe sạch bóng như mới!", "Car looks clean as new!")
@@ -320,7 +326,7 @@ export default function CustomerHomePage() {
         <CustomerExperienceStyles />
 
         {/* Promo Timer Banner */}
-        <div className="flex flex-wrap items-center justify-between gap-y-2 rounded-xl border border-[#BDEEFF] dark:border-slate-800/80 bg-[#F5FBFF] dark:bg-slate-950/40 px-5 py-3 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-y-2 rounded-xl border border-[#BDEEFF] bg-[#F5FBFF] px-5 py-3 shadow-sm">
           <div className="flex items-center gap-2.5 text-[13px] font-bold text-foreground">
             <span className="grid h-6 w-6 place-items-center rounded-full bg-[#00B8D9] text-white">
               <Sparkles className="h-3.5 w-3.5" />
@@ -344,17 +350,20 @@ export default function CustomerHomePage() {
         <section className="overflow-hidden rounded-3xl border border-border/50 bg-card p-6 shadow-sm sm:p-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full bg-[#EAF6FD] dark:bg-slate-900/60 px-3.5 py-1 text-xs font-bold uppercase tracking-[0.15em] text-[#0566D9] dark:text-cyan-400">
+              <div className="inline-flex items-center gap-2 rounded-full bg-[#EAF6FD] px-3.5 py-1 text-xs font-bold uppercase tracking-[0.15em] text-[#0566D9]">
                 <Sparkles className="h-3.5 w-3.5 text-[#00B8D9]" />
                 Aura Community Feed
               </div>
               <h1 className="text-3xl font-black tracking-tight text-foreground sm:text-4xl">
                 {t("Chào mừng đến với Aura Club", "Welcome to Aura Club")}{user?.fullName ? `, ${user.fullName}` : ""}.
               </h1>
+              <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                {t("Theo dõi xu hướng chăm sóc xe hơi, chia sẻ câu chuyện của bạn và cập nhật những ưu đãi dịch vụ độc quyền từ các chuyên viên của chúng tôi.", "Track car care trends, share your stories, and stay up to date with exclusive offers from our technicians.")}
+              </p>
             </div>
 
             {/* Loyalty Perks Card */}
-            <div className="flex min-w-[240px] items-center gap-4 rounded-2xl border border-[#BDEEFF] dark:border-slate-800/80 bg-[#F5FBFF] dark:bg-slate-950/40 p-4 shadow-sm">
+            <div className="flex min-w-[240px] items-center gap-4 rounded-2xl border border-[#BDEEFF] bg-[#F5FBFF] p-4 shadow-sm">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#0566D9] text-white shadow-md shadow-[#0566D9]/20">
                 <Gift className="h-6 w-6 text-white" />
               </div>
@@ -375,35 +384,35 @@ export default function CustomerHomePage() {
         </section>
 
         {/* Hero Slider & Info */}
-        <section className="relative mt-2 overflow-hidden rounded-3xl border border-[#BDEEFF] dark:border-slate-800 bg-[#F5FBFF] dark:bg-slate-950/40 shadow-[0_18px_48px_rgba(47,128,237,0.12)]">
+        <section className="relative mt-2 overflow-hidden rounded-3xl border border-[#BDEEFF] bg-[#F5FBFF] shadow-[0_18px_48px_rgba(47,128,237,0.12)]">
           {heroSlides.map((src, i) => (
-            <Image
+            <img
               key={src}
               src={src}
               alt="Luxury car wash & detailing"
-              fill
-              sizes="100vw"
-              priority={i === 0}
-              className={`object-cover transition-opacity duration-1000 ease-out ${
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ease-out ${
                 i === heroIndex ? "opacity-28" : "opacity-0"
               }`}
             />
           ))}
           <div className="relative min-h-[360px] w-full flex flex-col justify-center px-8 py-10 sm:px-12">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#F7FCFF]/95 via-[#DFF7FF]/84 to-[#EAF6FD]/40 dark:from-slate-950/95 dark:via-slate-900/85 dark:to-slate-950/40" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#F7FCFF]/95 via-[#DFF7FF]/84 to-[#EAF6FD]/40" />
             
             <div className="relative z-10 max-w-xl space-y-4">
-              <span className="inline-block rounded-full border border-[#BDEEFF] dark:border-slate-800 bg-white/85 dark:bg-slate-900/80 px-3.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#0566D9] dark:text-cyan-400 shadow-sm">
+              <span className="inline-block rounded-full border border-[#BDEEFF] bg-white/85 px-3.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#0566D9] shadow-sm">
                 Aura Detailing Elite
               </span>
-              <h2 className="font-bold text-3xl sm:text-4xl text-[#102A43] dark:text-slate-100 leading-tight tracking-tight">
+              <h2 className="font-bold text-3xl sm:text-4xl text-[#102A43] leading-tight tracking-tight">
                 {t("Chuyên Nghiệp – Đẳng Cấp Spa Cho Xế Yêu", "Professional – Luxury Car Care & Detailing")}
               </h2>
+              <p className="max-w-lg text-sm leading-relaxed text-[#52677A]">
+                {t("Trải nghiệm dịch vụ chăm sóc xe hơi đẳng cấp với quy trình chuyên nghiệp, hệ thống không chạm hiện đại và đội ngũ kỹ thuật viên tận tâm – mang lại vẻ đẹp hoàn hảo cho chiếc xe của bạn.", "Experience luxury car care with a professional process, modern touchless technology, and a dedicated technician team – restoring perfect shine to your car.")}
+              </p>
               <div className="pt-2 flex flex-wrap items-center gap-3">
                 <Button asChild className="rounded-xl bg-[#00A3B8] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#00B8D9]/20 hover:bg-[#008FA3]">
                   <Link href="/customer/booking">{t("Đặt lịch ngay", "Book Detailing Now")}</Link>
                 </Button>
-                <div className="inline-flex items-center gap-1.5 rounded-xl border border-[#BDEEFF] dark:border-slate-850 bg-white/75 dark:bg-slate-900/75 px-4 py-2 text-xs font-semibold text-[#102A43] dark:text-slate-200 backdrop-blur">
+                <div className="inline-flex items-center gap-1.5 rounded-xl border border-[#BDEEFF] bg-white/75 px-4 py-2 text-xs font-semibold text-[#102A43] backdrop-blur">
                   <ShieldCheck className="h-4 w-4 text-[#00B8D9]" />
                   {t("Cam kết hài lòng 100%", "Satisfaction Guaranteed")}
                 </div>
@@ -430,6 +439,9 @@ export default function CustomerHomePage() {
         <section className="mt-4">
           <div className="text-center space-y-1">
             <h3 className="text-2xl font-black text-foreground">{t("Tại sao chọn Aura Car Care", "Why Choose Us")}</h3>
+            <p className="text-xs text-muted-foreground font-medium">
+              {t("Dịch vụ chất lượng cao được thiết kế tỉ mỉ cho từng dòng xe.", "Premium services custom-tailored for your driving satisfaction.")}
+            </p>
           </div>
           <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-3">
             {mockWhyItems.map((item, idx) => {
@@ -439,15 +451,12 @@ export default function CustomerHomePage() {
                   key={idx}
                   className="relative overflow-hidden rounded-2xl group shadow-sm border border-border/50"
                 >
-                  <div className="relative h-[210px] w-full overflow-hidden">
-                    <Image
-                      src={item.image}
-                      alt={t(item.title.vi, item.title.en)}
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 30vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
+                  <img
+                    src={item.image}
+                    alt={t(item.title.vi, item.title.en)}
+                    loading="lazy"
+                    className="h-[210px] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent" />
                   <div className="absolute inset-0 flex flex-col justify-end p-5 text-white">
                     <span className="mb-2 grid h-8 w-8 place-items-center rounded-full bg-white/15 backdrop-blur text-amber-100">
@@ -456,6 +465,9 @@ export default function CustomerHomePage() {
                     <div className="text-base font-black tracking-tight leading-tight">
                       {t(item.title.vi, item.title.en)}
                     </div>
+                    <p className="mt-1 text-[11px] leading-relaxed text-slate-200">
+                      {t(item.description.vi, item.description.en)}
+                    </p>
                   </div>
                 </div>
               );
@@ -512,7 +524,7 @@ export default function CustomerHomePage() {
                           <Star
                             key={i}
                             className="h-3 w-3"
-                            fill={i < Math.round(s.rating) ? "currentColor" : "none"}
+                            fill={i < Math.round(Number(s.rating)) ? "currentColor" : "none"}
                             strokeWidth={2}
                           />
                         ))}
@@ -594,31 +606,25 @@ export default function CustomerHomePage() {
 
                 {/* Grid of Before/After Photos */}
                 <div className="grid gap-4 sm:grid-cols-2 mt-4">
-                  <div className="relative rounded-2xl overflow-hidden border border-border/50 h-48 w-full">
-                    <Image
+                  <div className="relative rounded-2xl overflow-hidden border border-border/50">
+                    <img
                       src="https://images.unsplash.com/photo-1507136566006-cfc505b114fc?auto=format&fit=crop&q=80&w=600"
                       alt="Before"
-                      fill
-                      sizes="(max-width: 640px) 100vw, 300px"
-                      className="object-cover"
+                      className="h-48 w-full object-cover"
                     />
-                    <span className="absolute bottom-3 left-3 bg-red-600/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider text-white z-10">
+                    <span className="absolute bottom-3 left-3 bg-red-600/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider text-white">
                       Before Detailing
                     </span>
                   </div>
                   <div className="relative rounded-2xl overflow-hidden border border-border/50">
-                    <div className="relative h-48 w-full">
-                      <Image
-                        src="https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=600"
-                        alt="After"
-                        fill
-                        sizes="(max-width: 640px) 100vw, 300px"
-                        className="object-cover"
-                      />
-                      <span className="absolute bottom-3 left-3 bg-emerald-600/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider text-white z-10">
-                        After Detailing
-                      </span>
-                    </div>
+                    <img
+                      src="https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=600"
+                      alt="After"
+                      className="h-48 w-full object-cover"
+                    />
+                    <span className="absolute bottom-3 left-3 bg-emerald-600/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider text-white">
+                      After Detailing
+                    </span>
                   </div>
                 </div>
                 
@@ -641,7 +647,10 @@ export default function CustomerHomePage() {
                   {blogTags.map((tag) => (
                     <button
                       key={tag.id}
-                      onClick={() => setActiveTab(tag.id as any)}
+                      onClick={() => {
+                        setActiveTab(tag.id);
+                        setCurrentPage(1);
+                      }}
                       className={cn(
                         "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border",
                         activeTab === tag.id
@@ -657,14 +666,12 @@ export default function CustomerHomePage() {
 
               {/* Social/Blog Post List */}
               <div className="space-y-5">
-                {blogPosts
-                  .filter((post) => activeTab === "all" || post.category === activeTab)
-                  .map((post) => (
+                {paginatedPosts.map((post) => (
                     <Card key={post.id} className="overflow-hidden rounded-3xl border border-border/50 bg-card p-5 shadow-sm hover:shadow-md transition-all duration-300">
                       <div className="flex flex-col gap-5 sm:flex-row">
                         <Link href={`/customer/guides/${post.id}`} className="relative h-36 w-full sm:w-48 rounded-2xl overflow-hidden shrink-0 block">
-                          <Image src={post.image} alt={post.title} fill sizes="(max-width: 640px) 100vw, 192px" className="object-cover" />
-                          <span className="absolute top-2.5 left-2.5 bg-black/75 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider text-white z-10">
+                          <img src={post.image} alt={post.title} className="h-full w-full object-cover" />
+                          <span className="absolute top-2.5 left-2.5 bg-black/75 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider text-white">
                             {post.categoryLabel}
                           </span>
                         </Link>
@@ -713,6 +720,33 @@ export default function CustomerHomePage() {
                       </div>
                     </Card>
                   ))}
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 pt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="h-8 w-8 p-0 rounded-full"
+                      >
+                        <ChevronRight className="h-4 w-4 rotate-180" />
+                      </Button>
+                      <span className="text-xs font-bold text-muted-foreground">
+                        {currentPage} / {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="h-8 w-8 p-0 rounded-full"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
               </div>
             </div>
           </div>
@@ -720,23 +754,6 @@ export default function CustomerHomePage() {
           {/* Right Column: Trending, Stats & Lounge events */}
           <div className="space-y-6">
             
-            {/* Live Stats */}
-            <Card className="rounded-3xl border border-border/50 bg-card p-5 shadow-sm space-y-4">
-              <h4 className="text-xs font-black text-foreground flex items-center gap-2 uppercase tracking-wider border-b border-border/50 pb-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                Aura Live Stats
-              </h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-amber-500/5 rounded-2xl p-3.5 border border-amber-500/10">
-                  <div className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">{t("Đã rửa hôm nay", "Completed Today")}</div>
-                  <div className="text-xl font-black text-primary mt-1">42 {t("Xe", "Vehicles")}</div>
-                </div>
-                <div className="bg-amber-500/5 rounded-2xl p-3.5 border border-amber-500/10">
-                  <div className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">{t("Đang đợi", "Queue Status")}</div>
-                  <div className="text-xl font-black text-amber-500 mt-1">3 Min {t("Chờ", "Wait")}</div>
-                </div>
-              </div>
-            </Card>
 
             {/* Detailing Workshops */}
             <Card className="rounded-3xl border border-border/50 bg-card p-5 shadow-sm space-y-4">

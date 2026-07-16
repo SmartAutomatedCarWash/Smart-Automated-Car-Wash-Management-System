@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { TierBadge } from "@/shared/ui/customer/customer-experience";
 import {
@@ -10,6 +9,7 @@ import {
   BellRing,
   Car,
   ChevronDown,
+  ChevronLeft,
   ClipboardList,
   History,
   LayoutDashboard,
@@ -22,7 +22,6 @@ import {
   RefreshCw,
   Settings2,
   ShieldCheck,
-  Sparkles,
   Sun,
   UserCog,
   Wrench,
@@ -82,6 +81,7 @@ const PAGE_TITLE_VI: Record<string, string> = {
   "Customer Workspace": "Không gian khách hàng",
   "Admin Control Panel": "Bảng điều khiển Admin",
   "Booking Management": "Quản lý đặt lịch",
+  "Content & Feedback": "Nội dung & Phản hồi",
   "Accounts": "Tài khoản",
   "Operations Health": "Sức khỏe vận hành",
   "Reports & Analytics": "Báo cáo & Phân tích",
@@ -124,6 +124,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     plate: string;
     path: string;
   }>({ show: false, title: "", message: "", plate: "", path: "" });
+  const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
 
   const isStaff = requiredRole === "STAFF";
   const isCustomer = requiredRole === "CUSTOMER";
@@ -180,6 +181,11 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   }, [queueQuery.data]);
   const pendingSessionsCount = pendingSessions.length;
   const totalNotifications = eligibleCount + pendingSessionsCount;
+
+  const selectedNotification = useMemo(() => {
+    if (!selectedNotificationId || !customerNotificationsQuery.data) return null;
+    return customerNotificationsQuery.data.find(n => n.notificationId === selectedNotificationId) || null;
+  }, [selectedNotificationId, customerNotificationsQuery.data]);
 
   const isExcluded = SHELL_EXCLUDED_PATHS.includes(pathname);
   const workspaceTheme = WORKSPACE_THEMES[requiredRole];
@@ -294,13 +300,13 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       {requiredRole === "CUSTOMER" && <MarqueeTicker />}
       <div className="relative flex flex-1 overflow-hidden bg-background text-foreground">
         <div 
-          className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[radial-gradient(circle_at_14%_0%,rgba(45,255,238,0.12),transparent_28rem),radial-gradient(circle_at_92%_12%,rgba(13,108,107,0.10),transparent_28rem),linear-gradient(180deg,#f7feff_0%,#ffffff_48%,#f2fbfb_100%)] dark:bg-[radial-gradient(circle_at_18%_0%,rgba(45,255,238,0.10),transparent_30rem),linear-gradient(180deg,#05080d_0%,hsl(222,47%,10%)_48%,#05080d_100%)]"
+          className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[radial-gradient(circle_at_14%_0%,rgba(45,255,238,0.12),transparent_28rem),radial-gradient(circle_at_92%_12%,rgba(13,108,107,0.10),transparent_28rem),linear-gradient(180deg,#f7feff_0%,#ffffff_48%,#f2fbfb_100%)]"
         />
 
       {/* ── Sidebar ── */}
       <aside
         className={cn(
-          "sticky top-0 z-20 hidden h-full shrink-0 flex-col border-r border-cyan-900/10 dark:border-cyan-300/10 bg-white/88 dark:bg-[#071016]/88 shadow-[0_24px_80px_rgba(6,17,26,0.08)] dark:shadow-[0_24px_80px_rgba(0,0,0,0.50)] backdrop-blur-xl transition-all duration-300 cubic-bezier(0.16, 1, 0.3, 1) lg:flex",
+          "sticky top-0 z-20 hidden h-full shrink-0 flex-col border-r border-cyan-900/10 bg-white/88 shadow-[0_24px_80px_rgba(6,17,26,0.08)] backdrop-blur-xl transition-all duration-300 lg:flex",
           requiredRole === "CUSTOMER"
             ? (sidebarCollapsed ? "w-[5.25rem]" : "w-64")
             : (sidebarCollapsed ? "w-[5.25rem]" : "w-72"),
@@ -345,7 +351,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           )}
 
           {requiredRole !== "CUSTOMER" && !sidebarCollapsed && (
-            <div className="rounded-2xl border border-cyan-900/10 dark:border-cyan-300/10 bg-white/72 dark:bg-[#0c1922]/72 p-3 shadow-[0_14px_36px_rgba(6,17,26,0.05)] dark:shadow-none">
+            <div className="rounded-2xl border border-cyan-900/10 bg-white/72 p-3 shadow-[0_14px_36px_rgba(6,17,26,0.05)]">
               <div className="flex items-start gap-3">
                 <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", workspaceTheme.accent)}>
                   <Phone className="h-4 w-4" />
@@ -364,7 +370,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
             type="button"
             disabled={logoutMutation.isPending}
             onClick={handleLogout}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-cyan-900/10 dark:border-cyan-300/10 bg-white/76 dark:bg-[#0c1922]/76 px-3 py-2.5 text-sm font-bold transition hover:bg-cyan-50 dark:hover:bg-white/5 dark:text-white"
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-cyan-900/10 bg-white/76 px-3 py-2.5 text-sm font-bold transition hover:bg-cyan-50"
           >
             <LogOut className="h-4 w-4" />
             {!sidebarCollapsed && (
@@ -381,13 +387,13 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       {/* ── Main content ── */}
       <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-y-auto">
         {/* Header */}
-        <header className="sticky top-0 z-30 border-b border-cyan-900/10 dark:border-cyan-300/10 bg-white/84 dark:bg-[#071016]/84 px-4 py-4 shadow-[0_12px_40px_rgba(6,17,26,0.04)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.30)] backdrop-blur-xl lg:px-8">
+        <header className="sticky top-0 z-30 border-b border-cyan-900/10 bg-white/84 px-4 py-4 shadow-[0_12px_40px_rgba(6,17,26,0.04)] backdrop-blur-xl lg:px-8">
           <div className="flex items-start justify-between gap-3">
             {/* Left: title */}
             <div className="flex min-w-0 items-start gap-3">
               <button
                 type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-900/10 dark:border-cyan-300/10 bg-white dark:bg-[#0c1922] shadow-sm lg:hidden"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-900/10 bg-white shadow-sm lg:hidden"
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label={t("Mở menu điều hướng", "Open navigation menu")}
               >
@@ -407,7 +413,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
             {/* Right: actions */}
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               {/* Language switcher */}
-              <div className="inline-flex items-center rounded-full border border-cyan-900/10 dark:border-cyan-300/10 bg-white/90 dark:bg-[#0c1922]/90 p-0.5 shadow-sm backdrop-blur-sm">
+              <div className="inline-flex items-center rounded-full border border-cyan-900/10 bg-white/90 p-0.5 shadow-sm backdrop-blur-sm">
                 <button
                   type="button"
                   onClick={() => setLanguage("en")}
@@ -438,7 +444,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               <button
                 type="button"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-900/10 dark:border-cyan-300/10 bg-white/90 dark:bg-[#0c1922]/90 transition hover:border-cyan-300/50 hover:bg-cyan-50 dark:hover:bg-white/5"
+                className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
                 aria-label={t("Chuyển chế độ sáng/tối", "Toggle dark/light mode")}
               >
                 {theme === "dark" ? (
@@ -454,7 +460,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-900/10 dark:border-cyan-300/10 bg-white/90 dark:bg-[#0c1922]/90 transition hover:border-cyan-300/50 hover:bg-cyan-50 dark:hover:bg-white/5"
+                      className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
                       aria-label={t("Thông báo nghiệp vụ", "Work notifications")}
                     >
                       <Bell className={cn("h-4 w-4", totalNotifications > 0 ? "text-cyan-700" : "text-muted-foreground")} />
@@ -469,7 +475,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverContent
                     align="end"
                     sideOffset={10}
-                    className="w-80 rounded-2xl border-cyan-900/10 dark:border-cyan-300/10 bg-white/95 dark:bg-[#071016]/95 p-3 shadow-[0_22px_60px_rgba(6,17,26,0.12)] dark:shadow-[0_22px_60px_rgba(0,0,0,0.50)] backdrop-blur-xl"
+                    className="w-80 rounded-2xl border-cyan-900/10 bg-white/95 p-3 shadow-[0_22px_60px_rgba(6,17,26,0.12)] backdrop-blur-xl"
                   >
                     <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
                       <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
@@ -554,11 +560,11 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
               {/* Customer notification bell */}
               {isCustomer && (
-                <Popover>
+                <Popover onOpenChange={(open) => { if (!open) setSelectedNotificationId(null); }}>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                    className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-900/10 dark:border-cyan-300/10 bg-white/90 dark:bg-[#0c1922]/90 transition hover:border-cyan-300/50 hover:bg-cyan-50 dark:hover:bg-white/5"
+                      className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
                       aria-label={t("Thông báo", "Notifications")}
                     >
                       <Bell className={cn("h-4 w-4", unreadCustomerNotifications > 0 ? "text-cyan-700" : "text-muted-foreground")} />
@@ -573,73 +579,110 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverContent
                     align="end"
                     sideOffset={10}
-                    className="w-80 rounded-2xl border-cyan-900/10 dark:border-cyan-300/10 bg-white/95 dark:bg-[#071016]/95 p-3 shadow-[0_22px_60px_rgba(6,17,26,0.12)] dark:shadow-[0_22px_60px_rgba(0,0,0,0.50)] backdrop-blur-xl"
+                    className="w-80 rounded-2xl border-cyan-900/10 bg-white/95 p-3 shadow-[0_22px_60px_rgba(6,17,26,0.12)] backdrop-blur-xl"
                   >
-                    <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-                          {t("Thông báo", "Notifications")}
-                        </h3>
-                        {unreadCustomerNotifications > 0 && (
-                          <span className="rounded-full bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 text-[9px] font-black text-cyan-800 dark:text-cyan-400">
-                            {unreadCustomerNotifications}
-                          </span>
-                        )}
-                      </div>
-                      {unreadCustomerNotifications > 0 && (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            const unread = customerNotificationsQuery.data?.filter(n => !n.read) ?? [];
-                            try {
-                              await Promise.all(unread.map(item => markCustomerNotificationAsReadMutation.mutateAsync(item.notificationId)));
-                              toast.success(t("Đã đọc tất cả thông báo", "All notifications marked as read"));
-                            } catch (e) {}
-                          }}
-                          className="text-[10px] font-bold text-[#0566D9] dark:text-sky-400 hover:underline"
-                        >
-                          {t("Đọc tất cả", "Mark all read")}
-                        </button>
-                      )}
-                    </div>
-
-                    {(!customerNotificationsQuery.data || customerNotificationsQuery.data.length === 0) ? (
-                      <div className="py-6 text-center text-xs font-semibold text-muted-foreground">
-                        {t("Không có thông báo nào", "No notifications")}
+                    {selectedNotification ? (
+                      <div className="flex flex-col h-full animate-in slide-in-from-right-4 duration-200">
+                        <div className="flex items-center gap-2 border-b border-border/50 pb-2 mb-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedNotificationId(null)}
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-lg hover:bg-cyan-50 dark:hover:bg-cyan-950/40 text-muted-foreground transition"
+                            aria-label={t("Quay lại", "Back")}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </button>
+                          <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground flex-1">
+                            {t("Chi tiết thông báo", "Notification Detail")}
+                          </h3>
+                        </div>
+                        <div className="flex flex-col gap-2 p-1 overflow-y-auto max-h-64">
+                          <div className="text-sm font-bold text-cyan-950 dark:text-cyan-100">
+                            {selectedNotification.title}
+                          </div>
+                          <div className="text-[10px] font-semibold text-muted-foreground">
+                            {new Date(selectedNotification.createdAt).toLocaleString(language === "vi" ? "vi-VN" : "en-US")}
+                          </div>
+                          <div className="text-xs leading-relaxed text-foreground dark:text-slate-300 mt-2 whitespace-pre-wrap">
+                            {selectedNotification.message}
+                          </div>
+                        </div>
                       </div>
                     ) : (
-                      <div className="max-h-64 overflow-y-auto space-y-2">
-                        {customerNotificationsQuery.data.slice(0, 5).map((notification) => (
-                          <button
-                            key={notification.notificationId}
-                                    className={cn(
-                              "flex w-full flex-col gap-1 rounded-xl p-2 text-left text-xs transition",
-                              notification.read 
-                                ? "bg-muted/30 dark:bg-slate-900/40 hover:bg-muted/50 dark:hover:bg-slate-800/40" 
-                                : "bg-cyan-50/70 dark:bg-cyan-950/20 hover:bg-cyan-50 dark:hover:bg-cyan-950/30"
-                            )}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className={cn("font-bold", notification.read ? "text-muted-foreground" : "text-cyan-955 dark:text-cyan-200")}>
-                                {notification.title}
+                      <div className="flex flex-col h-full animate-in slide-in-from-left-4 duration-200">
+                        <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                              {t("Thông báo", "Notifications")}
+                            </h3>
+                            {unreadCustomerNotifications > 0 && (
+                              <span className="rounded-full bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 text-[9px] font-black text-cyan-800 dark:text-cyan-400">
+                                {unreadCustomerNotifications}
                               </span>
-                              {!notification.read && (
-                                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
-                              )}
-                            </div>
-                            <div className={cn("line-clamp-2 text-[11px]", notification.read ? "text-muted-foreground" : "text-foreground dark:text-slate-300")}>
-                              {notification.message}
-                            </div>
-                          </button>
-                        ))}
-                        <div className="pt-2 border-t border-border/50">
-                          <Link
-                            href="/customer/notifications"
-                            className="flex w-full items-center justify-center rounded-xl bg-muted dark:bg-slate-900 py-2 text-center text-[11px] font-bold text-foreground dark:text-slate-350 hover:bg-accent dark:hover:bg-slate-800 transition"
-                          >
-                            {t("Xem tất cả", "View all")}
-                          </Link>
+                            )}
+                          </div>
+                          {unreadCustomerNotifications > 0 && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const unread = customerNotificationsQuery.data?.filter(n => !n.read) ?? [];
+                                try {
+                                  await Promise.all(unread.map(item => markCustomerNotificationAsReadMutation.mutateAsync(item.notificationId)));
+                                  toast.success(t("Đã đọc tất cả thông báo", "All notifications marked as read"));
+                                } catch (e) {}
+                              }}
+                              className="text-[10px] font-bold text-[#0566D9] dark:text-sky-400 hover:underline"
+                            >
+                              {t("Đọc tất cả", "Mark all read")}
+                            </button>
+                          )}
                         </div>
+
+                        {(!customerNotificationsQuery.data || customerNotificationsQuery.data.length === 0) ? (
+                          <div className="py-6 text-center text-xs font-semibold text-muted-foreground">
+                            {t("Không có thông báo nào", "No notifications")}
+                          </div>
+                        ) : (
+                          <div className="max-h-64 overflow-y-auto space-y-2">
+                            {customerNotificationsQuery.data.slice(0, 5).map((notification) => (
+                              <button
+                                key={notification.notificationId}
+                                onClick={() => {
+                                  if (!notification.read) {
+                                    markCustomerNotificationAsReadMutation.mutate(notification.notificationId);
+                                  }
+                                  setSelectedNotificationId(notification.notificationId);
+                                }}
+                                className={cn(
+                                  "flex w-full flex-col gap-1 rounded-xl p-2 text-left text-xs transition",
+                                  notification.read 
+                                    ? "bg-muted/30 dark:bg-slate-900/40 hover:bg-muted/50 dark:hover:bg-slate-800/40" 
+                                    : "bg-cyan-50/70 dark:bg-cyan-950/20 hover:bg-cyan-50 dark:hover:bg-cyan-950/30"
+                                )}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className={cn("font-bold", notification.read ? "text-muted-foreground" : "text-cyan-955 dark:text-cyan-200")}>
+                                    {notification.title}
+                                  </span>
+                                  {!notification.read && (
+                                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
+                                  )}
+                                </div>
+                                <div className={cn("line-clamp-2 text-[11px]", notification.read ? "text-muted-foreground" : "text-foreground dark:text-slate-300")}>
+                                  {notification.message}
+                                </div>
+                              </button>
+                            ))}
+                            <div className="pt-2 border-t border-border/50">
+                              <Link
+                                href="/customer/notifications"
+                                className="flex w-full items-center justify-center rounded-xl bg-muted dark:bg-slate-900 py-2 text-center text-[11px] font-bold text-foreground dark:text-slate-350 hover:bg-accent dark:hover:bg-slate-800 transition"
+                              >
+                                {t("Xem tất cả", "View all")}
+                              </Link>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </PopoverContent>
@@ -777,7 +820,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
         {requiredRole === "STAFF" && <StaffNotificationListener />}
 
         {/* Mobile bottom nav */}
-        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-cyan-900/10 dark:border-cyan-300/10 bg-white/95 dark:bg-[#071016]/95 px-2 py-2 shadow-[0_-14px_44px_rgba(6,17,26,0.08)] dark:shadow-[0_-14px_44px_rgba(0,0,0,0.40)] backdrop-blur-xl lg:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-cyan-900/10 bg-white/95 px-2 py-2 shadow-[0_-14px_44px_rgba(6,17,26,0.08)] backdrop-blur-xl lg:hidden">
           <ul className="grid grid-cols-4 gap-1">
             {mobileItems.map((item) => {
               const active = isNavActive(pathname, item);
@@ -894,65 +937,10 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
 function WorkspaceGate({ message }: { message: string }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#05080d] px-6 relative overflow-hidden">
-      <style>{`
-        @keyframes draw {
-          0% {
-            stroke-dashoffset: 80;
-          }
-          100% {
-            stroke-dashoffset: 0;
-          }
-        }
-        .animate-draw {
-          animation: draw 2s ease-in-out infinite alternate;
-        }
-      `}</style>
-      {/* Background radial glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-[#00B8D9]/10 blur-[100px]" />
-        <div className="absolute -right-20 -bottom-20 h-96 w-96 rounded-full bg-[#2F80ED]/10 blur-[100px]" />
-      </div>
-
-      <div className="relative z-10 flex flex-col items-center justify-center rounded-3xl border border-cyan-500/20 bg-[#071016]/60 p-8 backdrop-blur-xl shadow-[0_24px_80px_rgba(0,0,0,0.50)] max-w-sm w-full text-center">
-        {/* Animated glowing car SVG */}
-        <div className="relative flex h-24 w-24 items-center justify-center mb-6">
-          {/* Pulsing outer glow ring */}
-          <div className="absolute inset-0 rounded-full border border-cyan-500/30 bg-cyan-500/5 animate-ping opacity-25" />
-          <div className="absolute inset-2 rounded-full border border-cyan-400/20 bg-cyan-400/5 animate-pulse" />
-          
-          <div className="relative flex h-16 w-16 items-center justify-center text-cyan-300">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-14 h-14 filter drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]"
-            >
-              {/* Car body path */}
-              <path 
-                d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" 
-                strokeDasharray="80"
-                strokeDashoffset="80"
-                className="animate-draw"
-              />
-              {/* Wheels */}
-              <circle cx="7" cy="17" r="2.5" className="animate-pulse" />
-              <circle cx="17" cy="17" r="2.5" className="animate-pulse" />
-              
-              {/* Soapy bubbles / water droplets rising */}
-              <circle cx="5" cy="5" r="0.7" className="animate-bounce text-cyan-400/80" style={{ animationDelay: '0.2s' }} />
-              <circle cx="12" cy="3.5" r="1" className="animate-bounce text-cyan-400/60" style={{ animationDelay: '0.4s' }} />
-              <circle cx="18" cy="4.5" r="0.8" className="animate-bounce text-cyan-400/90" style={{ animationDelay: '0.1s' }} />
-            </svg>
-          </div>
-        </div>
-
-        <h3 className="text-base font-black tracking-[0.1em] uppercase text-cyan-300 mb-2">AURA CAR CARE</h3>
-        <p className="text-sm font-semibold text-white/80 animate-pulse">{message}</p>
-      </div>
+    <main className="flex min-h-screen items-center justify-center bg-background px-6">
+      <p className="rounded-xl border border-border bg-card px-5 py-3 text-sm font-medium text-muted-foreground shadow-sm">
+        {message}
+      </p>
     </main>
   );
 }
@@ -1026,7 +1014,7 @@ function SidebarBrand({
             {isCustomer ? "AR" : "AC"}
           </div>
           <div className="min-w-0 animate-in fade-in">
-            <div className="font-black tracking-[-0.02em] text-lg text-slate-900 dark:text-white">
+            <div className="font-black tracking-[-0.02em] text-lg text-slate-900">
               {isCustomer ? "AURA CAR CARE" : "AURA CAR CARE"}
             </div>
             <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">

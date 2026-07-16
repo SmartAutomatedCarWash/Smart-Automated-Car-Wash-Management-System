@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { BellRing, CalendarCheck, Car, Clock3, Gift, Gauge, Sparkles, Star, Trophy, WandSparkles, Zap } from "lucide-react";
 import { Button } from "@/shared/ui/ui/button";
@@ -342,15 +341,7 @@ export function BookingLiveSessionCard({
   return (
     <div className="overflow-hidden rounded-3xl border border-[#BDEEFF] bg-white shadow-[0_18px_45px_rgba(47,128,237,0.12)] dark:border-slate-700 dark:bg-slate-900">
       <div className="grid gap-4 p-4 sm:grid-cols-[9rem_1fr]">
-        <div className="relative h-32 w-full sm:h-full min-h-[8rem] rounded-2xl overflow-hidden">
-          <Image
-            src={imageUrl}
-            alt={serviceName ?? "Booking"}
-            fill
-            sizes="(max-width: 640px) 100vw, 144px"
-            className="object-cover"
-          />
-        </div>
+        <img src={imageUrl} alt={serviceName ?? "Booking"} className="h-32 w-full rounded-2xl object-cover sm:h-full" />
         <div className="min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>

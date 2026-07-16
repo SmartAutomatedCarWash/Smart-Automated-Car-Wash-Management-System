@@ -1,9 +1,11 @@
 import axios, {
   AxiosError,
+  AxiosInstance,
   AxiosResponse,
   AxiosRequestConfig,
   InternalAxiosRequestConfig
 } from "axios";
+import { getApiErrorCode } from "@/shared/lib/api-errors";
 import { clearAuthSession, getAccessToken, getRefreshToken, setAccessToken } from "@/features/auth/store/auth.store";
 import { ApiErrorResponse, ApiSuccessResponse } from "@/shared/types/api.types";
 
@@ -22,8 +24,6 @@ type RefreshResponse = ApiSuccessResponse<{
 let refreshPromise: Promise<string | null> | null = null;
 
 // ─── AXIOS CLIENT ─────────────────────────────────────────────────────────────
-
-
 export const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
@@ -43,6 +43,8 @@ apiClient.interceptors.response.use(
     }
 
     const is401 = error.response?.status === 401;
+
+    // Treat any 401 as a potentially expired token (backend sends plain 401 without body)
     const shouldTryRefresh = is401 && !request._retry;
 
     if (!shouldTryRefresh) {
@@ -70,6 +72,7 @@ function attachAccessToken(config: InternalAxiosRequestConfig) {
   if (token) {
     config.headers.set("Authorization", `Bearer ${token}`);
   }
+
   return config;
 }
 
@@ -79,6 +82,7 @@ async function refreshAccessToken(): Promise<string | null> {
       refreshPromise = null;
     });
   }
+
   return refreshPromise;
 }
 
@@ -94,7 +98,9 @@ async function performTokenRefresh(): Promise<string | null> {
       `${API_URL}/auth/refresh`,
       { refreshToken },
       {
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         withCredentials: true
       }
     );

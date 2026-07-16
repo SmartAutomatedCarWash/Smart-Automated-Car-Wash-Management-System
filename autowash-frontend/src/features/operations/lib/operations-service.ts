@@ -10,6 +10,7 @@ import type {
   StaffOption,
   StartWashSessionResponse,
   TransferWashSessionResponse,
+  CancelWashSessionResponse,
 } from "@/entities/operations";
 
 const SESSION_BASE_URL = "/operations/sessions";
@@ -84,5 +85,13 @@ export function transferWashSession(sessionId: string, toStaffId: string, reason
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/transfer`,
     data: { toStaffId, reason },
+  });
+}
+
+export function cancelWashSession(sessionId: string, reason: string, faultType?: string) {
+  return apiRequest<CancelWashSessionResponse, { reason: string; faultType?: string }>({
+    method: "POST",
+    url: `${SESSION_BASE_URL}/${sessionId}/cancel`,
+    data: { reason, faultType },
   });
 }

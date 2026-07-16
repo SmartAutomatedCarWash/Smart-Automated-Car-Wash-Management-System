@@ -24,9 +24,9 @@
 
 ## Overview
 
-**AutoWash Pro** is a modular monolith application that digitizes the end-to-end workflow of a car wash service center. The system serves three user roles — **Customer**, **Staff**, and **Admin** — each with a dedicated portal within a unified Next.js frontend, backed by a Spring Boot REST API.
+**AutoWash Pro** is a comprehensive, modular monolith application designed to systematically digitize and streamline the end-to-end operational workflows of a modern car wash service center. The architecture accommodates three distinct user roles—**Customer**, **Staff**, and **Admin**—each interacting through specialized portals integrated within a unified Next.js frontend, seamlessly supported by a robust Spring Boot REST API layer.
 
-This project was developed as part of the **SWP391 – Software Development Project** course at **FPT University Ho Chi Minh City** (Summer 2026).
+This software solution was engineered as a capstone fulfillment for the **SWP391 – Software Development Project** curriculum at **FPT University Ho Chi Minh City** (Summer 2026).
 
 ---
 
@@ -50,7 +50,7 @@ graph TD
     end
 
     subgraph "Data Layer"
-        DB[("PostgreSQL<br/>Flyway · 25 Migrations")]:::db
+        DB[("PostgreSQL<br/>Flyway · Consolidated Baseline + Data Seed")]:::db
     end
 
     CP & SP & AP -->|REST| API
@@ -64,9 +64,9 @@ graph TD
 
 | Layer | Technologies |
 |---|---|
-| **Frontend** | Next.js 14 (App Router) · React 18 · TypeScript · Tailwind CSS · Zustand · TanStack Query v5 · Axios · React Hook Form · Recharts · Shadcn UI (Radix) |
+| **Frontend** | Next.js 14.2 (App Router) · React 18 · TypeScript · Tailwind CSS · Zustand · TanStack Query v5 · Axios · React Hook Form · Recharts · Shadcn UI (Radix) |
 | **Backend** | Spring Boot 3.3.5 · Java 21 · Spring Security · Spring Data JPA · Flyway · JWT (JJWT) · Lombok |
-| **Database** | PostgreSQL · Flyway migrations (V1–V25) |
+| **Database** | PostgreSQL · Flyway migrations (Consolidated Baseline V1 + Seed V28) |
 | **DevOps** | GitHub Actions (CI) · Dependabot · OpenAPI / Swagger UI |
 
 ---
