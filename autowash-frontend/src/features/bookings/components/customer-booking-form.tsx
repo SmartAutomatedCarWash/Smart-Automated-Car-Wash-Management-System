@@ -53,6 +53,7 @@ import {
 import { useSlotHold } from "@/features/bookings/hooks/use-slot-hold";
 import { useCustomerVehicles, useCreateCustomerVehicle } from "@/features/vehicles/hooks/use-customer-vehicles";
 import { useCustomerVouchers } from "@/features/vouchers/hooks/use-customer-vouchers";
+import { useCustomerPromotions } from "@/features/loyalty/hooks/use-customer-loyalty";
 import { useBookingStore } from "@/features/bookings/store/booking.store";
 import type { BookingDraft, VoucherValidationResult } from "@/entities/bookings";
 import {
@@ -742,6 +743,7 @@ export function CustomerBookingForm() {
   const addonsQuery = useBookingAddons();
   const combosQuery = useBookingCombos();
   const activeCustomerCombosQuery = useActiveCustomerCombos();
+  const customerPromotionsQuery = useCustomerPromotions();
   const customerVouchersQuery = useCustomerVouchers();
   const voucherMutation = useValidateBookingVoucher();
   const publicSettingsQuery = usePublicSettings();
@@ -764,7 +766,8 @@ export function CustomerBookingForm() {
     packagesQuery.isPending ||
     addonsQuery.isPending ||
     combosQuery.isPending ||
-    activeCustomerCombosQuery.isPending;
+    activeCustomerCombosQuery.isPending ||
+    customerPromotionsQuery.isPending;
 
   const catalogError =
     vehiclesQuery.error ??
@@ -772,6 +775,7 @@ export function CustomerBookingForm() {
     addonsQuery.error ??
     combosQuery.error ??
     activeCustomerCombosQuery.error ??
+    customerPromotionsQuery.error ??
     null;
 
   const vehicles = vehiclesQuery.data?.items ?? [];
@@ -848,12 +852,15 @@ export function CustomerBookingForm() {
 
   const packageOptions = useMemo(
     () =>
-      packages.map((item) => ({
-        value: item.packageId,
-        label: item.name,
-        description: item.description,
-        helper: `${item.duration} min · ${formatBookingCurrency(item.basePrice)}`,
-      })),
+      packages
+        .map((item) => ({
+          value: item.packageId,
+          label: item.name,
+          description: item.description,
+          helper: `${item.duration} min · ${formatBookingCurrency(item.basePrice)}`,
+          badge: item.popularity === "BEST_SELLER" ? { label: "Best Seller", tone: "amber" as const } : undefined,
+        }))
+        .sort((a, b) => (a.badge ? -1 : b.badge ? 1 : 0)),
     [packages],
   );
 
@@ -864,9 +871,10 @@ export function CustomerBookingForm() {
         addons,
         combos,
         voucher: validatedVoucher,
+        promotions: customerPromotionsQuery.data,
         ownedComboApplied: Boolean(selectedCustomerCombo),
       }),
-    [addons, combos, draft, packages, selectedCustomerCombo, validatedVoucher],
+    [addons, combos, draft, packages, selectedCustomerCombo, validatedVoucher, customerPromotionsQuery.data],
   );
 
   const errors = useMemo(() => {
@@ -898,7 +906,7 @@ export function CustomerBookingForm() {
     const normalizedCode = sanitizeVoucherCodeInput(code);
     const formatError = getVoucherCodeFormatError(normalizedCode);
     if (!normalizedCode || !summary) { resetValidatedVoucher(); return; }
-    if (formatError) { resetValidatedVoucher(); toast.error(formatError); return; }
+    if (formatError) { resetValidatedVoucher(); return; }
     try {
       const result = await voucherMutation.mutateAsync({
         voucherCode: normalizedCode,
@@ -910,7 +918,8 @@ export function CustomerBookingForm() {
       updateDraft({ voucherCode: result.voucherCode });
       toast.success(`Voucher ${result.voucherCode} applied.`);
     } catch (error) {
-      resetValidatedVoucher();
+      setValidatedVoucher(null);
+      setStoredValidatedVoucher(null);
       toast.error(getDisplayErrorMessage(error));
     }
   };
@@ -966,6 +975,7 @@ export function CustomerBookingForm() {
             addonsQuery.refetch(),
             combosQuery.refetch(),
             activeCustomerCombosQuery.refetch(),
+            customerPromotionsQuery.refetch(),
           ]);
         }}
       />
@@ -1248,7 +1258,12 @@ export function CustomerBookingForm() {
                   <SummaryItem label="Base" value={formatBookingCurrency(summary.baseAmount)} />
                   <SummaryItem label="Add-ons" value={formatBookingCurrency(summary.addonsTotal)} />
                   <SummaryItem label="Subtotal" value={formatBookingCurrency(summary.subtotal)} />
-                  <SummaryItem label="Discount" value={`-${formatBookingCurrency(summary.discountAmount)}`} />
+                  {summary.discountAmount > 0 && (
+                    <SummaryItem label="Discount" value={`-${formatBookingCurrency(summary.discountAmount)}`} />
+                  )}
+                  {summary.promotionDiscountAmount > 0 && (
+                    <SummaryItem label="Promotion" value={`-${formatBookingCurrency(summary.promotionDiscountAmount)}`} />
+                  )}
                   {draft.mode === "COMBO" && (
                     <SummaryItem label="Owned combo" value={selectedCustomerCombo ? `${selectedCustomerCombo.remainingUsages} usages left` : "Will be purchased"} />
                   )}

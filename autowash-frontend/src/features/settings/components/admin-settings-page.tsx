@@ -12,6 +12,7 @@ import type { SystemSettings } from "@/features/settings/lib/admin-settings-serv
 import { uploadTierImage, type TierConfig } from "@/features/settings/lib/admin-tiers-service";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import { useLanguageStore } from "@/shared/store/language.store";
+import { cn } from "@/shared/lib/utils";
 
 const ADMIN_SETTINGS_COPY = {
   vi: {
@@ -446,7 +447,15 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
   const [multiplier, setMultiplier] = useState(initialConfig.pointMultiplier);
   const [priorityScore, setPriorityScore] = useState(initialConfig.priorityScore);
   const [rankOrder, setRankOrder] = useState(initialConfig.rankOrder);
-  const [imageUrl, setImageUrl] = useState(initialConfig.imageUrl || "");
+  const defaultHex = {
+    BRONZE: "#B07D4B",
+    SILVER: "#94A3B8",
+    GOLD: "#EAB308",
+    PLATINUM: "#64748B",
+    DIAMOND: "#A855F7",
+  }[initialConfig.tier] || "#cbd5e1";
+
+  const [imageUrl, setImageUrl] = useState(initialConfig.imageUrl || defaultHex);
   const [active, setActive] = useState(initialConfig.active);
 
   const isChanged =
@@ -487,18 +496,19 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
     DIAMOND: copy.loyaltyTiers.diamond,
   };
 
-  const colorMap: Record<string, string> = {
-    BRONZE: "bg-orange-50 text-orange-700 border-orange-200",
-    SILVER: "bg-slate-100 text-slate-700 border-slate-300",
-    GOLD: "bg-amber-50 text-amber-700 border-amber-200",
-    PLATINUM: "bg-violet-50 text-violet-700 border-violet-200",
-    DIAMOND: "bg-sky-50 text-sky-700 border-sky-200",
-  };
-
   const isBronze = initialConfig.tier === "BRONZE";
+  
+  const dynamicStyle = imageUrl ? {
+    backgroundColor: `${imageUrl}10`,
+    borderColor: `${imageUrl}40`,
+    color: imageUrl,
+  } : {};
 
   return (
-    <div className="flex flex-col rounded-xl border border-border/60 bg-muted/20 hover:border-primary/30 transition-all shadow-sm overflow-hidden">
+    <div 
+      className={cn("overflow-hidden rounded-2xl border transition-all", isExpanded ? "shadow-md" : "", !imageUrl && "bg-card border-border/60")}
+      style={dynamicStyle}
+    >
       <div 
         className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30"
         onClick={() => setIsExpanded(!isExpanded)}

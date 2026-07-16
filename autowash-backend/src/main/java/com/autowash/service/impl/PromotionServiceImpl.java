@@ -59,6 +59,8 @@ public class PromotionServiceImpl implements PromotionService {
                 request.name(),
                 request.description(),
                 BigDecimal.valueOf(request.pointMultiplier()),
+                request.discountType(),
+                request.discountValue(),
                 request.startDate(),
                 request.endDate(),
                 request.targetingMode(),
@@ -88,6 +90,8 @@ public class PromotionServiceImpl implements PromotionService {
                 request.name(),
                 request.description(),
                 BigDecimal.valueOf(request.pointMultiplier()),
+                request.discountType(),
+                request.discountValue(),
                 request.startDate(),
                 request.endDate(),
                 request.targetingMode(),
@@ -194,6 +198,8 @@ public class PromotionServiceImpl implements PromotionService {
                 promotion.getName(),
                 promotion.getDescription(),
                 promotion.getPointMultiplier().doubleValue(),
+                promotion.getDiscountType() != null ? promotion.getDiscountType().name() : "NONE",
+                promotion.getDiscountValue() != null ? promotion.getDiscountValue() : 0L,
                 promotion.getStartAt(),
                 promotion.getEndAt(),
                 promotion.getTargetingMode().name(),
@@ -212,6 +218,8 @@ public class PromotionServiceImpl implements PromotionService {
                 promotion.targetingMode(),
                 promotion.applicableTiers(),
                 promotion.pointMultiplier(),
+                promotion.discountType(),
+                promotion.discountValue(),
                 0L,
                 false,
                 promotion.endDate()
@@ -253,6 +261,29 @@ public class PromotionServiceImpl implements PromotionService {
                 .map(LoyaltyAccount::getTier)
                 .map(tierConfigService::eligibleTierCodesFor)
                 .orElseGet(() -> tierConfigService.eligibleTierCodesFor(TierConfigService.BRONZE));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Optional<Promotion> getActivePromotionByNameForCustomer(String name, User customer) {
+        java.util.Optional<Promotion> promoOpt = promotionRepository.findByName(name)
+                .filter(p -> p.getStatus() == ActiveStatus.ACTIVE)
+                .filter(p -> p.getStartAt().isBefore(java.time.Instant.now()))
+                .filter(p -> p.getEndAt().isAfter(java.time.Instant.now()));
+
+        if (promoOpt.isPresent()) {
+            Promotion p = promoOpt.get();
+            if (p.getTargetingMode() == com.autowash.entity.enums.PromotionTargetingMode.SPECIFIC_TIERS) {
+                List<String> eligible = eligibleTiersFor(customer);
+                boolean hasTier = promotionTierRepository.findByPromotionId(p.getId()).stream()
+                        .anyMatch(pt -> eligible.contains(pt.getTier()));
+                if (!hasTier) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "Your tier is not eligible for this promotion", "TIER_NOT_ELIGIBLE");
+                }
+            }
+        }
+        
+        return promoOpt;
     }
 
     private record ValidatedPromotion(List<String> tiers) {

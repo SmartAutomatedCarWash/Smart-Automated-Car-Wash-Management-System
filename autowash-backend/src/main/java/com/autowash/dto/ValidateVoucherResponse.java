@@ -10,7 +10,8 @@ public record ValidateVoucherResponse(
         int discountValue,
         long discountAmount,
         long finalAmount,
-        Instant expiresAt
+        Instant expiresAt,
+        Boolean isPromotion
 ) {
 }
 

@@ -78,7 +78,7 @@ public class OperationsController {
             @PathVariable UUID sessionId,
             @Valid @RequestBody CancelWashSessionRequest request
     ) {
-        return ApiResponse.ok("Wash session cancelled", operationsService.cancelSession(sessionId, request.reason()));
+        return ApiResponse.ok("Wash session cancelled", operationsService.cancelSession(sessionId, request.reason(), request.faultType()));
     }
 
 }

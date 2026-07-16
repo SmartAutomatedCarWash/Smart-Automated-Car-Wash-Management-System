@@ -36,6 +36,7 @@ import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
 import { TierBadge } from "@/shared/ui/customer/customer-experience";
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
+import { useBlogArticles, useBlogCategories } from "@/features/blog/hooks/use-blog";
 import { useCustomerBookings } from "@/features/bookings/hooks/use-bookings";
 import { useBookingPackages, useBookingCombos } from "@/features/bookings/hooks/use-bookings";
 import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
@@ -143,7 +144,10 @@ export default function CustomerHomePage() {
     ["PENDING", "SCHEDULED", "CHECKED_IN", "IN_PROGRESS", "CONFIRMED"].includes(booking.status),
   );
 
-  const [activeTab, setActiveTab] = useState<"all" | "tips" | "knowledge" | "stories" | "promo">("all");
+  const [activeTab, setActiveTab] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data: articles = [] } = useBlogArticles();
+  const { data: categories = [] } = useBlogCategories();
   const [likes, setLikes] = useState<Record<string, number>>({ post1: 24, post2: 12 });
   const [hasLiked, setHasLiked] = useState<Record<string, boolean>>({});
 
@@ -193,38 +197,40 @@ export default function CustomerHomePage() {
     return () => clearInterval(timer);
   }, []);
 
-  const blogTags = [
-    { id: "all", label: t("Tất cả", "All") },
-    { id: "tips", label: t("Mẹo chăm sóc xe", "Car Care Tips") },
-    { id: "knowledge", label: t("Kiến thức Ceramic/Detailing", "Ceramic & Detailing") },
-    { id: "stories", label: t("Câu chuyện khách hàng", "Customer Stories") },
-    { id: "promo", label: t("Khuyến mãi & Ưu đãi", "Promotions & Offers") },
-  ];
+  const blogTags = useMemo(() => {
+    const allTag = { id: "all", label: t("Tất cả", "All") };
+    const apiTags = categories.map((cat: any) => ({
+      id: cat.id,
+      label: cat.name,
+    }));
+    return [allTag, ...apiTags];
+  }, [categories, language]);
 
-  const blogPosts = [
-    {
-      id: "post1",
-      category: "tips",
-      categoryLabel: t("Mẹo chăm sóc xe", "Car Care Tips"),
-      title: t("Bí quyết giữ màu sơn xe luôn như mới trong mùa mưa", "Secrets to keeping your car paint brand new in the rainy season"),
-      excerpt: t("Mùa mưa kéo dài mang theo axit và bụi bẩn làm tàn phá lớp sơn bóng của bạn. Hãy bảo vệ bề mặt sơn ngay hôm nay bằng các bước đơn giản này...", "Continuous rain carries acids and dirt that ruin your gloss coat. Protect your paint surface today with these simple steps..."),
-      author: "Aura Detailing Expert",
-      readTime: "3 min read",
-      image: "/images/rainy-care.jpg",
-      comments: 5,
-    },
-    {
-      id: "post2",
-      category: "knowledge",
-      categoryLabel: t("Kiến thức Detailing", "Detailing Knowledge"),
-      title: t("Tại sao rửa xe thông thường tại nhà có thể làm xước sơn?", "Why standard home washing might scratch your paint?"),
-      excerpt: t("Sử dụng khăn lau không đạt chuẩn và xà phòng rửa chén sẽ làm mòn lớp bảo vệ ceramic và tạo ra vết xước xoáy mất thẩm mỹ...", "Using sub-standard cloths and dish soap degrades ceramic coatings and creates micro swirl scratches..."),
-      author: "Technical Lead",
-      readTime: "5 min read",
-      image: "/images/scratch-care.jpg",
-      comments: 8,
-    },
-  ];
+  const blogPosts = useMemo(() => {
+    return articles.map((article: any) => ({
+      id: article.slug,
+      category: article.category.id,
+      categoryLabel: article.category.name,
+      title: article.title,
+      excerpt: article.excerpt,
+      author: article.authorName,
+      readTime: "5 min read", // API doesn't provide read time yet
+      image: article.thumbnailUrl || "/images/placeholder.jpg",
+      comments: article.commentCount || 0,
+      likes: article.likeCount || 0,
+      views: article.viewCount || 0,
+    }));
+  }, [articles]);
+
+  const filteredPosts = useMemo(() => {
+    return blogPosts.filter((post) => activeTab === "all" || post.category === activeTab);
+  }, [blogPosts, activeTab]);
+
+  const itemsPerPage = 2;
+  const totalPages = Math.ceil(filteredPosts.length / itemsPerPage);
+  const paginatedPosts = useMemo(() => {
+    return filteredPosts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  }, [filteredPosts, currentPage, itemsPerPage]);
 
   // Map backend packages dynamically or fallback to mock
   const servicesList = useMemo(() => {
@@ -235,8 +241,8 @@ export default function CustomerHomePage() {
         description: p.description,
         price: formatBookingCurrency(p.basePrice),
         duration: `${p.duration} ${t("phút", "mins")}`,
-        rating: 4.8 + (idx * 0.1),
-        reviews: `${120 - (idx * 30)}+ reviews`,
+        rating: p.averageRating ? Number(p.averageRating).toFixed(1) : "5.0",
+        reviews: `${p.reviewCount || 0} reviews`,
         badge: idx === 1 ? { label: t("Bán chạy", "Best Seller"), tone: "amber" } : undefined,
         feedback: idx === 0 
           ? t("Xe sạch bóng như mới!", "Car looks clean as new!")
@@ -513,7 +519,7 @@ export default function CustomerHomePage() {
                           <Star
                             key={i}
                             className="h-3 w-3"
-                            fill={i < Math.round(s.rating) ? "currentColor" : "none"}
+                            fill={i < Math.round(Number(s.rating)) ? "currentColor" : "none"}
                             strokeWidth={2}
                           />
                         ))}
@@ -636,7 +642,10 @@ export default function CustomerHomePage() {
                   {blogTags.map((tag) => (
                     <button
                       key={tag.id}
-                      onClick={() => setActiveTab(tag.id as any)}
+                      onClick={() => {
+                        setActiveTab(tag.id);
+                        setCurrentPage(1);
+                      }}
                       className={cn(
                         "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border",
                         activeTab === tag.id
@@ -652,9 +661,7 @@ export default function CustomerHomePage() {
 
               {/* Social/Blog Post List */}
               <div className="space-y-5">
-                {blogPosts
-                  .filter((post) => activeTab === "all" || post.category === activeTab)
-                  .map((post) => (
+                {paginatedPosts.map((post) => (
                     <Card key={post.id} className="overflow-hidden rounded-3xl border border-border/50 bg-card p-5 shadow-sm hover:shadow-md transition-all duration-300">
                       <div className="flex flex-col gap-5 sm:flex-row">
                         <Link href={`/customer/guides/${post.id}`} className="relative h-36 w-full sm:w-48 rounded-2xl overflow-hidden shrink-0 block">
@@ -708,6 +715,33 @@ export default function CustomerHomePage() {
                       </div>
                     </Card>
                   ))}
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 pt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="h-8 w-8 p-0 rounded-full"
+                      >
+                        <ChevronRight className="h-4 w-4 rotate-180" />
+                      </Button>
+                      <span className="text-xs font-bold text-muted-foreground">
+                        {currentPage} / {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="h-8 w-8 p-0 rounded-full"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
               </div>
             </div>
           </div>
@@ -715,23 +749,6 @@ export default function CustomerHomePage() {
           {/* Right Column: Trending, Stats & Lounge events */}
           <div className="space-y-6">
             
-            {/* Live Stats */}
-            <Card className="rounded-3xl border border-border/50 bg-card p-5 shadow-sm space-y-4">
-              <h4 className="text-xs font-black text-foreground flex items-center gap-2 uppercase tracking-wider border-b border-border/50 pb-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                Aura Live Stats
-              </h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-amber-500/5 rounded-2xl p-3.5 border border-amber-500/10">
-                  <div className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">{t("Đã rửa hôm nay", "Completed Today")}</div>
-                  <div className="text-xl font-black text-primary mt-1">42 {t("Xe", "Vehicles")}</div>
-                </div>
-                <div className="bg-amber-500/5 rounded-2xl p-3.5 border border-amber-500/10">
-                  <div className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">{t("Đang đợi", "Queue Status")}</div>
-                  <div className="text-xl font-black text-amber-500 mt-1">3 Min {t("Chờ", "Wait")}</div>
-                </div>
-              </div>
-            </Card>
 
             {/* Detailing Workshops */}
             <Card className="rounded-3xl border border-border/50 bg-card p-5 shadow-sm space-y-4">

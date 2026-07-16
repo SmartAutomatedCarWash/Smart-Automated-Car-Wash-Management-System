@@ -69,6 +69,23 @@ public class ResendBookingEmailDeliveryServiceImpl implements BookingEmailDelive
         }
     }
 
+    @Override
+    public void sendBookingReminder(Booking booking, String email) {
+        try {
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from(fromName + " <" + from + ">")
+                    .to(email)
+                    .subject("AURA Car Wash - Nhắc nhở lịch rửa xe")
+                    .template(bookingReminderTemplate(booking))
+                    .build();
+            CreateEmailResponse response = resend.emails().send(params);
+            LOGGER.info("Booking reminder sent: bookingId={}, emailId={}, to={}",
+                    booking.getId(), response.getId(), email);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to send booking reminder via Resend", e);
+        }
+    }
+
     private Template bookingDetailTemplate(Booking booking) {
         return Template.builder()
                 .id(BOOKING_DETAIL_TEMPLATE_ID)
@@ -89,6 +106,19 @@ public class ResendBookingEmailDeliveryServiceImpl implements BookingEmailDelive
                 .addVariable("finalAmount", String.format("%,d", booking.getFinalAmount()))
                 .addVariable("otp", otp)
                 .addVariable("minutes", String.valueOf(minutes))
+                .build();
+    }
+
+    private Template bookingReminderTemplate(Booking booking) {
+        // We reuse the detail template or you can create a separate one on Resend
+        // For now, using BOOKING_DETAIL_TEMPLATE_ID because they share similar fields
+        return Template.builder()
+                .id(BOOKING_DETAIL_TEMPLATE_ID)
+                .addVariable("bookingId", booking.getId().toString())
+                .addVariable("bookingDate", booking.getBookingDate().toString())
+                .addVariable("bookingTime", booking.getBookingTime().toString())
+                .addVariable("finalAmount", String.format("%,d", booking.getFinalAmount()))
+                .addVariable("status", booking.getStatus().name())
                 .build();
     }
 }

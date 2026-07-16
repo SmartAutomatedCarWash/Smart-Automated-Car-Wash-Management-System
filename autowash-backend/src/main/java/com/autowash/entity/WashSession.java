@@ -1,6 +1,7 @@
 package com.autowash.entity;
 
 import com.autowash.entity.enums.WashSessionStatus;
+import com.autowash.entity.enums.CancelFaultType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -64,6 +65,10 @@ public class WashSession {
     @Column(name = "cancel_reason", length = 500)
     private String cancelReason;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancel_fault_type")
+    private CancelFaultType cancelFaultType;
+
     @Column(name = "notes")
     private String notes;
 
@@ -107,10 +112,11 @@ public class WashSession {
         this.awardedPoints = awardedPoints;
     }
 
-    public void cancel(Instant cancelledAt, String reason) {
+    public void cancel(Instant cancelledAt, String reason, CancelFaultType faultType) {
         this.status = WashSessionStatus.CANCELLED;
         this.cancelledAt = cancelledAt;
         this.cancelReason = reason;
+        this.cancelFaultType = faultType;
     }
 
     public Integer getProjectedLoyaltyPoints() {

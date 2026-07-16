@@ -67,7 +67,7 @@ export type WashHistoryItem = {
   completedAt: string;
 };
 
-export type PromotionType = "ALL_TIERS" | "SELECTED_TIERS" | "NEW_CUSTOMERS";
+export type PromotionType = "ALL_TIERS" | "SELECTED_TIERS" | "SPECIFIC_TIERS" | "NEW_CUSTOMERS";
 
 export type CustomerPromotion = {
   promotionId: string;
@@ -76,10 +76,11 @@ export type CustomerPromotion = {
   promotionType: PromotionType;
   targetTiers: LoyaltyTier[];
   pointMultiplier: number | null;
+  discountType: "NONE" | "PERCENT" | "FIXED_AMOUNT";
+  discountValue: number;
   minAmount?: number | null;
   newCustomerOnly?: boolean;
   startDate: string;
   expiresAt: string;
   status: "ACTIVE" | "INACTIVE";
 };
-

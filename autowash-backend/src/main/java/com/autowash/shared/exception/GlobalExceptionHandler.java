@@ -80,6 +80,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> handleUnreadableMessage(HttpMessageNotReadableException exception) {
+        System.err.println("HttpMessageNotReadableException caught: " + exception.getMessage());
         return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
                 "statusCode", 400,

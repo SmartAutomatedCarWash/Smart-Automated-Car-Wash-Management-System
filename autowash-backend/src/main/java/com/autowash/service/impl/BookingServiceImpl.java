@@ -4,6 +4,9 @@ import com.autowash.dto.BookingStatusHistoryItem;
 import com.autowash.entity.User;
 
 
+import com.autowash.entity.Notification;
+import com.autowash.entity.enums.NotificationType;
+import com.autowash.repository.NotificationRepository;
 import com.autowash.dto.BookingOptionResponse;
 import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.BookingListItemResponse;
@@ -21,6 +24,7 @@ import com.autowash.entity.BookingOption;
 import com.autowash.entity.BookingPromotion;
 import com.autowash.entity.BookingStatusHistory;
 import com.autowash.entity.Payment;
+import com.autowash.entity.Promotion;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.repository.BookingRepository;
@@ -111,6 +115,7 @@ public class BookingServiceImpl implements BookingService {
     private final VoucherRedemptionService voucherRedemptionService;
     private final SlotHoldRepository slotHoldRepository;
     private final ViolationRecordRepository violationRecordRepository;
+    private final NotificationRepository notificationRepository;
 
     public BookingServiceImpl(
             CurrentUserService currentUserService,
@@ -131,7 +136,8 @@ public class BookingServiceImpl implements BookingService {
             SystemSettingsRepository systemSettingsRepository,
             VoucherRedemptionService voucherRedemptionService,
             SlotHoldRepository slotHoldRepository,
-            ViolationRecordRepository violationRecordRepository
+            ViolationRecordRepository violationRecordRepository,
+            NotificationRepository notificationRepository
     ) {
         this.currentUserService = currentUserService;
         this.VehicleRepository = VehicleRepository;
@@ -152,6 +158,7 @@ public class BookingServiceImpl implements BookingService {
         this.voucherRedemptionService = voucherRedemptionService;
         this.slotHoldRepository = slotHoldRepository;
         this.violationRecordRepository = violationRecordRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     @Transactional
@@ -223,16 +230,40 @@ public class BookingServiceImpl implements BookingService {
         long subtotal = basePrice + optionsTotal;
         UUID userVoucherId = null;
         long voucherDiscount = 0;
+        long promotionDiscount = 0;
+        List<Promotion> activePromotions = new java.util.ArrayList<>();
+
         if (request.voucherCode() != null && !request.voucherCode().isBlank()) {
-            com.autowash.entity.UserVoucher userVoucher;
-            try {
-                userVoucher = voucherRedemptionService.getUserVoucherByCode(user.getId(), request.voucherCode());
-            } catch (ApiException e) {
-                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Voucher already used or expired", "VOUCHER_ALREADY_USED");
+            java.util.Optional<Promotion> promoOpt = promotionService.getActivePromotionByNameForCustomer(request.voucherCode(), user);
+            if (promoOpt.isPresent()) {
+                Promotion p = promoOpt.get();
+                activePromotions.add(p);
+                if (p.getDiscountType() == com.autowash.entity.enums.DiscountType.PERCENT) {
+                    promotionDiscount = (subtotal * (p.getDiscountValue() != null ? p.getDiscountValue() : 0)) / 100;
+                } else if (p.getDiscountType() == com.autowash.entity.enums.DiscountType.FIXED_AMOUNT) {
+                    promotionDiscount = (p.getDiscountValue() != null ? p.getDiscountValue() : 0);
+                }
+            } else {
+                com.autowash.entity.UserVoucher userVoucher;
+                try {
+                    userVoucher = voucherRedemptionService.getUserVoucherByCode(user.getId(), request.voucherCode());
+                } catch (ApiException e) {
+                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Voucher or Promotion invalid, already used or expired", "VOUCHER_ALREADY_USED");
+                }
+                userVoucherId = userVoucher.getId();
+                voucherDiscount = voucherRedemptionService.calculateDiscount(userVoucherId, subtotal, 
+                        options.stream().map(CatalogService.CatalogOption::optionId).toList());
             }
-            userVoucherId = userVoucher.getId();
-            voucherDiscount = voucherRedemptionService.calculateDiscount(userVoucherId, subtotal, 
-                    options.stream().map(CatalogService.CatalogOption::optionId).toList());
+        }
+
+        long totalDiscount = voucherDiscount + promotionDiscount;
+        if (totalDiscount > subtotal) {
+            totalDiscount = subtotal;
+            if (promotionDiscount > 0) {
+                promotionDiscount = totalDiscount;
+            } else {
+                voucherDiscount = totalDiscount;
+            }
         }
 
         Booking booking = new Booking(
@@ -248,7 +279,8 @@ public class BookingServiceImpl implements BookingService {
                 basePrice,
                 optionsTotal,
                 voucherDiscount,
-                subtotal - voucherDiscount,
+                promotionDiscount,
+                subtotal - totalDiscount,
                 baseDuration + options.stream().mapToInt(CatalogService.CatalogOption::durationMinutes).sum()
         );
         BookingRepository.save(booking);
@@ -260,7 +292,7 @@ public class BookingServiceImpl implements BookingService {
                 .map(option -> new BookingOption(booking, option.optionId(), option.name(), option.price()))
                 .toList();
         bookingOptionRepository.saveAll(bookingOptions);
-        List<BookingPromotion> bookingPromotions = promotionService.listActiveForCustomer(user).stream()
+        List<BookingPromotion> bookingPromotions = activePromotions.stream()
                 .map(promotion -> new BookingPromotion(booking, promotion.getId(), promotion.getPointMultiplier()))
                 .toList();
         bookingPromotionRepository.saveAll(bookingPromotions);
@@ -279,6 +311,16 @@ public class BookingServiceImpl implements BookingService {
 
         recordStatusHistory(booking, null, booking.getStatus(), user, "Booking created");
 
+        notificationRepository.save(Notification.builder()
+                .id(UUID.randomUUID())
+                .user(user)
+                .title("Đặt lịch thành công!")
+                .message("Bạn đã đặt lịch rửa xe thành công vào " + booking.getBookingDate() + " lúc " + booking.getBookingTime() + ".")
+                .type(NotificationType.BOOKING_CREATED)
+                .read(false)
+                .createdAt(Instant.now())
+                .build());
+
         if (Combo != null) {
             if (ownedCombo == null) {
                 ownedCombo = customerComboService.createOwnedCombo(user, Combo.getId().toString(), booking.getId().toString());
@@ -296,9 +338,10 @@ public class BookingServiceImpl implements BookingService {
                 responsePackageId,
                 responsePackageName,
                 toOptionSelections(booking),
-                booking.getBasePrice(),
-                booking.getOptionsTotal(),
+                booking.getBaseAmount(),
+                booking.getOptionsAmount(),
                 booking.getVoucherDiscount(),
+                booking.getPromotionDiscount(),
                 booking.getFinalAmount(),
                 booking.getBookingDate(),
                 booking.getBookingTime().toString(),
@@ -444,6 +487,16 @@ public class BookingServiceImpl implements BookingService {
                 BookingStatus oldStatus = booking.getStatus();
                 booking.updateStatus(BookingStatus.CONFIRMED);
                 recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), "Payment verified");
+                
+                notificationRepository.save(Notification.builder()
+                        .id(UUID.randomUUID())
+                        .user(booking.getCustomer())
+                        .title("Booking đã được xác nhận!")
+                        .message("Booking " + booking.getId() + " đã được thanh toán và xác nhận thành công.")
+                        .type(NotificationType.BOOKING_CONFIRMED)
+                        .read(false)
+                        .createdAt(Instant.now())
+                        .build());
             }
         }
 
@@ -595,11 +648,12 @@ public class BookingServiceImpl implements BookingService {
                 packageName,
                 toOptionSelections(booking),
                 new BookingDetailResponse.Pricing(
-                        booking.getBasePrice(),
-                        booking.getOptionsTotal(),
-                        booking.getBasePrice() + booking.getOptionsTotal(),
-                        booking.getVoucherCode(),
+                        booking.getBaseAmount(),
+                        booking.getOptionsAmount(),
+                        booking.getBaseAmount() + booking.getOptionsAmount(),
+                        booking.getVoucherId() != null ? booking.getVoucherId().toString() : null,
                         booking.getVoucherDiscount(),
+                        booking.getPromotionDiscount(),
                         booking.getFinalAmount(),
                         "VND"
                 ),
@@ -755,6 +809,29 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public ValidateVoucherResponse validateVoucher(ValidateVoucherRequest request) {
         User user = currentUserService.getCurrentUser();
+        java.util.Optional<Promotion> promoOpt = promotionService.getActivePromotionByNameForCustomer(request.voucherCode(), user);
+        
+        if (promoOpt.isPresent()) {
+            Promotion p = promoOpt.get();
+            long discount = 0;
+            if (p.getDiscountType() == com.autowash.entity.enums.DiscountType.PERCENT) {
+                discount = (request.amount() * (p.getDiscountValue() != null ? p.getDiscountValue() : 0)) / 100;
+            } else if (p.getDiscountType() == com.autowash.entity.enums.DiscountType.FIXED_AMOUNT) {
+                discount = (p.getDiscountValue() != null ? p.getDiscountValue() : 0);
+            }
+            long finalAmount = Math.max(0, request.amount() - discount);
+            return new ValidateVoucherResponse(
+                    request.voucherCode(),
+                    true,
+                    p.getDiscountType().name(),
+                    (int) (p.getDiscountValue() != null ? p.getDiscountValue() : 0),
+                    discount,
+                    finalAmount,
+                    p.getEndAt(),
+                    true
+            );
+        }
+        
         com.autowash.entity.UserVoucher userVoucher = voucherRedemptionService.getUserVoucherByCode(user.getId(), request.voucherCode());
         
         List<java.util.UUID> serviceIds = new java.util.ArrayList<>();
@@ -768,7 +845,8 @@ public class BookingServiceImpl implements BookingService {
                 (int) userVoucher.getVoucherTemplate().getDiscountValue(),
                 discount, 
                 finalAmount,
-                userVoucher.getExpiredAt()
+                userVoucher.getExpiredAt(),
+                false
         );
     }
 }

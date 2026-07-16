@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown, X } from "lucide-react";
+import { Check, ChevronDown, Sparkles, X } from "lucide-react";
 import { Button } from "@/shared/ui/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/ui/popover";
 import { cn } from "@/shared/lib/utils";
@@ -11,6 +11,7 @@ type SelectOption = {
   label: string;
   description?: string;
   helper?: string;
+  badge?: { label: string; tone: "amber" | "emerald" | "sky" | "rose" | "purple" | "blue" };
 };
 
 function filterOptions(options: SelectOption[], query: string) {
@@ -103,7 +104,22 @@ export function CustomerBookingSelect({
                 >
                   <Check className={cn("mt-0.5 h-4 w-4 shrink-0", active ? "opacity-100" : "opacity-0")} />
                   <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-slate-900">{option.label}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="font-semibold text-slate-900">{option.label}</div>
+                      {option.badge && (
+                        <span className={cn(
+                          "inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-600 shadow-[0_0_10px_rgba(251,191,36,0.4)] animate-pulse",
+                          option.badge.tone === "emerald" && "bg-emerald-100 text-emerald-600 shadow-[0_0_10px_rgba(52,211,153,0.4)]",
+                          option.badge.tone === "sky" && "bg-sky-100 text-sky-600 shadow-[0_0_10px_rgba(56,189,248,0.4)]",
+                          option.badge.tone === "rose" && "bg-rose-100 text-rose-600 shadow-[0_0_10px_rgba(251,113,133,0.4)]",
+                          option.badge.tone === "purple" && "bg-purple-100 text-purple-600 shadow-[0_0_10px_rgba(192,132,252,0.4)]",
+                          option.badge.tone === "blue" && "bg-blue-100 text-blue-600 shadow-[0_0_10px_rgba(96,165,250,0.4)]"
+                        )}>
+                          <Sparkles className="h-3 w-3" />
+                          {option.badge.label}
+                        </span>
+                      )}
+                    </div>
                     {option.description ? (
                       <div className="mt-1 text-xs leading-5 text-slate-500">
                         {option.description}

@@ -1,0 +1,26 @@
+﻿### ðŸŽ¯ Má»¥c tiÃªu PR (What's in this PR?)
+PR nÃ y bá»• sung chá»©c nÄƒng huy hiá»‡u Æ°u tiÃªn cho Staff Operations vÃ  hoÃ n thiá»‡n há»‡ thá»‘ng Notifications (thÃ´ng bÃ¡o & email) dá»±a trÃªn cÃ¡c Business Rules:
+
+#### ðŸ‘·â€â™‚ï¸ Staff Operations
+- **[BR-101]**: Cáº­p nháº­t danh sÃ¡ch phiÃªn rá»­a xe Ä‘á»§ Ä‘iá»u kiá»‡n Ä‘á»ƒ hiá»ƒn thá»‹ thÃªm huy hiá»‡u Æ¯u tiÃªn (`GOLD`, `PLATINUM`, `DIAMOND`).
+
+#### ðŸ”” Notifications
+- **[BR-174]**: Tá»± Ä‘á»™ng lÆ°u vÃ  gá»­i thÃ´ng bÃ¡o khi má»™t booking Ä‘Æ°á»£c **táº¡o thÃ nh cÃ´ng**.
+- **[BR-175]**: Tá»± Ä‘á»™ng lÆ°u vÃ  gá»­i thÃ´ng bÃ¡o khi booking Ä‘Æ°á»£c **thanh toÃ¡n/xÃ¡c nháº­n (`CONFIRMED`)**.
+- **[BR-176]**: Tá»± Ä‘á»™ng lÆ°u vÃ  gá»­i thÃ´ng bÃ¡o khi Staff tiáº¿n hÃ nh **check-in** hoáº·c **hoÃ n thÃ nh** phiÃªn rá»­a xe.
+- **[BR-177]**: ThÃªm Scheduled Job (`@Scheduled`) Ä‘á»ƒ gá»­i email thÃ´ng bÃ¡o nháº¯c nhá»Ÿ **24 tiáº¿ng trÆ°á»›c giá» booking**.
+- **[BR-178]**: Chuáº©n hÃ³a trÆ°á»ng `type` cá»§a notification sang **Enum cá»‘ Ä‘á»‹nh** (vÃ­ dá»¥: `BOOKING_CREATED`, `BOOKING_CONFIRMED`,...), ngÄƒn cháº·n viá»‡c lÆ°u chuá»—i tá»± do.
+- **[BR-180]**: TÃ­ch há»£p luá»“ng event Backend Ä‘á»ƒ tá»± Ä‘á»™ng Ä‘áº©y log sá»± kiá»‡n vÃ o báº£ng notifications vÃ  káº¿t há»£p vá»›i Frontend (sá»­ dá»¥ng ká»¹ thuáº­t polling 30 giÃ¢y má»™t láº§n).
+
+---
+
+### ðŸ“‹ Checklist
+- [x] ÄÃ£ cáº­p nháº­t vÃ  Ä‘Ã¡nh láº¡i version cÃ¡c file trong `db/migration` & `db/demo`.
+- [x] ÄÃ£ dá»n dáº¹p cÃ¡c file rÃ¡c/log trong dá»± Ã¡n.
+- [x] ÄÃ£ cháº¡y vÃ  pass toÃ n bá»™ Unit Test (Backend & Frontend).
+- [ ] Review code.
+
+### ðŸ“ Notes / Testing Instructions
+- Äá»ƒ kiá»ƒm thá»­ tÃ­nh nÄƒng **Polling (BR-180)**, hÃ£y má»Ÿ Frontend, trigger má»™t event booking á»Ÿ tab khÃ¡c vÃ  chá» tá»‘i Ä‘a 30s Ä‘á»ƒ notification xuáº¥t hiá»‡n.
+- Äá»‘i vá»›i **Job nháº¯c nhá»Ÿ (BR-177)**, cÃ³ thá»ƒ thay Ä‘á»•i config cron/giÃ£n cÃ¡ch thá»i gian táº¡m thá»i Ä‘á»ƒ test viá»‡c gá»­i email á»Ÿ local.
+- **LÆ°u Ã½ DB**: CÃ¡c file migration Ä‘Ã£ Ä‘Æ°á»£c Ä‘Ã¡nh láº¡i sá»‘ thá»© tá»±. HÃ£y thá»±c hiá»‡n `flyway:clean` (hoáº·c drop DB) vÃ  cháº¡y láº¡i cÃ¡c script migration.

@@ -11,6 +11,7 @@ public record CancelWashSessionResponse(
         String bookingId,
         String bookingStatus,
         String reason,
+        String faultType,
         Instant cancelledAt
 ) {
 }

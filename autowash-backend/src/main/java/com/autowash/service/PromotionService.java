@@ -17,6 +17,7 @@ public interface PromotionService {
     PromotionPage listActiveForCurrentCustomer(int page, int limit);
     List<Promotion> listActiveForCustomer(User customer);
     List<CustomerPromotionResponse> listActiveLegacyForCurrentCustomer();
+    java.util.Optional<Promotion> getActivePromotionByNameForCustomer(String name, User customer);
 
     record PromotionPage(List<PromotionResponse> items, PaginationMeta pagination) {
     }

@@ -68,6 +68,8 @@ export function listCustomerPromotions() {
         promotionType: promotion.targetingMode,
         targetTiers: promotion.applicableTiers,
         pointMultiplier: promotion.pointMultiplier ?? null,
+        discountType: promotion.discountType || "NONE",
+        discountValue: promotion.discountValue || 0,
         startDate: promotion.startDate,
         expiresAt: promotion.endDate,
         status: promotion.status,

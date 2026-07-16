@@ -14,7 +14,9 @@ public record PackageResponse(
         List<String> serviceIds,
         List<String> imageUrls,
         String status,
-        String popularity
+        String popularity,
+        Double averageRating,
+        Long reviewCount
 ) {
 }
 

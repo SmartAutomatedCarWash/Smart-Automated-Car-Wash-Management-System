@@ -12,6 +12,8 @@ import com.autowash.dto.RedeemPointsResponse;
 import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.PointTransaction;
 import com.autowash.entity.TierHistory;
+import com.autowash.entity.enums.LoyaltyTier;
+import com.autowash.entity.enums.NotificationType;
 import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.LoyaltyAccountRepository;
@@ -282,7 +284,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 .user(account.getCustomer())
                 .title("Chúc mừng! Bạn đã thăng hạng")
                 .message("Hạng thành viên của bạn đã được nâng lên " + targetTier + ".")
-                .type("LOYALTY")
+                .type(NotificationType.LOYALTY)
                 .read(false)
                 .createdAt(Instant.now())
                 .build();
@@ -320,7 +322,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 .user(customer)
                 .title(title)
                 .message(message)
-                .type("SYSTEM")
+                .type(NotificationType.SYSTEM)
                 .read(false)
                 .createdAt(Instant.now())
                 .build();

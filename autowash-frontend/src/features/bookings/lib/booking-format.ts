@@ -64,6 +64,7 @@ export function buildBookingSummary(
     addons: BookingAddon[];
     combos: BookingCombo[];
     voucher: VoucherValidationResult | null;
+    promotions?: import("../../../entities/loyalty/index.ts").CustomerPromotion[];
     ownedComboApplied?: boolean;
   },
 ): BookingSummary | null {
@@ -77,8 +78,27 @@ export function buildBookingSummary(
     }
 
     const subtotal = selectedPackage.basePrice + addonsTotal;
-    const discountAmount = input.voucher?.discountAmount ?? 0;
-    const finalAmount = input.voucher?.finalAmount ?? Math.max(subtotal - discountAmount, 0);
+    let voucherDiscountAmount = 0;
+    let promotionDiscountAmount = 0;
+    if (input.voucher) {
+      if (input.voucher.isPromotion) {
+        promotionDiscountAmount = input.voucher.discountAmount;
+      } else {
+        voucherDiscountAmount = input.voucher.discountAmount;
+      }
+    }
+    
+    let totalDiscountAmount = voucherDiscountAmount + promotionDiscountAmount;
+    if (totalDiscountAmount > subtotal) {
+      totalDiscountAmount = subtotal;
+      if (promotionDiscountAmount > 0) {
+        promotionDiscountAmount = totalDiscountAmount;
+      } else {
+        voucherDiscountAmount = totalDiscountAmount;
+      }
+    }
+    
+    const finalAmount = Math.max(subtotal - totalDiscountAmount, 0);
 
     return {
       itemType: "PACKAGE",
@@ -87,7 +107,8 @@ export function buildBookingSummary(
       baseAmount: selectedPackage.basePrice,
       addonsTotal,
       subtotal,
-      discountAmount,
+      discountAmount: voucherDiscountAmount,
+      promotionDiscountAmount,
       finalAmount,
       estimatedDurationLabel: `${selectedPackage.duration + selectedAddons.reduce((sum, addon) => sum + addon.duration, 0)} min`,
       selectedAddons,
@@ -102,8 +123,27 @@ export function buildBookingSummary(
   }
 
   const subtotal = input.ownedComboApplied ? 0 : selectedCombo.basePrice;
-  const discountAmount = input.voucher?.discountAmount ?? 0;
-  const finalAmount = input.voucher?.finalAmount ?? Math.max(subtotal - discountAmount, 0);
+  let voucherDiscountAmount = 0;
+  let promotionDiscountAmount = 0;
+  if (input.voucher) {
+    if (input.voucher.isPromotion) {
+      promotionDiscountAmount = input.voucher.discountAmount;
+    } else {
+      voucherDiscountAmount = input.voucher.discountAmount;
+    }
+  }
+  
+  let totalDiscountAmount = voucherDiscountAmount + promotionDiscountAmount;
+  if (totalDiscountAmount > subtotal) {
+    totalDiscountAmount = subtotal;
+    if (promotionDiscountAmount > 0) {
+      promotionDiscountAmount = totalDiscountAmount;
+    } else {
+      voucherDiscountAmount = totalDiscountAmount;
+    }
+  }
+  
+  const finalAmount = Math.max(subtotal - totalDiscountAmount, 0);
 
   return {
     itemType: "COMBO",
@@ -112,7 +152,8 @@ export function buildBookingSummary(
     baseAmount: selectedCombo.basePrice,
     addonsTotal: 0,
     subtotal,
-    discountAmount,
+    discountAmount: voucherDiscountAmount,
+    promotionDiscountAmount,
     finalAmount,
     estimatedDurationLabel: `${selectedCombo.durationDays} day combo`,
     selectedAddons: [],

@@ -19,8 +19,12 @@ import com.autowash.dto.StartWashSessionResponse;
 import com.autowash.dto.StaffDashboardSummaryResponse;
 import com.autowash.dto.StaffOptionResponse;
 import com.autowash.entity.WashSession;
+import com.autowash.entity.enums.CancelFaultType;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.WashSessionRepository;
+import com.autowash.entity.Notification;
+import com.autowash.entity.enums.NotificationType;
+import com.autowash.repository.NotificationRepository;
 import com.autowash.entity.User;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.shared.exception.ApiException;
@@ -61,6 +65,7 @@ public class OperationsServiceImpl implements OperationsService {
     private final CurrentUserService currentUserService;
     private final StaffAssignmentService staffAssignmentService;
     private final TierConfigService tierConfigService;
+    private final NotificationRepository notificationRepository;
     private final String currency;
 
     public OperationsServiceImpl(
@@ -71,6 +76,7 @@ public class OperationsServiceImpl implements OperationsService {
             CurrentUserService currentUserService,
             StaffAssignmentService staffAssignmentService,
             TierConfigService tierConfigService,
+            NotificationRepository notificationRepository,
             @Value("${autowash.currency}") String currency
     ) {
         this.bookingService = bookingService;
@@ -80,6 +86,7 @@ public class OperationsServiceImpl implements OperationsService {
         this.currentUserService = currentUserService;
         this.staffAssignmentService = staffAssignmentService;
         this.tierConfigService = tierConfigService;
+        this.notificationRepository = notificationRepository;
         this.currency = currency;
     }
 
@@ -191,6 +198,16 @@ public class OperationsServiceImpl implements OperationsService {
         WashSessionLifecycle.validateTransition(session.getStatus(), WashSessionStatus.CHECKED_IN);
         session.checkIn(checkedInAt, booking.getFinalAmount(), currency, projectedPoints);
         bookingService.updateStatus(booking, BookingStatus.CHECKED_IN);
+        
+        notificationRepository.save(Notification.builder()
+                .id(UUID.randomUUID())
+                .user(booking.getCustomer())
+                .title("Xe đang được rửa")
+                .message("Phiên rửa xe của bạn đã bắt đầu (" + session.getBooking().getVehicle().getPlate() + ").")
+                .type(NotificationType.WASH_CHECKED_IN)
+                .read(false)
+                .createdAt(Instant.now())
+                .build());
         return CheckInWashSessionResponse.builder()
                 .sessionId(session.getId())
                 .status(session.getStatus().name())
@@ -226,6 +243,16 @@ public class OperationsServiceImpl implements OperationsService {
                 sessionId
         );
         bookingService.updateStatus(session.getBooking(), BookingStatus.COMPLETED);
+        
+        notificationRepository.save(Notification.builder()
+                .id(UUID.randomUUID())
+                .user(session.getBooking().getCustomer())
+                .title("Rửa xe hoàn tất")
+                .message("Phiên rửa xe của bạn đã hoàn tất. Cảm ơn bạn đã sử dụng dịch vụ!")
+                .type(NotificationType.WASH_COMPLETED)
+                .read(false)
+                .createdAt(Instant.now())
+                .build());
         markCustomerAsNotNew(session.getBooking().getCustomer());
         return CompleteWashSessionResponse.builder()
                 .sessionId(session.getId())
@@ -236,19 +263,44 @@ public class OperationsServiceImpl implements OperationsService {
     }
 
     @Transactional
-    public CancelWashSessionResponse cancelSession(UUID sessionId, String reason) {
+    public CancelWashSessionResponse cancelSession(UUID sessionId, String reason, String faultType) {
         WashSession session = requireSessionForCurrentUser(sessionId);
         WashSessionLifecycle.validateTransition(session.getStatus(), WashSessionStatus.CANCELLED);
         String normalizedReason = normalizeCancelReason(reason);
         Instant cancelledAt = Instant.now();
-        session.cancel(cancelledAt, normalizedReason);
-        bookingService.updateStatus(session.getBooking(), BookingStatus.CONFIRMED);
+
+        WashSessionStatus currentStatus = session.getStatus();
+        boolean alreadyCheckedIn = (currentStatus == WashSessionStatus.CHECKED_IN
+                || currentStatus == WashSessionStatus.IN_PROGRESS);
+
+        CancelFaultType resolvedFault = null;
+        BookingStatus targetBookingStatus;
+
+        if (alreadyCheckedIn) {
+            resolvedFault = parseFaultType(faultType);
+            targetBookingStatus = (resolvedFault == CancelFaultType.CARWASH_FAULT) 
+                    ? BookingStatus.CONFIRMED 
+                    : BookingStatus.CANCELLED;
+        } else {
+            targetBookingStatus = BookingStatus.CONFIRMED;
+        }
+
+        session.cancel(cancelledAt, normalizedReason, resolvedFault);
+
+        Booking booking = session.getBooking();
+        if (targetBookingStatus == BookingStatus.CANCELLED) {
+            booking.cancel(normalizedReason);
+        } else {
+            bookingService.updateStatus(booking, targetBookingStatus);
+        }
+
         return CancelWashSessionResponse.builder()
                 .sessionId(session.getId())
                 .status(session.getStatus().name())
-                .bookingId(session.getBooking().getId().toString())
-                .bookingStatus(session.getBooking().getStatus().name())
+                .bookingId(booking.getId().toString())
+                .bookingStatus(booking.getStatus().name())
                 .reason(session.getCancelReason())
+                .faultType(resolvedFault == null ? null : resolvedFault.name())
                 .cancelledAt(session.getCancelledAt())
                 .build();
     }
@@ -372,6 +424,25 @@ public class OperationsServiceImpl implements OperationsService {
             );
         }
         return normalized;
+    }
+
+    private CancelFaultType parseFaultType(String faultType) {
+        if (faultType == null || faultType.isBlank()) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Fault type is required when cancelling a checked-in or in-progress session",
+                    "BUSINESS_RULE_VIOLATION"
+            );
+        }
+        try {
+            return CancelFaultType.valueOf(faultType.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Invalid fault type. Must be CUSTOMER_FAULT or CARWASH_FAULT",
+                    "BUSINESS_RULE_VIOLATION"
+            );
+        }
     }
 
     private OperationsQueueResponse.QueueColumn column(

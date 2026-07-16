@@ -199,6 +199,14 @@ const ROUTE_META: Array<{
     },
   },
   {
+    match: (pathname) => pathname.startsWith("/admin/blog"),
+    meta: {
+      title: "Content & Feedback",
+      subtitle: "Manage articles, announcements, and customer reviews",
+      workspace: "ADMIN",
+    },
+  },
+  {
     match: (pathname) => pathname.startsWith("/admin/settings"),
     meta: {
       title: "Admin Workspace",

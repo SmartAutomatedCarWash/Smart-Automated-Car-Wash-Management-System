@@ -20,6 +20,8 @@ public record PromotionRequest(
         String name,
         @Size(max = 500) String description,
         @NotNull Double pointMultiplier,
+        com.autowash.entity.enums.DiscountType discountType,
+        Long discountValue,
         @NotNull Instant startDate,
         @NotNull Instant endDate,
         @NotNull PromotionTargetingMode targetingMode,

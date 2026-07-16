@@ -31,6 +31,7 @@ export function useCustomerNotifications() {
     queryKey: notificationsQueryKey(userId),
     queryFn: listCustomerNotifications,
     enabled,
+    refetchInterval: 30_000,
   });
 }
 

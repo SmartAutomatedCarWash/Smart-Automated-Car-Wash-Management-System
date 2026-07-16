@@ -43,11 +43,11 @@ import {
   usePublicTierConfigs,
   usePublicTierVoucherOffers,
 } from "@/features/loyalty/hooks/use-customer-loyalty";
-import { useCustomerVouchers } from "@/features/vouchers/hooks/use-customer-vouchers";
+import { useCustomerVouchers, useClaimCustomerVoucher } from "@/features/vouchers/hooks/use-customer-vouchers";
 import { cn } from "@/shared/lib/utils";
 import type { RedeemPointsResponse, TierVoucherOffer } from "@/entities/loyalty";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
-import { useTierStyle } from "@/shared/lib/tier-styles";
+import { generateTierMetalStyle, generateTierBadgeStyle } from "@/shared/lib/tier-styles";
 
 type VoucherOfferState = TierVoucherOffer & {
   eligible: boolean;
@@ -63,9 +63,9 @@ export function CustomerLoyaltyPageContent() {
   const tiersQuery = usePublicTierConfigs();
   const offersQuery = usePublicTierVoucherOffers();
   const transactionsQuery = useCustomerLoyaltyTransactions(1, 50);
-  const redeemMutation = useCustomerRedeemPoints();
+  const redeemMutation = useClaimCustomerVoucher();
   const [selectedOffer, setSelectedOffer] = useState<VoucherOfferState | null>(null);
-  const [successVoucher, setSuccessVoucher] = useState<RedeemPointsResponse | null>(null);
+  const [isSuccessVoucher, setIsSuccessVoucher] = useState(false);
 
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [activeTab, setActiveTab] = useState<"exchange" | "my-vouchers" | "history">("exchange");
@@ -85,22 +85,18 @@ export function CustomerLoyaltyPageContent() {
   );
 
   const locale = language === "vi" ? "vi-VN" : "en-US";
-  const tierStyle = useTierStyle(summary?.tier);
 
   const handleRedeem = () => {
     if (!selectedOffer || !summary) {
       return;
     }
 
-    setSuccessVoucher(null);
+    setIsSuccessVoucher(false);
     redeemMutation.mutate(
+      selectedOffer.id,
       {
-        pointsToRedeem: selectedOffer.pointsCost,
-        referenceId: selectedOffer.id,
-      },
-      {
-        onSuccess: (response) => {
-          setSuccessVoucher(response);
+        onSuccess: () => {
+          setIsSuccessVoucher(true);
           setSelectedOffer(null);
         },
       },
@@ -133,9 +129,17 @@ export function CustomerLoyaltyPageContent() {
   if (!summary) {
     return null;
   }
+  const fallbackHex: Record<string, string> = {
+    BRONZE: "#B07D4B",
+    SILVER: "#94A3B8",
+    GOLD: "#EAB308",
+    PLATINUM: "#64748B",
+    DIAMOND: "#A855F7",
+  };
+  const currentHex = currentTierConfig?.imageUrl || fallbackHex[summary.tier] || undefined;
+  const tierMetal = generateTierMetalStyle(currentHex);
 
   const currentTierIndex = TIER_ORDER.indexOf(summary.tier);
-  const tierMetal = tierStyle.metal;
   const selectedRemainingPoints = selectedOffer
     ? Math.max(summary.availablePoints - selectedOffer.pointsCost, 0)
     : summary.availablePoints;
@@ -220,7 +224,7 @@ export function CustomerLoyaltyPageContent() {
                 </div>
                 <div className="rounded-full border bg-white/58 px-3 py-1 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur" style={{ borderColor: tierMetal.border, color: tierMetal.text }}>
                   {summary.progress.nextTier
-                    ? `${formatTierLabel(summary.progress.nextTier)} ${translate(language, "tiếp theo", "next")}`
+                    ? `${formatTierLabel(summary.progress.nextTier, tiersQuery.data)} ${translate(language, "tiếp theo", "next")}`
                     : translate(language, "Hạng tối đa", "Max tier")}
                 </div>
               </div>
@@ -243,28 +247,11 @@ export function CustomerLoyaltyPageContent() {
           </div>
         </section>
 
-        {successVoucher ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5 text-emerald-900 shadow-sm animate-in fade-in zoom-in duration-500 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/confetti.png')] opacity-20 animate-[pulse_3s_ease-in-out_infinite]" />
-            <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-emerald-700">
-                  <CheckCircle2 className="h-4 w-4" />
-                  {translate(language, "Đổi điểm thành công", "Redemption successful")}
-                </div>
-                <div className="mt-2 text-2xl font-black tracking-tight">{successVoucher.voucherCode}</div>
-                <p className="mt-1 text-sm text-emerald-800">
-                  {translate(language, "Voucher của bạn sẵn sàng sử dụng cho lần đặt tiếp theo.", "Your voucher is ready to use on a future booking.")}
-                </p>
-              </div>
-              <Badge className="w-fit border-emerald-200 bg-white text-emerald-700" variant="outline">
-                {successVoucher.status}
-              </Badge>
-            </div>
-            <div className="relative z-10 mt-4 grid gap-3 sm:grid-cols-3">
-              <SuccessVoucherMetric label={translate(language, "Điểm đã đổi", "Points redeemed")} value={`${successVoucher.pointsRedeemed.toLocaleString(locale)} pts`} />
-              <SuccessVoucherMetric label={translate(language, "Giá trị voucher", "Voucher value")} value={`${successVoucher.voucherValue.toLocaleString(locale)} VND`} />
-              <SuccessVoucherMetric label={translate(language, "Hết hạn", "Expires")} value={new Date(successVoucher.expiresAt).toLocaleDateString(locale)} />
+        {isSuccessVoucher ? (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5 text-emerald-900 shadow-sm animate-in fade-in zoom-in duration-500 flex items-center justify-center">
+            <div className="flex items-center gap-2 text-base font-bold uppercase tracking-[0.14em] text-emerald-700">
+              <CheckCircle2 className="h-5 w-5" />
+              {translate(language, "Đổi voucher thành công", "Redemption successful")}
             </div>
           </div>
         ) : null}
@@ -303,17 +290,16 @@ export function CustomerLoyaltyPageContent() {
                   <Button variant={exchangeFilter === "available" ? "default" : "outline"} onClick={() => setExchangeFilter("available")} className={cn("rounded-full border-slate-200 transition-all font-semibold", exchangeFilter === "available" ? "bg-[#007A78] text-white hover:bg-[#00605E] border-transparent shadow-md" : "bg-white text-slate-600 hover:bg-slate-50")}>
                     {translate(language, "Khả dụng", "Available")}
                   </Button>
-                  <Button variant={exchangeFilter === "exclusive" ? "default" : "outline"} onClick={() => setExchangeFilter("exclusive")} className={cn("rounded-full border-slate-200 transition-all font-semibold", exchangeFilter === "exclusive" ? "bg-[#007A78] text-white hover:bg-[#00605E] border-transparent shadow-md" : "bg-white text-slate-600 hover:bg-slate-50")}>
-                    {translate(language, "Độc quyền theo hạng", "Exclusive to your tier")}
-                  </Button>
+
                 </div>
 
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                   {summary.voucherOffers
                     .filter(offer => {
+                      if (!offer.eligible) return false;
                       if (exchangeFilter === "all") return true;
-                      if (exchangeFilter === "available") return offer.eligible && offer.affordable;
-                      if (exchangeFilter === "exclusive") return offer.minTier === summary.tier;
+                      if (exchangeFilter === "available") return offer.affordable;
+
                       return true;
                     })
                     .map((offer) => (
@@ -325,6 +311,7 @@ export function CustomerLoyaltyPageContent() {
                         availablePoints={summary.availablePoints}
                         isPending={redeemMutation.isPending}
                         onSelect={setSelectedOffer}
+                        tierConfigs={tiersQuery.data}
                       />
                   ))}
                 </div>
@@ -412,6 +399,7 @@ function ExchangeVoucherCard({
   availablePoints,
   isPending,
   onSelect,
+  tierConfigs,
 }: {
   offer: VoucherOfferState;
   locale: string;
@@ -419,59 +407,34 @@ function ExchangeVoucherCard({
   availablePoints: number;
   isPending: boolean;
   onSelect: (offer: VoucherOfferState) => void;
+  tierConfigs?: any[]; // using any for simplicity, or TierConfig
 }) {
   const disabled = !offer.eligible || !offer.affordable || isPending;
 
-  const tierStyles: Record<string, { bg: string; border: string; glow: string; text: string; badgeText: string }> = {
-    BRONZE: {
-      bg: "bg-[#FCF9F6]",
-      border: "border-[#D4A373]/30",
-      glow: "shadow-sm",
-      text: "text-[#B07D4B]",
-      badgeText: "text-[#8C5D30]",
-    },
-    SILVER: {
-      bg: "bg-gradient-to-br from-slate-50 to-slate-200",
-      border: "border-slate-300",
-      glow: "shadow-md",
-      text: "text-slate-600",
-      badgeText: "text-slate-700",
-    },
-    GOLD: {
-      bg: "bg-gradient-to-br from-[#FDFBF1] to-[#F3E7C3]",
-      border: "border-[#E8D190]",
-      glow: "shadow-lg shadow-amber-200/40",
-      text: "text-[#B8860B]",
-      badgeText: "text-[#996515]",
-    },
-    PLATINUM: {
-      bg: "bg-gradient-to-br from-slate-50 to-pink-50",
-      border: "border-slate-200",
-      glow: "shadow-xl shadow-slate-300/40",
-      text: "text-slate-700",
-      badgeText: "text-slate-800",
-    },
-    DIAMOND: {
-      bg: "bg-[linear-gradient(135deg,#e0f2fe_0%,#e8dbfa_50%,#fce7f3_100%)] relative overflow-hidden",
-      border: "border-transparent",
-      glow: "shadow-2xl shadow-purple-200/50",
-      text: "text-purple-700",
-      badgeText: "text-purple-800",
-    },
+  const tierConfig = tierConfigs?.find((c) => c.tier === offer.minTier);
+  const fallbackHex: Record<string, string> = {
+    BRONZE: "#B07D4B",
+    SILVER: "#94A3B8",
+    GOLD: "#EAB308",
+    PLATINUM: "#64748B",
+    DIAMOND: "#A855F7",
   };
-
-  const style = tierStyles[offer.minTier] || tierStyles["BRONZE"];
+  const hexCode = tierConfig?.imageUrl || fallbackHex[offer.minTier] || undefined;
+  const metal = generateTierMetalStyle(hexCode);
+  const badge = generateTierBadgeStyle(hexCode);
 
   return (
     <div
       className={cn(
         "group flex min-h-[230px] flex-col rounded-2xl border p-5 transition-all duration-300 ease-out relative",
-        style.bg,
-        style.border,
         offer.eligible 
-          ? "hover:-translate-y-1 hover:scale-[1.02] " + style.glow 
+          ? "hover:-translate-y-1 hover:scale-[1.02] shadow-sm" 
           : "opacity-[0.85] grayscale-[20%]"
       )}
+      style={{
+        background: metal.surface,
+        borderColor: metal.border,
+      }}
     >
       {!offer.eligible && (
         <div className="absolute inset-0 z-0 bg-white/20 backdrop-blur-[2px] rounded-2xl pointer-events-none" />
@@ -485,15 +448,15 @@ function ExchangeVoucherCard({
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/80 shadow-sm backdrop-blur-sm text-slate-700">
           <TicketPercent className="h-5 w-5" />
         </div>
-        <Badge variant="outline" className={cn("border-white/40 bg-white/60 px-3 py-1 font-bold backdrop-blur-md", style.badgeText)}>
-          {formatTierLabel(offer.minTier)}
+        <Badge variant="outline" className="border-white/40 bg-white/60 px-3 py-1 font-bold backdrop-blur-md" style={{ color: metal.text }}>
+          {formatTierLabel(offer.minTier, tierConfigs)}
         </Badge>
       </div>
 
       <div className="relative z-10 mt-5 flex-1">
         <h3 className="text-[17px] font-black text-slate-900 leading-tight">{offer.title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-700">
-          {offer.voucherValue.toLocaleString(locale)} VND voucher {translate(language, "cho thành viên", "for")} <span className={cn("font-bold", style.text)}>{formatTierLabel(offer.minTier)}</span> {translate(language, "trở lên", "and above")}.
+          {offer.voucherValue.toLocaleString(locale)} VND voucher {translate(language, "cho thành viên", "for")} <span className="font-bold" style={{ color: metal.text }}>{formatTierLabel(offer.minTier, tierConfigs)}</span> {translate(language, "trở lên", "and above")}.
         </p>
       </div>
 
@@ -546,15 +509,6 @@ function MetricTile({
           <div className="text-lg font-black text-slate-950">{value}</div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function SuccessVoucherMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-emerald-200 bg-white px-3 py-2">
-      <div className="text-xs font-semibold uppercase text-emerald-700">{label}</div>
-      <div className="mt-1 text-sm font-black text-slate-950">{value}</div>
     </div>
   );
 }
