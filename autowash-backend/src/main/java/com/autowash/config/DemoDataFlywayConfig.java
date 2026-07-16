@@ -12,7 +12,7 @@ import jakarta.annotation.PostConstruct;
 
 @Configuration
 @DependsOn("flywayInitializer")
-@Profile("!test")
+@Profile("!test & !local")
 public class DemoDataFlywayConfig {
 
     @Autowired
