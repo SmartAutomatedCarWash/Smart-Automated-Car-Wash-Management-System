@@ -12,6 +12,9 @@ import {
   RefreshCcw,
   Ticket,
   X,
+  Phone,
+  MessageSquare,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
@@ -43,6 +46,7 @@ import {
   getVoucherCodeFormatError,
   sanitizeVoucherCodeInput,
 } from "@/shared/lib/validators";
+import { cn } from "@/shared/lib/utils";
 import {
   useActiveCustomerCombos,
   useBookingAddons,
@@ -419,26 +423,6 @@ function AmPmTimePicker({
   /** Selected booking date "YYYY-MM-DD" — used to filter past slots when today */
   bookingDate?: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [ampm, setAmpm] = useState<"AM" | "PM">(() => {
-    if (!value) return "AM";
-    const [h] = value.split(":").map(Number);
-    return h >= 12 ? "PM" : "AM";
-  });
-
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return;
-    function handleOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [open]);
-
   const availableSet = useMemo(() => new Set(timeSlots), [timeSlots]);
 
   // When booking date is today, hide time slots that have already passed
@@ -453,18 +437,13 @@ function AmPmTimePicker({
     });
   }, [timeSlots, bookingDate]);
 
-  // All slots for current AM/PM period
-  const periodSlots = useMemo(() => {
-    return visibleSlots
-      .filter((t) => {
-        const h = Number(t.split(":")[0]);
-        return ampm === "AM" ? h < 12 : h >= 12;
-      })
-      .map((t) => {
-        const { time: label } = to12hLabel(t);
-        return { slot24: t, label };
-      });
-  }, [visibleSlots, ampm]);
+  const groupedSlots = useMemo(() => {
+    const mapSlot = (slot24: string) => ({ slot24, label: to12hLabel(slot24).time });
+    return {
+      AM: visibleSlots.filter((t) => Number(t.split(":")[0]) < 12).map(mapSlot),
+      PM: visibleSlots.filter((t) => Number(t.split(":")[0]) >= 12).map(mapSlot),
+    };
+  }, [visibleSlots]);
 
   // If the currently selected time has become past (today), clear it
   useEffect(() => {
@@ -476,32 +455,19 @@ function AmPmTimePicker({
   function selectSlot(slot24: string) {
     if (availableSet.has(slot24)) {
       onChange(slot24);
-      setOpen(false);
     }
-  }
-
-  function toggleAmpm(ap: "AM" | "PM") {
-    setAmpm(ap);
-    onChange("");
   }
 
   const startLabel = value ? to12hLabel(value) : null;
   const endLabel = endTime ? to12hLabel(endTime) : null;
+  const availableCount = visibleSlots.filter((slot) => availableSet.has(slot)).length;
 
   return (
-    <div ref={containerRef} className="relative space-y-0">
+    <div className="relative space-y-3">
       {/* ── Two trigger buttons row ── */}
       <div className="grid grid-cols-2 gap-3">
         {/* Start with — active/clickable */}
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all ${
-            open
-              ? "border-primary bg-primary/5 shadow-sm"
-              : "border-border bg-background hover:border-primary/50"
-          }`}
-        >
+        <div className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-left shadow-sm">
           <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground leading-none mb-0.5">
@@ -511,8 +477,7 @@ function AmPmTimePicker({
               {startLabel ? `${startLabel.time} ${startLabel.period}` : "Select time"}
             </p>
           </div>
-          <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
-        </button>
+        </div>
 
         {/* End with — read-only, auto-calculated */}
         <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/30 px-4 py-3 cursor-default">
@@ -529,57 +494,59 @@ function AmPmTimePicker({
         </div>
       </div>
 
-      {/* ── Dropdown — floats above other content via absolute positioning ── */}
-      {open && (
-        <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-full rounded-2xl border border-border bg-background shadow-xl overflow-hidden">
-          {/* AM/PM toggle inside dropdown header */}
-          <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-            <span className="text-xs font-semibold text-muted-foreground">Select start time</span>
-            <div className="flex rounded-lg border border-border bg-muted/40 p-0.5 gap-0.5">
-              {(["AM", "PM"] as const).map((ap) => (
-                <button
-                  key={ap}
-                  type="button"
-                  onClick={() => toggleAmpm(ap)}
-                  className={`rounded-md px-3 py-1 text-xs font-bold transition-all ${
-                    ampm === ap
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {ap}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Scrollable time list */}
-          <div className="max-h-52 overflow-y-auto">
-            {periodSlots.length === 0 ? (
-              <p className="py-4 text-center text-xs text-muted-foreground">No time slots available</p>
-            ) : (
-              periodSlots.map(({ slot24, label }) => {
-                const active = value === slot24;
-                return (
-                  <button
-                    key={slot24}
-                    type="button"
-                    onClick={() => selectSlot(slot24)}
-                    className={`flex w-full items-center justify-between px-5 py-2.5 text-sm transition-colors ${
-                      active
-                        ? "bg-primary/8 font-bold text-primary"
-                        : "text-foreground hover:bg-muted/50"
-                    }`}
-                  >
-                    <span className="tabular-nums font-semibold">{label}</span>
-                    {active && <span className="h-2 w-2 rounded-full bg-primary" />}
-                  </button>
-                );
-              })
-            )}
-          </div>
+      <div className="rounded-3xl border border-border bg-card/70 p-3 shadow-sm">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">Available slots</p>
+          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">
+            {availableCount} open
+          </span>
         </div>
-      )}
+        <div className="grid gap-3 sm:grid-cols-2">
+          {(["AM", "PM"] as const).map((period) => (
+            <div key={period} className="rounded-2xl border border-border/80 bg-background/70 p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-black text-foreground">{period === "AM" ? "Morning" : "Afternoon"}</p>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{period}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {groupedSlots[period].length === 0 ? (
+                  <p className="col-span-2 rounded-xl border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+                    No slots
+                  </p>
+                ) : (
+                  groupedSlots[period].map(({ slot24, label }) => {
+                    const active = value === slot24;
+                    const available = availableSet.has(slot24);
+                    return (
+                      <button
+                        key={slot24}
+                        type="button"
+                        disabled={!available}
+                        onClick={() => selectSlot(slot24)}
+                        className={cn(
+                          "rounded-xl border px-3 py-2 text-sm font-black tabular-nums transition duration-200",
+                          active
+                            ? "border-primary bg-primary text-primary-foreground shadow-[0_10px_24px_rgba(0,184,217,0.22)]"
+                            : available
+                              ? "border-border bg-card text-foreground hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5"
+                              : "cursor-not-allowed border-border bg-muted/40 text-muted-foreground/45 line-through",
+                        )}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        {value && endLabel ? (
+          <div className="mt-3 rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-3 text-sm font-bold text-foreground">
+            Estimated completion: {endLabel.time} {endLabel.period}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -690,6 +657,81 @@ function VoucherSection({
   );
 }
 
+function TimeSlotGrid({
+  timeSlots,
+  value,
+  onChange,
+  bookingDate,
+  durationMinutes = 45,
+}: {
+  timeSlots: string[];
+  value: string;
+  onChange: (time: string) => void;
+  bookingDate?: string;
+  durationMinutes?: number;
+}) {
+  const visibleSlotsMap = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    return timeSlots.map((t, idx) => {
+      const [h, m] = t.split(":").map(Number);
+      const isPast = bookingDate === today && (h * 60 + m <= nowMinutes);
+      const endTimeStr = addMinutesToTime(t, durationMinutes);
+      
+      return {
+        id: idx + 1,
+        timeStart: t,
+        timeEnd: endTimeStr,
+        isAvailable: !isPast,
+      };
+    });
+  }, [timeSlots, bookingDate, durationMinutes]);
+
+  return (
+    <div className="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+      {visibleSlotsMap.map((slot) => {
+        const active = value === slot.timeStart;
+        return (
+          <button
+            key={slot.timeStart}
+            type="button"
+            disabled={!slot.isAvailable}
+            onClick={() => onChange(slot.timeStart)}
+            className={cn(
+              "flex flex-col items-center justify-center rounded-2xl border p-3 text-center transition-all duration-200",
+              !slot.isAvailable
+                ? "border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900 cursor-not-allowed opacity-50"
+                : active
+                  ? "border-[#00B8D9] bg-[#EAF6FD] dark:bg-slate-900/60 shadow-[0_0_12px_rgba(0,184,217,0.18)]"
+                  : "border-border bg-card hover:border-primary/50"
+            )}
+          >
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Lượt {slot.id}
+            </div>
+            <div className="mt-1 text-xs font-bold text-foreground tabular-nums">
+              {slot.timeStart} - {slot.timeEnd}
+            </div>
+            <div className="mt-2">
+              {slot.isAvailable ? (
+                <span className="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
+                  Còn trống
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full border border-rose-500/20 bg-rose-500/10 px-2 py-0.5 text-[9px] font-bold text-rose-600 dark:text-rose-400">
+                  Không khả dụng
+                </span>
+              )}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export function CustomerBookingForm() {
@@ -702,6 +744,30 @@ export function CustomerBookingForm() {
   const queryServiceIds = searchParams.get("serviceIds");
   const queryType = searchParams.get("type");
   const queryId = searchParams.get("id");
+
+  const [activeScrollStep, setActiveScrollStep] = useState(1);
+  useEffect(() => {
+    const handleScroll = () => {
+      const steps = [1, 2, 3, 4, 5, 6, 7];
+      let currentActive = 1;
+      let minDistance = Infinity;
+      steps.forEach((s) => {
+        const el = document.getElementById(`step-${s}`);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          const distance = Math.abs(rect.top - 140);
+          if (distance < minDistance) {
+            minDistance = distance;
+            currentActive = s;
+          }
+        }
+      });
+      setActiveScrollStep(currentActive);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const hasAutoSelectedComboRef = useRef(false);
   const draft = useBookingStore((state) => state.draft);
@@ -993,8 +1059,40 @@ export function CustomerBookingForm() {
     );
   }
 
+  const completedStepsCount = useMemo(() => {
+    let count = 0;
+    if (draft.vehicleId) count++; // step 1
+    if (draft.mode) count++; // step 2
+    if (draft.mode === "PACKAGE" ? draft.packageId : draft.comboId) count++; // step 3
+    count++; // Step 4 (Add-ons optional)
+    if (draft.bookingDate && draft.bookingTime) count++; // step 5
+    count++; // Step 6 (Voucher optional)
+    if (Object.keys(errors).length === 0) count++; // step 7
+    return count;
+  }, [draft, errors]);
+
+  const progressPercent = Math.round((completedStepsCount / 7) * 100);
+
+  const stepMeta = [
+    { step: 1, label: "Phương tiện" },
+    { step: 2, label: "Loại dịch vụ" },
+    { step: 3, label: draft.mode === "PACKAGE" ? "Chọn gói" : "Chọn combo" },
+    { step: 4, label: "Dịch vụ thêm" },
+    { step: 5, label: "Lịch hẹn" },
+    { step: 6, label: "Khuyến mãi" },
+    { step: 7, label: "Hỗ trợ" },
+  ];
+
   return (
     <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-background px-4 py-6 sm:px-6 lg:px-8">
+      {/* Sticky horizontal progress bar */}
+      <div className="sticky top-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 mb-6 h-1.5 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)] lg:w-[calc(100%+4rem)] bg-border/20 backdrop-blur-md">
+        <div
+          className="h-full bg-gradient-to-r from-cyan-400 to-[#00B8D9] transition-all duration-500 ease-out"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/8 via-background to-background" />
 
       <AddVehicleModal
@@ -1006,8 +1104,57 @@ export function CustomerBookingForm() {
         }}
       />
 
-      <div className="relative mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.6fr,1fr]">
-        <div className="space-y-4">
+      <div className="relative mx-auto grid max-w-7xl gap-6 lg:grid-cols-[200px_1.6fr_1fr]">
+        
+        {/* Left Vertical Stepper Bubble Menu */}
+        <div className="hidden lg:block sticky top-24 self-start">
+          <div className="flex flex-col gap-4 border-l border-border pl-4">
+            {stepMeta.map((s) => {
+              const isActive = activeScrollStep === s.step;
+              const isCompleted = s.step < completedStepsCount || (s.step === 7 && Object.keys(errors).length === 0);
+              return (
+                <button
+                  key={s.step}
+                  type="button"
+                  onClick={() => {
+                    document.getElementById(`step-${s.step}`)?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="group flex items-center gap-3 text-left transition-all duration-300"
+                >
+                  <div
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-full border text-xs font-black transition-all duration-300",
+                      isActive
+                        ? "border-[#00B8D9] bg-[#EAF6FD] text-[#00B8D9] dark:bg-slate-900/60 shadow-[0_0_12px_rgba(0,184,217,0.22)]"
+                        : isCompleted
+                          ? "border-emerald-500 bg-emerald-500 text-white"
+                          : "border-border bg-card text-muted-foreground group-hover:border-primary"
+                    )}
+                  >
+                    {isCompleted && s.step < 7 ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : (
+                      s.step
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      "text-xs font-bold transition-all duration-300",
+                      isActive
+                        ? "text-[#00B8D9] scale-105"
+                        : "text-muted-foreground group-hover:text-foreground"
+                    )}
+                  >
+                    {s.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Steps List */}
+        <div className="space-y-6">
 
           {/* Step 1 — Vehicle */}
           <StepCard step={1} title="Your vehicle">
@@ -1150,10 +1297,8 @@ export function CustomerBookingForm() {
           </StepCard>
 
           {/* Step 5 — Schedule */}
-          <div className="relative z-10">
           <StepCard step={5} title="Schedule">
-            <div className="grid gap-3 sm:grid-cols-[200px,1fr]">
-              {/* Date picker */}
+            <div className="space-y-4">
               <div>
                 <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Select a day
@@ -1163,33 +1308,30 @@ export function CustomerBookingForm() {
                   min={getTomorrowDate()}
                   value={draft.bookingDate}
                   onChange={(e) => updateDraft({ bookingDate: e.target.value })}
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="rounded-xl border border-input bg-background px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
                 <FieldError message={showValidation ? errors.bookingDate : null} />
               </div>
-              {/* Time picker with End time */}
+
               <div>
                 <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Time
+                  Khung giờ khả dụng (Lượt)
                 </label>
-                <AmPmTimePicker
+                <TimeSlotGrid
                   timeSlots={timeSlots}
                   value={draft.bookingTime}
                   onChange={(time) => updateDraft({ bookingTime: time })}
                   bookingDate={draft.bookingDate}
-                  endTime={(() => {
-                    if (!draft.bookingTime || !summary) return null;
-                    // extract numeric minutes from estimatedDurationLabel e.g. "60 min"
+                  durationMinutes={(() => {
+                    if (!summary) return 45;
                     const match = summary.estimatedDurationLabel.match(/^(\d+)\s*min/);
-                    if (!match) return null;
-                    return addMinutesToTime(draft.bookingTime, Number(match[1]));
+                    return match ? Number(match[1]) : 45;
                   })()}
                 />
                 <FieldError message={showValidation ? errors.bookingTime : null} />
               </div>
             </div>
           </StepCard>
-          </div>
 
           {/* Step 6 — Voucher */}
           <StepCard step={6} title="Voucher">
@@ -1205,39 +1347,11 @@ export function CustomerBookingForm() {
             />
           </StepCard>
 
-          {/* Step 7 — Continue */}
-          <StepCard step={7} title="Confirm & Pay">
-            {holdError && (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700">
-                {getDisplayErrorMessage(holdError)}
-              </div>
-            )}
-            {/* Mini summary line */}
-            {summary && draft.bookingDate && draft.bookingTime && (
-              <p className="text-xs text-muted-foreground">
-                {getModeLabel(summary.itemType)}: {summary.itemName} · {draft.bookingDate} {draft.bookingTime}
-                {draft.addonIds.length > 0 ? ` · ${draft.addonIds.length} add-on${draft.addonIds.length > 1 ? "s" : ""}` : ""}
-              </p>
-            )}
-            {/* Total */}
-            {summary && (
-              <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Total</span>
-                  <span className="text-lg font-bold text-primary">{formatBookingCurrency(summary.finalAmount)}</span>
-                </div>
-                {validatedVoucher && (
-                  <p className="mt-0.5 text-xs text-emerald-600">Voucher applied: -{formatBookingCurrency(validatedVoucher.discountAmount)}</p>
-                )}
-              </div>
-            )}
-            <BookingButton
-              onClick={() => void handleSubmit()}
-              isLoading={isHolding}
-              errors={errors}
-              showValidation={showValidation}
-              summary={summary}
-            />
+          {/* Step 7 — Support Info */}
+          <StepCard step={7} title="Xác nhận & Hỗ trợ">
+            <p className="text-sm font-medium text-muted-foreground leading-6">
+              Chúng tôi hiện hỗ trợ đặt lịch trực tiếp qua hotline. Vui lòng nhấn nút **Liên hệ hỗ trợ: 1900 5566** ở bảng tóm tắt bên phải để được điều phối kỹ thuật viên tức thì.
+            </p>
           </StepCard>
         </div>
 
@@ -1270,6 +1384,14 @@ export function CustomerBookingForm() {
                   <div className="border-t border-border pt-3">
                     <SummaryItem label="Total" value={formatBookingCurrency(summary.finalAmount)} emphasize />
                   </div>
+
+                  <a
+                    href="tel:19005566"
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-500 py-3 text-sm font-black text-white shadow-lg transition-transform duration-300 hover:scale-[1.02] hover:bg-cyan-600 active:scale-[0.98]"
+                  >
+                    <Phone className="h-4 w-4" />
+                    Liên hệ hỗ trợ: 1900 5566
+                  </a>
                 </>
               ) : (
                 <div className="rounded-xl border border-dashed border-border bg-muted/40 p-5 text-center">
@@ -1280,6 +1402,15 @@ export function CustomerBookingForm() {
           </Card>
         </div>
       </div>
+
+      {/* Floating Chatbot support bubble */}
+      <a
+        href="tel:19005566"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-cyan-500 text-white shadow-xl transition-all duration-300 hover:scale-110 hover:bg-cyan-600 hover:shadow-cyan-500/20"
+      >
+        <MessageSquare className="h-6 w-6" />
+        <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white">1</span>
+      </a>
     </div>
   );
 }
@@ -1296,17 +1427,19 @@ function StepCard({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="border-slate-200/80 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900 overflow-visible">
-      <CardHeader className="pb-2 pt-4">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-black text-primary-foreground">
-            {step}
-          </span>
-          <CardTitle className="text-sm font-bold text-foreground">{title}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3 pb-4 pt-1 overflow-visible">{children}</CardContent>
-    </Card>
+    <div id={`step-${step}`} className="scroll-mt-24">
+      <Card className="border-slate-200/80 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900 overflow-visible transition-all duration-300">
+        <CardHeader className="pb-2 pt-4">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-black text-primary-foreground">
+              {step}
+            </span>
+            <CardTitle className="text-sm font-bold text-foreground">{title}</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3 pb-4 pt-1 overflow-visible">{children}</CardContent>
+      </Card>
+    </div>
   );
 }
 
