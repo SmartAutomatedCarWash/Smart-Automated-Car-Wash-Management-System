@@ -10,6 +10,8 @@ public record CustomerPromotionResponse(
         String promotionType,
         List<String> targetTiers,
         Double pointMultiplier,
+        String discountType,
+        Long discountValue,
         long minAmount,
         boolean newCustomerOnly,
         Instant expiresAt

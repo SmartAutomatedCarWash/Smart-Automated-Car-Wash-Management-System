@@ -20,4 +20,10 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     Page<Review> findAllFiltered(@Param("rating") Integer rating, Pageable pageable);
 
     long countByFeaturedTrue();
+
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.booking.packageId = :packageId")
+    Double getAverageRatingByPackageId(@Param("packageId") UUID packageId);
+
+    @Query("SELECT COUNT(r) FROM Review r WHERE r.booking.packageId = :packageId")
+    Long getReviewCountByPackageId(@Param("packageId") UUID packageId);
 }

@@ -16,6 +16,8 @@ public interface PromotionRepository extends JpaRepository<Promotion, UUID> {
 
     Page<Promotion> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
+    java.util.Optional<Promotion> findByName(String name);
+
     long countByStatus(ActiveStatus status);
 
     @Query("""

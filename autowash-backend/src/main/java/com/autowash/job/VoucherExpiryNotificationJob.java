@@ -4,6 +4,7 @@ import com.autowash.entity.Notification;
 import com.autowash.entity.User;
 import com.autowash.entity.UserVoucher;
 import com.autowash.entity.VoucherTemplate;
+import com.autowash.entity.enums.NotificationType;
 import com.autowash.entity.enums.UserVoucherStatus;
 import com.autowash.repository.NotificationRepository;
 import com.autowash.repository.UserVoucherRepository;
@@ -53,7 +54,7 @@ public class VoucherExpiryNotificationJob {
                 .user(user)
                 .title("Voucher sắp hết hạn!")
                 .message("Voucher " + voucher.getCode() + " (" + voucher.getName() + ") của bạn sẽ hết hạn vào " + voucher.getEndAt() + ". Hãy sử dụng ngay!")
-                .type("VOUCHER_EXPIRY")
+                .type(NotificationType.VOUCHER_EXPIRY)
                 .read(false)
                 .createdAt(Instant.now())
                 .build();

@@ -1,6 +1,7 @@
 package com.autowash.entity;
 
 import com.autowash.entity.enums.ActiveStatus;
+import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.enums.PromotionTargetingMode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,6 +36,13 @@ public class Promotion {
     private BigDecimal pointMultiplier;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "discount_type")
+    private DiscountType discountType;
+
+    @Column(name = "discount_value")
+    private Long discountValue;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "targeting_mode", nullable = false)
     private PromotionTargetingMode targetingMode;
 
@@ -54,14 +62,20 @@ public class Promotion {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public Promotion(String name, String description, BigDecimal pointMultiplier, Instant startAt, Instant endAt, PromotionTargetingMode targetingMode, ActiveStatus status) {
+    public Promotion(String name, String description, BigDecimal pointMultiplier, DiscountType discountType, Long discountValue, Instant startAt, Instant endAt, PromotionTargetingMode targetingMode, ActiveStatus status) {
         this.name = name;
         this.description = description;
         this.pointMultiplier = pointMultiplier;
+        this.discountType = discountType != null ? discountType : DiscountType.NONE;
+        this.discountValue = discountValue != null ? discountValue : 0L;
         this.startAt = startAt;
         this.endAt = endAt;
         this.targetingMode = targetingMode;
         this.status = status;
+    }
+
+    public Promotion(String name, String description, BigDecimal pointMultiplier, Instant startAt, Instant endAt, PromotionTargetingMode targetingMode, ActiveStatus status) {
+        this(name, description, pointMultiplier, DiscountType.NONE, 0L, startAt, endAt, targetingMode, status);
     }
 
     @PrePersist
@@ -79,10 +93,12 @@ public class Promotion {
         updatedAt = Instant.now();
     }
 
-    public void update(String name, String description, BigDecimal pointMultiplier, Instant startAt, Instant endAt, PromotionTargetingMode targetingMode, ActiveStatus status) {
+    public void update(String name, String description, BigDecimal pointMultiplier, DiscountType discountType, Long discountValue, Instant startAt, Instant endAt, PromotionTargetingMode targetingMode, ActiveStatus status) {
         this.name = name;
         this.description = description;
         this.pointMultiplier = pointMultiplier;
+        this.discountType = discountType != null ? discountType : DiscountType.NONE;
+        this.discountValue = discountValue != null ? discountValue : 0L;
         this.startAt = startAt;
         this.endAt = endAt;
         this.targetingMode = targetingMode;

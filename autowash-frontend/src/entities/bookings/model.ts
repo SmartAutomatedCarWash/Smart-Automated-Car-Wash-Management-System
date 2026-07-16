@@ -35,6 +35,8 @@ export type BookingPackage = {
   imageUrls?: string[] | null;
   status: string;
   popularity: string | null;
+  averageRating?: number;
+  reviewCount?: number;
 };
 
 export type BookingAddon = {
@@ -90,6 +92,7 @@ export type VoucherValidationResult = {
   discountAmount: number;
   finalAmount: number;
   expiresAt: string;
+  isPromotion?: boolean;
 };
 
 export type CreateBookingRequest = {
@@ -132,6 +135,7 @@ export type CreateBookingResponse = {
   addonsTotal?: number;
   optionsTotal?: number;
   voucherDiscount: number;
+  promotionDiscount: number;
   finalAmount: number;
   bookingDate: string;
   bookingTime: string;
@@ -181,6 +185,7 @@ export type BookingDetail = {
     subtotal: number;
     voucherCode: string | null;
     voucherDiscount: number;
+    promotionDiscount: number;
     pointsRedeemed: number;
     pointsDiscount: number;
     finalAmount: number;
@@ -310,6 +315,7 @@ export type BookingSummary = {
   addonsTotal: number;
   subtotal: number;
   discountAmount: number;
+  promotionDiscountAmount: number;
   finalAmount: number;
   estimatedDurationLabel: string;
   selectedAddons: BookingAddon[];

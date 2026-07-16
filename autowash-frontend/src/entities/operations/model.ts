@@ -79,6 +79,10 @@ export type EligibleSessionBooking = {
   bookingTime: string;
   finalAmount: number;
   estimatedDurationMinutes: number;
+  assignedStaffId: string | null;
+  assignedStaffName: string | null;
+  customerTier: string | null;
+  customerPriorityScore: number;
 };
 
 export type CreateWashSessionResponse = {
@@ -128,5 +132,17 @@ export type TransferWashSessionResponse = {
   toStaffName: string;
   reason: string | null;
   transferredAt: string;
+};
+
+export type CancelFaultType = "CUSTOMER_FAULT" | "CARWASH_FAULT";
+
+export type CancelWashSessionResponse = {
+  sessionId: string;
+  status: WashSessionStatus;
+  bookingId: string;
+  bookingStatus: string;
+  reason: string;
+  faultType: CancelFaultType | null;
+  cancelledAt: string;
 };
 

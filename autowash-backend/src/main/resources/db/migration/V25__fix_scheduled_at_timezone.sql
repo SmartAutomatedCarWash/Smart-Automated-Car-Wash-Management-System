@@ -5,7 +5,7 @@
 -- DATEADD is H2-compatible; PostgreSQL also accepts it in MODE=PostgreSQL.
 
 UPDATE bookings
-SET scheduled_at = DATEADD('HOUR', -7, scheduled_at)
+SET scheduled_at = scheduled_at - INTERVAL '7' HOUR
 WHERE status IN ('PENDING', 'CONFIRMED')
   AND scheduled_at > CURRENT_TIMESTAMP
-  AND scheduled_at < DATEADD('DAY', 90, CURRENT_TIMESTAMP);
+  AND scheduled_at < CURRENT_TIMESTAMP + INTERVAL '90' DAY;

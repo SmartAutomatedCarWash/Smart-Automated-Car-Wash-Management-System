@@ -6,6 +6,7 @@ import com.autowash.entity.Notification;
 import com.autowash.entity.ViolationRecord;
 import com.autowash.entity.WashSession;
 import com.autowash.entity.enums.BookingStatus;
+import com.autowash.entity.enums.NotificationType;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.BookingStatusHistoryRepository;
@@ -93,7 +94,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
                     .message("Your booking at " + booking.getBookingTime()
                             + " was marked no-show because you did not check in within the grace period. "
                             + penaltyPoints + " loyalty points were deducted.")
-                    .type("NO_SHOW")
+                    .type(NotificationType.NO_SHOW)
                     .read(false)
                     .createdAt(now)
                     .build());
@@ -134,7 +135,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
         );
         for (WashSession session : sessions) {
             WashSessionLifecycle.validateTransition(session.getStatus(), WashSessionStatus.CANCELLED);
-            session.cancel(cancelledAt, "Booking marked NO_SHOW before check-in");
+            session.cancel(cancelledAt, "Booking marked NO_SHOW before check-in", null);
         }
     }
 }

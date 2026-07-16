@@ -31,4 +31,15 @@ public class LoggingBookingEmailDeliveryServiceImpl implements BookingEmailDeliv
                 expiresInSeconds
         );
     }
+
+    @Override
+    public void sendBookingReminder(Booking booking, String email) {
+        LOGGER.info(
+                "Booking reminder email queued: bookingId={}, to={}, date={}, time={}",
+                booking.getId(),
+                email,
+                booking.getBookingDate(),
+                booking.getBookingTime()
+        );
+    }
 }

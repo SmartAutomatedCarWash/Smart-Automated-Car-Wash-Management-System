@@ -229,7 +229,9 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
                 serviceIds,
                 split(pkg.getImageUrl()),
                 pkg.getStatus().name(),
-                null
+                null,
+                0.0,
+                0L
         );
     }
 
