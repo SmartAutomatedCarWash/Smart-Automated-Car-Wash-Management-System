@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   CalendarCheck,
@@ -258,10 +259,26 @@ export function ModernAuthPopupModal({
   language,
   setLanguage,
 }: ModernAuthPopupModalProps) {
+  const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const accessToken = useAuthStore((state) => state.accessToken);
   const copy = { ...AUTH_COPY[language], ...FORGOT_COPY[language] };
+
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMounted]);
 
   useEffect(() => {
     if (accessToken && user) {
@@ -561,16 +578,17 @@ export function ModernAuthPopupModal({
     "active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-50 disabled:scale-100",
   ].join(" ");
 
-  return (
+  if (!isMounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300"
-      style={{ background: "rgba(15,23,42,0.40)", backdropFilter: "blur(14px)", animation: "authBackdropIn 260ms ease-out both" }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-slate-950/55 p-4"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
       <div
-        className="relative flex w-full overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-500 ease-out border border-white/10 bg-white/82 dark:bg-[#071016]/90"
+        className="relative my-auto flex max-h-[calc(100vh-2rem)] w-full overflow-hidden border border-white/20 bg-white shadow-2xl dark:bg-[#071016]"
         style={{
           maxWidth: mode === "register" || mode === "forgot-password" ? "1040px" : "940px",
           minHeight:
@@ -581,7 +599,6 @@ export function ModernAuthPopupModal({
                 : "600px",
           borderRadius: "2rem",
           boxShadow: "0 34px 100px rgba(15,23,42,0.30)",
-          animation: "authCardIn 560ms cubic-bezier(0.16, 1, 0.3, 1) both",
         }}
       >
         <BrandPanel copy={copy} />
@@ -1078,7 +1095,8 @@ export function ModernAuthPopupModal({
           ) : null}
         </section>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

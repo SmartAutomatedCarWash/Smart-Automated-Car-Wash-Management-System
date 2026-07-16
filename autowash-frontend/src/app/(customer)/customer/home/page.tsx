@@ -37,7 +37,7 @@ import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
 import { TierBadge } from "@/shared/ui/customer/customer-experience";
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
-import { useCustomerBookings } from "@/features/bookings/hooks/use-bookings";
+import { useCustomerBookings, useActiveWashTracking } from "@/features/bookings/hooks/use-bookings";
 import { useBookingPackages, useBookingCombos } from "@/features/bookings/hooks/use-bookings";
 import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
 import {
@@ -140,9 +140,24 @@ export default function CustomerHomePage() {
   const packagesQuery = useBookingPackages();
   const combosQuery = useBookingCombos();
 
+  const activeWashQuery = useActiveWashTracking();
+  const activeWash = activeWashQuery.data;
+
   const activeBooking = bookingsQuery.data?.items?.find((booking) =>
     ["PENDING", "SCHEDULED", "CHECKED_IN", "IN_PROGRESS", "CONFIRMED"].includes(booking.status),
   );
+
+  const displayBooking = activeWash || activeBooking;
+
+  const washTimestamps = useMemo(() => {
+    if (!activeWash) return undefined;
+    return {
+      SCHEDULED: activeWash.createdAt,
+      CHECKED_IN: activeWash.checkedInAt,
+      IN_PROGRESS: activeWash.startedAt,
+      COMPLETED: activeWash.completedAt,
+    };
+  }, [activeWash]);
 
   const [activeTab, setActiveTab] = useState<"all" | "tips" | "knowledge" | "stories" | "promo">("all");
   const [likes, setLikes] = useState<Record<string, number>>({ post1: 24, post2: 12 });
@@ -359,14 +374,15 @@ export default function CustomerHomePage() {
           </div>
         </section>
 
-        {activeBooking ? (
+        {displayBooking ? (
           <BookingLiveSessionCard
             language={language}
-            bookingCode={activeBooking.bookingId}
-            serviceName={activeBooking.packageName ?? t("Dịch vụ rửa xe", "Car wash service")}
-            status={toLiveSessionStatus(activeBooking.status)}
+            bookingCode={displayBooking.bookingId}
+            serviceName={("serviceName" in displayBooking ? displayBooking.serviceName : null) || ("packageName" in displayBooking ? displayBooking.packageName : null) || t("Dịch vụ rửa xe", "Car wash service")}
+            status={toLiveSessionStatus(displayBooking.status)}
             imageUrl="/images/gallery1.jpg"
-            scheduledAt={toBookingDateTime(activeBooking.bookingDate, activeBooking.bookingTime)}
+            scheduledAt={toBookingDateTime(displayBooking.bookingDate, displayBooking.bookingTime)}
+            timestamps={washTimestamps}
           />
         ) : null}
 

@@ -22,7 +22,7 @@ type RefreshResponse = ApiSuccessResponse<{
 
 let refreshPromise: Promise<string | null> | null = null;
 
-const defaultAdapter = axios.defaults.adapter;
+const defaultAdapter: AxiosAdapter = axios.getAdapter(axios.defaults.adapter);
 
 function paginatedMock(data: any[], config: any) {
   return {
@@ -570,13 +570,15 @@ const mockAdapter: AxiosAdapter = async (config) => {
 
 // ─── AXIOS CLIENT ─────────────────────────────────────────────────────────────
 
+const useMsw = process.env.NEXT_PUBLIC_USE_MSW === "true";
+
 export const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-Type": "application/json"
   },
   withCredentials: true,
-  adapter: mockAdapter
+  adapter: useMsw ? undefined : mockAdapter
 });
 
 apiClient.interceptors.request.use((config) => attachAccessToken(config));

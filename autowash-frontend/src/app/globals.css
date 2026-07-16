@@ -73,14 +73,14 @@
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 
-  :root body {
+  html:not(.dark) body {
     background:
       radial-gradient(circle at 15% 0%, rgba(45, 255, 238, 0.12), transparent 28rem),
       radial-gradient(circle at 88% 10%, rgba(13, 108, 107, 0.08), transparent 28rem),
       linear-gradient(180deg, #f7feff 0%, #ffffff 48%, #f2fbfb 100%);
   }
 
-  .dark body {
+  html.dark body {
     background:
       radial-gradient(circle at 18% 0%, rgba(45, 255, 238, 0.10), transparent 30rem),
       linear-gradient(180deg, #05080d 0%, hsl(222, 47%, 10%) 48%, #05080d 100%);
@@ -93,11 +93,9 @@
   @keyframes authBackdropIn {
     from {
       opacity: 0;
-      backdrop-filter: blur(0);
     }
     to {
       opacity: 1;
-      backdrop-filter: blur(14px);
     }
   }
 
@@ -105,12 +103,10 @@
     from {
       opacity: 0;
       transform: translateY(24px) scale(0.965);
-      filter: blur(8px);
     }
     to {
       opacity: 1;
       transform: translateY(0) scale(1);
-      filter: blur(0);
     }
   }
 

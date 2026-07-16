@@ -5,7 +5,8 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { listBookingPackages } from "@/features/bookings/lib/booking-service";
 import {
   ArrowRight,
   Check,
@@ -190,15 +191,52 @@ export function HomePageView() {
   const router = useRouter();
   const copy = HOME_COPY[language];
 
+  // Fetch actual packages from backend API
+  const { data: publicPackages } = useQuery({
+    queryKey: ["public-packages"],
+    queryFn: () => listBookingPackages(1, 10),
+  });
+
+  const packagesData = useMemo(() => {
+    if (!publicPackages || publicPackages.length === 0) {
+      return homeServices;
+    }
+    const icons = ["💧", "✨", "🏆", "⚙️", "🧼"];
+    return publicPackages.map((p, idx) => ({
+      id: p.packageId,
+      name: p.name,
+      description: p.description,
+      price: p.basePrice,
+      duration: `${p.duration} phút`,
+      icon: icons[idx % icons.length],
+    }));
+  }, [publicPackages]);
+
   // Hydrate language on mount
   useEffect(() => {
     hydrateLanguage();
   }, [hydrateLanguage]);
 
-  // BR-19: Redirect logged-in users to their respective workspaces
+  // BR-19: Redirect logged-in users to their respective workspaces or customer booking page if preselected
   useEffect(() => {
     if (accessToken && user) {
-      router.replace(getAuthRedirectPath(user.role));
+      const preselected = localStorage.getItem("preselected_booking");
+      if (preselected && user.role === "CUSTOMER") {
+        const { type, id } = JSON.parse(preselected);
+        localStorage.removeItem("preselected_booking");
+        router.replace(`/customer/booking?type=${type}&id=${id}`);
+      } else {
+        router.replace(getAuthRedirectPath(user.role));
+      }
+    }
+  }, [accessToken, user, router]);
+
+  const handleBookClick = useCallback((id: string, type: "package" | "combo" = "package") => {
+    if (accessToken && user) {
+      router.push(`/customer/booking?type=${type}&id=${id}`);
+    } else {
+      localStorage.setItem("preselected_booking", JSON.stringify({ type, id }));
+      setAuthMode("login");
     }
   }, [accessToken, user, router]);
 
@@ -228,12 +266,12 @@ export function HomePageView() {
   }, []);
 
   const translatedServices = useMemo(() => {
-    return homeServices.map((s) => {
+    return packagesData.map((s) => {
       if (language === "en") {
-        if (s.id === "s1") return { ...s, name: "Quick Wash", description: "Quick exterior wash in 15 mins", duration: "15 mins" };
-        if (s.id === "s2") return { ...s, name: "Premium Wash", description: "Exterior wash and interior vacuuming", duration: "30 mins" };
-        if (s.id === "s3") return { ...s, name: "Deep Detailing", description: "Detailed cleaning inside and out", duration: "90 mins" };
-        if (s.id === "s4") return { ...s, name: "Engine Cleaning", description: "Safe engine cleaning", duration: "45 mins" };
+        if (s.id === "s1" || s.name === "Rửa nhanh") return { ...s, name: "Quick Wash", description: "Quick exterior wash in 15 mins", duration: "15 mins" };
+        if (s.id === "s2" || s.name === "Rửa cao cấp") return { ...s, name: "Premium Wash", description: "Exterior wash and interior vacuuming", duration: "30 mins" };
+        if (s.id === "s3" || s.name === "Chăm sóc chuyên sâu") return { ...s, name: "Deep Detailing", description: "Detailed cleaning inside and out", duration: "90 mins" };
+        if (s.id === "s4" || s.name === "Vệ sinh khoang máy") return { ...s, name: "Engine Cleaning", description: "Safe engine cleaning", duration: "45 mins" };
       }
       return s;
     });
@@ -267,9 +305,9 @@ export function HomePageView() {
       <PublicHeader onOpenAuth={handleOpenAuth} language={language} onChangeLanguage={setLanguage} copy={copy} />
       <HeroSection onOpenAuth={handleOpenAuth} copy={copy} />
       <FacilitySection copy={copy} />
-      <ServicesSection onOpenAuth={handleOpenAuth} copy={copy} services={translatedServices} />
+      <ServicesSection onBookClick={handleBookClick} onOpenAuth={handleOpenAuth} copy={copy} services={translatedServices} />
       <ResultsSection copy={copy} />
-      <CombosSection onOpenAuth={handleOpenAuth} copy={copy} combos={translatedCombos} />
+      <CombosSection onBookClick={handleBookClick} onOpenAuth={handleOpenAuth} copy={copy} combos={translatedCombos} />
       <ReviewsSection copy={copy} testimonials={translatedTestimonials} />
       <CallToActionSection onOpenAuth={handleOpenAuth} copy={copy} />
       <PublicFooter copy={copy} />
@@ -619,10 +657,12 @@ function FacilitySection({ copy }: { copy: Record<string, string> }) {
 }
 
 function ServicesSection({
+  onBookClick,
   onOpenAuth,
   copy,
   services,
 }: {
+  onBookClick: (id: string, type?: "package" | "combo") => void;
   onOpenAuth: (mode: "login" | "register") => void;
   copy: Record<string, string>;
   services: any[];
@@ -638,7 +678,7 @@ function ServicesSection({
     >
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {services.map((service) => (
-          <ServiceCard key={service.id} service={service} onOpenAuth={onOpenAuth} copy={copy} />
+          <ServiceCard key={service.id} service={service} onBookClick={onBookClick} onOpenAuth={onOpenAuth} copy={copy} />
         ))}
       </div>
     </SectionShell>
@@ -691,10 +731,12 @@ function ResultsSection({ copy }: { copy: Record<string, string> }) {
 }
 
 function CombosSection({
+  onBookClick,
   onOpenAuth,
   copy,
   combos,
 }: {
+  onBookClick: (id: string, type?: "package" | "combo") => void;
   onOpenAuth: (mode: "login" | "register") => void;
   copy: Record<string, string>;
   combos: any[];
@@ -724,11 +766,11 @@ function CombosSection({
 
         <div className="grid gap-5 lg:grid-cols-[0.72fr_1.28fr]">
           {featuredCombo ? (
-            <ComboCard combo={featuredCombo} onOpenAuth={onOpenAuth} copy={copy} featured />
+            <ComboCard combo={featuredCombo} onBookClick={onBookClick} onOpenAuth={onOpenAuth} copy={copy} featured />
           ) : null}
           <div className="grid gap-5">
             {secondaryCombos.map((combo) => (
-              <ComboCard key={combo.id} combo={combo} onOpenAuth={onOpenAuth} copy={copy} />
+              <ComboCard key={combo.id} combo={combo} onBookClick={onBookClick} onOpenAuth={onOpenAuth} copy={copy} />
             ))}
           </div>
         </div>
@@ -1036,11 +1078,11 @@ function MiniFeatureCard({ title, items }: { title: string; items: string[] }) {
 
 function ServiceCard({
   service,
-  onOpenAuth,
+  onBookClick,
   copy,
 }: {
   service: HomeService;
-  onOpenAuth: (mode: "login") => void;
+  onBookClick: (id: string, type?: "package" | "combo") => void;
   copy: Record<string, string>;
 }) {
   return (
@@ -1062,7 +1104,7 @@ function ServiceCard({
         <Button
           variant="outline"
           className="rounded-full border-slate-950/15 bg-slate-950 px-4 text-sm font-black text-white transition-transform duration-300 hover:scale-[1.02] hover:bg-slate-800"
-          onClick={() => onOpenAuth("login")}
+          onClick={() => onBookClick(service.id, "package")}
         >
           {copy.navServices === "Dịch vụ" ? "Đặt lịch" : "Book Now"}
           <ArrowRight className="h-4 w-4" />
@@ -1102,12 +1144,12 @@ function BeforeAfterCard({
 
 function ComboCard({
   combo,
-  onOpenAuth,
+  onBookClick,
   copy,
   featured = false,
 }: {
   combo: HomeCombo;
-  onOpenAuth: (mode: "login" | "register") => void;
+  onBookClick: (id: string, type: "combo") => void;
   copy: Record<string, string>;
   featured?: boolean;
 }) {
@@ -1151,7 +1193,7 @@ function ComboCard({
             <Button
               size="sm"
               className="h-10 shrink-0 rounded-full bg-cyan-300 px-5 text-xs font-black text-slate-950 shadow-[0_0_20px_rgba(45,255,238,0.18)] hover:bg-cyan-200"
-              onClick={() => onOpenAuth("login")}
+              onClick={() => onBookClick(combo.id, "combo")}
             >
               {copy.getThisPack}
             </Button>
@@ -1195,7 +1237,7 @@ function ComboCard({
         <Button
           size="lg"
           className="relative z-10 mt-8 h-12 w-full rounded-full bg-slate-950 text-sm font-black text-white transition-transform duration-300 hover:scale-[1.02] hover:bg-slate-800"
-          onClick={() => onOpenAuth("login")}
+          onClick={() => onBookClick(combo.id, "combo")}
         >
           {copy.getThisPack}
           <ArrowRight className="h-4 w-4" />

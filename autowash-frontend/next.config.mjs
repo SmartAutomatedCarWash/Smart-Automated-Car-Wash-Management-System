@@ -27,6 +27,8 @@ const nextConfig = {
     },
     experimental: {
         optimizePackageImports: ['lucide-react', 'recharts', 'date-fns'],
+        workerThreads: false,
+        cpus: 1,
     },
 };
 

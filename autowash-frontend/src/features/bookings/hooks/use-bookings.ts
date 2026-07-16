@@ -194,7 +194,7 @@ export function useActiveWashTracking() {
     queryKey: washTrackingActiveQueryKey(userId),
     queryFn: getActiveWashTracking,
     enabled,
-    refetchInterval: (query) => (query.state.data?.status === "COMPLETED" ? false : 15_000),
+    refetchInterval: (query) => (query.state.data?.status === "COMPLETED" ? false : 5_000),
     refetchIntervalInBackground: true,
   });
 }
