@@ -718,9 +718,11 @@ function ServicesSection({
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {services.map((service) => (
-            <ServiceCard key={service.id} service={service} onBookClick={onBookClick} copy={copy} />
+        <div className="flex flex-wrap justify-center gap-6">
+          {services.slice(0, 5).map((service) => (
+            <div key={service.id} className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] max-w-[360px] min-w-[280px] flex flex-col">
+              <ServiceCard service={service} onBookClick={onBookClick} copy={copy} />
+            </div>
           ))}
         </div>
       )}
@@ -1129,15 +1131,17 @@ function ServiceCard({
   copy: Record<string, string>;
 }) {
   return (
-    <article className="group rounded-[1.6rem] border border-cyan-200/40 bg-cyan-300 p-6 text-slate-950 shadow-[0_20px_50px_rgba(45,255,238,0.14)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(45,255,238,0.22)]">
-      <div className="flex items-center justify-between">
-        <span className="text-3xl transition-transform duration-300 group-hover:scale-110">{service.icon}</span>
-        <span className="rounded-full bg-slate-950/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-slate-950">
-          {service.duration}
-        </span>
+    <article className="group h-full flex flex-col justify-between rounded-[1.6rem] border border-cyan-200/40 bg-cyan-300 p-6 text-slate-950 shadow-[0_20px_50px_rgba(45,255,238,0.14)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(45,255,238,0.22)]">
+      <div>
+        <div className="flex items-center justify-between">
+          <span className="text-3xl transition-transform duration-300 group-hover:scale-110">{service.icon}</span>
+          <span className="rounded-full bg-slate-950/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-slate-950">
+            {service.duration}
+          </span>
+        </div>
+        <h3 className="mt-5 text-xl font-black tracking-tight text-slate-950">{service.name}</h3>
+        <p className="mt-3 text-sm font-medium leading-7 text-slate-800/78">{service.description}</p>
       </div>
-      <h3 className="mt-5 text-xl font-black tracking-tight text-slate-950">{service.name}</h3>
-      <p className="mt-3 text-sm font-medium leading-7 text-slate-800/78">{service.description}</p>
       <div className="mt-6 flex items-center justify-between border-t border-slate-950/10 pt-5">
         <div>
           <p className="text-2xl font-black tracking-tight text-slate-950">
