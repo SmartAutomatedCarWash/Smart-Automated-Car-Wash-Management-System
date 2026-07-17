@@ -5,7 +5,8 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { listBookingPackages } from "@/features/bookings/lib/booking-service";
 import {
   ArrowRight,
   Check,
@@ -184,8 +185,62 @@ const navigationItems = [
 export function HomePageView() {
   const [authMode, setAuthMode] = useState<"login" | "register" | "otp" | "forgot-password" | null>(null);
   const [otpEmail, setOtpEmail] = useState("");
-  const { language, setLanguage } = useLanguageStore();
+  const { language, setLanguage, hydrateLanguage } = useLanguageStore();
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const user = useAuthStore((state) => state.user);
+  const router = useRouter();
   const copy = HOME_COPY[language];
+
+  // Fetch actual packages from backend API
+  const {
+    data: publicPackages = [],
+    isError: packagesError,
+    isLoading: packagesLoading,
+  } = useQuery({
+    queryKey: ["public-packages"],
+    queryFn: () => listBookingPackages(1, 10),
+  });
+
+  const packagesData = useMemo(() => {
+    const icons = ["💧", "✨", "🏆", "⚙️", "🧼"];
+    return publicPackages.map((p, idx) => ({
+      id: p.packageId,
+      name: p.name,
+      description: p.description,
+      price: p.basePrice,
+      duration: `${p.duration} phút`,
+      icon: icons[idx % icons.length],
+    }));
+  }, [publicPackages]);
+
+  // Hydrate language on mount
+  useEffect(() => {
+    hydrateLanguage();
+  }, [hydrateLanguage]);
+
+  // BR-19: Redirect logged-in users to their respective workspaces or customer booking page if preselected
+  useEffect(() => {
+    if (accessToken && user) {
+      const preselected = localStorage.getItem("preselected_booking");
+      if (preselected && user.role === "CUSTOMER") {
+        const { type, id } = JSON.parse(preselected);
+        localStorage.removeItem("preselected_booking");
+        router.replace(`/customer/booking?type=${type}&id=${id}`);
+      } else {
+        router.replace(getAuthRedirectPath(user.role));
+      }
+    }
+  }, [accessToken, user, router]);
+
+  const handleBookClick = useCallback((id: string, type: "package" | "combo" = "package") => {
+    if (accessToken && user) {
+      router.push(`/customer/booking?type=${type}&id=${id}`);
+    } else {
+      localStorage.setItem("preselected_booking", JSON.stringify({ type, id }));
+      setAuthMode("login");
+    }
+  }, [accessToken, user, router]);
+
 
   const handleOpenAuth = (mode: "login" | "register") => {
     setAuthMode(mode);
@@ -213,16 +268,17 @@ export function HomePageView() {
   }, []);
 
   const translatedServices = useMemo(() => {
-    return homeServices.map((s) => {
+    return packagesData.map((s) => {
       if (language === "en") {
-        if (s.id === "s1") return { ...s, name: "Quick Wash", description: "Quick exterior wash in 15 mins", duration: "15 mins" };
-        if (s.id === "s2") return { ...s, name: "Premium Wash", description: "Exterior wash and interior vacuuming", duration: "30 mins" };
-        if (s.id === "s3") return { ...s, name: "Deep Detailing", description: "Detailed cleaning inside and out", duration: "90 mins" };
-        if (s.id === "s4") return { ...s, name: "Engine Cleaning", description: "Safe engine cleaning", duration: "45 mins" };
+        const normalizedName = s.name.toLowerCase();
+        if (normalizedName.includes("rửa nhanh")) return { ...s, name: "Quick Wash", description: "Quick exterior wash in 15 mins", duration: "15 mins" };
+        if (normalizedName.includes("rửa cao cấp")) return { ...s, name: "Premium Wash", description: "Exterior wash and interior vacuuming", duration: "30 mins" };
+        if (normalizedName.includes("chăm sóc chuyên sâu")) return { ...s, name: "Deep Detailing", description: "Detailed cleaning inside and out", duration: "90 mins" };
+        if (normalizedName.includes("khoang máy")) return { ...s, name: "Engine Cleaning", description: "Safe engine cleaning", duration: "45 mins" };
       }
       return s;
     });
-  }, [language]);
+  }, [packagesData, language]);
 
   const translatedCombos = useMemo(() => {
     return homeCombos.map((c) => {
@@ -252,9 +308,9 @@ export function HomePageView() {
       <PublicHeader onOpenAuth={handleOpenAuth} language={language} onChangeLanguage={setLanguage} copy={copy} />
       <HeroSection onOpenAuth={handleOpenAuth} copy={copy} />
       <FacilitySection copy={copy} />
-      <ServicesSection onOpenAuth={handleOpenAuth} copy={copy} services={translatedServices} />
+      <ServicesSection onBookClick={handleBookClick} copy={copy} services={translatedServices} isLoading={packagesLoading} isError={packagesError} />
       <ResultsSection copy={copy} />
-      <CombosSection onOpenAuth={handleOpenAuth} copy={copy} combos={translatedCombos} />
+      <CombosSection onBookClick={handleBookClick} onOpenAuth={handleOpenAuth} copy={copy} combos={translatedCombos} />
       <ReviewsSection copy={copy} testimonials={translatedTestimonials} />
       <CallToActionSection onOpenAuth={handleOpenAuth} copy={copy} />
       <PublicFooter copy={copy} />
@@ -498,15 +554,17 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
             <div className="relative mx-auto max-w-5xl">
               <div className="absolute inset-x-[8%] bottom-2 h-12 rounded-[999px] border-4 border-cyan-300 shadow-[0_0_34px_rgba(45,255,238,0.62),inset_0_0_24px_rgba(45,255,238,0.28)]" />
               <div className="absolute inset-x-[12%] bottom-8 h-20 rounded-full bg-cyan-300/18 blur-3xl" />
-              <Image
-                src={homeGallery[3].src}
-                alt={homeGallery[3].alt}
-                width={1200}
-                height={720}
-                sizes="(min-width: 1024px) 56rem, 92vw"
-                priority
-                className="relative z-10 mx-auto h-[18rem] w-full max-w-4xl rounded-[2rem] object-cover object-center shadow-[0_32px_90px_rgba(0,0,0,0.46)] [clip-path:polygon(4%_10%,96%_0,100%_88%,0_100%)] sm:h-[24rem] lg:h-[28rem]"
-              />
+              {/* Skewed Wrapper with Rounded Corners */}
+              <div className="relative z-10 mx-auto h-[18rem] sm:h-[24rem] lg:h-[28rem] w-full max-w-4xl overflow-hidden rounded-[3rem] shadow-[0_32px_90px_rgba(0,0,0,0.46)] -skew-y-[3deg] origin-center">
+                <Image
+                  src={homeGallery[3].src}
+                  alt={homeGallery[3].alt}
+                  fill
+                  priority
+                  className="object-cover object-center skew-y-[3deg] scale-[1.18]"
+                  sizes="(min-width: 1024px) 56rem, 92vw"
+                />
+              </div>
               <div className="absolute left-4 top-1/4 z-20 hidden rounded-[1.4rem] border border-cyan-300/18 bg-[#071016]/82 p-4 shadow-[0_18px_48px_rgba(0,0,0,0.36)] backdrop-blur md:block">
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">Aura Care</p>
                 <p className="mt-1 text-sm font-semibold text-white/80">{copy.featurePromiseTitle}</p>
@@ -598,14 +656,20 @@ function FacilitySection({ copy }: { copy: Record<string, string> }) {
 }
 
 function ServicesSection({
-  onOpenAuth,
+  onBookClick,
   copy,
   services,
+  isLoading,
+  isError,
 }: {
-  onOpenAuth: (mode: "login" | "register") => void;
+  onBookClick: (id: string, type?: "package" | "combo") => void;
   copy: Record<string, string>;
   services: any[];
+  isLoading: boolean;
+  isError: boolean;
 }) {
+  const servicePlaceholders = homeServices.slice(0, 4);
+
   return (
     <SectionShell
       id="services"
@@ -615,11 +679,55 @@ function ServicesSection({
       className="relative bg-[#0d6c6b] py-24 before:absolute before:inset-x-0 before:-top-10 before:h-20 before:rounded-[0_0_50%_50%] before:bg-[#05080d] after:absolute after:left-8 after:top-16 after:h-9 after:w-9 after:rotate-45 after:bg-cyan-300"
       invert
     >
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {services.map((service) => (
-          <ServiceCard key={service.id} service={service} onOpenAuth={onOpenAuth} copy={copy} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {servicePlaceholders.map((service) => (
+            <article key={service.id} className="rounded-[1.6rem] border border-cyan-200/25 bg-cyan-200/20 p-6 shadow-[0_20px_50px_rgba(45,255,238,0.10)]">
+              <div className="flex items-center justify-between">
+                <div className="h-10 w-10 animate-pulse rounded-2xl bg-white/30" />
+                <div className="h-7 w-24 animate-pulse rounded-full bg-white/24" />
+              </div>
+              <div className="mt-7 h-6 w-3/4 animate-pulse rounded-full bg-white/28" />
+              <div className="mt-4 h-4 w-full animate-pulse rounded-full bg-white/22" />
+              <div className="mt-2 h-4 w-2/3 animate-pulse rounded-full bg-white/22" />
+              <div className="mt-8 flex items-center justify-between border-t border-white/18 pt-5">
+                <div className="h-7 w-28 animate-pulse rounded-full bg-white/28" />
+                <div className="h-10 w-28 animate-pulse rounded-full bg-slate-950/25" />
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : isError ? (
+        <div className="rounded-[1.6rem] border border-cyan-200/30 bg-white/10 p-8 text-center shadow-[0_20px_50px_rgba(45,255,238,0.10)] backdrop-blur">
+          <p className="text-lg font-black text-white">
+            {copy.navServices === "Dịch vụ" ? "Chưa tải được gói dịch vụ" : "Unable to load service packages"}
+          </p>
+          <p className="mt-2 text-sm font-medium text-white/65">
+            {copy.navServices === "Dịch vụ"
+              ? "Vui lòng kiểm tra backend hoặc thử tải lại trang."
+              : "Please check the backend service or refresh the page."}
+          </p>
+        </div>
+      ) : services.length === 0 ? (
+        <div className="rounded-[1.6rem] border border-cyan-200/30 bg-white/10 p-8 text-center shadow-[0_20px_50px_rgba(45,255,238,0.10)] backdrop-blur">
+          <p className="text-lg font-black text-white">
+            {copy.navServices === "Dịch vụ" ? "Chưa có gói dịch vụ khả dụng" : "No service packages available"}
+          </p>
+          <p className="mt-2 text-sm font-medium text-white/65">
+            {copy.navServices === "Dịch vụ"
+              ? "Dữ liệu sẽ hiển thị khi backend trả về danh sách package."
+              : "Packages will appear here once the backend returns data."}
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-wrap justify-center gap-6">
+          {services.slice(0, 6).map((service) => (
+            <div key={service.id} className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] max-w-[360px] min-w-[280px] flex flex-col">
+              <ServiceCard service={service} onBookClick={onBookClick} copy={copy} />
+            </div>
+          ))}
+        </div>
+      )}
     </SectionShell>
   );
 }
@@ -670,10 +778,12 @@ function ResultsSection({ copy }: { copy: Record<string, string> }) {
 }
 
 function CombosSection({
+  onBookClick,
   onOpenAuth,
   copy,
   combos,
 }: {
+  onBookClick: (id: string, type?: "package" | "combo") => void;
   onOpenAuth: (mode: "login" | "register") => void;
   copy: Record<string, string>;
   combos: any[];
@@ -703,11 +813,11 @@ function CombosSection({
 
         <div className="grid gap-5 lg:grid-cols-[0.72fr_1.28fr]">
           {featuredCombo ? (
-            <ComboCard combo={featuredCombo} onOpenAuth={onOpenAuth} copy={copy} featured />
+            <ComboCard combo={featuredCombo} onBookClick={onBookClick} copy={copy} featured />
           ) : null}
           <div className="grid gap-5">
             {secondaryCombos.map((combo) => (
-              <ComboCard key={combo.id} combo={combo} onOpenAuth={onOpenAuth} copy={copy} />
+              <ComboCard key={combo.id} combo={combo} onBookClick={onBookClick} copy={copy} />
             ))}
           </div>
         </div>
@@ -1015,23 +1125,25 @@ function MiniFeatureCard({ title, items }: { title: string; items: string[] }) {
 
 function ServiceCard({
   service,
-  onOpenAuth,
+  onBookClick,
   copy,
 }: {
   service: HomeService;
-  onOpenAuth: (mode: "login") => void;
+  onBookClick: (id: string, type?: "package" | "combo") => void;
   copy: Record<string, string>;
 }) {
   return (
-    <article className="group rounded-[1.6rem] border border-cyan-200/40 bg-cyan-300 p-6 text-slate-950 shadow-[0_20px_50px_rgba(45,255,238,0.14)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(45,255,238,0.22)]">
-      <div className="flex items-center justify-between">
-        <span className="text-3xl transition-transform duration-300 group-hover:scale-110">{service.icon}</span>
-        <span className="rounded-full bg-slate-950/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-slate-950">
-          {service.duration}
-        </span>
+    <article className="group h-full flex flex-col justify-between rounded-[1.6rem] border border-cyan-200/40 bg-cyan-300 p-6 text-slate-950 shadow-[0_20px_50px_rgba(45,255,238,0.14)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(45,255,238,0.22)]">
+      <div>
+        <div className="flex items-center justify-between">
+          <span className="text-3xl transition-transform duration-300 group-hover:scale-110">{service.icon}</span>
+          <span className="rounded-full bg-slate-950/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-slate-950">
+            {service.duration}
+          </span>
+        </div>
+        <h3 className="mt-5 text-xl font-black tracking-tight text-slate-950">{service.name}</h3>
+        <p className="mt-3 text-sm font-medium leading-7 text-slate-800/78">{service.description}</p>
       </div>
-      <h3 className="mt-5 text-xl font-black tracking-tight text-slate-950">{service.name}</h3>
-      <p className="mt-3 text-sm font-medium leading-7 text-slate-800/78">{service.description}</p>
       <div className="mt-6 flex items-center justify-between border-t border-slate-950/10 pt-5">
         <div>
           <p className="text-2xl font-black tracking-tight text-slate-950">
@@ -1041,7 +1153,7 @@ function ServiceCard({
         <Button
           variant="outline"
           className="rounded-full border-slate-950/15 bg-slate-950 px-4 text-sm font-black text-white transition-transform duration-300 hover:scale-[1.02] hover:bg-slate-800"
-          onClick={() => onOpenAuth("login")}
+          onClick={() => onBookClick(service.id, "package")}
         >
           {copy.navServices === "Dịch vụ" ? "Đặt lịch" : "Book Now"}
           <ArrowRight className="h-4 w-4" />
@@ -1081,12 +1193,12 @@ function BeforeAfterCard({
 
 function ComboCard({
   combo,
-  onOpenAuth,
+  onBookClick,
   copy,
   featured = false,
 }: {
   combo: HomeCombo;
-  onOpenAuth: (mode: "login" | "register") => void;
+  onBookClick: (id: string, type: "combo") => void;
   copy: Record<string, string>;
   featured?: boolean;
 }) {
@@ -1130,7 +1242,7 @@ function ComboCard({
             <Button
               size="sm"
               className="h-10 shrink-0 rounded-full bg-cyan-300 px-5 text-xs font-black text-slate-950 shadow-[0_0_20px_rgba(45,255,238,0.18)] hover:bg-cyan-200"
-              onClick={() => onOpenAuth("login")}
+              onClick={() => onBookClick(combo.id, "combo")}
             >
               {copy.getThisPack}
             </Button>
@@ -1174,7 +1286,7 @@ function ComboCard({
         <Button
           size="lg"
           className="relative z-10 mt-8 h-12 w-full rounded-full bg-slate-950 text-sm font-black text-white transition-transform duration-300 hover:scale-[1.02] hover:bg-slate-800"
-          onClick={() => onOpenAuth("login")}
+          onClick={() => onBookClick(combo.id, "combo")}
         >
           {copy.getThisPack}
           <ArrowRight className="h-4 w-4" />

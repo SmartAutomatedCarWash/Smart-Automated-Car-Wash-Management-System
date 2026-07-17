@@ -45,6 +45,7 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
     private final PasswordEncoder passwordEncoder;
     private final long refreshTokenExpirationSeconds;
     private final long ticketTtlSeconds;
+    private final boolean devBypassEnabled;
 
     public GoogleOAuthServiceImpl(
             GoogleOAuthClient googleOAuthClient,
@@ -57,7 +58,8 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
             JwtService jwtService,
             PasswordEncoder passwordEncoder,
             @Value("${autowash.auth.jwt.refresh-token-expiration-seconds}") long refreshTokenExpirationSeconds,
-            @Value("${autowash.auth.google.ticket-ttl-seconds:300}") long ticketTtlSeconds
+            @Value("${autowash.auth.google.ticket-ttl-seconds:300}") long ticketTtlSeconds,
+            @Value("${autowash.auth.google.dev-bypass-enabled:false}") boolean devBypassEnabled
     ) {
         this.googleOAuthClient = googleOAuthClient;
         this.ticketRepository = ticketRepository;
@@ -70,6 +72,7 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenExpirationSeconds = refreshTokenExpirationSeconds;
         this.ticketTtlSeconds = ticketTtlSeconds;
+        this.devBypassEnabled = devBypassEnabled;
     }
 
     // -----------------------------------------------------------------------
@@ -86,6 +89,17 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
                 Instant.now().plusSeconds(ticketTtlSeconds)
         );
         ticketRepository.save(ticket);
+        if (devBypassEnabled) {
+            ticket.markReady(
+                    "google-dev-bypass",
+                    "google-demo@example.com",
+                    "Google Demo User",
+                    null
+            );
+            String callbackUrl = ticket.getReturnUrl();
+            String separator = callbackUrl.contains("?") ? "&" : "?";
+            return callbackUrl + separator + "state=" + encode(state);
+        }
         return googleOAuthClient.buildAuthorizationUrl(state, returnUrl);
     }
 

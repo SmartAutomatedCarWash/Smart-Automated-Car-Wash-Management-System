@@ -283,6 +283,7 @@ public class BookingServiceImpl implements BookingService {
                 subtotal - totalDiscount,
                 baseDuration + options.stream().mapToInt(CatalogService.CatalogOption::durationMinutes).sum()
         );
+        booking.setConfirmationEmail(resolveConfirmationEmail(request.confirmationEmail(), user));
         BookingRepository.save(booking);
         long totalBookings = BookingRepository.countByCustomer(user);
         if (totalBookings == 1) {
@@ -354,6 +355,7 @@ public class BookingServiceImpl implements BookingService {
                 null,
                 booking.getCreatedAt(),
                 booking.getId().toString(),
+                booking.getConfirmationEmail(),
                 Combo == null ? null : Combo.getId().toString(),
                 customerComboId,
                 comboPurchased,
@@ -640,6 +642,7 @@ public class BookingServiceImpl implements BookingService {
                 booking.getCustomer().getId().toString(),
                 booking.getCustomer().getFullName(),
                 booking.getCustomer().getPhone(),
+                booking.getConfirmationEmail(),
                 booking.getVehicle().getId().toString(),
                 booking.getVehicle().getPlate(),
                 booking.getVehicle().getBrand(),
@@ -785,9 +788,9 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void sendBookingConfirmationEmail(Booking booking) {
-        String email = booking.getCustomer().getEmail();
+        String email = booking.getConfirmationEmail();
         if (email == null || email.isBlank()) {
-            LOGGER.warn("Skipping booking confirmation email because customer email is empty: bookingId={}", booking.getId());
+            LOGGER.warn("Skipping booking confirmation email because confirmation email is empty: bookingId={}", booking.getId());
             return;
         }
         try {
@@ -795,6 +798,13 @@ public class BookingServiceImpl implements BookingService {
         } catch (RuntimeException exception) {
             LOGGER.warn("Failed to send booking confirmation email: bookingId={}, to={}", booking.getId(), email, exception);
         }
+    }
+
+    private String resolveConfirmationEmail(String requestedEmail, User customer) {
+        if (requestedEmail != null && !requestedEmail.isBlank()) {
+            return requestedEmail.trim().toLowerCase(java.util.Locale.ROOT);
+        }
+        return customer.getEmail();
     }
 
 

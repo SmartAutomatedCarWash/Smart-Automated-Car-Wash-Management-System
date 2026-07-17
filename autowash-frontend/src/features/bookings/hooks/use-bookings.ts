@@ -45,6 +45,31 @@ import type {
   CustomerCombo,
 } from "@/entities/bookings";
 
+const LIVE_BOOKING_REFETCH_MS = 3_000;
+const TERMINAL_BOOKING_STATUSES = new Set(["COMPLETED", "CANCELLED", "NO_SHOW"]);
+
+function isLiveBookingStatus(status: string | null | undefined) {
+  return Boolean(status) && !TERMINAL_BOOKING_STATUSES.has(String(status).toUpperCase());
+}
+
+function shouldPollBookingDetail(booking: BookingDetail | undefined) {
+  if (!booking) {
+    return LIVE_BOOKING_REFETCH_MS;
+  }
+
+  return isLiveBookingStatus(booking.washStatus ?? booking.status) ? LIVE_BOOKING_REFETCH_MS : false;
+}
+
+function shouldPollBookingList(page: BookingListPage | undefined) {
+  if (!page) {
+    return LIVE_BOOKING_REFETCH_MS;
+  }
+
+  return page.items.some((booking) => isLiveBookingStatus(booking.washStatus ?? booking.status))
+    ? LIVE_BOOKING_REFETCH_MS
+    : false;
+}
+
 function useBookingQueryContext() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
@@ -144,6 +169,9 @@ export function useCustomerBookings(filters: BookingListFilters = {}) {
     queryKey: bookingsListQueryKey(userId, filters),
     queryFn: () => listCustomerBookings(filters),
     enabled,
+    refetchInterval: (query) => shouldPollBookingList(query.state.data),
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -154,6 +182,9 @@ export function useCustomerBookingDetail(bookingId: string) {
     queryKey: bookingDetailQueryKey(userId, bookingId),
     queryFn: () => getCustomerBookingDetail(bookingId),
     enabled: enabled && bookingId.length > 0,
+    refetchInterval: (query) => shouldPollBookingDetail(query.state.data),
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -194,7 +225,7 @@ export function useActiveWashTracking() {
     queryKey: washTrackingActiveQueryKey(userId),
     queryFn: getActiveWashTracking,
     enabled,
-    refetchInterval: (query) => (query.state.data?.status === "COMPLETED" ? false : 15_000),
+    refetchInterval: (query) => (query.state.data?.status === "COMPLETED" ? false : 5_000),
     refetchIntervalInBackground: true,
   });
 }
@@ -206,5 +237,8 @@ export function useWashTrackingDetail(washSessionId: string) {
     queryKey: washTrackingDetailQueryKey(userId, washSessionId),
     queryFn: () => getWashTrackingDetail(washSessionId),
     enabled: enabled && washSessionId.length > 0,
+    refetchInterval: (query) => (query.state.data?.status === "COMPLETED" ? false : LIVE_BOOKING_REFETCH_MS),
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   });
 }

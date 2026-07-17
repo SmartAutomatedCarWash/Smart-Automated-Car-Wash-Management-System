@@ -103,6 +103,7 @@ export type CreateBookingRequest = {
   bookingDate: string;
   bookingTime: string;
   voucherCode?: string;
+  confirmationEmail?: string;
   paymentMethod: PaymentMethod;
 };
 
@@ -146,6 +147,7 @@ export type CreateBookingResponse = {
   confirmationStatus: BookingConfirmationStatus;
   createdAt: string;
   confirmationNumber: string;
+  confirmationEmail: string | null;
   comboId: string | null;
   customerComboId: string | null;
   comboPurchased: boolean;
@@ -170,6 +172,7 @@ export type BookingDetail = {
   customerId: string;
   customerName: string;
   customerPhone: string;
+  confirmationEmail: string | null;
   vehicleId: string;
   vehiclePlate: string;
   vehicleBrand: string;
@@ -302,6 +305,7 @@ export type BookingDraft = {
   bookingDate: string;
   bookingTime: string;
   voucherCode: string;
+  confirmationEmail?: string;
   paymentMethod: PaymentMethod | null;
 };
 

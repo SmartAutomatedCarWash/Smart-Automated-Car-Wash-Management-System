@@ -10,6 +10,7 @@ public record BookingDetailResponse(
         String customerId,
         String customerName,
         String customerPhone,
+        String confirmationEmail,
         String vehicleId,
         String vehiclePlate,
         String vehicleBrand,

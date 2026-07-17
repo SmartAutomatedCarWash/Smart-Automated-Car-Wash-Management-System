@@ -54,6 +54,11 @@ export function buildCreateBookingPayload(draft: BookingDraft): CreateBookingReq
     payload.voucherCode = voucherCode;
   }
 
+  const confirmationEmail = normalizeOptionalText(draft.confirmationEmail ?? "");
+  if (confirmationEmail) {
+    payload.confirmationEmail = confirmationEmail.toLowerCase();
+  }
+
   return payload;
 }
 
@@ -184,6 +189,9 @@ export function validateBookingDraft(
   }
   if (!draft.bookingTime) {
     errors.bookingTime = "Please choose a booking time.";
+  }
+  if (draft.confirmationEmail?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.confirmationEmail.trim())) {
+    errors.confirmationEmail = "Please enter a valid confirmation email.";
   }
   if (requirePaymentMethod && !draft.paymentMethod) {
     errors.paymentMethod = "Please select a payment method.";

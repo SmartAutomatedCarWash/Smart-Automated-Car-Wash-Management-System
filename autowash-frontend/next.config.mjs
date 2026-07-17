@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     images: {
+        unoptimized: true,
         remotePatterns: [
             {
                 protocol: 'https',
@@ -23,6 +24,11 @@ const nextConfig = {
                 hostname: 'images.pexels.com',
             },
         ],
+    },
+    experimental: {
+        optimizePackageImports: ['lucide-react', 'recharts', 'date-fns'],
+        workerThreads: false,
+        cpus: 1,
     },
 };
 

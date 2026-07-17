@@ -95,6 +95,7 @@ class BookingControllerIntegrationTest {
     void createBookingCreatesPendingAndPayConfirmsBooking() throws Exception {
         String accessToken = registerActivateAndLogin("0901234998");
         String vehicleId = createVehicle(accessToken, "30H-223456");
+        String confirmationEmail = "booking-confirmation-target@example.com";
 
         MvcResult claimResult = mockMvc.perform(post("/api/v1/vouchers/{id}/claim", "66666666-1234-1234-1234-123456789012")
                 .header("Authorization", "Bearer " + accessToken))
@@ -112,12 +113,14 @@ class BookingControllerIntegrationTest {
                                   "bookingDate": "%s",
                                   "bookingTime": "14:00",
                                   "voucherCode": "%s",
+                                  "confirmationEmail": "%s",
                                   "paymentMethod": "E_WALLET"
                                 }
-                                """.formatted(vehicleId, futureBookingDate(), voucherCode)))
+                                """.formatted(vehicleId, futureBookingDate(), voucherCode, confirmationEmail)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.confirmationStatus").value("PENDING"))
+                .andExpect(jsonPath("$.data.confirmationEmail").value(confirmationEmail))
                 .andExpect(jsonPath("$.data.paymentStatus").value("PENDING_PAYMENT"))
                 .andExpect(jsonPath("$.data.vehicleId").value(vehicleId))
                 .andExpect(jsonPath("$.data.finalAmount").value(120000))

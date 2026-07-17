@@ -41,3 +41,7 @@ next-env.d.ts
 !.vscode/settings.json
 !.vscode/extensions.json
 .idea
+
+# MSW / Mock Data (local testing)
+/src/mocks/
+/public/mockServiceWorker.js

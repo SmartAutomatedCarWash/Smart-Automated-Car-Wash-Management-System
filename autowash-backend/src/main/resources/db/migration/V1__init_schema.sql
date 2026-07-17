@@ -436,7 +436,7 @@ CREATE INDEX "idx_point_transactions_loyalty_account_id" ON "point_transactions"
 
 CREATE INDEX "idx_point_transactions_booking_id" ON "point_transactions" ("booking_id");
 
-CREATE UNIQUE INDEX uk_point_transactions_booking_type ON point_transactions (booking_id, type);
+CREATE UNIQUE INDEX "uk_point_transactions_booking_type" ON "point_transactions" ("booking_id", "type");
 
 CREATE INDEX "idx_tier_histories_loyalty_account_id" ON "tier_histories" ("loyalty_account_id");
 

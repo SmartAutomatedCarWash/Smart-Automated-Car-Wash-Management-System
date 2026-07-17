@@ -280,6 +280,17 @@ export function FeatureSection({ language }: { language: Language }) {
   );
 }
 
+type BookingLiveSessionCardProps = {
+  language: Language;
+  bookingCode?: string;
+  serviceName?: string | null;
+  status?: LiveSessionStatus;
+  imageUrl?: string;
+  scheduledAt?: string | null;
+  estimatedDurationMinutes?: number;
+  timestamps?: Partial<Record<LiveSessionStep, string | null>>;
+};
+
 export function BookingLiveSessionCard({
   language,
   bookingCode,
@@ -289,16 +300,7 @@ export function BookingLiveSessionCard({
   scheduledAt,
   estimatedDurationMinutes = 45,
   timestamps,
-}: {
-  language: Language;
-  bookingCode?: string;
-  serviceName?: string | null;
-  status?: LiveSessionStatus;
-  imageUrl?: string;
-  scheduledAt?: string | null;
-  estimatedDurationMinutes?: number;
-  timestamps?: Partial<Record<LiveSessionStep, string | null>>;
-}) {
+}: BookingLiveSessionCardProps) {
   const [now, setNow] = useState(() => new Date());
   const visualStatus = normalizeLiveStatus(status);
   const activeIndex = Math.max(0, liveSessionSteps.indexOf(visualStatus));
@@ -393,6 +395,57 @@ export function BookingLiveSessionCard({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+export function FloatingWashSessionBubble(props: BookingLiveSessionCardProps) {
+  const {
+    language,
+    bookingCode,
+    serviceName,
+    status = "SCHEDULED",
+  } = props;
+  const [open, setOpen] = useState(false);
+  const visualStatus = normalizeLiveStatus(status);
+  const activeIndex = Math.max(0, liveSessionSteps.indexOf(visualStatus));
+  const percent = Math.round(((activeIndex + 1) / liveSessionSteps.length) * 100);
+  const isLive = status === "IN_PROGRESS" || status === "QUEUED" || status === "CHECKED_IN";
+
+  return (
+    <div className="fixed bottom-24 right-5 z-40 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:right-6">
+      {open ? (
+        <div className="w-[min(42rem,calc(100vw-2rem))] origin-bottom-right animate-in fade-in slide-in-from-bottom-3 duration-300">
+          <BookingLiveSessionCard {...props} />
+        </div>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className={cn(
+          "group flex items-center gap-3 rounded-full border border-[#BDEEFF] bg-white/95 px-3 py-2 text-left shadow-[0_18px_42px_rgba(47,128,237,0.20)] backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_52px_rgba(47,128,237,0.26)] dark:border-slate-700 dark:bg-slate-900/95",
+          isLive && "ring-4 ring-[#00B8D9]/12",
+        )}
+        aria-expanded={open}
+        aria-label={translate(language, "Mở phiên rửa đang hoạt động", "Open active wash session")}
+      >
+        <span className="relative grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#00B8D9] to-[#2F80ED] text-white shadow-[0_12px_28px_rgba(0,184,217,0.30)]">
+          <Car className="h-5 w-5" />
+          {isLive ? <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-[#06D6A0] shadow-[0_0_16px_rgba(6,214,160,0.7)]" /> : null}
+        </span>
+        <span className="hidden min-w-0 sm:block">
+          <span className="block max-w-48 truncate text-sm font-black text-[#102A43] dark:text-white">
+            {serviceName || translate(language, "Theo dõi lịch rửa", "Track wash session")}
+          </span>
+          <span className="mt-1 flex items-center gap-2 text-xs font-bold text-[#627D98]">
+            <span>{liveSessionLabels[language][status]}</span>
+            <span className="h-1 w-1 rounded-full bg-[#BFD7EA]" />
+            <span>{percent}%</span>
+            {bookingCode ? <span className="max-w-20 truncate">#{bookingCode.slice(0, 8).toUpperCase()}</span> : null}
+          </span>
+        </span>
+      </button>
     </div>
   );
 }
