@@ -147,7 +147,6 @@ public class Booking {
         this.packageId = packageId;
         this.comboId = comboId;
         this.voucherId = voucherId;
-        this.confirmationEmail = customer == null ? null : customer.getEmail();
         this.status = BookingStatus.PENDING;
         this.scheduledAt = scheduledAt;
         this.baseAmount = baseAmount;
