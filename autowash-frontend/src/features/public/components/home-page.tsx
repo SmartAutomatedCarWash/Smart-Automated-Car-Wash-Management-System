@@ -554,15 +554,17 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
             <div className="relative mx-auto max-w-5xl">
               <div className="absolute inset-x-[8%] bottom-2 h-12 rounded-[999px] border-4 border-cyan-300 shadow-[0_0_34px_rgba(45,255,238,0.62),inset_0_0_24px_rgba(45,255,238,0.28)]" />
               <div className="absolute inset-x-[12%] bottom-8 h-20 rounded-full bg-cyan-300/18 blur-3xl" />
-              <Image
-                src={homeGallery[3].src}
-                alt={homeGallery[3].alt}
-                width={1200}
-                height={720}
-                sizes="(min-width: 1024px) 56rem, 92vw"
-                priority
-                className="relative z-10 mx-auto h-[18rem] w-full max-w-4xl rounded-[2rem] object-cover object-center shadow-[0_32px_90px_rgba(0,0,0,0.46)] [clip-path:polygon(4%_10%,96%_0,100%_88%,0_100%)] sm:h-[24rem] lg:h-[28rem]"
-              />
+              {/* Skewed Wrapper with Rounded Corners */}
+              <div className="relative z-10 mx-auto h-[18rem] sm:h-[24rem] lg:h-[28rem] w-full max-w-4xl overflow-hidden rounded-[3rem] shadow-[0_32px_90px_rgba(0,0,0,0.46)] -skew-y-[3deg] origin-center">
+                <Image
+                  src={homeGallery[3].src}
+                  alt={homeGallery[3].alt}
+                  fill
+                  priority
+                  className="object-cover object-center skew-y-[3deg] scale-[1.18]"
+                  sizes="(min-width: 1024px) 56rem, 92vw"
+                />
+              </div>
               <div className="absolute left-4 top-1/4 z-20 hidden rounded-[1.4rem] border border-cyan-300/18 bg-[#071016]/82 p-4 shadow-[0_18px_48px_rgba(0,0,0,0.36)] backdrop-blur md:block">
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">Aura Care</p>
                 <p className="mt-1 text-sm font-semibold text-white/80">{copy.featurePromiseTitle}</p>
@@ -718,9 +720,11 @@ function ServicesSection({
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {services.map((service) => (
-            <ServiceCard key={service.id} service={service} onBookClick={onBookClick} copy={copy} />
+        <div className="flex flex-wrap justify-center gap-6">
+          {services.slice(0, 6).map((service) => (
+            <div key={service.id} className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] max-w-[360px] min-w-[280px] flex flex-col">
+              <ServiceCard service={service} onBookClick={onBookClick} copy={copy} />
+            </div>
           ))}
         </div>
       )}
@@ -1129,15 +1133,17 @@ function ServiceCard({
   copy: Record<string, string>;
 }) {
   return (
-    <article className="group rounded-[1.6rem] border border-cyan-200/40 bg-cyan-300 p-6 text-slate-950 shadow-[0_20px_50px_rgba(45,255,238,0.14)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(45,255,238,0.22)]">
-      <div className="flex items-center justify-between">
-        <span className="text-3xl transition-transform duration-300 group-hover:scale-110">{service.icon}</span>
-        <span className="rounded-full bg-slate-950/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-slate-950">
-          {service.duration}
-        </span>
+    <article className="group h-full flex flex-col justify-between rounded-[1.6rem] border border-cyan-200/40 bg-cyan-300 p-6 text-slate-950 shadow-[0_20px_50px_rgba(45,255,238,0.14)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(45,255,238,0.22)]">
+      <div>
+        <div className="flex items-center justify-between">
+          <span className="text-3xl transition-transform duration-300 group-hover:scale-110">{service.icon}</span>
+          <span className="rounded-full bg-slate-950/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-slate-950">
+            {service.duration}
+          </span>
+        </div>
+        <h3 className="mt-5 text-xl font-black tracking-tight text-slate-950">{service.name}</h3>
+        <p className="mt-3 text-sm font-medium leading-7 text-slate-800/78">{service.description}</p>
       </div>
-      <h3 className="mt-5 text-xl font-black tracking-tight text-slate-950">{service.name}</h3>
-      <p className="mt-3 text-sm font-medium leading-7 text-slate-800/78">{service.description}</p>
       <div className="mt-6 flex items-center justify-between border-t border-slate-950/10 pt-5">
         <div>
           <p className="text-2xl font-black tracking-tight text-slate-950">
