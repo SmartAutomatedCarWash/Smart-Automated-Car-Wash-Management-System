@@ -75,6 +75,25 @@ test("returns explicit validation errors for create vehicle form", () => {
   );
 });
 
+test("requires an allowed vehicle type when creating a vehicle", () => {
+  assert.deepEqual(
+    validateCustomerVehicleForm(
+      {
+        plate: "30H-123456",
+        type: "PLANE" as "CAR",
+        brand: "Toyota",
+        model: "Camry",
+        year: "2024",
+        color: "",
+      },
+      "create",
+    ),
+    {
+      type: "Vehicle type is required.",
+    },
+  );
+});
+
 test("hydrates vehicle form defaults from detail payload", () => {
   assert.deepEqual(
     buildVehicleFormDefaults({

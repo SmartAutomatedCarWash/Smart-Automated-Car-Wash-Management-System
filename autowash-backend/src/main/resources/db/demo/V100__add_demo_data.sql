@@ -3,8 +3,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Add demo users (idempotent by email)
 INSERT INTO "users" (id, full_name, phone, email, password_hash, role, status) VALUES
 (gen_random_uuid(), 'Admin User', '0901234567', 'admin@autowash.com', crypt('Password123@', gen_salt('bf', 10)), 'ADMIN', 'ACTIVE'),
-(gen_random_uuid(), 'Staff User', '0901234568', 'staff@autowash.com', crypt('Password123@', gen_salt('bf', 10)), 'STAFF', 'ACTIVE'),
-(gen_random_uuid(), 'Customer User', '0901234569', 'customer@autowash.com', crypt('Password123@', gen_salt('bf', 10)), 'CUSTOMER', 'ACTIVE')
+(gen_random_uuid(), 'Staff User', '0901234568', 'staff@autowash.com', crypt('Password123@', gen_salt('bf', 10)), 'STAFF', 'ACTIVE')
 ON CONFLICT (email) DO NOTHING;
 
 -- Use DO block to handle data that depends on dynamic UUIDs

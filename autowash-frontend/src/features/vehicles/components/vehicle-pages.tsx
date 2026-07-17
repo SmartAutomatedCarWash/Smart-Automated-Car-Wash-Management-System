@@ -31,6 +31,7 @@ import type {
   CustomerVehicleListItem,
 } from "@/entities/vehicles";
 import { CustomerVehicleFormCard } from "@/features/vehicles/components/vehicle-form";
+import { CustomerVehicleListCard } from "@/features/vehicles/components/customer-vehicle-list-card";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 export function CustomerVehiclesListClientPage() {
@@ -90,7 +91,7 @@ export function CustomerVehiclesListClientPage() {
 
         <section className="grid gap-4">
           {vehiclesQuery.data.items.map((vehicle) => (
-            <VehicleListCard
+            <CustomerVehicleListCard
               key={vehicle.vehicleId}
               vehicle={vehicle}
               isDeleting={deleteId === vehicle.vehicleId}
@@ -125,11 +126,11 @@ export function CustomerVehicleCreateClientPage() {
     }
 
     try {
-      const createdVehicle = await createVehicleMutation.mutateAsync(
+      await createVehicleMutation.mutateAsync(
         buildCreateCustomerVehicleRequest(form),
       );
       toast.success(translate(language, "Xe đã được tạo thành công.", "Vehicle created successfully."));
-      router.push(`/customer/vehicles/${createdVehicle.vehicleId}`);
+      router.push("/customer/vehicles");
     } catch {
       toast.error(translate(language, "Không thể tạo xe.", "Unable to create vehicle."));
     }
