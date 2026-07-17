@@ -201,6 +201,14 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   }, [hydrateLanguage]);
 
   useEffect(() => { setIsMounted(true); }, []);
+
+  // Default workspaces to light mode
+  useEffect(() => {
+    if (isMounted) {
+      setTheme("light");
+    }
+  }, [isMounted, setTheme]);
+
   useEffect(() => { setMobileMenuOpen(false); }, [pathname]);
   useEffect(() => { fetchTiers(); }, [fetchTiers]);
 
