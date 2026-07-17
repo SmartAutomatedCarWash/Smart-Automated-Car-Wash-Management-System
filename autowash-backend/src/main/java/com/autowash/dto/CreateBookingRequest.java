@@ -2,6 +2,7 @@ package com.autowash.dto;
 
 import com.autowash.entity.enums.PaymentMethod;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -21,6 +22,8 @@ public record CreateBookingRequest(
         @Pattern(regexp = "^([01]\\d|2[0-3]):[0-5]\\d$", message = "Booking time must be in HH:mm format")
         String bookingTime,
         String voucherCode,
+        @Email(message = "Confirmation email must be valid")
+        String confirmationEmail,
         @NotNull(message = "Payment method is required")
         PaymentMethod paymentMethod,
         String comboId

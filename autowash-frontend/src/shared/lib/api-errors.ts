@@ -45,6 +45,18 @@ export function getDisplayErrorMessage(error: unknown): string {
     return error.message;
   }
 
+  if (error && typeof error === "object" && "errors" in error) {
+    const fieldErrors = (error as { errors?: unknown }).errors;
+    if (Array.isArray(fieldErrors) && fieldErrors.length > 0) {
+      const first = fieldErrors[0] as { field?: unknown; message?: unknown };
+      const field = typeof first.field === "string" ? first.field : null;
+      const message = typeof first.message === "string" ? first.message : null;
+      if (message) {
+        return field ? `${field}: ${message}` : message;
+      }
+    }
+  }
+
   if (error instanceof Error) {
     return error.message;
   }

@@ -57,6 +57,9 @@ public class Booking {
     @Column(name = "voucher_id")
     private UUID voucherId;
 
+    @Column(name = "confirmation_email", length = 255)
+    private String confirmationEmail;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BookingStatus status;
@@ -144,6 +147,7 @@ public class Booking {
         this.packageId = packageId;
         this.comboId = comboId;
         this.voucherId = voucherId;
+        this.confirmationEmail = customer == null ? null : customer.getEmail();
         this.status = BookingStatus.PENDING;
         this.scheduledAt = scheduledAt;
         this.baseAmount = baseAmount;
@@ -176,6 +180,10 @@ public class Booking {
         this.reminderSent = true;
     }
 
+    public void setConfirmationEmail(String confirmationEmail) {
+        this.confirmationEmail = confirmationEmail;
+        this.updatedAt = Instant.now();
+    }
 
     public void updateStatus(BookingStatus status) {
         this.status = status;

@@ -16,6 +16,7 @@ import com.autowash.entity.Booking;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.BookingStatusHistoryRepository;
+import com.autowash.repository.PaymentRepository;
 import com.autowash.entity.WashSession;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.BookingNoShowService;
@@ -61,6 +62,9 @@ class OperationsControllerIntegrationTest {
 
     @Autowired
     private WashSessionRepository washSessionRepository;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     @Autowired
     private BookingNoShowService bookingNoShowService;
@@ -114,6 +118,7 @@ class OperationsControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.awardedLoyaltyPoints").value(27));
 
         assertBookingStatus(booking.getId(), "COMPLETED");
+        assertPaymentStatus(booking.getId(), "PAID");
     }
 
     @Test
@@ -471,6 +476,15 @@ class OperationsControllerIntegrationTest {
         BookingRepository.flush();
         Booking booking = BookingRepository.findById(bookingId).orElseThrow();
         assertThat(booking.getStatus().name()).isEqualTo(status);
+    }
+
+    private void assertPaymentStatus(UUID bookingId, String status) {
+        BookingRepository.flush();
+        assertThat(paymentRepository.findByBookingId(bookingId))
+                .isPresent()
+                .get()
+                .extracting(payment -> payment.getStatus().name())
+                .isEqualTo(status);
     }
 
     private void assertQueueContains(MvcResult result, String sessionId, UUID bookingId) throws Exception {

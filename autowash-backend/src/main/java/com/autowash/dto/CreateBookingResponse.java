@@ -29,6 +29,7 @@ public record CreateBookingResponse(
         Instant otpExpiresAt,
         Instant createdAt,
         String confirmationNumber,
+        String confirmationEmail,
         String comboId,
         String customerComboId,
         boolean comboPurchased,

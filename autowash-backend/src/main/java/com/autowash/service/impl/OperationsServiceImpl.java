@@ -243,6 +243,7 @@ public class OperationsServiceImpl implements OperationsService {
                 sessionId
         );
         bookingService.updateStatus(session.getBooking(), BookingStatus.COMPLETED);
+        bookingService.markBookingPaidForOperations(session.getBooking().getId().toString(), null);
         
         notificationRepository.save(Notification.builder()
                 .id(UUID.randomUUID())
