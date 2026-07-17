@@ -38,8 +38,6 @@ const CAR_BRANDS_MAP: Record<string, string[]> = {
 };
 
 const BRAND_OPTIONS = Object.keys(CAR_BRANDS_MAP);
-const currentYear = new Date().getFullYear();
-const YEAR_OPTIONS = Array.from({ length: currentYear - 1989 }, (_, i) => String(currentYear - i));
 const COLOR_OPTIONS = [
   "White", "Black", "Silver", "Gray", "Red", "Blue", "Brown",
   "Green", "Yellow", "Orange", "Gold", "Beige", "Navy Blue",
@@ -118,13 +116,13 @@ export function CustomerVehicleFormCard({
             disabled={!form.brand}
           />
           <div className="grid gap-5 sm:grid-cols-2">
-            <VehicleSelectField
+            <VehicleTextField
               label="Year"
               value={form.year}
-              onChange={(value) => onChange("year", value)}
-              placeholder="Select year"
-              options={YEAR_OPTIONS}
+              onChange={(value) => onChange("year", value.replace(/\D/g, "").slice(0, 4))}
+              placeholder="e.g. 2024"
               error={errors.year ?? null}
+              inputMode="numeric"
             />
             <VehicleSelectField
               label="Color"
@@ -139,8 +137,8 @@ export function CustomerVehicleFormCard({
 
           {disableIdentityFields ? (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 mt-4">
-              Plate is read-only here because the backend update contract does not
-              accept it.
+              Plate is locked after creation to keep service history, invoices,
+              and booking records consistent.
             </div>
           ) : null}
         </div>

@@ -102,7 +102,7 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
   const bookingOptions = getBookingOptions(booking);
   const customerName = booking.customerName || profileQuery.data?.fullName || translate(language, "Khách hàng", "Customer");
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || translate(language, "Chưa có số điện thoại", "No phone number");
-  const customerEmail = profileQuery.data?.email || translate(language, "email của bạn", "your email");
+  const customerEmail = booking.confirmationEmail || profileQuery.data?.email || translate(language, "email của bạn", "your email");
   const placedDate = new Date(booking.createdAt || Date.now()).toLocaleDateString(locale, {
     year: "numeric",
     month: "long",

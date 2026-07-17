@@ -73,6 +73,31 @@ export function CustomerBookingSelect({
           <span className="min-w-0 flex-1 truncate">
             {renderValue ? renderValue(selected) : selected?.label ?? placeholder}
           </span>
+          {selected ? (
+            <span
+              aria-label="Clear selection"
+              role="button"
+              tabIndex={0}
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onValueChange("");
+                setOpen(false);
+                setQuery("");
+              }}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                event.stopPropagation();
+                onValueChange("");
+                setOpen(false);
+                setQuery("");
+              }}
+            >
+              <X className="h-3.5 w-3.5" />
+            </span>
+          ) : null}
           <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" />
         </Button>
       </PopoverTrigger>

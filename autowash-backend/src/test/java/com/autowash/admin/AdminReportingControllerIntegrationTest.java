@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -54,6 +55,11 @@ class AdminReportingControllerIntegrationTest {
 
     @Autowired
     private BookingRepository BookingRepository;
+
+    @BeforeEach
+    void ensureActiveStaffExists() {
+        createActiveUser(UserRole.STAFF, uniquePhone("0918"), "Reporting Staff");
+    }
 
     @Test
     void adminBookingListSupportsFiltersAndPagination() throws Exception {

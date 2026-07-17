@@ -3,18 +3,23 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { ElementType, ReactNode } from "react";
 import {
+  Banknote,
+  Building2,
   CheckCircle2,
   ChevronDown,
   Clock,
+  CreditCard,
   Loader2,
+  Mail,
   RefreshCcw,
+  Sparkles,
   Ticket,
   X,
   Phone,
   MessageSquare,
-  Check,
+  Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
@@ -52,6 +57,7 @@ import {
   useBookingAddons,
   useBookingCombos,
   useBookingPackages,
+  useCreateCustomerBooking,
   useValidateBookingVoucher,
 } from "@/features/bookings/hooks/use-bookings";
 import { useSlotHold } from "@/features/bookings/hooks/use-slot-hold";
@@ -59,7 +65,7 @@ import { useCustomerVehicles, useCreateCustomerVehicle } from "@/features/vehicl
 import { useCustomerVouchers } from "@/features/vouchers/hooks/use-customer-vouchers";
 import { useCustomerPromotions } from "@/features/loyalty/hooks/use-customer-loyalty";
 import { useBookingStore } from "@/features/bookings/store/booking.store";
-import type { BookingDraft, VoucherValidationResult } from "@/entities/bookings";
+import type { BookingDraft, PaymentMethod, VoucherValidationResult } from "@/entities/bookings";
 import {
   CUSTOMER_VEHICLE_TYPES,
   type CustomerVehicleFormValues,
@@ -149,12 +155,36 @@ const VEHICLE_COLORS = [
   "Champagne", "Pearl White", "Midnight Black", "Other",
 ];
 
-const YEAR_LIST = Array.from({ length: new Date().getFullYear() - 1989 }, (_, i) =>
-  String(new Date().getFullYear() - i),
-);
-
 const selectCls =
   "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+const PAYMENT_OPTIONS: {
+  method: PaymentMethod;
+  label: string;
+  description: string;
+  icon: ElementType;
+  badge?: string;
+}[] = [
+  {
+    method: "CASH_AT_COUNTER",
+    label: "Cash at counter",
+    description: "Pay directly when you arrive.",
+    icon: Banknote,
+  },
+  {
+    method: "BANK_TRANSFER",
+    label: "Bank transfer",
+    description: "Transfer before your appointment.",
+    icon: Building2,
+  },
+  {
+    method: "E_WALLET",
+    label: "E-wallet",
+    description: "Pay via MoMo, ZaloPay or VNPay.",
+    icon: Wallet,
+    badge: "Popular",
+  },
+];
 
 function AddVehicleModal({
   open,
@@ -264,12 +294,13 @@ function AddVehicleModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="mb-1 block text-xs font-semibold">Year *</Label>
-              <select value={form.year} onChange={(e) => set("year", e.target.value)} className={selectCls}>
-                <option value="" disabled>Select year</option>
-                {YEAR_LIST.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
+              <Input
+                value={form.year}
+                onChange={(e) => set("year", e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="e.g. 2024"
+                inputMode="numeric"
+                className="rounded-xl"
+              />
               {errors.year && <p className="mt-1 text-xs text-rose-600">{errors.year}</p>}
             </div>
             <div>
@@ -745,30 +776,8 @@ export function CustomerBookingForm() {
   const queryType = searchParams.get("type");
   const queryId = searchParams.get("id");
 
-  const [activeScrollStep, setActiveScrollStep] = useState(1);
-  useEffect(() => {
-    const handleScroll = () => {
-      const steps = [1, 2, 3, 4, 5, 6, 7];
-      let currentActive = 1;
-      let minDistance = Infinity;
-      steps.forEach((s) => {
-        const el = document.getElementById(`step-${s}`);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          const distance = Math.abs(rect.top - 140);
-          if (distance < minDistance) {
-            minDistance = distance;
-            currentActive = s;
-          }
-        }
-      });
-      setActiveScrollStep(currentActive);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
+  const hasAutoSelectedVehicleRef = useRef(false);
+  const hasAutoSelectedPackageRef = useRef(false);
   const hasAutoSelectedComboRef = useRef(false);
   const draft = useBookingStore((state) => state.draft);
   const updateDraft = useBookingStore((state) => state.updateDraft);
@@ -812,14 +821,24 @@ export function CustomerBookingForm() {
   const customerPromotionsQuery = useCustomerPromotions();
   const customerVouchersQuery = useCustomerVouchers();
   const voucherMutation = useValidateBookingVoucher();
+  const createBookingMutation = useCreateCustomerBooking();
   const publicSettingsQuery = usePublicSettings();
   const { holdSlot, isHolding, holdError } = useSlotHold();
   const setExpiresAt = useBookingStore((state) => state.setExpiresAt);
   const setStoredValidatedVoucher = useBookingStore((state) => state.setValidatedVoucher);
+  const resetDraft = useBookingStore((state) => state.resetDraft);
+  const setLastCreatedBooking = useBookingStore((state) => state.setLastCreatedBooking);
 
   const [validatedVoucher, setValidatedVoucher] = useState<VoucherValidationResult | null>(null);
   const [showValidation, setShowValidation] = useState(false);
   const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(draft.paymentMethod);
+  const [showPaymentError, setShowPaymentError] = useState(false);
+
+  useEffect(() => {
+    setSelectedPaymentMethod(draft.paymentMethod);
+  }, [draft.paymentMethod]);
 
   const resetValidatedVoucher = () => {
     setValidatedVoucher(null);
@@ -876,7 +895,12 @@ export function CustomerBookingForm() {
   }, [draft.bookingDate, updateDraft]);
 
   useEffect(() => {
-    if (!draft.vehicleId && vehicles.length > 0) {
+    if (draft.vehicleId) {
+      hasAutoSelectedVehicleRef.current = true;
+      return;
+    }
+    if (!hasAutoSelectedVehicleRef.current && vehicles.length > 0) {
+      hasAutoSelectedVehicleRef.current = true;
       updateDraft({
         vehicleId: vehicles.find((item) => item.isPrimary)?.vehicleId ?? vehicles[0].vehicleId,
       });
@@ -884,7 +908,16 @@ export function CustomerBookingForm() {
   }, [draft.vehicleId, updateDraft, vehicles]);
 
   useEffect(() => {
-    if (draft.mode === "PACKAGE" && !draft.packageId && packages.length > 0) {
+    if (draft.mode !== "PACKAGE") {
+      hasAutoSelectedPackageRef.current = false;
+      return;
+    }
+    if (draft.packageId) {
+      hasAutoSelectedPackageRef.current = true;
+      return;
+    }
+    if (!hasAutoSelectedPackageRef.current && packages.length > 0) {
+      hasAutoSelectedPackageRef.current = true;
       updateDraft({ packageId: packages[0].packageId });
     }
   }, [draft.mode, draft.packageId, packages, updateDraft]);
@@ -898,7 +931,17 @@ export function CustomerBookingForm() {
     const fallbackComboId = preferredOwnedComboId || combos[0]?.comboId || "";
     const availableComboIds = new Set(combos.map((item) => item.comboId));
     const hasValidSelectedCombo = draft.comboId.length > 0 && availableComboIds.has(draft.comboId);
-    if (!hasValidSelectedCombo && fallbackComboId) {
+
+    if (hasValidSelectedCombo) {
+      hasAutoSelectedComboRef.current = true;
+      return;
+    }
+
+    if (!draft.comboId && hasAutoSelectedComboRef.current) {
+      return;
+    }
+
+    if (!hasValidSelectedCombo && fallbackComboId && !hasAutoSelectedComboRef.current) {
       hasAutoSelectedComboRef.current = true;
       updateDraft({ comboId: fallbackComboId });
       return;
@@ -1002,19 +1045,62 @@ export function CustomerBookingForm() {
 
   const handleSubmit = async () => {
     setShowValidation(true);
-    if (Object.keys(errors).length > 0) return;
+    if (Object.keys(errors).length > 0) {
+      toast.error(Object.values(errors)[0] ?? "Please complete booking information.");
+      return;
+    }
+    setSelectedPaymentMethod(draft.paymentMethod);
+    setShowPaymentError(false);
+    setShowPaymentDialog(true);
+  };
+
+  const handleConfirmPayment = async () => {
+    setShowPaymentError(true);
+    if (!selectedPaymentMethod) return;
+
+    const nextDraft = { ...draft, paymentMethod: selectedPaymentMethod };
+    const nextErrors = validateBookingDraft(nextDraft, summary, { requirePaymentMethod: true });
+    if (Object.keys(nextErrors).length > 0) {
+      setShowValidation(true);
+      toast.error(Object.values(nextErrors)[0] ?? "Please complete booking information.");
+      setShowPaymentDialog(false);
+      return;
+    }
+
     try {
-      const hold = await holdSlot({
+      updateDraft({ paymentMethod: selectedPaymentMethod });
+      await holdSlot({
         bookingDate: draft.bookingDate,
         bookingTime: draft.bookingTime,
       });
-      setExpiresAt(new Date(hold.expiresAt).getTime());
-      toast.success("Slot held for 15 minutes.");
-      router.push("/customer/booking/confirm");
+      const booking = await createBookingMutation.mutateAsync(nextDraft);
+      setLastCreatedBooking(booking);
+      resetDraft();
+      setExpiresAt(null);
+      setShowPaymentDialog(false);
+      toast.success("Booking confirmed.");
+      router.push(`/customer/bookings/${booking.bookingId}`);
     } catch (error) {
       toast.error(getDisplayErrorMessage(error));
     }
   };
+
+  const completedSteps = useMemo<Record<number, boolean>>(
+    () => ({
+      1: Boolean(draft.vehicleId),
+      2: Boolean(draft.mode),
+      3: Boolean(draft.mode === "PACKAGE" ? draft.packageId : draft.comboId),
+      4: true,
+      5: Boolean(draft.bookingDate && draft.bookingTime),
+      6: true,
+      7: true,
+    }),
+    [draft],
+  );
+
+  const completedStepsCount = Object.values(completedSteps).filter(Boolean).length;
+
+  const progressPercent = Math.round((completedStepsCount / 7) * 100);
 
   const updateMode = (mode: BookingDraft["mode"]) => {
     resetValidatedVoucher();
@@ -1059,32 +1145,8 @@ export function CustomerBookingForm() {
     );
   }
 
-  const completedStepsCount = useMemo(() => {
-    let count = 0;
-    if (draft.vehicleId) count++; // step 1
-    if (draft.mode) count++; // step 2
-    if (draft.mode === "PACKAGE" ? draft.packageId : draft.comboId) count++; // step 3
-    count++; // Step 4 (Add-ons optional)
-    if (draft.bookingDate && draft.bookingTime) count++; // step 5
-    count++; // Step 6 (Voucher optional)
-    if (Object.keys(errors).length === 0) count++; // step 7
-    return count;
-  }, [draft, errors]);
-
-  const progressPercent = Math.round((completedStepsCount / 7) * 100);
-
-  const stepMeta = [
-    { step: 1, label: "Phương tiện" },
-    { step: 2, label: "Loại dịch vụ" },
-    { step: 3, label: draft.mode === "PACKAGE" ? "Chọn gói" : "Chọn combo" },
-    { step: 4, label: "Dịch vụ thêm" },
-    { step: 5, label: "Lịch hẹn" },
-    { step: 6, label: "Khuyến mãi" },
-    { step: 7, label: "Hỗ trợ" },
-  ];
-
   return (
-    <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-background px-4 py-6 sm:px-6 lg:px-8">
+    <div className="relative min-h-[calc(100vh-72px)] overflow-x-hidden bg-background px-4 py-6 sm:px-6 lg:px-8">
       {/* Sticky horizontal progress bar */}
       <div className="sticky top-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 mb-6 h-1.5 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)] lg:w-[calc(100%+4rem)] bg-border/20 backdrop-blur-md">
         <div
@@ -1104,54 +1166,95 @@ export function CustomerBookingForm() {
         }}
       />
 
-      <div className="relative mx-auto grid max-w-7xl gap-6 lg:grid-cols-[200px_1.6fr_1fr]">
-        
-        {/* Left Vertical Stepper Bubble Menu */}
-        <div className="hidden lg:block sticky top-24 self-start">
-          <div className="flex flex-col gap-4 border-l border-border pl-4">
-            {stepMeta.map((s) => {
-              const isActive = activeScrollStep === s.step;
-              const isCompleted = s.step < completedStepsCount || (s.step === 7 && Object.keys(errors).length === 0);
-              return (
-                <button
-                  key={s.step}
-                  type="button"
-                  onClick={() => {
-                    document.getElementById(`step-${s.step}`)?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className="group flex items-center gap-3 text-left transition-all duration-300"
-                >
-                  <div
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="max-w-2xl rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Choose payment method
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Select how you want to pay before we reserve this booking slot.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {PAYMENT_OPTIONS.map(({ method, label, description, icon: Icon, badge }) => {
+                const active = selectedPaymentMethod === method;
+                return (
+                  <button
+                    key={method}
+                    type="button"
+                    onClick={() => {
+                      setSelectedPaymentMethod(method);
+                      setShowPaymentError(false);
+                    }}
                     className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-full border text-xs font-black transition-all duration-300",
-                      isActive
-                        ? "border-[#00B8D9] bg-[#EAF6FD] text-[#00B8D9] dark:bg-slate-900/60 shadow-[0_0_12px_rgba(0,184,217,0.22)]"
-                        : isCompleted
-                          ? "border-emerald-500 bg-emerald-500 text-white"
-                          : "border-border bg-card text-muted-foreground group-hover:border-primary"
+                      "relative flex min-h-40 flex-col gap-3 rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                      active
+                        ? "border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary)/0.28)]"
+                        : "border-border bg-card hover:border-primary/40 hover:bg-muted/30",
                     )}
                   >
-                    {isCompleted && s.step < 7 ? (
-                      <Check className="h-3.5 w-3.5" />
-                    ) : (
-                      s.step
-                    )}
-                  </div>
-                  <span
-                    className={cn(
-                      "text-xs font-bold transition-all duration-300",
-                      isActive
-                        ? "text-[#00B8D9] scale-105"
-                        : "text-muted-foreground group-hover:text-foreground"
-                    )}
-                  >
-                    {s.label}
-                  </span>
-                </button>
-              );
-            })}
+                    {badge ? (
+                      <span className="absolute right-3 top-3 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                        {badge}
+                      </span>
+                    ) : null}
+                    <span
+                      className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-xl",
+                        active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span className="space-y-1">
+                      <span className="block text-sm font-bold text-foreground">{label}</span>
+                      <span className="block text-xs leading-relaxed text-muted-foreground">{description}</span>
+                    </span>
+                    {active ? <CheckCircle2 className="absolute bottom-3 right-3 h-4 w-4 text-primary" /> : null}
+                  </button>
+                );
+              })}
+            </div>
+            {showPaymentError && !selectedPaymentMethod ? (
+              <p className="text-xs font-medium text-rose-600">Please select a payment method.</p>
+            ) : null}
+            <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => setShowPaymentDialog(false)}
+                disabled={isHolding || createBookingMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="rounded-xl px-6 font-bold"
+                onClick={() => void handleConfirmPayment()}
+                disabled={isHolding || createBookingMutation.isPending}
+              >
+                {isHolding || createBookingMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Confirming...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Continue
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
+        </DialogContent>
+      </Dialog>
+
+      <div className="relative mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.6fr_1fr]">
 
         {/* Steps List */}
         <div className="space-y-6">
@@ -1165,7 +1268,7 @@ export function CustomerBookingForm() {
                 if (value === "__add_new__") {
                   setShowAddVehicleModal(true);
                 } else {
-                  updateDraft({ vehicleId: value });
+                  updateDraft({ vehicleId: draft.vehicleId === value ? "" : value });
                 }
               }}
               placeholder="Select a vehicle"
@@ -1195,7 +1298,14 @@ export function CustomerBookingForm() {
                     type="button"
                     className={optionCardClass(active, disabled)}
                     disabled={disabled}
-                    onClick={() => updateMode(mode)}
+                    onClick={() => {
+                      if (active) {
+                        resetValidatedVoucher();
+                        updateDraft({ mode, packageId: "", comboId: "", addonIds: [], voucherCode: "" });
+                        return;
+                      }
+                      updateMode(mode);
+                    }}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm font-bold text-foreground">{getModeLabel(mode)}</span>
@@ -1215,7 +1325,11 @@ export function CustomerBookingForm() {
                 value={draft.packageId}
                 onValueChange={(packageId) => {
                   resetValidatedVoucher();
-                  updateDraft({ packageId, addonIds: [], voucherCode: "" });
+                  updateDraft({
+                    packageId: draft.packageId === packageId ? "" : packageId,
+                    addonIds: [],
+                    voucherCode: "",
+                  });
                 }}
                 placeholder="Select a package"
                 searchPlaceholder="Search package..."
@@ -1239,7 +1353,13 @@ export function CustomerBookingForm() {
                       key={item.comboId}
                       type="button"
                       className={optionCardClass(active)}
-                      onClick={() => { resetValidatedVoucher(); updateDraft({ comboId: item.comboId, voucherCode: "" }); }}
+                      onClick={() => {
+                        resetValidatedVoucher();
+                        updateDraft({
+                          comboId: active ? "" : item.comboId,
+                          voucherCode: "",
+                        });
+                      }}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -1333,8 +1453,34 @@ export function CustomerBookingForm() {
             </div>
           </StepCard>
 
-          {/* Step 6 — Voucher */}
-          <StepCard step={6} title="Voucher">
+          {/* Step 6 — Confirmation email */}
+          <StepCard step={6} title="Confirmation email (optional)">
+            <div className="space-y-2">
+              <Label htmlFor="booking-confirmation-email" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Gmail / Email nhận xác nhận (không bắt buộc)
+              </Label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="booking-confirmation-email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="example@gmail.com"
+                  value={draft.confirmationEmail ?? ""}
+                  onChange={(event) => updateDraft({ confirmationEmail: event.target.value })}
+                  className="h-12 rounded-xl pl-10"
+                />
+              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Nếu để trống, email xác nhận booking sẽ gửi về email tài khoản đăng ký.
+              </p>
+              <FieldError message={showValidation ? errors.confirmationEmail : null} />
+            </div>
+          </StepCard>
+
+          {/* Step 7 — Voucher */}
+          <StepCard step={7} title="Voucher">
             <VoucherSection
               draft={draft}
               summary={summary}
@@ -1347,12 +1493,15 @@ export function CustomerBookingForm() {
             />
           </StepCard>
 
-          {/* Step 7 — Support Info */}
-          <StepCard step={7} title="Xác nhận & Hỗ trợ">
-            <p className="text-sm font-medium text-muted-foreground leading-6">
-              Chúng tôi hiện hỗ trợ đặt lịch trực tiếp qua hotline. Vui lòng nhấn nút **Liên hệ hỗ trợ: 1900 5566** ở bảng tóm tắt bên phải để được điều phối kỹ thuật viên tức thì.
-            </p>
-          </StepCard>
+          <div className="rounded-2xl border border-cyan-100 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <BookingButton
+              onClick={() => void handleSubmit()}
+              isLoading={isHolding || createBookingMutation.isPending}
+              errors={errors}
+              showValidation={showValidation}
+              summary={summary}
+            />
+          </div>
         </div>
 
         {/* Sidebar summary */}
@@ -1385,13 +1534,21 @@ export function CustomerBookingForm() {
                     <SummaryItem label="Total" value={formatBookingCurrency(summary.finalAmount)} emphasize />
                   </div>
 
-                  <a
-                    href="tel:19005566"
-                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-500 py-3 text-sm font-black text-white shadow-lg transition-transform duration-300 hover:scale-[1.02] hover:bg-cyan-600 active:scale-[0.98]"
-                  >
-                    <Phone className="h-4 w-4" />
-                    Liên hệ hỗ trợ: 1900 5566
-                  </a>
+                  <BookingButton
+                    onClick={() => void handleSubmit()}
+                    isLoading={isHolding || createBookingMutation.isPending}
+                    errors={errors}
+                    showValidation={showValidation}
+                    summary={summary}
+                  />
+
+                  <div className="mt-4 rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
+                    <div className="flex items-center gap-2 font-bold">
+                      <Phone className="h-4 w-4" />
+                      Liên hệ hỗ trợ: 1900 5566
+                    </div>
+                    
+                  </div>
                 </>
               ) : (
                 <div className="rounded-xl border border-dashed border-border bg-muted/40 p-5 text-center">
@@ -1404,13 +1561,10 @@ export function CustomerBookingForm() {
       </div>
 
       {/* Floating Chatbot support bubble */}
-      <a
-        href="tel:19005566"
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-cyan-500 text-white shadow-xl transition-all duration-300 hover:scale-110 hover:bg-cyan-600 hover:shadow-cyan-500/20"
-      >
+      <div className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-cyan-500 text-white shadow-xl">
         <MessageSquare className="h-6 w-6" />
         <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white">1</span>
-      </a>
+      </div>
     </div>
   );
 }
@@ -1525,12 +1679,11 @@ function BookingButton({
 }: {
   onClick: () => void;
   isLoading: boolean;
-  errors: Record<string, string>;
+  errors: Record<string, string | undefined>;
   showValidation: boolean;
   summary: ReturnType<typeof buildBookingSummary> | null;
 }) {
-  const hasErrors = Object.keys(errors).length > 0;
-  const isDisabled = isLoading || (showValidation && hasErrors);
+  const isDisabled = isLoading;
 
   const firstErrorKey = Object.keys(errors)[0];
   const errorHintMap: Record<string, string> = {
@@ -1539,6 +1692,7 @@ function BookingButton({
     comboId: "Please select a combo",
     bookingDate: "Please select a date",
     bookingTime: "Please select a time",
+    confirmationEmail: "Please enter a valid confirmation email",
     paymentMethod: "Please select a payment method",
   };
   const hintText = firstErrorKey ? errorHintMap[firstErrorKey] : null;
@@ -1547,9 +1701,13 @@ function BookingButton({
     <div className="space-y-2 pt-1">
       <Button
         type="button"
+        variant="ghost"
         onClick={onClick}
         disabled={isDisabled}
-        className="w-full rounded-xl h-11 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow-md transition-all disabled:opacity-60"
+        aria-disabled={isDisabled}
+        className={cn(
+          "h-11 w-full rounded-xl bg-cyan-500 text-sm font-bold !text-white shadow-sm shadow-cyan-500/20 transition-all hover:bg-cyan-600 hover:!text-white hover:shadow-md disabled:pointer-events-none disabled:opacity-60",
+        )}
       >
         {isLoading ? (
           <span className="flex items-center gap-2">

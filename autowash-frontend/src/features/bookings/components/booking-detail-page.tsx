@@ -188,7 +188,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const canCancelBooking = booking.status === "PENDING" || booking.status === "CONFIRMED";
   const customerName = booking.customerName || profileQuery.data?.fullName || translate(language, "Khách hàng", "Customer");
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || translate(language, "Chưa có số điện thoại", "No phone number");
-  const customerEmail = profileQuery.data?.email || translate(language, "email của bạn", "your email");
+  const customerEmail = booking.confirmationEmail || profileQuery.data?.email || translate(language, "email của bạn", "your email");
   const expectedDate = formatShortDate(booking.scheduling.bookingDate, language);
   const expectedTime = booking.scheduling.bookingTime.length >= 5
     ? booking.scheduling.bookingTime.slice(0, 5)

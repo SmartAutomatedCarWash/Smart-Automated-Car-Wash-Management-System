@@ -31,6 +31,7 @@ export const EMPTY_BOOKING_DRAFT: BookingDraft = {
   bookingDate: "",
   bookingTime: "",
   voucherCode: "",
+  confirmationEmail: "",
   paymentMethod: null,
 };
 

@@ -25,6 +25,7 @@ import {
 } from "@/features/vehicles/hooks/use-customer-vehicles";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type {
+  CustomerVehicleDetail,
   CustomerVehicleFormErrors,
   CustomerVehicleFormValues,
   CustomerVehicleListItem,
@@ -227,13 +228,20 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
   const handleSave = async () => {
     setShowValidation(true);
 
-    if (Object.keys(clientErrors).length > 0 || !hasChanges) {
+    if (Object.keys(clientErrors).length > 0) {
+      return;
+    }
+
+    if (!hasChanges) {
+      toast.info(translate(language, "Chưa có thay đổi nào để lưu.", "No changes to save."));
+      router.push("/customer/vehicles");
       return;
     }
 
     try {
       await updateMutation.mutateAsync(buildUpdateCustomerVehicleRequest(form));
       toast.success(translate(language, "Xe đã được cập nhật thành công.", "Vehicle updated successfully."));
+      router.push("/customer/vehicles");
     } catch {
       toast.error(translate(language, "Không thể cập nhật xe.", "Unable to update vehicle."));
     }
@@ -264,9 +272,11 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
       backLabel={translate(language, "Quay lại danh sách xe", "Back to vehicles")}
       notice={`${translate(language, "Xe đã tạo vào", "Vehicle created")} ${formatDateTime(vehicle.createdAt, locale)} ${translate(language, "và hiện có trạng thái", "and currently marked as")} ${vehicle.status.toLowerCase()}.`}
     >
+      <VehicleInfoSummaryCard vehicle={vehicle} language={language} locale={locale} />
+
       <CustomerVehicleFormCard
         title={`${vehicle.brand} ${vehicle.model}`}
-        description={translate(language, "Cập nhật các trường xe có thể chỉnh sửa. Biển số và loại xe chỉ đọc.", "Update editable vehicle fields. Plate and type stay read-only because the backend update contract excludes them.")}
+        description={translate(language, "Cập nhật các trường xe có thể chỉnh sửa. Biển số và loại xe chỉ đọc để giữ lịch sử xe nhất quán.", "Update editable vehicle fields. Plate and type stay read-only to keep vehicle history consistent.")}
         form={form}
         errors={submitErrors}
         submitLabel={translate(language, "Lưu thay đổi", "Save changes")}
@@ -331,6 +341,62 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
         }
       />
     </VehicleFormPageShell>
+  );
+}
+
+function VehicleInfoSummaryCard({
+  vehicle,
+  language,
+  locale,
+}: {
+  vehicle: CustomerVehicleDetail;
+  language: "vi" | "en";
+  locale: string;
+}) {
+  const details = [
+    { label: translate(language, "Biển số", "Plate"), value: vehicle.plate },
+    { label: translate(language, "Loại xe", "Type"), value: vehicle.type },
+    { label: translate(language, "Hãng xe", "Brand"), value: vehicle.brand },
+    { label: translate(language, "Dòng xe", "Model"), value: vehicle.model },
+    { label: translate(language, "Năm sản xuất", "Year"), value: String(vehicle.year) },
+    { label: translate(language, "Màu sắc", "Color"), value: vehicle.color ?? translate(language, "Chưa cung cấp", "Not provided") },
+    { label: translate(language, "Ngày tạo", "Created"), value: formatDateTime(vehicle.createdAt, locale) },
+  ];
+
+  return (
+    <Card className="border-slate-200/80 bg-white/95 shadow-[0_18px_44px_rgba(15,23,42,0.08)]">
+      <CardHeader className="border-b border-slate-200/70 bg-white">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle className="text-xl font-black text-slate-900">
+              {translate(language, "Thông tin xe", "Vehicle information")}
+            </CardTitle>
+            <CardDescription>
+              {translate(language, "Xem nhanh thông tin xe đã lưu trong tài khoản.", "Review the saved vehicle details for this account.")}
+            </CardDescription>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              {vehicle.status}
+            </span>
+            {vehicle.isPrimary ? (
+              <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                <Star className="mr-1 h-3.5 w-3.5" />
+                {translate(language, "Xe chính", "Primary vehicle")}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="grid gap-3 p-6 sm:grid-cols-2 lg:grid-cols-3">
+        {details.map((item) => (
+          <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+            <div className="text-xs font-semibold uppercase text-slate-500">{item.label}</div>
+            <div className="mt-1 text-sm font-bold text-slate-900">{item.value}</div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 
