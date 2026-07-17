@@ -2,33 +2,9 @@
 -- Uses fixed UUIDs compatible with uuid columns
 -- Correct column names per schema: packages(base_price, status), combos(price, max_usages, duration_days)
 
--- ── Clean up old demo data from V100 ─────────────────────────────────────────
--- Delete in FK dependency order
-DO $$
-DECLARE old_pkg_ids uuid[] := ARRAY[
-  '22222222-2222-2222-2222-111111111111'::uuid,
-  '22222222-2222-2222-2222-222222222222'::uuid
-];
-old_svc_ids uuid[] := ARRAY[
-  '11111111-1111-1111-1111-111111111111'::uuid,
-  '11111111-1111-1111-1111-222222222222'::uuid,
-  '11111111-1111-1111-1111-333333333333'::uuid
-];
-BEGIN
-  -- Cascade-delete bookings that reference old packages
-  DELETE FROM booking_promotions      WHERE booking_id IN (SELECT id FROM bookings WHERE package_id = ANY(old_pkg_ids));
-  DELETE FROM booking_options         WHERE booking_id IN (SELECT id FROM bookings WHERE package_id = ANY(old_pkg_ids));
-  DELETE FROM booking_status_histories WHERE booking_id IN (SELECT id FROM bookings WHERE package_id = ANY(old_pkg_ids));
-  DELETE FROM user_vouchers           WHERE booking_id IN (SELECT id FROM bookings WHERE package_id = ANY(old_pkg_ids));
-  DELETE FROM violation_records       WHERE booking_id IN (SELECT id FROM bookings WHERE package_id = ANY(old_pkg_ids));
-  DELETE FROM point_transactions      WHERE booking_id IN (SELECT id FROM bookings WHERE package_id = ANY(old_pkg_ids));
-  DELETE FROM wash_sessions           WHERE booking_id IN (SELECT id FROM bookings WHERE package_id = ANY(old_pkg_ids));
-  DELETE FROM payments                WHERE booking_id IN (SELECT id FROM bookings WHERE package_id = ANY(old_pkg_ids));
-  DELETE FROM bookings                WHERE package_id = ANY(old_pkg_ids);
-  DELETE FROM package_services     WHERE package_id = ANY(old_pkg_ids);
-  DELETE FROM packages             WHERE id         = ANY(old_pkg_ids);
-  DELETE FROM services             WHERE id         = ANY(old_svc_ids);
-END $$;
+-- ── Clean up old demo data from V100 (disabled for H2 compatibility) ───
+-- DELETE FROM packages; -- Done automatically on fresh H2 memory boot
+
 
 -- ── SERVICES ─────────────────────────────────────────────────────────────────
 INSERT INTO services (id, name, description, price, duration_minutes, status) VALUES
@@ -82,7 +58,7 @@ INSERT INTO services (id, name, description, price, duration_minutes, status) VA
 ('aa000001-0000-0000-0000-000000000048','Convertible Soft-Top Cleaning',       'Clean and protect convertible fabric hood against UV and moisture',300000,30,'ACTIVE'),
 ('aa000001-0000-0000-0000-000000000049','Paint Thickness Inspection',          'Gauge paint thickness to detect prior resprays or hidden damage',100000,15,'ACTIVE'),
 ('aa000001-0000-0000-0000-000000000050','Compressed Air Drying',               'Blow-dry entire vehicle to eliminate water spots',50000,10,'ACTIVE')
-ON CONFLICT (id) DO NOTHING;
+;
 
 -- ── PACKAGES ─────────────────────────────────────────────────────────────────
 INSERT INTO packages (id, name, description, base_price, duration_minutes, status) VALUES
@@ -96,7 +72,7 @@ INSERT INTO packages (id, name, description, base_price, duration_minutes, statu
 ('bb000002-0000-0000-0000-000000000008','Paint Protection Package',        'Iron decon, clay bar, carnauba wax, and paint sealant',1120000,130,'ACTIVE'),
 ('bb000002-0000-0000-0000-000000000009','Deodorize & Sanitize Package',    'Ozone, steam sterilisation, UV sanitation, and antibacterial spray',675000,90,'ACTIVE'),
 ('bb000002-0000-0000-0000-000000000010','Engine Bay & Undercarriage Care', 'Undercarriage rinse, engine bay detail, plastic dressing, battery clean',609000,90,'ACTIVE')
-ON CONFLICT (id) DO NOTHING;
+;
 
 -- ── PACKAGE → SERVICE MAPPING ────────────────────────────────────────────────
 INSERT INTO package_services (package_id, option_id, option_name, option_price, option_duration_minutes) VALUES
@@ -159,7 +135,7 @@ INSERT INTO package_services (package_id, option_id, option_name, option_price, 
 ('bb000002-0000-0000-0000-000000000010','aa000001-0000-0000-0000-000000000029','Deep Engine Bay Detailing',350000,40),
 ('bb000002-0000-0000-0000-000000000010','aa000001-0000-0000-0000-000000000030','Engine Bay Plastic Dressing',100000,15),
 ('bb000002-0000-0000-0000-000000000010','aa000001-0000-0000-0000-000000000046','Battery Terminal Cleaning',30000,5)
-ON CONFLICT DO NOTHING;
+;
 
 -- ── COMBOS ───────────────────────────────────────────────────────────────────
 -- combos schema: price (not base_price), max_usages (not usage_limit), duration_days (not valid_days)
@@ -174,7 +150,7 @@ INSERT INTO combos (id, name, description, price, duration_minutes, max_usages, 
 ('cc000003-0000-0000-0000-000000000008','Premium Leather Care Card — 5 Uses',       'Prepaid card for 5 leather cleaning and conditioning sessions',1550000,50,5,120,'ACTIVE'),
 ('cc000003-0000-0000-0000-000000000009','Floor Mat & Roof Lining Card — 5 Uses',    'Prepaid card for 5 floor mat shampoo and roof lining sessions',1300000,50,5,120,'ACTIVE'),
 ('cc000003-0000-0000-0000-000000000010','Quarterly Full-Service Card — 4 Uses',     'Prepaid card for 4 comprehensive maintenance sessions per quarter',980000,55,4,90,'ACTIVE')
-ON CONFLICT (id) DO NOTHING;
+;
 
 -- ── COMBO → SERVICE MAPPING ───────────────────────────────────────────────────
 INSERT INTO combo_services (combo_id, option_id, option_name, option_price, option_duration_minutes) VALUES
@@ -210,4 +186,4 @@ INSERT INTO combo_services (combo_id, option_id, option_name, option_price, opti
 ('cc000003-0000-0000-0000-000000000010','aa000001-0000-0000-0000-000000000011','Basic Interior Vacuum',60000,15),
 ('cc000003-0000-0000-0000-000000000010','aa000001-0000-0000-0000-000000000012','Dashboard & Console Cleaning',50000,10),
 ('cc000003-0000-0000-0000-000000000010','aa000001-0000-0000-0000-000000000023','Interior & Exterior Glass Cleaning',50000,10)
-ON CONFLICT DO NOTHING;
+;

@@ -3,5 +3,5 @@
 INSERT INTO "announcements" ("title", "type", "active", "priority", "expires_at")
 VALUES (
   'Limited time offer: Save 15% on Ceramic Coating services this week!',
-  'PROMO', true, 10, NOW() + INTERVAL '7 days'
+  'PROMO', true, 10, NOW() + INTERVAL '7' DAY
 );
