@@ -1,9 +1,9 @@
-import { StaffOperationsFlow } from "@/features/operations/components/staff-operations-flow";
+import { redirect } from "next/navigation";
 
 type PageProps = {
   searchParams: { sessionId?: string };
 };
 
 export default function StaffCheckInPage({ searchParams }: PageProps) {
-  return <StaffOperationsFlow mode="check-in" sessionId={searchParams.sessionId} />;
+  redirect("/staff/my-sessions");
 }

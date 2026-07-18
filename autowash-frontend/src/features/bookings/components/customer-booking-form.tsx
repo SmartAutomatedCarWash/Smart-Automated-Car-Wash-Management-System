@@ -37,6 +37,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/shared/ui/ui/popover";
+import { DatePickerButton } from "@/shared/ui/date-picker-button";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import { CustomerBookingSelect, CustomerBookingMultiSelect } from "@/features/bookings/components/customer-booking-select";
 import {
@@ -1435,12 +1436,12 @@ export function CustomerBookingForm() {
                 <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Select a day
                 </label>
-                <input
-                  type="date"
-                  min={getTomorrowDate()}
+                <DatePickerButton
                   value={draft.bookingDate}
-                  onChange={(e) => updateDraft({ bookingDate: e.target.value })}
-                  className="rounded-xl border border-input bg-background px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  min={getTomorrowDate()}
+                  onChange={(bookingDate) => updateDraft({ bookingDate })}
+                  label="Select a day"
+                  buttonClassName="h-11 w-full justify-start rounded-xl border-input bg-background text-sm"
                 />
                 <FieldError message={showValidation ? errors.bookingDate : null} />
               </div>

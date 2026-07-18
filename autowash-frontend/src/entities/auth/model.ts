@@ -1,4 +1,4 @@
-export type UserRole = "CUSTOMER" | "STAFF" | "ADMIN";
+export type UserRole = "CUSTOMER" | "STAFF" | "MANAGER" | "ADMIN";
 export type UserStatus = "ACTIVE" | "PENDING" | "PENDING_VERIFY" | "BLOCKED" | "SUSPENDED";
 export type LoyaltyTier = string;
 

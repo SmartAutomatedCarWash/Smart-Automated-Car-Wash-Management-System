@@ -1,5 +1,5 @@
-import { StaffSessionHistoryView } from "@/shared/ui/workspace/staff-session-history-view";
+import { StaffHistoryView } from "@/features/operations/components/staff-history-view";
 
 export default function StaffSessionHistoryPage() {
-  return <StaffSessionHistoryView />;
+  return <StaffHistoryView />;
 }

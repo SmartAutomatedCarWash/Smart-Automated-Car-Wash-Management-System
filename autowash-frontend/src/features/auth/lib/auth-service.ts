@@ -52,6 +52,16 @@ export async function loginCustomer(payload: LoginRequest) {
       accessToken: "mock-token-staff",
       expiresIn: 3600 * 24
     },
+    "manager@demo.com": {
+      userId: "manager-id-demo",
+      fullName: "Manager Demo",
+      phone: "0123456786",
+      email: "manager@demo.com",
+      role: "MANAGER",
+      status: "ACTIVE",
+      accessToken: "mock-token-manager",
+      expiresIn: 3600 * 24
+    },
     "customer@demo.com": {
       userId: "customer-id-demo",
       fullName: "Customer Demo",

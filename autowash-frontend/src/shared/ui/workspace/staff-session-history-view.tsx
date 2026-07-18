@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { Input } from "@/shared/ui/ui/input";
+import { DatePickerButton } from "@/shared/ui/date-picker-button";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import { getOperationsQueue } from "@/features/operations/lib/operations-service";
@@ -168,7 +169,7 @@ export function StaffSessionHistoryView() {
           <div className="grid items-end gap-3 rounded-3xl border border-border/50 bg-muted/40 p-3 shadow-inner lg:grid-cols-[minmax(220px,1fr)_112px_112px_minmax(0,1fr)]">
             <div>
               {periodMode === "day" ? (
-                <Input type="date" value={dayFilter} onChange={(event) => setDayFilter(event.target.value)} className="h-10 rounded-2xl border-border/60 bg-background shadow-sm" />
+                <DatePickerButton value={dayFilter} onChange={setDayFilter} label="Chọn ngày" buttonClassName="h-10 w-full justify-start rounded-2xl border-border/60 bg-background shadow-sm" />
               ) : null}
               {periodMode === "month" ? (
                 <Input type="month" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} className="h-10 rounded-2xl border-border/60 bg-background shadow-sm" />

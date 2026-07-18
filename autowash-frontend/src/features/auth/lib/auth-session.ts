@@ -9,6 +9,7 @@ import type { UserProfile } from "@/entities/users";
 const AUTH_REDIRECT_PATH: Record<UserRole, string> = {
   CUSTOMER: "/customer/home",
   STAFF: "/staff/dashboard",
+  MANAGER: "/manager/operations",
   ADMIN: "/admin/dashboard",
 };
 

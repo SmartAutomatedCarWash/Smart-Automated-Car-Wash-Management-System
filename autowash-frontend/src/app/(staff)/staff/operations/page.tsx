@@ -1,9 +1,9 @@
-import { StaffOperationsFlow } from "@/features/operations/components/staff-operations-flow";
+import { StaffMySessionsView } from "@/features/operations/components/staff-my-sessions-view";
 
 type PageProps = {
   searchParams: { sessionId?: string };
 };
 
 export default function StaffOperationsPage({ searchParams }: PageProps) {
-  return <StaffOperationsFlow mode="board" sessionId={searchParams.sessionId} />;
+  return <StaffMySessionsView />;
 }

@@ -1,4 +1,4 @@
-type WorkspaceRole = "CUSTOMER" | "STAFF" | "ADMIN";
+type WorkspaceRole = "CUSTOMER" | "STAFF" | "MANAGER" | "ADMIN";
 
 export type WorkspaceHeaderMeta = {
   title: string;
@@ -9,6 +9,7 @@ export type WorkspaceHeaderMeta = {
 const DEFAULT_SUBTITLE: Record<WorkspaceRole, string> = {
   CUSTOMER: "Manage bookings, vehicles, rewards, and account activity",
   STAFF: "Manage check-ins, wash sessions, and daily operations",
+  MANAGER: "Coordinate check-in, staff management, and wash progress",
   ADMIN: "Monitor system health, customers, services, and operations",
 };
 
@@ -109,18 +110,10 @@ const ROUTE_META: Array<{
     },
   },
   {
-    match: (pathname) => pathname.startsWith("/staff/operations"),
+    match: (pathname) => pathname.startsWith("/staff/my-sessions") || pathname.startsWith("/staff/operations"),
     meta: {
-      title: "Operations Board",
-      subtitle: "Move wash sessions through the service lifecycle",
-      workspace: "STAFF",
-    },
-  },
-  {
-    match: (pathname) => pathname.startsWith("/staff/check-in"),
-    meta: {
-      title: "Vehicle Check-in",
-      subtitle: "Confirm bookings and start the wash flow",
+      title: "My Wash Sessions",
+      subtitle: "Start and complete the wash sessions assigned to you",
       workspace: "STAFF",
     },
   },
@@ -138,6 +131,54 @@ const ROUTE_META: Array<{
       title: "Wash Session",
       subtitle: "Inspect session detail, timing, and next action",
       workspace: "STAFF",
+    },
+  },
+  {
+    match: (pathname) => pathname === "/manager/dashboard" || pathname === "/manager",
+    meta: {
+      title: "Operations Queue",
+      subtitle: "Check in vehicles and keep every wash session moving",
+      workspace: "MANAGER",
+    },
+  },
+  {
+    match: (pathname) => pathname.startsWith("/manager/profile"),
+    meta: {
+      title: "Manager Profile",
+      subtitle: "Manage account details and review shift responsibilities",
+      workspace: "MANAGER",
+    },
+  },
+  {
+    match: (pathname) => pathname.startsWith("/manager/operations"),
+    meta: {
+      title: "Operations Queue",
+      subtitle: "Check in vehicles and keep every wash session moving",
+      workspace: "MANAGER",
+    },
+  },
+  {
+    match: (pathname) => pathname.startsWith("/manager/staff"),
+    meta: {
+      title: "Staff Management",
+      subtitle: "Manage shifts, KPI, staff availability, and workload",
+      workspace: "MANAGER",
+    },
+  },
+  {
+    match: (pathname) => pathname.startsWith("/manager/reports"),
+    meta: {
+      title: "Dashboard",
+      subtitle: "Track revenue, booking volume, and staff KPI performance",
+      workspace: "MANAGER",
+    },
+  },
+  {
+    match: (pathname) => pathname.startsWith("/manager/settings"),
+    meta: {
+      title: "Settings",
+      subtitle: "Configure shifts, staff notifications, and priority vehicle alerts",
+      workspace: "MANAGER",
     },
   },
   {
@@ -238,6 +279,7 @@ export function getWorkspaceHeaderMeta(pathname: string): WorkspaceHeaderMeta {
 
 function resolveWorkspaceFromPath(pathname: string): WorkspaceRole {
   if (pathname.startsWith("/staff")) return "STAFF";
+  if (pathname.startsWith("/manager")) return "MANAGER";
   if (pathname.startsWith("/admin")) return "ADMIN";
   return "CUSTOMER";
 }
