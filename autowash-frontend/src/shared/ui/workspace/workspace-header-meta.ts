@@ -41,10 +41,18 @@ const ROUTE_META: Array<{
     },
   },
   {
+    match: (pathname) => pathname.startsWith("/customer/bookings/new"),
+    meta: {
+      title: "New Booking",
+      subtitle: "Create a new booking for your current primary or selected vehicle",
+      workspace: "CUSTOMER",
+    },
+  },
+  {
     match: (pathname) => pathname.startsWith("/customer/bookings") || pathname === "/customer/booking",
     meta: {
-      title: "History",
-      subtitle: "Active bookings, completed sessions and combo purchase history",
+      title: "Booking Management",
+      subtitle: "Review and manage active bookings, combos, and upcoming wash visits",
       workspace: "CUSTOMER",
     },
   },
@@ -59,8 +67,8 @@ const ROUTE_META: Array<{
   {
     match: (pathname) => pathname.startsWith("/customer/history"),
     meta: {
-      title: "Wash History",
-      subtitle: "Review past sessions and wash progress",
+      title: "History",
+      subtitle: "Review booking history, completed washes, and loyalty point activity",
       workspace: "CUSTOMER",
     },
   },

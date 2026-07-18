@@ -1,19 +1,14 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
-  Bell,
   BookOpen,
   CarFront,
   ClipboardList,
-  Droplets,
   Gift,
   History,
   LayoutDashboard,
   Layers3,
-  Radar,
   Settings2,
-  Star,
-  Tag,
   Users,
   Wrench,
 } from "lucide-react";
@@ -44,7 +39,7 @@ export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
     label: "AURA CAR CARE",
     labelVi: "AURA CAR CARE",
     description: "Detailing Customer Portal",
-    descriptionVi: "Cổng khách hàng Detailing",
+    descriptionVi: "Cong khach hang Detailing",
     accent: "bg-cyan-300 text-slate-950 shadow-cyan-300/25",
     accentSoft: "border-cyan-300/30 bg-cyan-50 text-cyan-950",
     activeNav: "bg-[#06111a] text-cyan-100 shadow-[0_16px_34px_rgba(8,145,178,0.18)] ring-1 ring-cyan-300/30",
@@ -52,9 +47,9 @@ export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
   },
   STAFF: {
     label: "Staff Operations",
-    labelVi: "Nghiệp vụ nhân viên",
+    labelVi: "Nghiep vu nhan vien",
     description: "Check-in and wash flow",
-    descriptionVi: "Duyệt check-in & Quy trình",
+    descriptionVi: "Duyet check-in va quy trinh",
     accent: "bg-cyan-300 text-slate-950 shadow-cyan-300/25",
     accentSoft: "border-cyan-300/30 bg-cyan-50 text-cyan-950",
     activeNav: "bg-[#06111a] text-cyan-100 shadow-[0_16px_34px_rgba(8,145,178,0.18)] ring-1 ring-cyan-300/30",
@@ -62,9 +57,9 @@ export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
   },
   ADMIN: {
     label: "Admin Dashboard",
-    labelVi: "Bảng quản trị",
+    labelVi: "Bang quan tri",
     description: "System control center",
-    descriptionVi: "Trung tâm quản trị hệ thống",
+    descriptionVi: "Trung tam quan tri he thong",
     accent: "bg-cyan-300 text-slate-950 shadow-cyan-300/25",
     accentSoft: "border-cyan-300/30 bg-cyan-50 text-cyan-950",
     activeNav: "bg-[#06111a] text-cyan-100 shadow-[0_16px_34px_rgba(8,145,178,0.18)] ring-1 ring-cyan-300/30",
@@ -73,30 +68,32 @@ export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
 };
 
 const CUSTOMER_NAV: WorkspaceNavItem[] = [
-  { href: "/customer/home", label: "Home Feed", labelVi: "Bản tin", icon: LayoutDashboard, exact: true },
-  { href: "/customer/guides", label: "Guides", labelVi: "Bài viết", icon: BookOpen },
-  { href: "/customer/services", label: "Service Catalog", labelVi: "Danh mục dịch vụ", icon: Wrench },
-  { href: "/customer/bookings", label: "History", labelVi: "Lịch sử", icon: History },
-  { href: "/customer/loyalty", label: "Member Lounge", labelVi: "Phòng chờ thành viên", icon: Gift },
+  { href: "/customer/home", label: "Home Feed", labelVi: "Ban tin", icon: LayoutDashboard, exact: true },
+  { href: "/customer/guides", label: "Guides", labelVi: "Bai viet", icon: BookOpen },
+  { href: "/customer/services", label: "Service Catalog", labelVi: "Danh muc dich vu", icon: Wrench },
+  { href: "/customer/bookings", label: "Manage Bookings", labelVi: "Quan ly dat lich", icon: ClipboardList },
+  { href: "/customer/history", label: "History", labelVi: "Lich su", icon: History },
+  { href: "/customer/vehicles", label: "Vehicles", labelVi: "Xe cua toi", icon: CarFront },
+  { href: "/customer/loyalty", label: "Member Lounge", labelVi: "Phong cho thanh vien", icon: Gift },
 ];
 
 const STAFF_NAV: WorkspaceNavItem[] = [
-  { href: "/staff/dashboard", label: "Dashboard", labelVi: "Trang chủ", icon: LayoutDashboard, exact: true },
-  { href: "/staff/operations", label: "Operations", labelVi: "Vận hành", icon: ClipboardList },
-  { href: "/staff/check-in", label: "Check-in", labelVi: "Duyệt check-in", icon: Wrench },
-  { href: "/staff/sessions/history", label: "History", labelVi: "Lịch sử", icon: History },
+  { href: "/staff/dashboard", label: "Dashboard", labelVi: "Trang chu", icon: LayoutDashboard, exact: true },
+  { href: "/staff/operations", label: "Operations", labelVi: "Van hanh", icon: ClipboardList },
+  { href: "/staff/check-in", label: "Check-in", labelVi: "Duyet check-in", icon: Wrench },
+  { href: "/staff/sessions/history", label: "History", labelVi: "Lich su", icon: History },
 ];
 
 const ADMIN_NAV: WorkspaceNavItem[] = [
-  { href: "/admin/dashboard", label: "Dashboard", labelVi: "Trang chủ", icon: LayoutDashboard, exact: true },
-  { href: "/admin/bookings", label: "Bookings", labelVi: "Quản lý đặt lịch", icon: ClipboardList },
-  { href: "/admin/accounts", label: "Accounts", labelVi: "Tài khoản", icon: Users },
-  { href: "/admin/services", label: "Service Management", labelVi: "Quản lý dịch vụ", icon: Layers3 },
-  { href: "/admin/offers?tab=promotions", label: "Offers Management", labelVi: "Ưu đãi & Voucher", icon: Gift },
-  { href: "/admin/blog", label: "Content & Feedback", labelVi: "Nội dung & Phản hồi", icon: BookOpen },
-  { href: "/admin/operations", label: "Operations", labelVi: "Vận hành", icon: Wrench },
-  { href: "/admin/reports", label: "Reports", labelVi: "Báo cáo", icon: BarChart3 },
-  { href: "/admin/settings", label: "Settings", labelVi: "Cài đặt", icon: Settings2 },
+  { href: "/admin/dashboard", label: "Dashboard", labelVi: "Trang chu", icon: LayoutDashboard, exact: true },
+  { href: "/admin/bookings", label: "Bookings", labelVi: "Quan ly dat lich", icon: ClipboardList },
+  { href: "/admin/accounts", label: "Accounts", labelVi: "Tai khoan", icon: Users },
+  { href: "/admin/services", label: "Service Management", labelVi: "Quan ly dich vu", icon: Layers3 },
+  { href: "/admin/offers?tab=promotions", label: "Offers Management", labelVi: "Uu dai va Voucher", icon: Gift },
+  { href: "/admin/blog", label: "Content & Feedback", labelVi: "Noi dung va Phan hoi", icon: BookOpen },
+  { href: "/admin/operations", label: "Operations", labelVi: "Van hanh", icon: Wrench },
+  { href: "/admin/reports", label: "Reports", labelVi: "Bao cao", icon: BarChart3 },
+  { href: "/admin/settings", label: "Settings", labelVi: "Cai dat", icon: Settings2 },
 ];
 
 export const SHELL_EXCLUDED_PATHS = ["/admin/login"];
@@ -116,8 +113,9 @@ export function mobileNavForRole(role: UserRole): WorkspaceNavItem[] {
       ),
     );
   }
+
   return CUSTOMER_NAV.filter((item) =>
-    ["/customer/home", "/customer/services", "/customer/bookings", "/customer/loyalty"].includes(
+    ["/customer/home", "/customer/bookings", "/customer/history", "/customer/vehicles", "/customer/loyalty"].includes(
       item.href,
     ),
   );
