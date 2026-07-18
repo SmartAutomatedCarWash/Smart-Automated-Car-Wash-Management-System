@@ -895,16 +895,21 @@ export function CustomerBookingForm() {
   }, [draft.bookingDate, updateDraft]);
 
   useEffect(() => {
-    if (draft.vehicleId) {
+    if (vehicles.length === 0) {
+      hasAutoSelectedVehicleRef.current = false;
+      return;
+    }
+
+    const preferredVehicleId =
+      vehicles.find((item) => item.isPrimary)?.vehicleId ?? vehicles[0].vehicleId;
+
+    if (draft.vehicleId === preferredVehicleId) {
       hasAutoSelectedVehicleRef.current = true;
       return;
     }
-    if (!hasAutoSelectedVehicleRef.current && vehicles.length > 0) {
-      hasAutoSelectedVehicleRef.current = true;
-      updateDraft({
-        vehicleId: vehicles.find((item) => item.isPrimary)?.vehicleId ?? vehicles[0].vehicleId,
-      });
-    }
+
+    hasAutoSelectedVehicleRef.current = true;
+    updateDraft({ vehicleId: preferredVehicleId });
   }, [draft.vehicleId, updateDraft, vehicles]);
 
   useEffect(() => {

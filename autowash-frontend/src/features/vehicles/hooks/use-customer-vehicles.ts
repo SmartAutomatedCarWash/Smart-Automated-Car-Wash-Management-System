@@ -15,6 +15,7 @@ import type {
   CreateCustomerVehicleRequest,
   CreateCustomerVehicleResponse,
   CustomerVehicleDetail,
+  CustomerVehicleListItem,
   CustomerVehicleListPage,
   SetPrimaryCustomerVehicleResponse,
   UpdateCustomerVehicleRequest,
@@ -33,6 +34,19 @@ function useVehicleQueryContext() {
   const enabled = Boolean(accessToken && userId && user?.role === "CUSTOMER");
 
   return { userId, enabled };
+}
+
+function toVehicleListItem(vehicle: CreateCustomerVehicleResponse): CustomerVehicleListItem {
+  return {
+    vehicleId: vehicle.vehicleId,
+    plate: vehicle.plate,
+    type: vehicle.type,
+    brand: vehicle.brand,
+    model: vehicle.model,
+    color: vehicle.color,
+    isPrimary: vehicle.isPrimary,
+    status: vehicle.status,
+  };
 }
 
 export function useCustomerVehicles(page = 1, limit = 20) {
@@ -62,7 +76,42 @@ export function useCreateCustomerVehicle() {
   return useMutation<CreateCustomerVehicleResponse, ApiErrorResponse, CreateCustomerVehicleRequest>(
     {
       mutationFn: createCustomerVehicle,
-      onSuccess: async () => {
+      onSuccess: async (createdVehicle) => {
+        queryClient.setQueryData(
+          customerVehicleDetailQueryKey(userId, createdVehicle.vehicleId),
+          createdVehicle,
+        );
+
+        queryClient.setQueriesData<CustomerVehicleListPage>(
+          { queryKey: customerVehiclesQueryScope(userId) },
+          (current) => {
+            if (
+              !current ||
+              !("items" in current) ||
+              !Array.isArray(current.items) ||
+              !("pagination" in current)
+            ) {
+              return current;
+            }
+
+            const nextItems = current.items
+              .filter((vehicle) => vehicle.vehicleId !== createdVehicle.vehicleId)
+              .map((vehicle) => ({
+                ...vehicle,
+                isPrimary: createdVehicle.isPrimary ? false : vehicle.isPrimary,
+              }));
+
+            return {
+              ...current,
+              items: [toVehicleListItem(createdVehicle), ...nextItems],
+              pagination: {
+                ...current.pagination,
+                total: current.pagination.total + 1,
+              },
+            };
+          },
+        );
+
         await queryClient.invalidateQueries({ queryKey: customerVehiclesQueryScope(userId) });
       },
     },
