@@ -29,6 +29,7 @@ import type {
   BookingDetail,
   BookingDraft,
   BookingListFilters,
+  BookingListItem,
   BookingListPage,
   BookingPackage,
   ApplyBookingPointsRequest,
@@ -156,7 +157,43 @@ export function useCreateCustomerBooking() {
 
   return useMutation<CreateBookingResponse, ApiErrorResponse, BookingDraft>({
     mutationFn: createCustomerBooking,
-    onSuccess: async () => {
+    onSuccess: async (createdBooking) => {
+      const newListItem: BookingListItem = {
+        bookingId: createdBooking.bookingId,
+        vehiclePlate: createdBooking.vehiclePlate,
+        packageName: createdBooking.packageName,
+        bookingDate: createdBooking.bookingDate,
+        bookingTime: createdBooking.bookingTime,
+        finalAmount: createdBooking.finalAmount,
+        status: createdBooking.status,
+        washStatus: null,
+        createdAt: createdBooking.createdAt,
+        completedAt: null,
+      };
+
+      queryClient.setQueriesData<BookingListPage>(
+        { queryKey: bookingQueryScope(userId) },
+        (current) => {
+          if (!current || !Array.isArray(current.items)) {
+            return current;
+          }
+
+          const existingItems = current.items.filter((item) => item.bookingId !== newListItem.bookingId);
+          return {
+            ...current,
+            items: [newListItem, ...existingItems],
+            pagination: current.pagination
+              ? {
+                  ...current.pagination,
+                  total: typeof current.pagination.total === "number"
+                    ? current.pagination.total + (existingItems.length === current.items.length ? 1 : 0)
+                    : current.pagination.total,
+                }
+              : current.pagination,
+          };
+        },
+      );
+
       await queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId) });
     },
   });

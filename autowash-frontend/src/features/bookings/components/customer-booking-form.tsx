@@ -902,9 +902,16 @@ export function CustomerBookingForm() {
 
     const preferredVehicleId =
       vehicles.find((item) => item.isPrimary)?.vehicleId ?? vehicles[0].vehicleId;
+    const availableVehicleIds = new Set(vehicles.map((item) => item.vehicleId));
+    const hasValidSelectedVehicle =
+      draft.vehicleId.length > 0 && availableVehicleIds.has(draft.vehicleId);
 
-    if (draft.vehicleId === preferredVehicleId) {
+    if (hasValidSelectedVehicle) {
       hasAutoSelectedVehicleRef.current = true;
+      return;
+    }
+
+    if (hasAutoSelectedVehicleRef.current) {
       return;
     }
 

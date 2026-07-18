@@ -33,7 +33,7 @@ import { toast } from "sonner";
 import { useCustomerLogout } from "@/features/auth/hooks/use-auth";
 import { getAuthRedirectPath } from "@/features/auth/lib/auth-session";
 import { cn } from "@/shared/lib/utils";
-import { clearAuthSession, useAuthStore } from "@/features/auth/store/auth.store";
+import { clearAuthSession, hydrateAuthSession, useAuthStore } from "@/features/auth/store/auth.store";
 import type { UserRole } from "@/entities/auth";
 import { getWorkspaceHeaderMeta } from "@/shared/ui/workspace/workspace-header-meta";
 import {
@@ -106,6 +106,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const logoutMutation = useCustomerLogout();
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
+  const authHydrated = useAuthStore((state) => state.hydrated);
   const [isMounted, setIsMounted] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -200,15 +201,15 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     hydrateLanguage();
   }, [hydrateLanguage]);
 
-  useEffect(() => { setIsMounted(true); }, []);
-
-  // Default workspaces to light mode
+  useEffect(() => {
+    setIsMounted(true);
+    hydrateAuthSession();
+  }, []);
   useEffect(() => {
     if (isMounted) {
       setTheme("light");
     }
   }, [isMounted, setTheme]);
-
   useEffect(() => { setMobileMenuOpen(false); }, [pathname]);
   useEffect(() => { fetchTiers(); }, [fetchTiers]);
 
@@ -283,7 +284,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
   if (isExcluded) return <>{children}</>;
 
-  if (!isMounted) return <WorkspaceGate message={t("Đang tải khu vực làm việc...", "Loading workspace...")} />;
+  if (!isMounted || !authHydrated) return <WorkspaceGate message={t("Đang tải khu vực làm việc...", "Loading workspace...")} />;
   if (!accessToken || !user) return <WorkspaceGate message={t("Đang chuyển đến trang đăng nhập...", "Redirecting to login...")} />;
   if (user.role !== requiredRole) return <WorkspaceGate message={t("Đang chuyển đến khu vực phù hợp...", "Redirecting to your workspace...")} />;
 
