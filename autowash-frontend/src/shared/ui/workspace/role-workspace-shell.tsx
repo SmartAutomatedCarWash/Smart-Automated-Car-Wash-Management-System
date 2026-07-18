@@ -205,6 +205,11 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     setIsMounted(true);
     hydrateAuthSession();
   }, []);
+  useEffect(() => {
+    if (isMounted) {
+      setTheme("light");
+    }
+  }, [isMounted, setTheme]);
   useEffect(() => { setMobileMenuOpen(false); }, [pathname]);
   useEffect(() => { fetchTiers(); }, [fetchTiers]);
 

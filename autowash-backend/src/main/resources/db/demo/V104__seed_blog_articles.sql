@@ -39,7 +39,7 @@ INSERT INTO "blog_articles" (
 </ul>
 <h2>Choosing the Right Products</h2>
 <p>Never use dish soap or household cleaners on your car. Always choose a <strong>pH-neutral car shampoo</strong> formulated specifically for automotive paint. Use a <strong>microfiber wash mitt</strong> — never a sponge, which holds grit against the paint surface.</p>$$,
-  'PUBLISHED', 156, NOW() - INTERVAL '45 days', NOW() - INTERVAL '45 days', NOW() - INTERVAL '45 days'
+  'PUBLISHED', 156, NOW() - INTERVAL '45' DAY, NOW() - INTERVAL '45' DAY, NOW() - INTERVAL '45' DAY
 );
 
 INSERT INTO "blog_articles" (
@@ -66,7 +66,7 @@ INSERT INTO "blog_articles" (
 </ul>
 <h2>Recommendation</h2>
 <p>Use a pressure washer for the initial rinse to remove heavy mud and brake dust, then finish with a proper hand wash using the two-bucket method for a scratch-free result.</p>$$,
-  'PUBLISHED', 89, NOW() - INTERVAL '30 days', NOW() - INTERVAL '30 days', NOW() - INTERVAL '30 days'
+  'PUBLISHED', 89, NOW() - INTERVAL '30' DAY, NOW() - INTERVAL '30' DAY, NOW() - INTERVAL '30' DAY
 );
 
 -- ── Category: Paint Protection (22222222-...) ──────────────────────────────────
@@ -95,7 +95,7 @@ INSERT INTO "blog_articles" (
 </ul>
 <h2>Before Application: Paint Correction Is Essential</h2>
 <p>Any scratches, swirl marks, or paint defects must be corrected before applying ceramic coating. The coating seals the surface permanently — any imperfection underneath will be locked in for years. Professional paint correction before coating is strongly recommended.</p>$$,
-  'PUBLISHED', 178, NOW() - INTERVAL '60 days', NOW() - INTERVAL '60 days', NOW() - INTERVAL '60 days'
+  'PUBLISHED', 178, NOW() - INTERVAL '60' DAY, NOW() - INTERVAL '60' DAY, NOW() - INTERVAL '60' DAY
 );
 
 INSERT INTO "blog_articles" (
@@ -122,7 +122,7 @@ INSERT INTO "blog_articles" (
 </ul>
 <h2>Our Recommendation</h2>
 <p>If you frequently drive on highways or mountain roads with loose gravel, apply PPF to the front bumper, hood, and mirrors. Add ceramic coating over the entire vehicle for the best combination of protection and ease of maintenance at an optimized cost.</p>$$,
-  'PUBLISHED', 134, NOW() - INTERVAL '20 days', NOW() - INTERVAL '20 days', NOW() - INTERVAL '20 days'
+  'PUBLISHED', 134, NOW() - INTERVAL '20' DAY, NOW() - INTERVAL '20' DAY, NOW() - INTERVAL '20' DAY
 );
 
 -- ── Category: Seasonal Care (33333333-...) ─────────────────────────────────────
@@ -152,7 +152,7 @@ INSERT INTO "blog_articles" (
 </ul>
 <h2>Quick Post-Rain Clean</h2>
 <p>If you cannot do a full wash immediately after rain, at minimum use a damp microfiber towel to wipe the exterior surfaces before parking. This simple step prevents mineral deposits from bonding to the paint overnight.</p>$$,
-  'PUBLISHED', 201, NOW() - INTERVAL '15 days', NOW() - INTERVAL '15 days', NOW() - INTERVAL '15 days'
+  'PUBLISHED', 201, NOW() - INTERVAL '15' DAY, NOW() - INTERVAL '15' DAY, NOW() - INTERVAL '15' DAY
 );
 
 INSERT INTO "blog_articles" (
@@ -179,7 +179,7 @@ INSERT INTO "blog_articles" (
 </ul>
 <h2>Interior and Tire Care</h2>
 <p>Use a windshield sun shade and rear window sun shade to reduce cabin temperature significantly. Apply a UV-protectant conditioner to all leather and plastic surfaces every three months. Check tire pressure at least once a week in summer — heat increases pressure inside the tire and can cause a sudden blowout at highway speeds.</p>$$,
-  'PUBLISHED', 167, NOW() - INTERVAL '90 days', NOW() - INTERVAL '90 days', NOW() - INTERVAL '90 days'
+  'PUBLISHED', 167, NOW() - INTERVAL '90' DAY, NOW() - INTERVAL '90' DAY, NOW() - INTERVAL '90' DAY
 );
 
 -- ── Category: Car Maintenance (44444444-...) ──────────────────────────────────
@@ -209,7 +209,7 @@ INSERT INTO "blog_articles" (
 </ul>
 <h2>Simple Way to Track Your Schedule</h2>
 <p>Record the mileage and date of every service in a phone app or on a sticker inside the engine bay. This simple habit ensures you never miss a critical milestone and helps maintain resale value when it is time to sell the car.</p>$$,
-  'PUBLISHED', 145, NOW() - INTERVAL '120 days', NOW() - INTERVAL '120 days', NOW() - INTERVAL '120 days'
+  'PUBLISHED', 145, NOW() - INTERVAL '120' DAY, NOW() - INTERVAL '120' DAY, NOW() - INTERVAL '120' DAY
 );
 
 INSERT INTO "blog_articles" (
@@ -239,5 +239,5 @@ INSERT INTO "blog_articles" (
 <p><strong>Step 3 — Fabric Seats and Mats:</strong> Apply enzyme-based cleaner, agitate with a brush, then extract with a wet-dry vacuum or allow to air dry completely before replacing mats.</p>
 <h2>Conditioning Leather and Plastics</h2>
 <p>Apply a UV-protective conditioner to all leather and plastic trim surfaces every three months. Products containing UV inhibitors keep surfaces supple and prevent cracking or discolouration caused by prolonged sun exposure.</p>$$,
-  'PUBLISHED', 112, NOW() - INTERVAL '75 days', NOW() - INTERVAL '75 days', NOW() - INTERVAL '75 days'
+  'PUBLISHED', 112, NOW() - INTERVAL '75' DAY, NOW() - INTERVAL '75' DAY, NOW() - INTERVAL '75' DAY
 );

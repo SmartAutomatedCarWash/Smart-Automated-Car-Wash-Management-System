@@ -16,7 +16,11 @@ import {
   SelectValue,
 } from "@/shared/ui/ui/select";
 import { cn } from "@/shared/lib/utils";
-import { type CustomerVehicleFormErrors, type CustomerVehicleFormValues } from "@/entities/vehicles";
+import {
+  CUSTOMER_VEHICLE_TYPES,
+  type CustomerVehicleFormErrors,
+  type CustomerVehicleFormValues,
+} from "@/entities/vehicles";
 
 const CAR_BRANDS_MAP: Record<string, string[]> = {
   Toyota:      ["Camry", "Corolla", "Vios", "Fortuner", "Innova", "Hilux", "Rush", "Raize", "Yaris", "Land Cruiser", "Other"],
@@ -38,6 +42,13 @@ const CAR_BRANDS_MAP: Record<string, string[]> = {
 };
 
 const BRAND_OPTIONS = Object.keys(CAR_BRANDS_MAP);
+const VEHICLE_TYPE_OPTIONS: Record<(typeof CUSTOMER_VEHICLE_TYPES)[number], string> = {
+  CAR: "Car",
+  SUV: "SUV",
+  TRUCK: "Truck",
+  MOTORBIKE: "Motorbike",
+  VAN: "Van",
+};
 const COLOR_OPTIONS = [
   "White", "Black", "Silver", "Gray", "Red", "Blue", "Brown",
   "Green", "Yellow", "Orange", "Gold", "Beige", "Navy Blue",
@@ -95,6 +106,18 @@ export function CustomerVehicleFormCard({
             disabled={disableIdentityFields}
           />
           <VehicleSelectField
+            label="Vehicle type"
+            value={form.type}
+            onChange={(value) => onChange("type", value)}
+            placeholder="Select a vehicle type"
+            options={CUSTOMER_VEHICLE_TYPES.map((type) => ({
+              value: type,
+              label: VEHICLE_TYPE_OPTIONS[type],
+            }))}
+            error={errors.type ?? null}
+            disabled={disableIdentityFields}
+          />
+          <VehicleSelectField
             label="Brand"
             value={form.brand}
             onChange={(value) => {
@@ -137,7 +160,7 @@ export function CustomerVehicleFormCard({
 
           {disableIdentityFields ? (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 mt-4">
-              Plate is locked after creation to keep service history, invoices,
+              Plate and vehicle type are locked after creation to keep service history, invoices,
               and booking records consistent.
             </div>
           ) : null}
@@ -223,9 +246,13 @@ function VehicleSelectField({
   placeholder: string;
   error: string | null;
   description?: string;
-  options: string[];
+  options: Array<{ value: string; label: string }> | string[];
   disabled?: boolean;
 }) {
+  const normalizedOptions = options.map((option) =>
+    typeof option === "string" ? { value: option, label: option } : option,
+  );
+
   return (
     <div className="space-y-2">
       <label className="text-sm font-semibold text-slate-900">{label}</label>
@@ -234,9 +261,9 @@ function VehicleSelectField({
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
-          {options.map((opt) => (
-            <SelectItem key={opt} value={opt}>
-              {opt}
+          {normalizedOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
             </SelectItem>
           ))}
         </SelectContent>
