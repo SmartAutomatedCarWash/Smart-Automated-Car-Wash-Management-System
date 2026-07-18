@@ -37,3 +37,8 @@ replay_pid*.log
 
 # Workspace-local scratch files
 .local/
+
+# Local PostgreSQL runtime files
+pgsql/
+postgresql.zip
+start-db.ps1

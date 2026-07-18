@@ -24,6 +24,7 @@ import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
 import { Input } from "@/shared/ui/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/ui/table";
+import { DateTimePickerButton } from "@/shared/ui/date-picker-button";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { AdminCustomerStatus, AdminEditableAccountRole } from "@/entities/reports";
@@ -899,18 +900,19 @@ function WashHistoryTab({
       <div className="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] md:items-end">
         <label className="space-y-1.5">
           <span className="text-xs font-medium text-slate-500">{translate(language, "Bắt đầu từ", "Started from")}</span>
-          <Input
-            type="datetime-local"
+          <DateTimePickerButton
             value={draft.dateFrom}
-            onChange={(event) => onDraftChange({ ...draft, dateFrom: event.target.value })}
+            onChange={(dateFrom) => onDraftChange({ ...draft, dateFrom })}
+            label={translate(language, "Bắt đầu từ", "Started from")}
           />
         </label>
         <label className="space-y-1.5">
           <span className="text-xs font-medium text-slate-500">{translate(language, "Bắt đầu đến", "Started to")}</span>
-          <Input
-            type="datetime-local"
+          <DateTimePickerButton
             value={draft.dateTo}
-            onChange={(event) => onDraftChange({ ...draft, dateTo: event.target.value })}
+            onChange={(dateTo) => onDraftChange({ ...draft, dateTo })}
+            label={translate(language, "Bắt đầu đến", "Started to")}
+            align="right"
           />
         </label>
         <Button type="button" onClick={onApply}>
@@ -1082,15 +1084,16 @@ function PointTransactionsTab({
           <option value="ADJUST">{translate(language, "Điều chỉnh", "ADJUST")}</option>
           <option value="EXPIRE">{translate(language, "Hết hạn", "EXPIRE")}</option>
         </select>
-        <Input
-          type="datetime-local"
+        <DateTimePickerButton
           value={dateDraft.dateFrom}
-          onChange={(event) => onDateDraftChange({ ...dateDraft, dateFrom: event.target.value })}
+          onChange={(dateFrom) => onDateDraftChange({ ...dateDraft, dateFrom })}
+          label={translate(language, "Từ ngày", "From date")}
         />
-        <Input
-          type="datetime-local"
+        <DateTimePickerButton
           value={dateDraft.dateTo}
-          onChange={(event) => onDateDraftChange({ ...dateDraft, dateTo: event.target.value })}
+          onChange={(dateTo) => onDateDraftChange({ ...dateDraft, dateTo })}
+          label={translate(language, "Đến ngày", "To date")}
+          align="right"
         />
         <Button type="button" onClick={onApply}>
           {translate(language, "Áp dụng", "Apply")}

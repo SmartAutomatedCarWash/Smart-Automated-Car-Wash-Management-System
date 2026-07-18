@@ -1,5 +1,5 @@
-import { StaffOperationsFlow } from "@/features/operations/components/staff-operations-flow";
+import { StaffSessionDetailView } from "@/features/operations/components/staff-session-detail-view";
 
 export default function StaffSessionPage({ params }: { params: { id: string } }) {
-  return <StaffOperationsFlow mode="session" sessionId={params.id} />;
+  return <StaffSessionDetailView sessionId={params.id} />;
 }

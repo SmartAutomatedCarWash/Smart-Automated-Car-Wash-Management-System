@@ -4,6 +4,7 @@ import {
   BookOpen,
   CarFront,
   ClipboardList,
+  Droplets,
   Gift,
   History,
   LayoutDashboard,
@@ -47,9 +48,19 @@ export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
   },
   STAFF: {
     label: "Staff Operations",
-    labelVi: "Nghiep vu nhan vien",
-    description: "Check-in and wash flow",
-    descriptionVi: "Duyet check-in va quy trinh",
+    labelVi: "Nghiệp vụ nhân viên",
+    description: "Assigned wash sessions",
+    descriptionVi: "Các phiên rửa được phân công",
+    accent: "bg-cyan-300 text-slate-950 shadow-cyan-300/25",
+    accentSoft: "border-cyan-300/30 bg-cyan-50 text-cyan-950",
+    activeNav: "bg-[#06111a] text-cyan-100 shadow-[0_16px_34px_rgba(8,145,178,0.18)] ring-1 ring-cyan-300/30",
+    mobileActive: "bg-cyan-50 text-cyan-800",
+  },
+  MANAGER: {
+    label: "Manager Operations",
+    labelVi: "Điều phối vận hành",
+    description: "Check-in, assignment, and service flow",
+    descriptionVi: "Check-in, phân công và điều phối",
     accent: "bg-cyan-300 text-slate-950 shadow-cyan-300/25",
     accentSoft: "border-cyan-300/30 bg-cyan-50 text-cyan-950",
     activeNav: "bg-[#06111a] text-cyan-100 shadow-[0_16px_34px_rgba(8,145,178,0.18)] ring-1 ring-cyan-300/30",
@@ -78,10 +89,16 @@ const CUSTOMER_NAV: WorkspaceNavItem[] = [
 ];
 
 const STAFF_NAV: WorkspaceNavItem[] = [
-  { href: "/staff/dashboard", label: "Dashboard", labelVi: "Trang chu", icon: LayoutDashboard, exact: true },
-  { href: "/staff/operations", label: "Operations", labelVi: "Van hanh", icon: ClipboardList },
-  { href: "/staff/check-in", label: "Check-in", labelVi: "Duyet check-in", icon: Wrench },
-  { href: "/staff/sessions/history", label: "History", labelVi: "Lich su", icon: History },
+  { href: "/staff/dashboard", label: "Dashboard", labelVi: "Trang chủ", icon: LayoutDashboard, exact: true },
+  { href: "/staff/my-sessions", label: "My Sessions", labelVi: "Phiên của tôi", icon: Droplets },
+  { href: "/staff/sessions/history", label: "History", labelVi: "Lịch sử", icon: History },
+];
+
+const MANAGER_NAV: WorkspaceNavItem[] = [
+  { href: "/manager/operations", label: "Operations Queue", labelVi: "Hàng đợi vận hành", icon: ClipboardList },
+  { href: "/manager/staff", label: "Staff Management", labelVi: "Quản lý nhân viên", icon: Users },
+  { href: "/manager/reports", label: "Dashboard", labelVi: "Dashboard", icon: BarChart3 },
+  { href: "/manager/settings", label: "Settings", labelVi: "Cài đặt", icon: Settings2 },
 ];
 
 const ADMIN_NAV: WorkspaceNavItem[] = [
@@ -100,12 +117,14 @@ export const SHELL_EXCLUDED_PATHS = ["/admin/login"];
 
 export function navForRole(role: UserRole): WorkspaceNavItem[] {
   if (role === "STAFF") return STAFF_NAV;
+  if (role === "MANAGER") return MANAGER_NAV;
   if (role === "ADMIN") return ADMIN_NAV;
   return CUSTOMER_NAV;
 }
 
 export function mobileNavForRole(role: UserRole): WorkspaceNavItem[] {
   if (role === "STAFF") return STAFF_NAV;
+  if (role === "MANAGER") return MANAGER_NAV;
   if (role === "ADMIN") {
     return ADMIN_NAV.filter((item) =>
       ["/admin/dashboard", "/admin/bookings", "/admin/accounts", "/admin/operations"].includes(

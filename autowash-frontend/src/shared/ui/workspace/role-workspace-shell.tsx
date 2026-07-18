@@ -54,6 +54,11 @@ import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { useQuery } from "@tanstack/react-query";
 import { MarqueeTicker } from "@/shared/ui/marquee-ticker";
 import { getEligibleSessionBookings, getOperationsQueue } from "@/features/operations/lib/operations-service";
+import {
+  useManagerNotificationStore,
+  type ManagerNotification,
+  type ManagerNotificationKind,
+} from "@/features/operations/store/manager-notification.store";
 import { useCustomerNotifications, useMarkCustomerNotificationAsRead } from "@/features/notifications/hooks/use-customer-notifications";
 import { useTierStore } from "@/shared/store/tier.store";
 import { useTierStyle } from "@/shared/lib/tier-styles";
@@ -85,6 +90,8 @@ const PAGE_TITLE_VI: Record<string, string> = {
   "Accounts": "Tài khoản",
   "Operations Health": "Sức khỏe vận hành",
   "Reports & Analytics": "Báo cáo & Phân tích",
+  "Manager Profile": "Hồ sơ Manager",
+  "Staff Management": "Quản lý nhân viên",
   "Service Management": "Quản lý dịch vụ",
   "Offers Management": "Quản lý ưu đãi",
   "Admin Workspace": "Không gian Admin",
@@ -129,6 +136,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
   const isStaff = requiredRole === "STAFF";
   const isCustomer = requiredRole === "CUSTOMER";
+  const isManager = requiredRole === "MANAGER";
   const tierStyleData = useTierStyle(user?.tier);
   const tierStyle = isCustomer && user ? tierStyleData : null;
   const customerTierMetal = tierStyle?.metal;
@@ -136,7 +144,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const eligibleQuery = useQuery({
     queryKey: ["staff-notifications", "eligible"],
     queryFn: getEligibleSessionBookings,
-    enabled: isStaff && isMounted,
+    enabled: false,
     refetchInterval: 10_000,
   });
 
@@ -178,7 +186,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const pendingSessions = useMemo(() => {
     if (!queueQuery.data) return [];
     const sessions = queueQuery.data.columns.flatMap((column) => column.sessions);
-    return sessions.filter((s) => s.status === "PENDING" || s.status === "QUEUED");
+    return sessions.filter((s) => s.status === "CHECKED_IN");
   }, [queueQuery.data]);
   const pendingSessionsCount = pendingSessions.length;
   const totalNotifications = eligibleCount + pendingSessionsCount;
@@ -193,6 +201,12 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const navItems = navForRole(requiredRole);
   const mobileItems = mobileNavForRole(requiredRole);
   const headerMeta = getWorkspaceHeaderMeta(pathname);
+  const managerNotifications = useManagerNotificationStore((state) => state.notifications);
+  const activeManagerPopup = useManagerNotificationStore((state) => state.activePopup);
+  const openManagerNotificationPopup = useManagerNotificationStore((state) => state.openPopup);
+  const closeManagerNotificationPopup = useManagerNotificationStore((state) => state.closePopup);
+  const markAllManagerNotificationsRead = useManagerNotificationStore((state) => state.markAllRead);
+  const unreadManagerNotifications = managerNotifications.filter((notification) => !notification.read).length;
 
   const { fetchTiers } = useTierStore();
   
@@ -228,28 +242,15 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       return;
     }
 
-    const newBookings = eligibleQuery.data?.filter((b) => !lastBookingIds.includes(b.bookingId)) ?? [];
     const newSessions = pendingSessions.filter((s) => !lastSessionIds.includes(s.sessionId));
 
-    if (newBookings.length > 0) {
-      const target = newBookings[0];
-      toast.warning(t("Lịch hẹn mới chờ duyệt!", "New booking awaiting approval!"), {
-        description: `${target.customerName} - ${target.vehiclePlate}`,
-        action: {
-          label: t("Duyệt ngay", "Approve"),
-          onClick: () => router.push("/staff/check-in"),
-        },
-        position: "bottom-right",
-        duration: 8000,
-      });
-      setLastBookingIds(currentBookingIds);
-    } else if (newSessions.length > 0) {
+    if (newSessions.length > 0) {
       const target = newSessions[0];
-      toast.warning(t("Phiên rửa xe chờ duyệt!", "Wash session awaiting approval!"), {
+      toast.info(t("Xe đã sẵn sàng để rửa!", "A wash session is ready!"), {
         description: `${target.customerName} - ${target.vehiclePlate}`,
         action: {
-          label: t("Xem ngay", "View"),
-          onClick: () => router.push(`/staff/check-in?sessionId=${target.sessionId}`),
+          label: t("Mở phiên", "Open session"),
+          onClick: () => router.push(`/staff/sessions/${target.sessionId}`),
         },
         position: "bottom-right",
         duration: 8000,
@@ -300,6 +301,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const profileHref =
     requiredRole === "CUSTOMER" ? "/customer/profile"
     : requiredRole === "STAFF" ? "/staff/profile"
+    : requiredRole === "MANAGER" ? "/manager/profile"
     : "/admin/dashboard";
 
   const quickActions = getProfileQuickActions(requiredRole);
@@ -396,7 +398,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       {/* ── Main content ── */}
       <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-y-auto">
         {/* Header */}
-        <header className="sticky top-0 z-30 border-b border-cyan-900/10 bg-white/84 px-4 py-4 shadow-[0_12px_40px_rgba(6,17,26,0.04)] backdrop-blur-xl lg:px-8">
+        <header className="relative z-30 border-b border-cyan-900/10 bg-white/84 px-4 py-4 shadow-[0_12px_40px_rgba(6,17,26,0.04)] backdrop-blur-xl lg:px-8">
           <div className="flex items-start justify-between gap-3">
             {/* Left: title */}
             <div className="flex min-w-0 items-start gap-3">
@@ -698,6 +700,81 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 </Popover>
               )}
 
+              {isManager && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
+                      aria-label={t("Thông báo Manager", "Manager notifications")}
+                    >
+                      <Bell className={cn("h-4 w-4", unreadManagerNotifications > 0 ? "text-cyan-700" : "text-muted-foreground")} />
+                      {unreadManagerNotifications > 0 ? (
+                        <span className="absolute -right-0.5 -top-0.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-black text-white shadow-sm">
+                          {unreadManagerNotifications}
+                        </span>
+                      ) : null}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="end"
+                    sideOffset={10}
+                    className="w-80 rounded-2xl border-cyan-100 bg-white/96 p-2 shadow-[0_22px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl"
+                  >
+                    <div className="flex items-center justify-between px-2 py-2">
+                      <div>
+                        <p className="text-sm font-black text-slate-950">{t("Thông báo vận hành", "Operations alerts")}</p>
+                        <p className="text-[11px] font-semibold text-muted-foreground">
+                          {unreadManagerNotifications > 0
+                            ? t(`${unreadManagerNotifications} thông báo chưa đọc`, `${unreadManagerNotifications} unread alerts`)
+                            : t("Tất cả đã đọc", "All caught up")}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="rounded-full bg-cyan-50 px-2.5 py-1 text-[11px] font-black text-cyan-800 hover:bg-cyan-100"
+                        onClick={markAllManagerNotificationsRead}
+                      >
+                        {t("Đã đọc", "Read")}
+                      </button>
+                    </div>
+                    <div className="max-h-80 space-y-1 overflow-y-auto pr-1">
+                      {managerNotifications.length === 0 ? (
+                        <p className="rounded-xl border border-dashed border-slate-200 px-3 py-6 text-center text-xs font-semibold text-slate-400">
+                          {t("Chưa có thông báo.", "No notifications yet.")}
+                        </p>
+                      ) : (
+                        managerNotifications.map((notification) => (
+                          <button
+                            key={notification.id}
+                            type="button"
+                            className={cn(
+                              "w-full rounded-xl px-3 py-2.5 text-left transition hover:bg-cyan-50",
+                              notification.read ? "bg-white" : "bg-cyan-50/70",
+                            )}
+                            onClick={() => openManagerNotificationPopup(notification.id)}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="truncate text-xs font-black text-slate-950">{notification.title}</p>
+                                <p className="mt-1 line-clamp-2 text-[11px] font-semibold text-slate-500">{notification.message}</p>
+                              </div>
+                              <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black", managerNotificationTone(notification.kind))}>
+                                {managerNotificationKindLabel(notification.kind)}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex justify-between text-[10px] font-bold text-slate-400">
+                              <span>{notification.target ?? "Manager"}</span>
+                              <span>{notification.createdAt}</span>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+
               {/* User profile popover */}
               <Popover>
                 <PopoverTrigger asChild>
@@ -937,6 +1014,9 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           </div>
         </div>
       )}
+      {activeManagerPopup ? (
+        <ManagerNotificationPopup notification={activeManagerPopup} onClose={closeManagerNotificationPopup} />
+      ) : null}
       </div>
     </div>
   );
@@ -954,13 +1034,110 @@ function WorkspaceGate({ message }: { message: string }) {
   );
 }
 
+function ManagerNotificationPopup({
+  notification,
+  onClose,
+}: {
+  notification: ManagerNotification;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed right-6 top-20 z-[110] w-[23rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-cyan-200/70 bg-white/96 p-4 shadow-[0_22px_70px_rgba(6,17,26,0.20)] backdrop-blur-xl animate-in fade-in slide-in-from-top-4 slide-in-from-right-4">
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute right-3 top-3 rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900"
+        aria-label="Đóng thông báo"
+      >
+        <X className="h-4 w-4" />
+      </button>
+
+      <div className="flex items-start gap-3 pr-6">
+        <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border", managerNotificationIconTone(notification.kind))}>
+          <BellRing className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-black", managerNotificationTone(notification.kind))}>
+              {managerNotificationKindLabel(notification.kind)}
+            </span>
+            <span className="text-[10px] font-bold text-slate-400">{notification.createdAt}</span>
+          </div>
+          <h4 className="mt-2 text-sm font-black text-slate-950">{notification.title}</h4>
+          {notification.plate ? (
+            <div className="mt-2 inline-flex rounded-xl bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-800">
+              Xe ưu tiên: {notification.plate}
+            </div>
+          ) : null}
+          <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">{notification.message}</p>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <span className="truncate text-[11px] font-bold text-slate-400">{notification.target ?? "Manager"}</span>
+            {notification.href ? (
+              <Link
+                href={notification.href}
+                onClick={onClose}
+                className="rounded-xl bg-[#06111a] px-3 py-2 text-[11px] font-black text-white transition hover:bg-slate-900"
+              >
+                Mở chi tiết
+              </Link>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function managerNotificationTone(kind: ManagerNotificationKind) {
+  const tones: Record<ManagerNotificationKind, string> = {
+    success: "bg-emerald-50 text-emerald-700",
+    error: "bg-rose-50 text-rose-700",
+    warning: "bg-amber-50 text-amber-700",
+    info: "bg-cyan-50 text-cyan-700",
+    priority: "bg-amber-100 text-amber-800",
+    shift: "bg-indigo-50 text-indigo-700",
+  };
+  return tones[kind];
+}
+
+function managerNotificationIconTone(kind: ManagerNotificationKind) {
+  const tones: Record<ManagerNotificationKind, string> = {
+    success: "border-emerald-100 bg-emerald-50 text-emerald-700",
+    error: "border-rose-100 bg-rose-50 text-rose-700",
+    warning: "border-amber-100 bg-amber-50 text-amber-700",
+    info: "border-cyan-100 bg-cyan-50 text-cyan-700",
+    priority: "border-amber-200 bg-amber-100 text-amber-800",
+    shift: "border-indigo-100 bg-indigo-50 text-indigo-700",
+  };
+  return tones[kind];
+}
+
+function managerNotificationKindLabel(kind: ManagerNotificationKind) {
+  const labels: Record<ManagerNotificationKind, string> = {
+    success: "Thành công",
+    error: "Lỗi",
+    warning: "Cảnh báo",
+    info: "Thông tin",
+    priority: "Ưu tiên",
+    shift: "Ca làm",
+  };
+  return labels[kind];
+}
+
 function getProfileQuickActions(role: UserRole) {
   if (role === "STAFF") {
     return [
       { href: "/staff/dashboard",       label: "Shift overview",        labelVi: "Tổng quan ca làm",    icon: LayoutDashboard },
-      { href: "/staff/operations",      label: "Operations board",      labelVi: "Bảng vận hành",       icon: ClipboardList },
-      { href: "/staff/check-in",        label: "Check-in review",       labelVi: "Duyệt check-in",      icon: Wrench },
+      { href: "/staff/my-sessions",     label: "My wash sessions",      labelVi: "Phiên rửa của tôi",   icon: ClipboardList },
       { href: "/staff/sessions/history",label: "Wash session history",  labelVi: "Lịch sử phiên rửa",  icon: History },
+    ];
+  }
+  if (role === "MANAGER") {
+    return [
+      { href: "/manager/dashboard", label: "Manager overview", labelVi: "Tổng quan điều phối", icon: LayoutDashboard },
+      { href: "/manager/operations", label: "Operations queue", labelVi: "Hàng đợi vận hành", icon: ClipboardList },
+      { href: "/manager/staff", label: "Staff management", labelVi: "Quản lý nhân viên", icon: UserCog },
+      { href: "/manager/settings", label: "Operation settings", labelVi: "Cài đặt vận hành", icon: Settings2 },
     ];
   }
   if (role === "ADMIN") {

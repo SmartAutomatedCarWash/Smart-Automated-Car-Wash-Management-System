@@ -1,4 +1,13 @@
 import { apiRequest } from "@/shared/lib/api";
+import { getAccessToken } from "@/features/auth/store/auth.store";
+import {
+  checkInDemoWashSession,
+  createDemoWashSession,
+  getDemoActiveStaffOptions,
+  getDemoEligibleSessionBookings,
+  getDemoOperationsQueue,
+  isManagerDemoToken,
+} from "@/features/operations/lib/operations-demo-data";
 import type {
   CheckInWashSessionResponse,
   CompleteWashSessionResponse,
@@ -16,6 +25,10 @@ import type {
 const SESSION_BASE_URL = "/operations/sessions";
 
 export function createWashSession(bookingId: string, notes?: string) {
+  if (isManagerDemoToken(getAccessToken())) {
+    return createDemoWashSession(bookingId);
+  }
+
   return apiRequest<CreateWashSessionResponse, { bookingId: string; notes?: string }>({
     method: "POST",
     url: SESSION_BASE_URL,
@@ -24,6 +37,10 @@ export function createWashSession(bookingId: string, notes?: string) {
 }
 
 export function getOperationsQueue() {
+  if (isManagerDemoToken(getAccessToken())) {
+    return getDemoOperationsQueue();
+  }
+
   return apiRequest<OperationsQueue>({
     method: "GET",
     url: "/operations/queue",
@@ -38,6 +55,10 @@ export function getStaffDashboardSummary() {
 }
 
 export function getActiveStaffOptions() {
+  if (isManagerDemoToken(getAccessToken())) {
+    return getDemoActiveStaffOptions();
+  }
+
   return apiRequest<StaffOption[]>({
     method: "GET",
     url: "/operations/staff/active",
@@ -45,6 +66,10 @@ export function getActiveStaffOptions() {
 }
 
 export function getEligibleSessionBookings() {
+  if (isManagerDemoToken(getAccessToken())) {
+    return getDemoEligibleSessionBookings();
+  }
+
   return apiRequest<EligibleSessionBooking[]>({
     method: "GET",
     url: "/operations/bookings/eligible-sessions",
@@ -60,6 +85,10 @@ export function queueWashSession(sessionId: string) {
 }
 
 export function checkInWashSession(sessionId: string) {
+  if (isManagerDemoToken(getAccessToken())) {
+    return checkInDemoWashSession(sessionId);
+  }
+
   return apiRequest<CheckInWashSessionResponse>({
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/check-in`,

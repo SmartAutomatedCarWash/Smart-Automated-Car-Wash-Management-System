@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type Language = "vi" | "en";
-const LANGUAGE_STORAGE_KEY = "aura-lang";
+const LANGUAGE_STORAGE_KEY = "aura-lang-v2";
 export const DEFAULT_LANGUAGE: Language = "en";
 
 interface LanguageState {

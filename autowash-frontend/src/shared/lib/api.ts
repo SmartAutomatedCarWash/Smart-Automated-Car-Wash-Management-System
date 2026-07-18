@@ -43,12 +43,15 @@ apiClient.interceptors.response.use(
     }
 
     const is401 = error.response?.status === 401;
+    const isDemoSession = isMockAccessToken(getAccessToken());
 
     // Treat any 401 as a potentially expired token (backend sends plain 401 without body)
-    const shouldTryRefresh = is401 && !request._retry;
+    // Demo accounts intentionally use frontend-only tokens, so their API errors must
+    // not erase the local session and immediately redirect them back to login.
+    const shouldTryRefresh = is401 && !request._retry && !isDemoSession;
 
     if (!shouldTryRefresh) {
-      if (is401) {
+      if (is401 && !isDemoSession) {
         clearAuthSession();
       }
       return Promise.reject(normalizeAxiosError(error));
@@ -74,6 +77,10 @@ function attachAccessToken(config: InternalAxiosRequestConfig) {
   }
 
   return config;
+}
+
+function isMockAccessToken(token: string | null) {
+  return token?.startsWith("mock-token-") ?? false;
 }
 
 async function refreshAccessToken(): Promise<string | null> {

@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, ArrowRight, BellRing, ClipboardCheck } from "lucide-react";
-import { getEligibleSessionBookings, getOperationsQueue } from "@/features/operations/lib/operations-service";
+import { getOperationsQueue } from "@/features/operations/lib/operations-service";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import { cn } from "@/shared/lib/utils";
 
@@ -14,13 +14,6 @@ export function StaffNotificationListener() {
   const user = useAuthStore((state) => state.user);
   const enabled = Boolean(accessToken && user?.role === "STAFF");
 
-  const eligibleQuery = useQuery({
-    queryKey: ["staff-notifications", "eligible"],
-    queryFn: getEligibleSessionBookings,
-    enabled,
-    refetchInterval: 10_000,
-  });
-
   const queueQuery = useQuery({
     queryKey: ["staff-notifications", "queue"],
     queryFn: getOperationsQueue,
@@ -28,16 +21,15 @@ export function StaffNotificationListener() {
     refetchInterval: 10_000,
   });
 
-  const eligibleCount = eligibleQuery.data?.length ?? 0;
   const pendingSessions = useMemo(() => {
     if (!queueQuery.data) return [];
     const sessions = queueQuery.data.columns.flatMap((column) => column.sessions);
-    return sessions.filter((session) => session.status === "PENDING" || session.status === "QUEUED");
+    return sessions.filter((session) => session.status === "CHECKED_IN");
   }, [queueQuery.data]);
 
   const firstPendingSessionId = pendingSessions[0]?.sessionId ?? null;
   const pendingSessionsCount = pendingSessions.length;
-  const hasTasks = eligibleCount > 0 || pendingSessionsCount > 0;
+  const hasTasks = pendingSessionsCount > 0;
 
   if (!hasTasks || user?.role !== "STAFF") return null;
 
