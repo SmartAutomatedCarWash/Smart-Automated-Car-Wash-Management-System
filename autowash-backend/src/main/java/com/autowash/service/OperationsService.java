@@ -10,8 +10,11 @@ import com.autowash.dto.OperationsQueueResponse;
 import com.autowash.dto.QueueWashSessionResponse;
 import com.autowash.dto.StaffDashboardSummaryResponse;
 import com.autowash.dto.StaffOptionResponse;
+import com.autowash.dto.StaffSessionHistoryResponse;
 import com.autowash.dto.StartWashSessionResponse;
+import com.autowash.dto.StaffTodayResponse;
 import com.autowash.dto.TransferWashSessionResponse;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,5 +33,16 @@ public interface OperationsService {
     OperationsQueueResponse getOperationsQueue();
     List<EligibleSessionBookingResponse> getEligibleSessionBookings(int limit);
     StaffDashboardSummaryResponse getMyStaffSummary();
+    StaffTodayResponse getMySessionsToday(LocalDate date);
+    StaffSessionHistoryResponse getMySessionHistory(
+            int page,
+            int limit,
+            String period,
+            LocalDate date,
+            String servicePackage,
+            String rating,
+            String search,
+            String sort
+    );
 }
 

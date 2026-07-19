@@ -2,6 +2,12 @@
 $ErrorActionPreference = "Stop"
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $envFile = Join-Path $here ".env"
+$jdk21 = "C:\Program Files\Java\jdk-21.0.11"
+
+if (Test-Path $jdk21) {
+  $env:JAVA_HOME = $jdk21
+  $env:Path = "$jdk21\bin;$env:Path"
+}
 
 if (Test-Path $envFile) {
   Get-Content $envFile | ForEach-Object {

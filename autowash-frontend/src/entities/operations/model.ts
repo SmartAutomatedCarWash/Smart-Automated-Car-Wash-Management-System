@@ -146,3 +146,145 @@ export type CancelWashSessionResponse = {
   cancelledAt: string;
 };
 
+// ─── Staff Today (My Sessions) ────────────────────────────────────────────────
+
+export type BookingStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "CHECKED_IN"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "NO_SHOW";
+
+export type StaffTodayMetrics = {
+  checkedInCount: number;
+  inProgressCount: number;
+  completedTodayCount: number;
+  totalTodayCount: number;
+};
+
+export type StaffTodaySessionItem = {
+  sessionId: string | null;
+  bookingId: string;
+  bookingStatus: BookingStatus;
+  sessionStatus: WashSessionStatus | null;
+  vehiclePlate: string;
+  customerName: string;
+  customerPhone?: string | null;
+  serviceName?: string | null;
+  bayCode?: string | null;
+  bookingTime: string;
+  checkedInAt?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  estimatedDurationMinutes?: number | null;
+  elapsedMinutes?: number | null;
+  customerNote?: string | null;
+  managerNote?: string | null;
+};
+
+export type StaffTodayResponse = {
+  staff: { staffId: string; staffName: string };
+  date: string;
+  autoRefreshSeconds: number;
+  metrics: StaffTodayMetrics;
+  waitingToStart: StaffTodaySessionItem[];
+  inProgress: StaffTodaySessionItem[];
+  todaySchedule: StaffTodaySessionItem[];
+};
+
+// ─── Staff Session History (paginated) ───────────────────────────────────────
+
+export type StaffSessionHistoryReview = {
+  hasReview: boolean;
+  id?: string | null;
+  rating?: number | null;
+  comment?: string | null;
+  beforeImageUrl?: string | null;
+  afterImageUrl?: string | null;
+  createdAt?: string | null;
+};
+
+export type StaffSessionHistoryItem = {
+  sessionId: string;
+  bookingId: string;
+  customerName: string;
+  customerPhone: string;
+  vehiclePlate: string;
+  packageId?: string | null;
+  servicePackage?: string | null;
+  assignedStaffId?: string | null;
+  assignedStaffName?: string | null;
+  status: string;
+  bookingDate: string;
+  bookingTime: string;
+  checkedInAt?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  durationMinutes?: number | null;
+  managerNotes?: string | null;
+  customerNotes?: string | null;
+  review: StaffSessionHistoryReview;
+};
+
+export type StaffSessionHistorySummary = {
+  completedTotal: number;
+  completedToday: number;
+  averageDurationMinutes?: number | null;
+  averageRating?: number | null;
+  reviewedCount: number;
+  unreviewedCount: number;
+};
+
+export type StaffSessionHistoryPagination = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+};
+
+export type StaffSessionHistoryResponse = {
+  summary: StaffSessionHistorySummary;
+  items: StaffSessionHistoryItem[];
+  pagination: StaffSessionHistoryPagination;
+};
+
+export type StaffSessionHistoryParams = {
+  page?: number;
+  limit?: number;
+  period?: "ALL" | "TODAY" | "7DAYS" | "MONTH";
+  date?: string;
+  servicePackage?: string;
+  rating?: "ALL" | "5" | "4" | "LOW" | "NONE";
+  search?: string;
+  sort?: "COMPLETED_DESC" | "COMPLETED_ASC" | "DURATION_DESC" | "RATING_ASC";
+};
+
+export type StartSessionRequest = {
+  startedAt: string;
+};
+
+export type StartSessionResponse = {
+  sessionId: string;
+  previousStatus: WashSessionStatus;
+  status: WashSessionStatus;
+  startedAt: string;
+  message: string;
+};
+
+export type CompleteSessionRequest = {
+  completedAt: string;
+  staffNote?: string;
+};
+
+export type CompleteSessionResponse = {
+  sessionId: string;
+  previousStatus: WashSessionStatus;
+  status: WashSessionStatus;
+  startedAt: string;
+  completedAt: string;
+  durationMinutes: number;
+  message: string;
+};
+

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { applyProfileToAuthUser, isAuthUserInSyncWithProfile } from "@/features/auth/lib/auth-session";
-import { getCustomerProfile, updateCustomerProfile } from "@/features/profile/lib/profile-service";
+import { getCustomerProfile, updateCustomerProfile, changePassword } from "@/features/profile/lib/profile-service";
 import { setAuthUser, useAuthStore } from "@/features/auth/store/auth.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type {
@@ -11,6 +11,7 @@ import type {
   UpdateUserProfileResponse,
   UserProfile,
 } from "@/entities/users";
+import type { ChangePasswordRequest } from "@/features/profile/lib/profile-service";
 
 export function useStaffProfile() {
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -74,5 +75,11 @@ export function useUpdateStaffProfile() {
 
       void queryClient.invalidateQueries({ queryKey: ["staff-profile", userId] });
     },
+  });
+}
+
+export function useChangeStaffPassword() {
+  return useMutation<void, ApiErrorResponse, ChangePasswordRequest>({
+    mutationFn: changePassword,
   });
 }

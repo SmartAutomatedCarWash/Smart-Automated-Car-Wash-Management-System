@@ -12,10 +12,13 @@ import com.autowash.dto.QueueWashSessionResponse;
 import com.autowash.dto.StartWashSessionResponse;
 import com.autowash.dto.StaffDashboardSummaryResponse;
 import com.autowash.dto.StaffOptionResponse;
+import com.autowash.dto.StaffSessionHistoryResponse;
+import com.autowash.dto.StaffTodayResponse;
 import com.autowash.dto.TransferWashSessionResponse;
 import com.autowash.entity.Booking;
 import com.autowash.entity.BookingDetail;
 import com.autowash.entity.Notification;
+import com.autowash.entity.Review;
 import com.autowash.entity.User;
 import com.autowash.entity.WashSession;
 import com.autowash.entity.enums.BookingItemType;
@@ -26,6 +29,7 @@ import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.NotificationRepository;
+import com.autowash.repository.ReviewRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.BookingService;
 import com.autowash.service.CurrentUserService;
@@ -37,10 +41,14 @@ import com.autowash.service.WashSessionLifecycle;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.shared.exception.ErrorCode;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -75,6 +83,7 @@ public class OperationsServiceImpl implements OperationsService {
     private final StaffAssignmentService staffAssignmentService;
     private final TierConfigService tierConfigService;
     private final NotificationRepository notificationRepository;
+    private final ReviewRepository reviewRepository;
     private final String currency;
 
     public OperationsServiceImpl(
@@ -86,6 +95,7 @@ public class OperationsServiceImpl implements OperationsService {
             StaffAssignmentService staffAssignmentService,
             TierConfigService tierConfigService,
             NotificationRepository notificationRepository,
+            ReviewRepository reviewRepository,
             @Value("${autowash.currency}") String currency
     ) {
         this.bookingService = bookingService;
@@ -96,6 +106,7 @@ public class OperationsServiceImpl implements OperationsService {
         this.staffAssignmentService = staffAssignmentService;
         this.tierConfigService = tierConfigService;
         this.notificationRepository = notificationRepository;
+        this.reviewRepository = reviewRepository;
         this.currency = currency;
     }
 
@@ -408,10 +419,399 @@ public class OperationsServiceImpl implements OperationsService {
         return getStaffSummary();
     }
 
+    @Transactional(readOnly = true)
+    public StaffTodayResponse getMySessionsToday(LocalDate date) {
+        User staff = currentUserService.getCurrentUser();
+        if (staff.getRole() != UserRole.STAFF) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Staff role required", ErrorCode.FORBIDDEN);
+        }
+
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+        ZoneId zone = ZoneId.systemDefault();
+        Instant dayStart = targetDate.atStartOfDay(zone).toInstant();
+        Instant dayEnd = targetDate.plusDays(1).atStartOfDay(zone).toInstant();
+
+        // All wash sessions assigned to this staff today
+        List<WashSession> sessions = washSessionRepository
+                .findByAssignedStaffAndBookingDate(staff, dayStart, dayEnd);
+
+        // All bookings assigned to this staff today (to catch bookings with no session yet)
+        List<Booking> allBookings = BookingRepository
+                .findTodayBookingsByAssignedStaff(staff, dayStart, dayEnd);
+
+        // Build a set of bookingIds that already have a session
+        Set<UUID> bookingIdsWithSession = sessions.stream()
+                .map(s -> s.getBooking().getId())
+                .collect(Collectors.toSet());
+
+        // Metrics from sessions
+        int checkedInCount  = (int) sessions.stream().filter(s -> s.getStatus() == WashSessionStatus.CHECKED_IN).count();
+        int inProgressCount = (int) sessions.stream().filter(s -> s.getStatus() == WashSessionStatus.IN_PROGRESS).count();
+        int completedCount  = (int) sessions.stream().filter(s -> s.getStatus() == WashSessionStatus.COMPLETED).count();
+        int totalCount      = allBookings.size();
+
+        StaffTodayResponse.Metrics metrics = StaffTodayResponse.Metrics.builder()
+                .checkedInCount(checkedInCount)
+                .inProgressCount(inProgressCount)
+                .completedTodayCount(completedCount)
+                .totalTodayCount(totalCount)
+                .build();
+
+        // waitingToStart = CHECKED_IN sessions
+        List<StaffTodayResponse.SessionItem> waitingToStart = sessions.stream()
+                .filter(s -> s.getStatus() == WashSessionStatus.CHECKED_IN)
+                .map(s -> toSessionItem(s, staff))
+                .toList();
+
+        // inProgress = IN_PROGRESS sessions
+        List<StaffTodayResponse.SessionItem> inProgressItems = sessions.stream()
+                .filter(s -> s.getStatus() == WashSessionStatus.IN_PROGRESS)
+                .map(s -> toSessionItem(s, staff))
+                .toList();
+
+        // todaySchedule = all bookings today, merged with session data where available
+        List<StaffTodayResponse.SessionItem> scheduleItems = new ArrayList<>();
+
+        // Add items for bookings that have sessions
+        for (WashSession session : sessions) {
+            scheduleItems.add(toSessionItem(session, staff));
+        }
+
+        // Add items for bookings without sessions yet
+        for (Booking booking : allBookings) {
+            if (!bookingIdsWithSession.contains(booking.getId())) {
+                scheduleItems.add(toBookingOnlyItem(booking));
+            }
+        }
+
+        // Sort by booking time
+        scheduleItems.sort(Comparator.comparing(item -> item.bookingTime()));
+
+        return StaffTodayResponse.builder()
+                .staff(StaffTodayResponse.StaffInfo.builder()
+                        .staffId(staff.getId().toString())
+                        .staffName(staff.getFullName())
+                        .build())
+                .date(targetDate)
+                .autoRefreshSeconds(15)
+                .metrics(metrics)
+                .waitingToStart(waitingToStart)
+                .inProgress(inProgressItems)
+                .todaySchedule(scheduleItems)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public StaffSessionHistoryResponse getMySessionHistory(
+            int page,
+            int limit,
+            String period,
+            LocalDate date,
+            String servicePackage,
+            String rating,
+            String search,
+            String sort
+    ) {
+        User staff = currentUserService.getCurrentUser();
+        if (staff.getRole() != UserRole.STAFF) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Staff role required", ErrorCode.FORBIDDEN);
+        }
+
+        int safePage = Math.max(page, 1);
+        int safeLimit = Math.max(1, Math.min(limit, 100));
+
+        List<WashSession> completedSessions = washSessionRepository
+                .findByAssignedStaffAndStatusOrderByCompletedAtDesc(staff, WashSessionStatus.COMPLETED);
+        Map<UUID, Review> reviewsByBookingId = reviewsByBookingId(completedSessions);
+
+        List<WashSession> filteredSessions = completedSessions.stream()
+                .filter(session -> matchesHistoryPeriod(session, period, date))
+                .filter(session -> matchesHistoryService(session, servicePackage))
+                .filter(session -> matchesHistoryRating(reviewsByBookingId.get(session.getBooking().getId()), rating))
+                .filter(session -> matchesHistorySearch(session, search))
+                .sorted(historyComparator(sort, reviewsByBookingId))
+                .toList();
+
+        int fromIndex = Math.min((safePage - 1) * safeLimit, filteredSessions.size());
+        int toIndex = Math.min(fromIndex + safeLimit, filteredSessions.size());
+        List<StaffSessionHistoryResponse.Item> items = filteredSessions.subList(fromIndex, toIndex).stream()
+                .map(session -> toHistoryItem(session, reviewsByBookingId.get(session.getBooking().getId())))
+                .toList();
+
+        int totalPages = filteredSessions.isEmpty()
+                ? 0
+                : (int) Math.ceil(filteredSessions.size() / (double) safeLimit);
+
+        return StaffSessionHistoryResponse.builder()
+                .summary(buildHistorySummary(filteredSessions, completedSessions, reviewsByBookingId))
+                .items(items)
+                .pagination(StaffSessionHistoryResponse.Pagination.builder()
+                        .page(safePage)
+                        .limit(safeLimit)
+                        .totalItems(filteredSessions.size())
+                        .totalPages(totalPages)
+                        .build())
+                .build();
+    }
+
     private void markCustomerAsNotNew(User customer) {
         if (customer.isNewCustomer()) {
             customer.markNotNewCustomer();
         }
+    }
+
+    private Map<UUID, Review> reviewsByBookingId(List<WashSession> sessions) {
+        Set<UUID> bookingIds = sessions.stream()
+                .map(session -> session.getBooking().getId())
+                .collect(Collectors.toSet());
+        if (bookingIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<UUID, Review> reviews = new HashMap<>();
+        reviewRepository.findByBookingIdIn(bookingIds)
+                .forEach(review -> reviews.put(review.getBooking().getId(), review));
+        return reviews;
+    }
+
+    private StaffSessionHistoryResponse.Summary buildHistorySummary(
+            List<WashSession> filteredSessions,
+            List<WashSession> allCompletedSessions,
+            Map<UUID, Review> reviewsByBookingId
+    ) {
+        LocalDate today = LocalDate.now();
+        int completedToday = (int) allCompletedSessions.stream()
+                .filter(session -> session.getCompletedAt() != null)
+                .filter(session -> session.getCompletedAt().atZone(ZoneId.systemDefault()).toLocalDate().equals(today))
+                .count();
+        List<Integer> durations = filteredSessions.stream()
+                .map(this::durationMinutes)
+                .filter(duration -> duration != null && duration > 0)
+                .toList();
+        Integer averageDuration = durations.isEmpty()
+                ? null
+                : (int) Math.round(durations.stream().mapToInt(Integer::intValue).average().orElse(0));
+        List<Integer> ratings = filteredSessions.stream()
+                .map(session -> reviewsByBookingId.get(session.getBooking().getId()))
+                .filter(review -> review != null)
+                .map(Review::getRating)
+                .toList();
+        Double averageRating = ratings.isEmpty()
+                ? null
+                : Math.round(ratings.stream().mapToInt(Integer::intValue).average().orElse(0.0) * 10.0) / 10.0;
+
+        return StaffSessionHistoryResponse.Summary.builder()
+                .completedTotal(filteredSessions.size())
+                .completedToday(completedToday)
+                .averageDurationMinutes(averageDuration)
+                .averageRating(averageRating)
+                .reviewedCount(ratings.size())
+                .unreviewedCount(filteredSessions.size() - ratings.size())
+                .build();
+    }
+
+    private StaffSessionHistoryResponse.Item toHistoryItem(WashSession session, Review review) {
+        Booking booking = session.getBooking();
+        User assignedStaff = session.getAssignedStaff();
+        UUID packageId = resolveBookingDetailRefId(booking, BookingItemType.PACKAGE);
+
+        return StaffSessionHistoryResponse.Item.builder()
+                .sessionId(session.getId())
+                .bookingId(booking.getId().toString())
+                .customerName(booking.getCustomer().getFullName())
+                .customerPhone(booking.getCustomer().getPhone())
+                .vehiclePlate(booking.getVehicle().getPlate())
+                .packageId(packageId == null ? null : packageId.toString())
+                .servicePackage(resolvePrimaryItemName(booking))
+                .assignedStaffId(assignedStaff == null ? null : assignedStaff.getId())
+                .assignedStaffName(assignedStaff == null ? null : assignedStaff.getFullName())
+                .status(session.getStatus().name())
+                .bookingDate(booking.getBookingDate())
+                .bookingTime(booking.getBookingTime() == null ? null : booking.getBookingTime().toString().substring(0, 5))
+                .checkedInAt(session.getCheckedInAt())
+                .startedAt(session.getStartedAt())
+                .completedAt(session.getCompletedAt())
+                .durationMinutes(durationMinutes(session))
+                .managerNotes(session.getNotes())
+                .customerNotes(booking.getNote())
+                .review(toHistoryReview(review))
+                .build();
+    }
+
+    private StaffSessionHistoryResponse.Review toHistoryReview(Review review) {
+        if (review == null) {
+            return StaffSessionHistoryResponse.Review.builder()
+                    .hasReview(false)
+                    .build();
+        }
+
+        return StaffSessionHistoryResponse.Review.builder()
+                .hasReview(true)
+                .id(review.getId().toString())
+                .rating(review.getRating())
+                .comment(review.getComment())
+                .beforeImageUrl(review.getBeforeImageUrl())
+                .afterImageUrl(review.getAfterImageUrl())
+                .createdAt(review.getCreatedAt())
+                .build();
+    }
+
+    private boolean matchesHistoryPeriod(WashSession session, String period, LocalDate date) {
+        if (session.getCompletedAt() == null) {
+            return false;
+        }
+        String normalizedPeriod = normalizeFilter(period, "ALL");
+        LocalDate completedDate = session.getCompletedAt().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate today = LocalDate.now();
+
+        return switch (normalizedPeriod) {
+            case "TODAY" -> completedDate.equals(today);
+            case "LAST_7_DAYS", "7_DAYS" -> !completedDate.isBefore(today.minusDays(7)) && !completedDate.isAfter(today);
+            case "THIS_MONTH", "MONTH" -> completedDate.getYear() == today.getYear() && completedDate.getMonth() == today.getMonth();
+            case "CUSTOM_DATE", "DATE" -> date == null || completedDate.equals(date);
+            default -> true;
+        };
+    }
+
+    private boolean matchesHistoryService(WashSession session, String servicePackage) {
+        String normalizedService = normalizeNullable(servicePackage);
+        if (normalizedService == null || "ALL".equalsIgnoreCase(normalizedService)) {
+            return true;
+        }
+        String serviceName = resolvePrimaryItemName(session.getBooking());
+        return serviceName != null && serviceName.equalsIgnoreCase(normalizedService);
+    }
+
+    private boolean matchesHistoryRating(Review review, String rating) {
+        String normalizedRating = normalizeFilter(rating, "ALL");
+        Integer value = review == null ? null : review.getRating();
+
+        return switch (normalizedRating) {
+            case "5", "FIVE" -> value != null && value == 5;
+            case "4", "FOUR" -> value != null && value == 4;
+            case "LOW", "BELOW_4" -> value != null && value < 4;
+            case "NONE", "UNREVIEWED" -> value == null;
+            default -> true;
+        };
+    }
+
+    private boolean matchesHistorySearch(WashSession session, String search) {
+        String normalizedSearch = normalizeNullable(search);
+        if (normalizedSearch == null) {
+            return true;
+        }
+        Booking booking = session.getBooking();
+        String needle = normalizedSearch.toLowerCase();
+        return containsIgnoreCase(booking.getVehicle().getPlate(), needle)
+                || containsIgnoreCase(booking.getCustomer().getFullName(), needle)
+                || containsIgnoreCase(booking.getCustomer().getPhone(), needle)
+                || booking.getId().toString().toLowerCase().contains(needle)
+                || session.getId().toString().toLowerCase().contains(needle);
+    }
+
+    private Comparator<WashSession> historyComparator(String sort, Map<UUID, Review> reviewsByBookingId) {
+        String normalizedSort = normalizeFilter(sort, "COMPLETED_DESC");
+        Comparator<WashSession> completedAtComparator = Comparator.comparing(
+                WashSession::getCompletedAt,
+                Comparator.nullsLast(Comparator.naturalOrder())
+        );
+
+        return switch (normalizedSort) {
+            case "COMPLETED_ASC", "OLDEST" -> completedAtComparator;
+            case "RATING_ASC", "LOWEST_RATING" -> Comparator
+                    .comparing((WashSession session) -> {
+                        Review review = reviewsByBookingId.get(session.getBooking().getId());
+                        return review == null ? 99 : review.getRating();
+                    })
+                    .thenComparing(completedAtComparator.reversed());
+            case "DURATION_DESC", "LONGEST" -> Comparator
+                    .comparing((WashSession session) -> durationMinutes(session) == null ? 0 : durationMinutes(session))
+                    .reversed()
+                    .thenComparing(completedAtComparator.reversed());
+            default -> completedAtComparator.reversed();
+        };
+    }
+
+    private Integer durationMinutes(WashSession session) {
+        if (session.getStartedAt() == null || session.getCompletedAt() == null) {
+            return null;
+        }
+        long minutes = ChronoUnit.MINUTES.between(session.getStartedAt(), session.getCompletedAt());
+        return minutes > 0 ? (int) minutes : null;
+    }
+
+    private String normalizeFilter(String value, String fallback) {
+        String normalized = normalizeNullable(value);
+        return normalized == null ? fallback : normalized.toUpperCase().replace('-', '_');
+    }
+
+    private String normalizeNullable(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private boolean containsIgnoreCase(String value, String normalizedNeedle) {
+        return value != null && value.toLowerCase().contains(normalizedNeedle);
+    }
+
+    private StaffTodayResponse.SessionItem toSessionItem(WashSession session, User staff) {
+        Booking booking = session.getBooking();
+        String bookingTimeStr = booking.getBookingTime() != null
+                ? booking.getBookingTime().toString().substring(0, 5)
+                : null;
+
+        Integer elapsed = null;
+        if (session.getStartedAt() != null && session.getStatus() == WashSessionStatus.IN_PROGRESS) {
+            elapsed = (int) java.time.Duration.between(session.getStartedAt(), Instant.now()).toMinutes();
+        }
+
+        return StaffTodayResponse.SessionItem.builder()
+                .sessionId(session.getId())
+                .bookingId(booking.getId().toString())
+                .bookingStatus(booking.getStatus().name())
+                .sessionStatus(session.getStatus().name())
+                .vehiclePlate(booking.getVehicle().getPlate())
+                .customerName(booking.getCustomer().getFullName())
+                .customerPhone(booking.getCustomer().getPhone())
+                .serviceName(resolvePrimaryItemName(booking))
+                .bayCode(null)
+                .bookingTime(bookingTimeStr)
+                .checkedInAt(session.getCheckedInAt())
+                .startedAt(session.getStartedAt())
+                .completedAt(session.getCompletedAt())
+                .estimatedDurationMinutes(resolveEstimatedDurationMinutes(booking))
+                .elapsedMinutes(elapsed)
+                .customerNote(booking.getNote())
+                .managerNote(session.getNotes())
+                .build();
+    }
+
+    private StaffTodayResponse.SessionItem toBookingOnlyItem(Booking booking) {
+        String bookingTimeStr = booking.getBookingTime() != null
+                ? booking.getBookingTime().toString().substring(0, 5)
+                : null;
+
+        return StaffTodayResponse.SessionItem.builder()
+                .sessionId(null)
+                .bookingId(booking.getId().toString())
+                .bookingStatus(booking.getStatus().name())
+                .sessionStatus(null)
+                .vehiclePlate(booking.getVehicle().getPlate())
+                .customerName(booking.getCustomer().getFullName())
+                .customerPhone(booking.getCustomer().getPhone())
+                .serviceName(resolvePrimaryItemName(booking))
+                .bayCode(null)
+                .bookingTime(bookingTimeStr)
+                .checkedInAt(null)
+                .startedAt(null)
+                .completedAt(null)
+                .estimatedDurationMinutes(resolveEstimatedDurationMinutes(booking))
+                .elapsedMinutes(null)
+                .customerNote(booking.getNote())
+                .managerNote(null)
+                .build();
     }
 
     private WashSession requireSession(UUID sessionId) {

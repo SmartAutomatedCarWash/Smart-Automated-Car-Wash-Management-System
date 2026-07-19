@@ -3,16 +3,21 @@ package com.autowash.controller;
 import com.autowash.dto.OperationsQueueResponse;
 import com.autowash.dto.StaffDashboardSummaryResponse;
 import com.autowash.dto.StaffOptionResponse;
+import com.autowash.dto.StaffSessionHistoryResponse;
+import com.autowash.dto.StaffTodayResponse;
 import com.autowash.service.OperationsService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.LocalDate;
+import java.util.List;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/operations")
@@ -44,5 +49,35 @@ public class OperationsQueueController {
     @Operation(summary = "List active staff members for transfer")
     public ApiResponse<List<StaffOptionResponse>> listActiveStaff() {
         return ApiResponse.ok("Active staff retrieved", operationsService.listActiveStaff());
+    }
+
+    @GetMapping("/my-sessions/today")
+    @Operation(summary = "Get today's sessions for the logged-in staff")
+    @PreAuthorize("hasRole('STAFF')")
+    public ApiResponse<StaffTodayResponse> getMySessionsToday(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        return ApiResponse.ok("Today sessions retrieved", operationsService.getMySessionsToday(date));
+    }
+
+    @GetMapping("/my-sessions/history")
+    @Operation(summary = "Get completed session history for the logged-in staff")
+    @PreAuthorize("hasRole('STAFF')")
+    public ApiResponse<StaffSessionHistoryResponse> getMySessionHistory(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "ALL") String period,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) String servicePackage,
+            @RequestParam(defaultValue = "ALL") String rating,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "COMPLETED_DESC") String sort
+    ) {
+        return ApiResponse.ok(
+                "Staff completed session history retrieved",
+                operationsService.getMySessionHistory(page, limit, period, date, servicePackage, rating, search, sort)
+        );
     }
 }

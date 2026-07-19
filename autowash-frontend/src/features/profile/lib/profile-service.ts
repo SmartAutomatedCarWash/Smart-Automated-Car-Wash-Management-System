@@ -10,6 +10,12 @@ import type {
   UserProfile,
 } from "@/entities/users";
 
+export type ChangePasswordRequest = {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+};
+
 export function getCustomerProfile() {
   return apiRequest<UserProfile>({
     method: "GET",
@@ -54,6 +60,14 @@ export function updateCustomerAvatar(payload: UpdateUserAvatarRequest) {
   return apiRequest<UpdateUserAvatarResponse, UpdateUserAvatarRequest>({
     method: "PUT",
     url: "/users/profile/avatar",
+    data: payload,
+  });
+}
+
+export function changePassword(payload: ChangePasswordRequest) {
+  return apiRequest<void, ChangePasswordRequest>({
+    method: "PUT",
+    url: "/users/profile/password",
     data: payload,
   });
 }

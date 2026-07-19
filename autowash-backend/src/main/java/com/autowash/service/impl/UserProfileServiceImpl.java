@@ -5,6 +5,7 @@ import com.autowash.service.LoyaltyService;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.shared.exception.ErrorCode;
 
+import com.autowash.dto.ChangePasswordRequest;
 import com.autowash.dto.CreateAvatarUploadUrlRequest;
 import com.autowash.dto.CreateAvatarUploadUrlResponse;
 import com.autowash.entity.User;
@@ -26,6 +27,7 @@ import com.autowash.dto.UserPreferencesDto;
 import com.autowash.dto.UserProfileResponse;
 import com.autowash.mapper.UserProfileMapper;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +42,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final LoyaltyService loyaltyService;
     private final AvatarStorageService avatarStorageService;
     private final UserProfileMapper userProfileMapper;
+    private final PasswordEncoder passwordEncoder;
 
     public UserProfileServiceImpl(
             CurrentUserService currentUserService,
@@ -49,7 +52,8 @@ public class UserProfileServiceImpl implements UserProfileService {
             CustomerLoyaltyService customerLoyaltyService,
             LoyaltyService loyaltyService,
             AvatarStorageService avatarStorageService,
-            UserProfileMapper userProfileMapper
+            UserProfileMapper userProfileMapper,
+            PasswordEncoder passwordEncoder
     ) {
         this.currentUserService = currentUserService;
         this.UserRepository = UserRepository;
@@ -59,6 +63,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         this.loyaltyService = loyaltyService;
         this.avatarStorageService = avatarStorageService;
         this.userProfileMapper = userProfileMapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -141,6 +146,19 @@ public class UserProfileServiceImpl implements UserProfileService {
         user.markNotNewCustomer();
 
         return userProfileMapper.toUpdateProfileResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(ChangePasswordRequest request) {
+        if (!request.newPassword().equals(request.confirmPassword())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "New password and confirmation do not match", ErrorCode.VALIDATION_ERROR);
+        }
+        User user = currentUserService.getCurrentUser();
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Current password is incorrect", ErrorCode.INCORRECT_PASSWORD);
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
     }
 
     @Override

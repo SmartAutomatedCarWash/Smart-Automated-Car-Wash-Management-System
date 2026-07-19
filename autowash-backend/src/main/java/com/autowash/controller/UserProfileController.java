@@ -1,6 +1,7 @@
 package com.autowash.controller;
 
 import com.autowash.shared.dto.ApiResponse;
+import com.autowash.dto.ChangePasswordRequest;
 import com.autowash.dto.CreateAvatarUploadUrlRequest;
 import com.autowash.dto.CreateAvatarUploadUrlResponse;
 import com.autowash.dto.UpdateUserProfileRequest;
@@ -61,6 +62,13 @@ public class UserProfileController {
     @Operation(summary = "Update authenticated user's profile")
     public ApiResponse<UpdateUserProfileResponse> updateProfile(@Valid @RequestBody UpdateUserProfileRequest request) {
         return ApiResponse.ok("Profile updated successfully", userProfileService.updateProfile(request));
+    }
+
+    @PutMapping("/profile/password")
+    @Operation(summary = "Change authenticated user's password")
+    public ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        userProfileService.changePassword(request);
+        return ApiResponse.ok("Password changed successfully", null);
     }
 
     @GetMapping("/preferences")

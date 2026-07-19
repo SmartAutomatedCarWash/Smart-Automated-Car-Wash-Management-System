@@ -9,6 +9,7 @@ import {
   updateCustomerAvatar,
   updateCustomerProfile,
   uploadAvatarFile,
+  changePassword,
 } from "@/features/profile/lib/profile-service";
 import { setAuthUser, useAuthStore } from "@/features/auth/store/auth.store";
 import { customerProfileQueryKey } from "@/features/profile/hooks/customer-profile-query";
@@ -20,6 +21,7 @@ import type {
   UpdateUserAvatarResponse,
   UserProfile,
 } from "@/entities/users";
+import type { ChangePasswordRequest } from "@/features/profile/lib/profile-service";
 
 type UploadCustomerAvatarRequest = {
   file: File;
@@ -125,5 +127,11 @@ export function useUploadCustomerAvatar() {
 
       void queryClient.invalidateQueries({ queryKey: customerProfileQueryKey(userId) });
     },
+  });
+}
+
+export function useChangeCustomerPassword() {
+  return useMutation<void, ApiErrorResponse, ChangePasswordRequest>({
+    mutationFn: changePassword,
   });
 }

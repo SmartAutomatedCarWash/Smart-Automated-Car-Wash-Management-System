@@ -1,5 +1,6 @@
 package com.autowash.service;
 
+import com.autowash.dto.ChangePasswordRequest;
 import com.autowash.dto.CreateAvatarUploadUrlRequest;
 import com.autowash.dto.CreateAvatarUploadUrlResponse;
 import com.autowash.dto.UpdateUserProfileRequest;
@@ -16,6 +17,7 @@ public interface UserProfileService {
     CreateAvatarUploadUrlResponse createAvatarUploadUrl(CreateAvatarUploadUrlRequest request);
     UpdateUserAvatarResponse updateAvatar(UpdateUserAvatarRequest request);
     UpdateUserProfileResponse updateProfile(UpdateUserProfileRequest request);
+    void changePassword(ChangePasswordRequest request);
     UserPreferencesDto getCurrentUserPreferences();
     UpdateUserPreferencesResponse updatePreferences(UpdateUserPreferencesRequest request);
 }
