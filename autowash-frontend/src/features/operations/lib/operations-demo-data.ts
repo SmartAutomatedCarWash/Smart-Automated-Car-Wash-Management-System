@@ -1,10 +1,14 @@
 import type {
+  CancelWashSessionResponse,
   CheckInWashSessionResponse,
+  CompleteWashSessionResponse,
   CreateWashSessionResponse,
   EligibleSessionBooking,
   OperationsQueue,
   OperationsQueueSession,
   StaffOption,
+  StartWashSessionResponse,
+  TransferWashSessionResponse,
   WashSessionStatus,
 } from "@/entities/operations";
 
@@ -409,6 +413,98 @@ export async function checkInDemoWashSession(sessionId: string): Promise<CheckIn
   };
 }
 
+export async function startDemoWashSession(sessionId: string): Promise<StartWashSessionResponse> {
+  const now = new Date().toISOString();
+  assertDemoSessionExists(sessionId);
+
+  sessions = sessions.map((item) =>
+    item.sessionId === sessionId
+      ? {
+          ...item,
+          status: "IN_PROGRESS",
+          startedAt: now,
+        }
+      : item,
+  );
+
+  return { sessionId, status: "IN_PROGRESS", startedAt: now };
+}
+
+export async function completeDemoWashSession(sessionId: string): Promise<CompleteWashSessionResponse> {
+  const now = new Date().toISOString();
+  const session = assertDemoSessionExists(sessionId);
+  const awardedLoyaltyPoints = session.projectedLoyaltyPoints ?? Math.round((session.feeAmount ?? 0) / 10000);
+
+  sessions = sessions.map((item) =>
+    item.sessionId === sessionId
+      ? {
+          ...item,
+          status: "COMPLETED",
+          completedAt: now,
+          awardedLoyaltyPoints,
+        }
+      : item,
+  );
+
+  return { sessionId, status: "COMPLETED", completedAt: now, awardedLoyaltyPoints };
+}
+
+export async function transferDemoWashSession(sessionId: string, toStaffId: string, reason?: string): Promise<TransferWashSessionResponse> {
+  const now = new Date().toISOString();
+  const session = assertDemoSessionExists(sessionId);
+  const nextStaff = STAFF.find((staff) => staff.staffId === toStaffId);
+  if (!nextStaff) {
+    throw new Error("Demo staff not found.");
+  }
+
+  sessions = sessions.map((item) =>
+    item.sessionId === sessionId
+      ? {
+          ...item,
+          assignedStaffId: nextStaff.staffId,
+          assignedStaffName: nextStaff.staffName,
+        }
+      : item,
+  );
+
+  return {
+    auditId: `demo-transfer-${Date.now()}`,
+    sessionId,
+    bookingId: session.bookingId,
+    fromStaffId: session.assignedStaffId ?? null,
+    fromStaffName: session.assignedStaffName ?? null,
+    toStaffId: nextStaff.staffId,
+    toStaffName: nextStaff.staffName,
+    reason: reason ?? null,
+    transferredAt: now,
+  };
+}
+
+export async function cancelDemoWashSession(sessionId: string, reason: string): Promise<CancelWashSessionResponse> {
+  const now = new Date().toISOString();
+  const session = assertDemoSessionExists(sessionId);
+
+  sessions = sessions.map((item) =>
+    item.sessionId === sessionId
+      ? {
+          ...item,
+          status: "CANCELLED",
+          notes: reason,
+        }
+      : item,
+  );
+
+  return {
+    sessionId,
+    status: "CANCELLED",
+    bookingId: session.bookingId,
+    bookingStatus: "CANCELLED",
+    reason,
+    faultType: "CUSTOMER_FAULT",
+    cancelledAt: now,
+  };
+}
+
 function buildQueue(): OperationsQueue {
   const orderedStatuses: WashSessionStatus[] = ["PENDING", "QUEUED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
   const columns = orderedStatuses.map((status) => ({
@@ -437,6 +533,14 @@ function pickLeastBusyStaff() {
       activeSessions.filter((session) => session.assignedStaffId === left.staffId).length -
       activeSessions.filter((session) => session.assignedStaffId === right.staffId).length,
   )[0];
+}
+
+function assertDemoSessionExists(sessionId: string) {
+  const session = sessions.find((item) => item.sessionId === sessionId);
+  if (!session) {
+    throw new Error("Demo session not found.");
+  }
+  return session;
 }
 
 function getServiceName(packageId: string | null) {

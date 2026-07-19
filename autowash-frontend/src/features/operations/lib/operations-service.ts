@@ -1,12 +1,16 @@
 import { apiRequest } from "@/shared/lib/api";
 import { getAccessToken } from "@/features/auth/store/auth.store";
 import {
+  cancelDemoWashSession,
   checkInDemoWashSession,
+  completeDemoWashSession,
   createDemoWashSession,
   getDemoActiveStaffOptions,
   getDemoEligibleSessionBookings,
   getDemoOperationsQueue,
   isManagerDemoToken,
+  startDemoWashSession,
+  transferDemoWashSession,
 } from "@/features/operations/lib/operations-demo-data";
 import type {
   CheckInWashSessionResponse,
@@ -96,6 +100,10 @@ export function checkInWashSession(sessionId: string) {
 }
 
 export function startWashSession(sessionId: string) {
+  if (isManagerDemoToken(getAccessToken())) {
+    return startDemoWashSession(sessionId);
+  }
+
   return apiRequest<StartWashSessionResponse>({
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/start`,
@@ -103,6 +111,10 @@ export function startWashSession(sessionId: string) {
 }
 
 export function completeWashSession(sessionId: string) {
+  if (isManagerDemoToken(getAccessToken())) {
+    return completeDemoWashSession(sessionId);
+  }
+
   return apiRequest<CompleteWashSessionResponse>({
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/complete`,
@@ -110,6 +122,10 @@ export function completeWashSession(sessionId: string) {
 }
 
 export function transferWashSession(sessionId: string, toStaffId: string, reason?: string) {
+  if (isManagerDemoToken(getAccessToken())) {
+    return transferDemoWashSession(sessionId, toStaffId, reason);
+  }
+
   return apiRequest<TransferWashSessionResponse, { toStaffId: string; reason?: string }>({
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/transfer`,
@@ -118,6 +134,10 @@ export function transferWashSession(sessionId: string, toStaffId: string, reason
 }
 
 export function cancelWashSession(sessionId: string, reason: string, faultType?: string) {
+  if (isManagerDemoToken(getAccessToken())) {
+    return cancelDemoWashSession(sessionId, reason);
+  }
+
   return apiRequest<CancelWashSessionResponse, { reason: string; faultType?: string }>({
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/cancel`,
