@@ -780,6 +780,7 @@ export function CustomerBookingForm() {
   const queryId = searchParams.get("id");
 
   const hasAutoSelectedVehicleRef = useRef(false);
+  const hasUserSelectedVehicleRef = useRef(false);
   const hasAutoSelectedPackageRef = useRef(false);
   const hasAutoSelectedComboRef = useRef(false);
   const draft = useBookingStore((state) => state.draft);
@@ -897,6 +898,7 @@ export function CustomerBookingForm() {
   useEffect(() => {
     if (vehicles.length === 0) {
       hasAutoSelectedVehicleRef.current = false;
+      hasUserSelectedVehicleRef.current = false;
       return;
     }
 
@@ -905,6 +907,16 @@ export function CustomerBookingForm() {
     const availableVehicleIds = new Set(vehicles.map((item) => item.vehicleId));
     const hasValidSelectedVehicle =
       draft.vehicleId.length > 0 && availableVehicleIds.has(draft.vehicleId);
+
+    if (
+      hasValidSelectedVehicle &&
+      !hasUserSelectedVehicleRef.current &&
+      draft.vehicleId !== preferredVehicleId
+    ) {
+      hasAutoSelectedVehicleRef.current = true;
+      updateDraft({ vehicleId: preferredVehicleId });
+      return;
+    }
 
     if (hasValidSelectedVehicle) {
       hasAutoSelectedVehicleRef.current = true;
@@ -1171,6 +1183,7 @@ export function CustomerBookingForm() {
         open={showAddVehicleModal}
         onOpenChange={setShowAddVehicleModal}
         onCreated={(vehicleId) => {
+          hasUserSelectedVehicleRef.current = true;
           updateDraft({ vehicleId });
           void vehiclesQuery.refetch();
         }}
@@ -1278,6 +1291,7 @@ export function CustomerBookingForm() {
                 if (value === "__add_new__") {
                   setShowAddVehicleModal(true);
                 } else {
+                  hasUserSelectedVehicleRef.current = true;
                   updateDraft({ vehicleId: draft.vehicleId === value ? "" : value });
                 }
               }}

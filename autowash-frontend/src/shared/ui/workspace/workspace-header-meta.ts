@@ -36,8 +36,8 @@ const ROUTE_META: Array<{
   {
     match: (pathname) => pathname.startsWith("/customer/vehicles"),
     meta: {
-      title: "Vehicles",
-      subtitle: "Manage registered vehicles and primary vehicle status",
+      title: "All vehicles",
+      subtitle: "View every saved vehicle and open each full vehicle profile",
       workspace: "CUSTOMER",
     },
   },

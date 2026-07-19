@@ -130,7 +130,9 @@ public class CustomerLoyaltyServiceImpl implements CustomerLoyaltyService {
             return Optional.empty();
         }
         try {
-            return washSessionRepository.findWithBookingById(UUID.fromString(referenceId));
+            UUID id = UUID.fromString(referenceId);
+            Optional<WashSession> session = washSessionRepository.findWithBookingById(id);
+            return session.isPresent() ? session : washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(id);
         } catch (IllegalArgumentException exception) {
             return Optional.empty();
         }

@@ -77,6 +77,7 @@ const PAGE_TITLE_VI: Record<string, string> = {
   "Wash Session": "Phiên rửa xe",
   "Customer Home": "Trang chủ khách hàng",
   "Personal Profile": "Hồ sơ cá nhân",
+  "All vehicles": "Tất cả xe",
   "Vehicles": "Phương tiện",
   "Bookings": "Lịch đặt",
   "Wash Tracking": "Theo dõi rửa xe",

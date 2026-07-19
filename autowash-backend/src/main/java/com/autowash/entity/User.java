@@ -30,7 +30,7 @@ public class User {
     private UUID id;
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
-    @Column(name = "phone", nullable = false, unique = true, length = 20)
+    @Column(name = "phone", unique = true, length = 20)
     private String phone;
     @Column(name = "email", unique = true, length = 255)
     private String email;
@@ -82,7 +82,7 @@ public class User {
 
     /**
      * Factory method for users created via Google OAuth.
-     * phone and passwordHash are null - user signed in with Google only.
+     * phone is null - user signed in with Google only.
      */
     public static User fromGoogle(String fullName, String email, String avatarUrl) {
         Instant now = Instant.now();

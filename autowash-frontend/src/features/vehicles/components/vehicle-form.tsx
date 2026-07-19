@@ -41,7 +41,10 @@ const CAR_BRANDS_MAP: Record<string, string[]> = {
   Other:       ["Other model"],
 };
 
-const BRAND_OPTIONS = Object.keys(CAR_BRANDS_MAP);
+const BRAND_OPTIONS = Object.keys(CAR_BRANDS_MAP).map((brand) => ({
+  value: brand,
+  label: brand === "Other" ? "Other brand" : brand,
+}));
 const VEHICLE_TYPE_OPTIONS: Record<(typeof CUSTOMER_VEHICLE_TYPES)[number], string> = {
   CAR: "Car",
   SUV: "SUV",
@@ -53,7 +56,17 @@ const COLOR_OPTIONS = [
   "White", "Black", "Silver", "Gray", "Red", "Blue", "Brown",
   "Green", "Yellow", "Orange", "Gold", "Beige", "Navy Blue",
   "Champagne", "Pearl White", "Midnight Black", "Other",
-];
+].map((color) => ({
+  value: color,
+  label: color === "Other" ? "Other color" : color,
+}));
+
+function getModelOptions(brand: string) {
+  return (CAR_BRANDS_MAP[brand] ?? ["Other model"]).map((model) => ({
+    value: model,
+    label: model === "Other model" ? "Not listed" : model,
+  }));
+}
 
 export function CustomerVehicleFormCard({
   title,
@@ -134,7 +147,7 @@ export function CustomerVehicleFormCard({
             value={form.model}
             onChange={(value) => onChange("model", value)}
             placeholder={form.brand ? "Select a model" : "Select brand first"}
-            options={form.brand ? (CAR_BRANDS_MAP[form.brand] ?? ["Other model"]) : []}
+            options={form.brand ? getModelOptions(form.brand) : []}
             error={errors.model ?? null}
             disabled={!form.brand}
           />

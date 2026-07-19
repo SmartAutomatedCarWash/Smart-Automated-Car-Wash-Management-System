@@ -23,6 +23,7 @@ import {
   washTrackingActiveQueryKey,
   washTrackingDetailQueryKey,
 } from "@/features/bookings/hooks/booking-query";
+import { customerLoyaltyScope } from "@/features/loyalty/hooks/customer-loyalty-query";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type {
@@ -89,6 +90,7 @@ async function invalidateBookingViews(
     queryClient.invalidateQueries({ queryKey: bookingDetailQueryKey(userId, bookingId) }),
     queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId) }),
     queryClient.invalidateQueries({ queryKey: washTrackingActiveQueryKey(userId) }),
+    queryClient.invalidateQueries({ queryKey: customerLoyaltyScope(userId) }),
   ]);
 }
 
@@ -140,7 +142,10 @@ export function usePurchaseCustomerCombo() {
     mutationFn: purchaseCustomerCombo,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["booking-catalog", "customer-combos", "active"] });
-      await queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId) }),
+        queryClient.invalidateQueries({ queryKey: customerLoyaltyScope(userId) }),
+      ]);
     },
   });
 }
@@ -194,7 +199,13 @@ export function useCreateCustomerBooking() {
         },
       );
 
-      await queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: bookingDetailQueryKey(userId, createdBooking.bookingId) }),
+        queryClient.invalidateQueries({ queryKey: washTrackingActiveQueryKey(userId) }),
+        queryClient.invalidateQueries({ queryKey: customerLoyaltyScope(userId) }),
+        queryClient.refetchQueries({ queryKey: bookingQueryScope(userId), type: "active" }),
+        queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId), type: "inactive" }),
+      ]);
     },
   });
 }
@@ -208,6 +219,7 @@ export function useCustomerBookings(filters: BookingListFilters = {}) {
     enabled,
     refetchInterval: (query) => shouldPollBookingList(query.state.data),
     refetchIntervalInBackground: true,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });
 }
@@ -221,6 +233,7 @@ export function useCustomerBookingDetail(bookingId: string) {
     enabled: enabled && bookingId.length > 0,
     refetchInterval: (query) => shouldPollBookingDetail(query.state.data),
     refetchIntervalInBackground: true,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });
 }

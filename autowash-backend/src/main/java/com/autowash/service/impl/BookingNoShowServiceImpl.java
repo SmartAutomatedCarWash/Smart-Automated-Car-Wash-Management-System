@@ -87,7 +87,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
             BookingStatus oldStatus = booking.getStatus();
             booking.markNoShow();
             cancelNotCheckedInSessions(booking, now);
-            int penaltyPoints = applyNoShowPenalty(booking, now);
+            int deductedPoints = applyNoShowPenalty(booking, now);
             if (booking.getPricing().getDiscountType() != null) {
                 DiscountRedemptionService.revertRedemption(booking);
             }
@@ -97,7 +97,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
                     .title("Booking marked no-show")
                     .message("Your booking at " + booking.getBookingTime()
                             + " was marked no-show because you did not check in within the grace period. "
-                            + penaltyPoints + " loyalty points were deducted.")
+                            + deductedPoints + " loyalty points were deducted.")
                     .type(NotificationType.NO_SHOW)
                     .read(false)
                     .createdAt(now)
@@ -121,7 +121,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
                 thirtyDaysAgo
         );
         int penaltyPoints = previousNoShows == 0 ? 50 : 100;
-        loyaltyService.postBonusTransaction(booking.getCustomer().getId(), -penaltyPoints, "No-show penalty");
+        int appliedPoints = loyaltyService.postBonusTransaction(booking.getCustomer().getId(), -penaltyPoints, "No-show penalty");
         violationRecordRepository.save(new ViolationRecord(
                 booking.getCustomer(),
                 booking,
@@ -129,7 +129,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
                 penaltyPoints,
                 "Customer did not check in within " + noShowGraceMinutes + " minutes"
         ));
-        return penaltyPoints;
+        return Math.abs(appliedPoints);
     }
 
     private void cancelNotCheckedInSessions(Booking booking, Instant cancelledAt) {

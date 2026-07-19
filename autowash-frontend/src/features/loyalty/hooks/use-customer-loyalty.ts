@@ -53,6 +53,8 @@ export function useCustomerLoyaltyAccount() {
     queryKey: loyaltyAccountQueryKey(userId),
     queryFn: getCustomerLoyaltyAccount,
     enabled,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -63,6 +65,8 @@ export function useCustomerLoyaltyTransactions(page = 1, limit = 20) {
     queryKey: loyaltyTransactionsQueryKey(userId, page, limit),
     queryFn: () => listCustomerLoyaltyTransactions(page, limit),
     enabled,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -73,6 +77,8 @@ export function useCustomerWashHistory(page = 1, limit = 20) {
     queryKey: washHistoryQueryKey(userId, page, limit),
     queryFn: () => listCustomerWashHistory(page, limit),
     enabled,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
