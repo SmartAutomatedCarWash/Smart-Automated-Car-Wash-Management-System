@@ -111,8 +111,8 @@ const ROUTE_META: Array<{
   {
     match: (pathname) => pathname.startsWith("/staff/my-sessions") || pathname.startsWith("/staff/operations"),
     meta: {
-      title: "My Wash Sessions",
-      subtitle: "Start and complete the wash sessions assigned to you",
+      title: "Today's Work",
+      subtitle: "Track and manage your assigned wash sessions for the day",
       workspace: "STAFF",
     },
   },

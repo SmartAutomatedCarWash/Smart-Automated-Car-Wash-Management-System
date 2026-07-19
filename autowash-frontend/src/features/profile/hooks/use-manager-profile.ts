@@ -3,12 +3,12 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { applyProfileToAuthUser, isAuthUserInSyncWithProfile } from "@/features/auth/lib/auth-session";
-import { getCustomerProfile, updateCustomerProfile } from "@/features/profile/lib/profile-service";
 import {
   getDemoManagerProfile,
   isManagerDemoAccessToken,
   updateDemoManagerProfile,
 } from "@/features/profile/lib/manager-profile-demo";
+import { getCustomerProfile, updateCustomerProfile, changePassword } from "@/features/profile/lib/profile-service";
 import { getAccessToken, setAuthUser, useAuthStore } from "@/features/auth/store/auth.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type {
@@ -16,6 +16,7 @@ import type {
   UpdateUserProfileResponse,
   UserProfile,
 } from "@/entities/users";
+import type { ChangePasswordRequest } from "@/features/profile/lib/profile-service";
 
 export function useManagerProfile() {
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -68,5 +69,11 @@ export function useUpdateManagerProfile() {
 
       void queryClient.invalidateQueries({ queryKey: ["manager-profile", userId] });
     },
+  });
+}
+
+export function useChangeManagerPassword() {
+  return useMutation<void, ApiErrorResponse, ChangePasswordRequest>({
+    mutationFn: changePassword,
   });
 }

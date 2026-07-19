@@ -1,5 +1,5 @@
-import { StaffDashboardView } from "@/shared/ui/workspace/staff-dashboard-view";
+import { redirect } from "next/navigation";
 
 export default function StaffDashboardPage() {
-  return <StaffDashboardView />;
+  redirect("/staff/my-sessions");
 }

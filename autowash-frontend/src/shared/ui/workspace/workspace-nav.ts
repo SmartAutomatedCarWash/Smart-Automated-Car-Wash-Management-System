@@ -89,8 +89,7 @@ const CUSTOMER_NAV: WorkspaceNavItem[] = [
 ];
 
 const STAFF_NAV: WorkspaceNavItem[] = [
-  { href: "/staff/dashboard", label: "Dashboard", labelVi: "Trang chủ", icon: LayoutDashboard, exact: true },
-  { href: "/staff/my-sessions", label: "My Sessions", labelVi: "Phiên của tôi", icon: Droplets },
+  { href: "/staff/my-sessions", label: "Today's Work", labelVi: "Công việc hôm nay", icon: Droplets, exact: true },
   { href: "/staff/sessions/history", label: "History", labelVi: "Lịch sử", icon: History },
 ];
 

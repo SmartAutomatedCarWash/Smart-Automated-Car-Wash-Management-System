@@ -11,6 +11,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ClipboardList,
+  Droplets,
   History,
   LayoutDashboard,
   LogOut,
@@ -71,6 +72,7 @@ type RoleWorkspaceShellProps = {
 // Map of English page titles to their Vietnamese equivalents
 const PAGE_TITLE_VI: Record<string, string> = {
   "Staff Dashboard": "Bảng điều khiển nhân viên",
+  "Today's Work": "Công việc hôm nay",
   "Operations Board": "Bảng vận hành",
   "Vehicle Check-in": "Duyệt phương tiện",
   "Wash Session History": "Lịch sử phiên rửa xe",
@@ -353,7 +355,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               href="/customer/bookings/new"
               title={sidebarCollapsed ? t("Đặt lịch mới", "Book New Service") : undefined}
               className={cn(
-                "flex w-full items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground text-sm font-black shadow-[0_16px_32px_rgba(45,255,238,0.20)] transition hover:-translate-y-0.5 hover:bg-cyan-200",
+                "flex w-full items-center justify-center gap-2 rounded-sm bg-primary text-primary-foreground text-sm font-black shadow-[0_16px_32px_rgba(45,255,238,0.20)] transition hover:-translate-y-0.5 hover:bg-cyan-200",
                 sidebarCollapsed ? "h-11 px-0" : "px-4 py-3",
               )}
             >
@@ -363,7 +365,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           )}
 
           {requiredRole !== "CUSTOMER" && !sidebarCollapsed && (
-            <div className="rounded-2xl border border-cyan-900/10 bg-white/72 p-3 shadow-[0_14px_36px_rgba(6,17,26,0.05)]">
+            <div className="rounded-md border border-cyan-900/10 bg-white/72 p-3 shadow-[0_14px_36px_rgba(6,17,26,0.05)]">
               <div className="flex items-start gap-3">
                 <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", workspaceTheme.accent)}>
                   <Phone className="h-4 w-4" />
@@ -382,7 +384,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
             type="button"
             disabled={logoutMutation.isPending}
             onClick={handleLogout}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-cyan-900/10 bg-white/76 px-3 py-2.5 text-sm font-bold transition hover:bg-cyan-50"
+            className="flex w-full items-center justify-center gap-2 rounded-sm border border-cyan-900/10 bg-white/76 px-3 py-2.5 text-sm font-bold transition hover:bg-cyan-50"
           >
             <LogOut className="h-4 w-4" />
             {!sidebarCollapsed && (
@@ -405,7 +407,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
             <div className="flex min-w-0 items-start gap-3">
               <button
                 type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-900/10 bg-white shadow-sm lg:hidden"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-cyan-900/10 bg-white shadow-sm lg:hidden"
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label={t("Mở menu điều hướng", "Open navigation menu")}
               >
@@ -419,6 +421,11 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 <h1 className="truncate text-xl font-bold tracking-tight lg:text-2xl">
                   {getPageTitle(headerMeta.title, language)}
                 </h1>
+                {headerMeta.subtitle ? (
+                  <p className="mt-1 max-w-2xl truncate text-sm font-semibold text-muted-foreground">
+                    {headerMeta.subtitle}
+                  </p>
+                ) : null}
               </div>
             </div>
 
@@ -430,7 +437,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   type="button"
                   onClick={() => setLanguage("en")}
                   className={cn(
-                    "rounded-lg px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-bold transition-all",
+                    "rounded-md px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-bold transition-all",
                     language === "en"
                       ? "bg-primary text-primary-foreground shadow-sm font-black"
                       : "text-muted-foreground hover:text-foreground font-semibold",
@@ -442,7 +449,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   type="button"
                   onClick={() => setLanguage("vi")}
                   className={cn(
-                    "rounded-lg px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-bold transition-all",
+                    "rounded-md px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-bold transition-all",
                     language === "vi"
                       ? "bg-primary text-primary-foreground shadow-sm font-black"
                       : "text-muted-foreground hover:text-foreground font-semibold",
@@ -456,7 +463,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               <button
                 type="button"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
+                className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
                 aria-label={t("Chuyển chế độ sáng/tối", "Toggle dark/light mode")}
               >
                 {theme === "dark" ? (
@@ -472,7 +479,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
+                      className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
                       aria-label={t("Thông báo nghiệp vụ", "Work notifications")}
                     >
                       <Bell className={cn("h-4 w-4", totalNotifications > 0 ? "text-cyan-700" : "text-muted-foreground")} />
@@ -487,7 +494,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverContent
                     align="end"
                     sideOffset={10}
-                    className="w-80 rounded-2xl border-cyan-900/10 bg-white/95 p-3 shadow-[0_22px_60px_rgba(6,17,26,0.12)] backdrop-blur-xl"
+                    className="w-80 rounded-md border-cyan-900/10 bg-white/95 p-3 shadow-[0_22px_60px_rgba(6,17,26,0.12)] backdrop-blur-xl"
                   >
                     <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
                       <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
@@ -515,7 +522,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                               <Link
                                 key={booking.bookingId}
                                 href="/staff/check-in"
-                                className="flex flex-col gap-0.5 rounded-xl bg-cyan-50/70 hover:bg-cyan-50 p-2 text-[11px] transition"
+                                className="flex flex-col gap-0.5 rounded-sm bg-cyan-50/70 hover:bg-cyan-50 p-2 text-[11px] transition"
                               >
                                 <div className="flex items-center justify-between">
                                   <span className="font-black text-cyan-950 font-mono">{booking.vehiclePlate}</span>
@@ -538,7 +545,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                               <Link
                                 key={session.sessionId}
                                 href={`/staff/check-in?sessionId=${session.sessionId}`}
-                                className="flex flex-col gap-0.5 rounded-xl bg-orange-50/50 dark:bg-orange-900/20 hover:bg-orange-50 dark:hover:bg-orange-900/30 p-2 text-[11px] transition"
+                                className="flex flex-col gap-0.5 rounded-sm bg-orange-50/50 dark:bg-orange-900/20 hover:bg-orange-50 dark:hover:bg-orange-900/30 p-2 text-[11px] transition"
                               >
                                 <div className="flex items-center justify-between">
                                   <span className="font-black text-orange-950 dark:text-orange-200 font-mono">{session.vehiclePlate}</span>
@@ -559,7 +566,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                         <div className="pt-2 border-t border-border/50">
                           <Link
                             href="/staff/check-in"
-                            className="flex w-full items-center justify-center rounded-xl bg-muted py-2 text-center text-[11px] font-bold text-foreground hover:bg-accent transition"
+                            className="flex w-full items-center justify-center rounded-sm bg-muted py-2 text-center text-[11px] font-bold text-foreground hover:bg-accent transition"
                           >
                             {t("Xem tất cả check-in", "View all check-ins")}
                           </Link>
@@ -576,7 +583,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
+                      className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
                       aria-label={t("Thông báo", "Notifications")}
                     >
                       <Bell className={cn("h-4 w-4", unreadCustomerNotifications > 0 ? "text-cyan-700" : "text-muted-foreground")} />
@@ -591,7 +598,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverContent
                     align="end"
                     sideOffset={10}
-                    className="w-80 rounded-2xl border-cyan-900/10 bg-white/95 p-3 shadow-[0_22px_60px_rgba(6,17,26,0.12)] backdrop-blur-xl"
+                    className="w-80 rounded-md border-cyan-900/10 bg-white/95 p-3 shadow-[0_22px_60px_rgba(6,17,26,0.12)] backdrop-blur-xl"
                   >
                     {selectedNotification ? (
                       <div className="flex flex-col h-full animate-in slide-in-from-right-4 duration-200">
@@ -599,7 +606,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                           <button
                             type="button"
                             onClick={() => setSelectedNotificationId(null)}
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-lg hover:bg-cyan-50 dark:hover:bg-cyan-950/40 text-muted-foreground transition"
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-cyan-50 dark:hover:bg-cyan-950/40 text-muted-foreground transition"
                             aria-label={t("Quay lại", "Back")}
                           >
                             <ChevronLeft className="h-4 w-4" />
@@ -666,7 +673,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                                   setSelectedNotificationId(notification.notificationId);
                                 }}
                                 className={cn(
-                                  "flex w-full flex-col gap-1 rounded-xl p-2 text-left text-xs transition",
+                                  "flex w-full flex-col gap-1 rounded-sm p-2 text-left text-xs transition",
                                   notification.read 
                                     ? "bg-muted/30 dark:bg-slate-900/40 hover:bg-muted/50 dark:hover:bg-slate-800/40" 
                                     : "bg-cyan-50/70 dark:bg-cyan-950/20 hover:bg-cyan-50 dark:hover:bg-cyan-950/30"
@@ -688,7 +695,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                             <div className="pt-2 border-t border-border/50">
                               <Link
                                 href="/customer/notifications"
-                                className="flex w-full items-center justify-center rounded-xl bg-muted dark:bg-slate-900 py-2 text-center text-[11px] font-bold text-foreground dark:text-slate-350 hover:bg-accent dark:hover:bg-slate-800 transition"
+                                className="flex w-full items-center justify-center rounded-sm bg-muted dark:bg-slate-900 py-2 text-center text-[11px] font-bold text-foreground dark:text-slate-350 hover:bg-accent dark:hover:bg-slate-800 transition"
                               >
                                 {t("Xem tất cả", "View all")}
                               </Link>
@@ -706,7 +713,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
+                      className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
                       aria-label={t("Thông báo Manager", "Manager notifications")}
                     >
                       <Bell className={cn("h-4 w-4", unreadManagerNotifications > 0 ? "text-cyan-700" : "text-muted-foreground")} />
@@ -720,7 +727,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverContent
                     align="end"
                     sideOffset={10}
-                    className="w-80 rounded-2xl border-cyan-100 bg-white/96 p-2 shadow-[0_22px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl"
+                    className="w-80 rounded-md border-cyan-100 bg-white/96 p-2 shadow-[0_22px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl"
                   >
                     <div className="flex items-center justify-between px-2 py-2">
                       <div>
@@ -741,7 +748,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                     </div>
                     <div className="max-h-80 space-y-1 overflow-y-auto pr-1">
                       {managerNotifications.length === 0 ? (
-                        <p className="rounded-xl border border-dashed border-slate-200 px-3 py-6 text-center text-xs font-semibold text-slate-400">
+                        <p className="rounded-sm border border-dashed border-slate-200 px-3 py-6 text-center text-xs font-semibold text-slate-400">
                           {t("Chưa có thông báo.", "No notifications yet.")}
                         </p>
                       ) : (
@@ -750,7 +757,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                             key={notification.id}
                             type="button"
                             className={cn(
-                              "w-full rounded-xl px-3 py-2.5 text-left transition hover:bg-cyan-50",
+                              "w-full rounded-sm px-3 py-2.5 text-left transition hover:bg-cyan-50",
                               notification.read ? "bg-white" : "bg-cyan-50/70",
                             )}
                             onClick={() => openManagerNotificationPopup(notification.id)}
@@ -782,7 +789,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <button
                     type="button"
                     className={cn(
-                      "group flex h-10 w-auto items-center gap-2 rounded-xl border px-3 py-1.5 text-left transition sm:px-3",
+                      "group flex h-10 w-auto items-center gap-2 rounded-sm border px-3 py-1.5 text-left transition sm:px-3",
                       customerTierMetal
                         ? "relative overflow-hidden border-transparent shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_4px_14px_rgba(0,0,0,0.15)] [&>*]:relative [&>*]:z-10"
                         : "border-border/70 bg-card/90 hover:border-primary/30 hover:bg-card",
@@ -792,7 +799,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   >
                     {customerTierMetal ? (
                       <>
-                        <span className="absolute inset-0 rounded-xl bg-[linear-gradient(135deg,rgba(255,255,255,0.30)_0%,rgba(255,255,255,0.05)_42%,rgba(0,0,0,0.12)_100%)]" />
+                        <span className="absolute inset-0 rounded-sm bg-[linear-gradient(135deg,rgba(255,255,255,0.30)_0%,rgba(255,255,255,0.05)_42%,rgba(0,0,0,0.12)_100%)]" />
                         <span className="absolute inset-x-3 top-px h-px bg-white/40" />
                       </>
                     ) : null}
@@ -814,7 +821,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 <PopoverContent
                   align="end"
                   sideOffset={10}
-                  className="w-72 rounded-2xl border-border/70 bg-card/95 p-2 shadow-[0_22px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl"
+                  className="w-72 rounded-md border-border/70 bg-card/95 p-2 shadow-[0_22px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl"
                 >
                   <div className="px-2 py-2">
                     <div className="flex items-center gap-3">
@@ -844,7 +851,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
                   <Link
                     href={profileHref}
-                    className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition hover:bg-accent"
+                    className="flex items-center gap-2 rounded-sm px-3 py-2.5 text-sm font-semibold transition hover:bg-accent"
                   >
                     <UserCog className="h-4 w-4 text-primary" />
                     {t("Hồ sơ cá nhân", "My Profile")}
@@ -856,7 +863,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                       <Link
                         key={action.href}
                         href={action.href}
-                        className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition hover:bg-accent"
+                        className="flex items-center gap-2 rounded-sm px-3 py-2.5 text-sm font-semibold transition hover:bg-accent"
                       >
                         <Icon className="h-4 w-4 text-muted-foreground" />
                         {language === "vi" ? action.labelVi : action.label}
@@ -868,7 +875,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
                   <button
                     type="button"
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition hover:bg-accent"
+                    className="flex w-full items-center gap-2 rounded-sm px-3 py-2.5 text-left text-sm font-semibold transition hover:bg-accent"
                     onClick={() => router.refresh()}
                   >
                     <RefreshCw className="h-4 w-4 text-muted-foreground" />
@@ -878,7 +885,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <button
                     type="button"
                     disabled={logoutMutation.isPending}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:hover:bg-red-950/30 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex w-full items-center gap-2 rounded-sm px-3 py-2.5 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:hover:bg-red-950/30 disabled:cursor-not-allowed disabled:opacity-60"
                     onClick={handleLogout}
                   >
                     <LogOut className="h-4 w-4" />
@@ -894,7 +901,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 type="button"
                 disabled={logoutMutation.isPending}
                 onClick={handleLogout}
-                className="inline-flex h-10 items-center gap-2 rounded-xl border border-border/70 px-3 text-sm font-semibold transition hover:bg-accent lg:hidden"
+                className="inline-flex h-10 items-center gap-2 rounded-sm border border-border/70 px-3 text-sm font-semibold transition hover:bg-accent lg:hidden"
                 aria-label={t("Đăng xuất", "Sign out")}
               >
                 <ArrowRightFromLine className="h-4 w-4" />
@@ -917,7 +924,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <Link
                     href={item.href}
                     className={cn(
-                      "flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] font-semibold",
+                      "flex flex-col items-center gap-1 rounded-sm px-1 py-2 text-[10px] font-semibold",
                       active ? workspaceTheme.mobileActive : "text-muted-foreground",
                     )}
                   >
@@ -972,18 +979,18 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
       {/* Staff alert popup */}
       {alertNotification.show && (
-        <div className="fixed top-20 right-6 z-[100] w-[22rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-cyan-300/50 bg-card/95 p-4 shadow-[0_16px_48px_-8px_rgba(8,145,178,0.22)] backdrop-blur-xl animate-in fade-in slide-in-from-top-4 slide-in-from-right-4">
+        <div className="fixed top-20 right-6 z-[100] w-[22rem] max-w-[calc(100vw-2rem)] rounded-md border border-cyan-300/50 bg-card/95 p-4 shadow-[0_16px_48px_-8px_rgba(8,145,178,0.22)] backdrop-blur-xl animate-in fade-in slide-in-from-top-4 slide-in-from-right-4">
           <button
             type="button"
             onClick={() => setAlertNotification((prev) => ({ ...prev, show: false }))}
-            className="absolute right-3 top-3 rounded-lg p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition"
+            className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition"
             aria-label={t("Đóng thông báo", "Dismiss notification")}
           >
             <X className="h-4 w-4" />
           </button>
 
           <div className="flex items-start gap-3.5 pr-6">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-cyan-200 bg-cyan-50 text-cyan-700 shadow-sm dark:border-cyan-800 dark:bg-cyan-900/30">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cyan-200 bg-cyan-50 text-cyan-700 shadow-sm dark:border-cyan-800 dark:bg-cyan-900/30">
               <BellRing className="h-5 w-5" />
             </div>
 
@@ -991,7 +998,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               <h4 className="text-xs font-black uppercase tracking-wider text-cyan-800">
                 {alertNotification.title}
               </h4>
-              <div className="mt-1.5 flex items-center gap-2 rounded-xl bg-muted/80 px-2.5 py-1.5 text-xs font-bold border border-border/50">
+              <div className="mt-1.5 flex items-center gap-2 rounded-sm bg-muted/80 px-2.5 py-1.5 text-xs font-bold border border-border/50">
                 <span className="text-[10px] text-muted-foreground uppercase">
                   {t("Biển số", "Plate")}
                 </span>
@@ -1006,7 +1013,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 <Link
                   href={alertNotification.path}
                   onClick={() => setAlertNotification((prev) => ({ ...prev, show: false }))}
-                  className="inline-flex items-center justify-center rounded-xl bg-[#06111a] hover:bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:-translate-y-0.5"
+                  className="inline-flex items-center justify-center rounded-sm bg-[#06111a] hover:bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:-translate-y-0.5"
                 >
                   {t("Duyệt ngay", "Review now")}
                 </Link>
@@ -1028,7 +1035,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 function WorkspaceGate({ message }: { message: string }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6">
-      <p className="rounded-xl border border-border bg-card px-5 py-3 text-sm font-medium text-muted-foreground shadow-sm">
+      <p className="rounded-sm border border-border bg-card px-5 py-3 text-sm font-medium text-muted-foreground shadow-sm">
         {message}
       </p>
     </main>
@@ -1043,18 +1050,18 @@ function ManagerNotificationPopup({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed right-6 top-20 z-[110] w-[23rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-cyan-200/70 bg-white/96 p-4 shadow-[0_22px_70px_rgba(6,17,26,0.20)] backdrop-blur-xl animate-in fade-in slide-in-from-top-4 slide-in-from-right-4">
+    <div className="fixed right-6 top-20 z-[110] w-[23rem] max-w-[calc(100vw-2rem)] rounded-md border border-cyan-200/70 bg-white/96 p-4 shadow-[0_22px_70px_rgba(6,17,26,0.20)] backdrop-blur-xl animate-in fade-in slide-in-from-top-4 slide-in-from-right-4">
       <button
         type="button"
         onClick={onClose}
-        className="absolute right-3 top-3 rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900"
+        className="absolute right-3 top-3 rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900"
         aria-label="Đóng thông báo"
       >
         <X className="h-4 w-4" />
       </button>
 
       <div className="flex items-start gap-3 pr-6">
-        <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border", managerNotificationIconTone(notification.kind))}>
+        <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-full border", managerNotificationIconTone(notification.kind))}>
           <BellRing className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
@@ -1066,7 +1073,7 @@ function ManagerNotificationPopup({
           </div>
           <h4 className="mt-2 text-sm font-black text-slate-950">{notification.title}</h4>
           {notification.plate ? (
-            <div className="mt-2 inline-flex rounded-xl bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-800">
+            <div className="mt-2 inline-flex rounded-sm bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-800">
               Xe ưu tiên: {notification.plate}
             </div>
           ) : null}
@@ -1077,7 +1084,7 @@ function ManagerNotificationPopup({
               <Link
                 href={notification.href}
                 onClick={onClose}
-                className="rounded-xl bg-[#06111a] px-3 py-2 text-[11px] font-black text-white transition hover:bg-slate-900"
+                className="rounded-sm bg-[#06111a] px-3 py-2 text-[11px] font-black text-white transition hover:bg-slate-900"
               >
                 Mở chi tiết
               </Link>
@@ -1128,8 +1135,7 @@ function managerNotificationKindLabel(kind: ManagerNotificationKind) {
 function getProfileQuickActions(role: UserRole) {
   if (role === "STAFF") {
     return [
-      { href: "/staff/dashboard",       label: "Shift overview",        labelVi: "Tổng quan ca làm",    icon: LayoutDashboard },
-      { href: "/staff/my-sessions",     label: "My wash sessions",      labelVi: "Phiên rửa của tôi",   icon: ClipboardList },
+      { href: "/staff/my-sessions",     label: "Today's work",          labelVi: "Công việc hôm nay",   icon: Droplets },
       { href: "/staff/sessions/history",label: "Wash session history",  labelVi: "Lịch sử phiên rửa",  icon: History },
     ];
   }
@@ -1183,7 +1189,7 @@ function SidebarBrand({
           <button
             type="button"
             onClick={onToggle}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/15 bg-card text-primary shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary/15 bg-card text-primary shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5"
             aria-label={translate(language, "Mở rộng thanh bên", "Expand sidebar")}
           >
             <PanelLeftOpen className="h-5 w-5" />
@@ -1197,7 +1203,7 @@ function SidebarBrand({
     <div className="border-b border-border/70 px-4 py-5">
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-3">
-          <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[10px] font-black tracking-tighter", theme.accent)}>
+          <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-[10px] font-black tracking-tighter", theme.accent)}>
             {isCustomer ? "AR" : "AC"}
           </div>
           <div className="min-w-0 animate-in fade-in">
@@ -1212,7 +1218,7 @@ function SidebarBrand({
         <button
           type="button"
           onClick={onToggle}
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition hover:bg-accent"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/70 text-muted-foreground transition hover:bg-accent"
           aria-label={closeIcon
             ? translate(language, "Đóng", "Close")
             : translate(language, "Thu gọn thanh bên", "Collapse sidebar")}
@@ -1253,8 +1259,8 @@ function SidebarNavLink({
         onClick={onNavigate}
         title={collapsed ? displayLabel : undefined}
         className={cn(
-          "group flex items-center rounded-xl text-sm font-medium transition-all",
-          collapsed ? "mx-auto h-12 w-12 justify-center rounded-2xl" : "gap-3 px-3 py-2.5",
+          "group flex items-center rounded-sm text-sm font-medium transition-all",
+          collapsed ? "mx-auto h-12 w-12 justify-center rounded-full" : "gap-3 px-3 py-2.5",
           active ? activeClassName : "text-muted-foreground hover:bg-accent hover:text-foreground",
         )}
       >

@@ -335,7 +335,7 @@ let sessions: OperationsQueueSession[] = [
 ];
 
 export function isManagerDemoToken(token: string | null) {
-  return token === "mock-token-manager";
+  return token === "mock-token-manager" || token === "mock-token-staff";
 }
 
 export async function getDemoOperationsQueue(): Promise<OperationsQueue> {

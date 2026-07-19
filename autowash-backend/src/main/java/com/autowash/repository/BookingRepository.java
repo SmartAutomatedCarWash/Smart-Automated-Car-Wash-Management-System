@@ -265,6 +265,20 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             Pageable pageable
     );
 
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff", "details"})
+    @Query("""
+            select booking from Booking booking
+            where booking.assignedStaff = :staff
+              and booking.scheduledAt >= :dayStart
+              and booking.scheduledAt < :dayEnd
+            order by booking.scheduledAt asc
+            """)
+    List<Booking> findTodayBookingsByAssignedStaff(
+            @Param("staff") User staff,
+            @Param("dayStart") Instant dayStart,
+            @Param("dayEnd") Instant dayEnd
+    );
+
     private static Optional<UUID> parseUuid(String id) {
         try {
             return id == null || id.isBlank() ? Optional.empty() : Optional.of(UUID.fromString(id));

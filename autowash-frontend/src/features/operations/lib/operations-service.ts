@@ -14,6 +14,8 @@ import {
 } from "@/features/operations/lib/operations-demo-data";
 import type {
   CheckInWashSessionResponse,
+  CompleteSessionRequest,
+  CompleteSessionResponse,
   CompleteWashSessionResponse,
   CreateWashSessionResponse,
   EligibleSessionBooking,
@@ -21,6 +23,11 @@ import type {
   QueueWashSessionResponse,
   StaffDashboardSummary,
   StaffOption,
+  StaffSessionHistoryParams,
+  StaffSessionHistoryResponse,
+  StaffTodayResponse,
+  StartSessionRequest,
+  StartSessionResponse,
   StartWashSessionResponse,
   TransferWashSessionResponse,
   CancelWashSessionResponse,
@@ -142,5 +149,54 @@ export function cancelWashSession(sessionId: string, reason: string, faultType?:
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/cancel`,
     data: { reason, faultType },
+  });
+}
+
+// ─── Staff Today (My Sessions) ────────────────────────────────────────────────
+
+export function getStaffSessionHistory(params: StaffSessionHistoryParams = {}) {
+  return apiRequest<StaffSessionHistoryResponse>({
+    method: "GET",
+    url: "/operations/my-sessions/history",
+    params: {
+      page: params.page ?? 1,
+      limit: params.limit ?? 5,
+      period: params.period ?? "ALL",
+      ...(params.date && { date: params.date }),
+      ...(params.servicePackage && { servicePackage: params.servicePackage }),
+      rating: params.rating ?? "ALL",
+      ...(params.search && { search: params.search }),
+      sort: params.sort ?? "COMPLETED_DESC",
+    },
+  });
+}
+
+export function getStaffTodaySessions(date?: string) {
+  const params = date ? { date } : undefined;
+  return apiRequest<StaffTodayResponse>({
+    method: "GET",
+    url: "/operations/my-sessions/today",
+    params,
+  });
+}
+
+export function startStaffSession(sessionId: string) {
+  const payload: StartSessionRequest = { startedAt: new Date().toISOString() };
+  return apiRequest<StartSessionResponse, StartSessionRequest>({
+    method: "POST",
+    url: `/operations/sessions/${sessionId}/start`,
+    data: payload,
+  });
+}
+
+export function completeStaffSession(sessionId: string, staffNote?: string) {
+  const payload: CompleteSessionRequest = {
+    completedAt: new Date().toISOString(),
+    staffNote,
+  };
+  return apiRequest<CompleteSessionResponse, CompleteSessionRequest>({
+    method: "POST",
+    url: `/operations/sessions/${sessionId}/complete`,
+    data: payload,
   });
 }

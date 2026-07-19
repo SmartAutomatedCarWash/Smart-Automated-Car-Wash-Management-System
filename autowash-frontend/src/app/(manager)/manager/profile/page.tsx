@@ -9,7 +9,11 @@ import {
   CheckCircle2,
   ClipboardCheck,
   ClipboardList,
+  Eye,
+  EyeOff,
+  KeyRound,
   Loader2,
+  Lock,
   Mail,
   Phone,
   RefreshCcw,
@@ -25,7 +29,7 @@ import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/worksp
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { validateProfileForm } from "@/features/profile/lib/profile-form-validation";
 import { buildUpdateUserProfileRequest } from "@/features/profile/lib/profile-update-payload";
-import { useManagerProfile, useUpdateManagerProfile } from "@/features/profile/hooks/use-manager-profile";
+import { useManagerProfile, useUpdateManagerProfile, useChangeManagerPassword } from "@/features/profile/hooks/use-manager-profile";
 import { getActiveStaffOptions, getEligibleSessionBookings, getOperationsQueue } from "@/features/operations/lib/operations-service";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { OperationsQueueSession } from "@/entities/operations";
@@ -36,10 +40,22 @@ type ProfileFormState = {
   phone: string;
 };
 
+type PasswordFormState = {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+};
+
 const EMPTY_FORM: ProfileFormState = {
   fullName: "",
   email: "",
   phone: "",
+};
+
+const EMPTY_PASSWORD_FORM: PasswordFormState = {
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: "",
 };
 
 const RESPONSIBILITIES = [
@@ -52,11 +68,15 @@ export default function ManagerProfilePage() {
   const getErrorMessage = useErrorMessage();
   const profileQuery = useManagerProfile();
   const updateProfileMutation = useUpdateManagerProfile();
+  const changePasswordMutation = useChangeManagerPassword();
   const queueQuery = useQuery({ queryKey: ["manager-profile", "queue"], queryFn: getOperationsQueue, refetchInterval: 30_000 });
   const eligibleQuery = useQuery({ queryKey: ["manager-profile", "eligible"], queryFn: getEligibleSessionBookings, refetchInterval: 30_000 });
   const staffQuery = useQuery({ queryKey: ["manager-profile", "staff"], queryFn: getActiveStaffOptions, refetchInterval: 30_000 });
   const [form, setForm] = useState<ProfileFormState>(EMPTY_FORM);
   const [showValidation, setShowValidation] = useState(false);
+  const [passwordForm, setPasswordForm] = useState<PasswordFormState>(EMPTY_PASSWORD_FORM);
+  const [showPasswordValidation, setShowPasswordValidation] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({ current: false, newPass: false, confirm: false });
 
   useEffect(() => {
     if (!profileQuery.data) return;
@@ -80,11 +100,20 @@ export default function ManagerProfilePage() {
   const delayedSessions = sessions.filter(isDelayed);
   const activeSessions = sessions.filter((session) => ["CHECKED_IN", "IN_PROGRESS"].includes(session.status));
 
+  const passwordErrors = useMemo(() => validatePasswordForm(passwordForm), [passwordForm]);
+  const hasPasswordClientErrors = Object.values(passwordErrors).some(Boolean);
+
   const handleFieldChange =
     (field: keyof ProfileFormState) => (event: ChangeEvent<HTMLInputElement>) => {
       const nextValue = field === "phone" ? event.target.value.replace(/\s/g, "") : event.target.value;
       setForm((current) => ({ ...current, [field]: nextValue }));
       if (updateProfileMutation.isError) updateProfileMutation.reset();
+    };
+
+  const handlePasswordChange =
+    (field: keyof PasswordFormState) => (event: ChangeEvent<HTMLInputElement>) => {
+      setPasswordForm((cur) => ({ ...cur, [field]: event.target.value }));
+      if (changePasswordMutation.isError) changePasswordMutation.reset();
     };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -99,6 +128,21 @@ export default function ManagerProfilePage() {
       setShowValidation(false);
     } catch {
       toast.error("Không thể cập nhật hồ sơ Manager.");
+    }
+  };
+
+  const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setShowPasswordValidation(true);
+    if (hasPasswordClientErrors) return;
+    try {
+      await changePasswordMutation.mutateAsync(passwordForm);
+      toast.success("Đã đổi mật khẩu thành công.");
+      setPasswordForm(EMPTY_PASSWORD_FORM);
+      setShowPasswordValidation(false);
+      changePasswordMutation.reset();
+    } catch {
+      toast.error("Không thể đổi mật khẩu.");
     }
   };
 
@@ -135,6 +179,10 @@ export default function ManagerProfilePage() {
   const submitMessage = updateProfileMutation.isError
     ? updateProfileMutation.error.errors?.map((item) => item.message).join(" ") ||
       getErrorMessage(updateProfileMutation.error)
+    : null;
+  const passwordSubmitMessage = changePasswordMutation.isError
+    ? changePasswordMutation.error.errors?.map((item) => item.message).join(" ") ||
+      getErrorMessage(changePasswordMutation.error)
     : null;
 
   return (
@@ -265,6 +313,60 @@ export default function ManagerProfilePage() {
               </p>
             ) : null}
           </Card>
+
+          {!profile.hasGoogleAuth && (
+            <Card className="rounded-3xl border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-slate-100">
+                  <KeyRound className="h-4 w-4 text-slate-600" />
+                </div>
+                <h2 className="font-black text-slate-950">Đổi mật khẩu</h2>
+              </div>
+              <form onSubmit={handlePasswordSubmit} className="space-y-3">
+                <ManagerPasswordField
+                  label="Mật khẩu hiện tại"
+                  value={passwordForm.currentPassword}
+                  onChange={handlePasswordChange("currentPassword")}
+                  show={showPasswords.current}
+                  onToggle={() => setShowPasswords((p) => ({ ...p, current: !p.current }))}
+                  error={showPasswordValidation ? passwordErrors.currentPassword : null}
+                />
+                <ManagerPasswordField
+                  label="Mật khẩu mới"
+                  value={passwordForm.newPassword}
+                  onChange={handlePasswordChange("newPassword")}
+                  show={showPasswords.newPass}
+                  onToggle={() => setShowPasswords((p) => ({ ...p, newPass: !p.newPass }))}
+                  error={showPasswordValidation ? passwordErrors.newPassword : null}
+                />
+                <ManagerPasswordField
+                  label="Xác nhận mật khẩu mới"
+                  value={passwordForm.confirmPassword}
+                  onChange={handlePasswordChange("confirmPassword")}
+                  show={showPasswords.confirm}
+                  onToggle={() => setShowPasswords((p) => ({ ...p, confirm: !p.confirm }))}
+                  error={showPasswordValidation ? passwordErrors.confirmPassword : null}
+                />
+                {passwordSubmitMessage ? (
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {passwordSubmitMessage}
+                  </div>
+                ) : null}
+                <Button
+                  type="submit"
+                  disabled={changePasswordMutation.isPending}
+                  className="h-11 w-full rounded-xl bg-slate-950 px-5 text-white hover:bg-slate-800"
+                >
+                  {changePasswordMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Lock className="h-4 w-4" />
+                  )}
+                  Đổi mật khẩu
+                </Button>
+              </form>
+            </Card>
+          )}
         </div>
       </section>
     </WorkspacePage>
@@ -308,6 +410,70 @@ function ProfileField({
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
     </div>
   );
+}
+
+function ManagerPasswordField({
+  label,
+  value,
+  onChange,
+  show,
+  onToggle,
+  error,
+}: {
+  label: string;
+  value: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  show: boolean;
+  onToggle: () => void;
+  error: string | null;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-bold text-slate-900">{label}</label>
+      <div
+        className={`flex h-12 items-center rounded-2xl border bg-white px-4 transition focus-within:ring-2 focus-within:ring-cyan-100 ${
+          error ? "border-rose-400 focus-within:border-rose-400" : "border-slate-200 focus-within:border-cyan-400"
+        }`}
+      >
+        <input
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={onChange}
+          autoComplete="off"
+          className="h-full w-full bg-transparent text-sm text-slate-900 outline-none"
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="ml-2 flex-shrink-0 text-slate-400 hover:text-slate-600"
+          tabIndex={-1}
+          aria-label={show ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+      {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+    </div>
+  );
+}
+
+function validatePasswordForm(form: PasswordFormState) {
+  const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+  return {
+    currentPassword: form.currentPassword.length === 0 ? "Vui lòng nhập mật khẩu hiện tại." : null,
+    newPassword:
+      form.newPassword.length === 0
+        ? "Vui lòng nhập mật khẩu mới."
+        : !strongPasswordPattern.test(form.newPassword)
+          ? "Mật khẩu tối thiểu 8 ký tự, gồm chữ hoa, chữ thường và số."
+          : null,
+    confirmPassword:
+      form.confirmPassword.length === 0
+        ? "Vui lòng xác nhận mật khẩu mới."
+        : form.confirmPassword !== form.newPassword
+          ? "Mật khẩu xác nhận không khớp."
+          : null,
+  };
 }
 
 function SnapshotCard({ label, value, tone = "slate" }: { label: string; value: number; tone?: "slate" | "rose" }) {

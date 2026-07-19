@@ -13,7 +13,7 @@ import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { getOperationsQueue } from "@/features/operations/lib/operations-service";
 import { cn } from "@/shared/lib/utils";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
-import type { OperationsQueue, OperationsQueueSession } from "@/entities/operations";
+import type { OperationsQueue, OperationsQueueSession, WashSessionStatus } from "@/entities/operations";
 
 const ALL_PACKAGE_VALUE = "__all_packages__";
 const ALL_STAFF_VALUE = "__all_staff__";
@@ -82,12 +82,12 @@ export function StaffSessionHistoryView() {
   });
 
   return (
-    <WorkspacePage className="space-y-6 rounded-[2rem] bg-[radial-gradient(circle_at_top_left,rgba(103,232,249,0.16),transparent_32%),radial-gradient(circle_at_top_right,rgba(15,23,42,0.06),transparent_34%),linear-gradient(180deg,rgba(248,253,255,0.96),rgba(236,254,255,0.58))]">
+    <WorkspacePage className="space-y-6 rounded-xl bg-[radial-gradient(circle_at_top_left,rgba(103,232,249,0.16),transparent_32%),radial-gradient(circle_at_top_right,rgba(15,23,42,0.06),transparent_34%),linear-gradient(180deg,rgba(248,253,255,0.96),rgba(236,254,255,0.58))]">
       <section className="flex flex-wrap items-center justify-between gap-3">
         <Button variant="outline" asChild>
-          <Link href="/staff/dashboard">
+          <Link href="/staff/my-sessions">
             <ArrowLeft className="h-4 w-4" />
-            Quay lại tổng quan
+            Back to Today's Work
           </Link>
         </Button>
         <Button variant="outline" onClick={() => queueQuery.refetch()}>
@@ -106,7 +106,8 @@ export function StaffSessionHistoryView() {
         <SummaryCard label="Điểm đã cộng" value={totals.pointsAwarded} detail="Tổng điểm từ danh sách đang hiển thị" />
       </section>
 
-      <Card className="overflow-hidden rounded-[1.75rem] border-cyan-100/80 bg-gradient-to-br from-white via-cyan-50/45 to-slate-50/35 shadow-[0_18px_42px_rgba(6,182,212,0.09)] backdrop-blur">
+      <Card className="overflow-hidden rounded-xl border-cyan-100/80 bg-gradient-to-br from-white via-cyan-50/45 to-slate-50/35 shadow-[0_18px_42px_rgba(6,182,212,0.09)] backdrop-blur">
+
         <div className="border-b border-cyan-100/70 bg-card/70 px-5 py-4 dark:border-cyan-900/30">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -115,7 +116,8 @@ export function StaffSessionHistoryView() {
             </div>
             <Button
               variant="ghost"
-              className="h-8 rounded-xl px-3 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="h-8 rounded-md px-3 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground"
+
               onClick={() => {
                 setSearch("");
                 setPackageFilter(ALL_PACKAGE_VALUE);
@@ -139,7 +141,7 @@ export function StaffSessionHistoryView() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Tìm mã đặt lịch, biển số, khách hàng, SĐT..."
-                className="h-11 rounded-2xl border-border/60 bg-background/85 pl-10 text-sm font-semibold shadow-sm focus:border-cyan-200 focus:bg-background"
+                className="h-11 rounded-lg border-border/60 bg-background/85 pl-10 text-sm font-semibold shadow-sm focus:border-cyan-200 focus:bg-background"
               />
             </div>
 
@@ -167,13 +169,13 @@ export function StaffSessionHistoryView() {
             />
           </div>
 
-          <div className="grid items-end gap-3 rounded-3xl border border-border/50 bg-muted/40 p-3 shadow-inner lg:grid-cols-[minmax(220px,1fr)_112px_112px_minmax(0,1fr)]">
+          <div className="grid items-end gap-3 rounded-lg border border-border/50 bg-muted/40 p-3 shadow-inner lg:grid-cols-[minmax(220px,1fr)_112px_112px_minmax(0,1fr)]">
             <div>
               {periodMode === "day" ? (
-                <DatePickerButton value={dayFilter} onChange={setDayFilter} label="Chọn ngày" buttonClassName="h-10 w-full justify-start rounded-2xl border-border/60 bg-background shadow-sm" />
+                <DatePickerButton value={dayFilter} onChange={setDayFilter} label="Chọn ngày" buttonClassName="h-10 w-full justify-start rounded-lg border-border/60 bg-background shadow-sm" />
               ) : null}
               {periodMode === "month" ? (
-                <Input type="month" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} className="h-10 rounded-2xl border-border/60 bg-background shadow-sm" />
+                <Input type="month" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} className="h-10 rounded-lg border-border/60 bg-background shadow-sm" />
               ) : null}
               {periodMode === "year" ? (
                 <Input
@@ -182,18 +184,18 @@ export function StaffSessionHistoryView() {
                   max="2100"
                   value={yearFilter}
                   onChange={(event) => setYearFilter(event.target.value)}
-                  className="h-10 rounded-2xl border-border/60 bg-background shadow-sm"
+                  className="h-10 rounded-lg border-border/60 bg-background shadow-sm"
                 />
               ) : null}
               {periodMode === "all" ? (
-                <div className="flex h-10 items-center rounded-2xl border border-border/50 bg-muted/50 px-3 text-sm font-semibold text-muted-foreground shadow-sm">
+                <div className="flex h-10 items-center rounded-lg border border-border/50 bg-muted/50 px-3 text-sm font-semibold text-muted-foreground shadow-sm">
                   Không giới hạn ngày
                 </div>
               ) : null}
             </div>
 
-            <Input type="time" value={startHour} onChange={(event) => setStartHour(event.target.value)} className="h-10 rounded-2xl border-border/60 bg-background text-sm shadow-sm" aria-label="Từ giờ" />
-            <Input type="time" value={endHour} onChange={(event) => setEndHour(event.target.value)} className="h-10 rounded-2xl border-border/60 bg-background text-sm shadow-sm" aria-label="Đến giờ" />
+            <Input type="time" value={startHour} onChange={(event) => setStartHour(event.target.value)} className="h-10 rounded-lg border-border/60 bg-background text-sm shadow-sm" aria-label="Từ giờ" />
+            <Input type="time" value={endHour} onChange={(event) => setEndHour(event.target.value)} className="h-10 rounded-lg border-border/60 bg-background text-sm shadow-sm" aria-label="Đến giờ" />
             <p className="hidden text-xs font-semibold leading-5 text-muted-foreground lg:block">
               Lọc theo thời điểm hoàn thành của phiên rửa.
             </p>
@@ -207,7 +209,7 @@ export function StaffSessionHistoryView() {
               description={getErrorMessage(queueQuery.error as unknown as ApiErrorResponse)}
             />
           ) : queueQuery.isPending ? (
-            <div className="h-72 animate-pulse rounded-3xl bg-muted" />
+            <div className="h-72 animate-pulse rounded-lg bg-muted" />
           ) : filteredSessions.length === 0 ? (
             <WorkspaceEmptyState title="Không tìm thấy phiên đã hoàn thành" description="Thử từ khóa hoặc bộ lọc khác." />
           ) : (
@@ -237,7 +239,7 @@ function HistorySelect({
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-10 w-full rounded-2xl border border-border/60 bg-background px-3 text-sm font-semibold text-foreground shadow-sm outline-none transition focus:border-cyan-200 focus:ring-2 focus:ring-cyan-100 dark:focus:ring-cyan-900/40"
+      className="h-10 w-full rounded-lg border border-border/60 bg-background px-3 text-sm font-semibold text-foreground shadow-sm outline-none transition focus:border-cyan-200 focus:ring-2 focus:ring-cyan-100 dark:focus:ring-cyan-900/40"
     >
       {options.map(([optionValue, optionLabel]) => (
         <option key={optionValue} value={optionValue}>
@@ -250,18 +252,36 @@ function HistorySelect({
 
 function SummaryCard({ label, value, detail }: { label: string; value: number | string; detail: string }) {
   return (
-    <Card className="rounded-3xl border-border/50 bg-gradient-to-br from-card via-card to-cyan-50/25 p-5 shadow-[0_16px_34px_rgba(15,23,42,0.07)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(6,182,212,0.10)] dark:to-cyan-950/10">
+    <Card className="rounded-xl border-border/50 bg-gradient-to-br from-card via-card to-cyan-50/25 p-5 shadow-[0_16px_34px_rgba(15,23,42,0.07)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(6,182,212,0.10)] dark:to-cyan-950/10">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
           <p className="mt-2 text-3xl font-black tracking-tight">{value}</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
         </div>
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-800 shadow-[0_0_24px_rgba(6,182,212,0.16)]">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-cyan-800 shadow-[0_0_24px_rgba(6,182,212,0.16)]">
           <CheckCircle2 className="h-5 w-5" />
         </div>
       </div>
     </Card>
+  );
+}
+
+const STATUS_CONFIG: Record<WashSessionStatus, { label: string; className: string }> = {
+  COMPLETED:  { label: "Hoàn thành", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  CANCELLED:  { label: "Đã huỷ",     className: "border-rose-200 bg-rose-50 text-rose-600" },
+  IN_PROGRESS:{ label: "Đang rửa",   className: "border-blue-200 bg-blue-50 text-blue-700" },
+  CHECKED_IN: { label: "Đã check-in",className: "border-amber-200 bg-amber-50 text-amber-700" },
+  QUEUED:     { label: "Chờ xử lý",  className: "border-purple-200 bg-purple-50 text-purple-700" },
+  PENDING:    { label: "Chờ xác nhận",className: "border-slate-200 bg-slate-50 text-slate-600" },
+};
+
+function SessionStatusBadge({ status }: { status: WashSessionStatus }) {
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
+  return (
+    <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-bold", cfg.className)}>
+      {cfg.label}
+    </span>
   );
 }
 
@@ -270,16 +290,17 @@ function HistorySessionRow({ session }: { session: OperationsQueueSession }) {
   const primaryItemName = session.servicePackage ?? session.packageId ?? "Gói rửa";
 
   return (
-    <div className="grid gap-3 rounded-3xl border border-cyan-100/80 bg-gradient-to-r from-white via-white to-cyan-50/55 px-4 py-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg xl:grid-cols-[minmax(0,1.3fr)_1fr_1.25fr] xl:items-center">
+    <div className="grid gap-3 rounded-lg border border-cyan-100/80 bg-gradient-to-r from-white via-white to-cyan-50/55 px-4 py-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg xl:grid-cols-[minmax(0,1.3fr)_1fr_1.25fr] xl:items-center">
       <div className="min-w-0">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <p className="truncate text-sm font-black">{session.bookingId}</p>
-          <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-cyan-800">
-            Đã hoàn thành
-          </span>
+          <p className="truncate text-sm font-black">{session.vehiclePlate}</p>
+          <SessionStatusBadge status={session.status} />
         </div>
         <p className="mt-1 truncate text-xs text-muted-foreground">
-          {session.customerName} · {session.vehiclePlate} · {session.customerPhone}
+          {session.customerName} · {session.customerPhone}
+        </p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground/70">
+          {session.bookingDate} {session.bookingTime}
         </p>
       </div>
 
@@ -300,7 +321,7 @@ function HistorySessionRow({ session }: { session: OperationsQueueSession }) {
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-2xl bg-muted/60 px-3 py-2 shadow-inner ring-1 ring-border/50">
+    <div className="min-w-0 rounded-lg bg-muted/60 px-3 py-2 shadow-inner ring-1 ring-border/50">
       <p className="text-[10px] font-bold uppercase text-muted-foreground">{label}</p>
       <p className="truncate font-semibold text-foreground" title={value}>
         {value}

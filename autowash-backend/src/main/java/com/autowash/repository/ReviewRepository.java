@@ -1,6 +1,7 @@
 package com.autowash.repository;
 
 import com.autowash.entity.Review;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
@@ -13,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 public interface ReviewRepository extends JpaRepository<Review, UUID> {
     boolean existsByBookingId(UUID bookingId);
     Optional<Review> findByBookingId(UUID bookingId);
+    List<Review> findByBookingIdIn(Collection<UUID> bookingIds);
     List<Review> findByFeaturedTrueOrderByCreatedAtDesc();
 
     @Query("SELECT r FROM Review r WHERE " +
