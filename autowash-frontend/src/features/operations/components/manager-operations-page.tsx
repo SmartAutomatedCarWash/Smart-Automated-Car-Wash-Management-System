@@ -3,6 +3,7 @@
 import { useMemo, useState, type ComponentType } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AlertTriangle,
   Check,
   CheckCircle2,
   Clock3,
@@ -21,14 +22,19 @@ import { DatePickerButton, getTodayInputValue } from "@/shared/ui/date-picker-bu
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
+  cancelWashSession,
   checkInWashSession,
+  completeWashSession,
   createWashSession,
+  getActiveStaffOptions,
   getEligibleSessionBookings,
   getOperationsQueue,
+  startWashSession,
+  transferWashSession,
 } from "@/features/operations/lib/operations-service";
 import { useManagerNotificationStore } from "@/features/operations/store/manager-notification.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
-import type { EligibleSessionBooking, OperationsQueueSession, WashSessionStatus } from "@/entities/operations";
+import type { EligibleSessionBooking, OperationsQueueSession, StaffOption, WashSessionStatus } from "@/entities/operations";
 
 type QueueFilter = "ALL" | "PENDING" | "QUEUED" | "CHECKED_IN" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 
@@ -44,6 +50,7 @@ type OperationRow = {
   bookingDate: string;
   bookingTime: string;
   status: WashSessionStatus;
+  assignedStaffId: string | null;
   assignedStaffName: string | null;
   amount: number | null;
   estimatedDurationMinutes: number | null;
@@ -67,6 +74,7 @@ export function ManagerOperationsPage() {
   const [filter, setFilter] = useState<QueueFilter>("ALL");
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState(getTodayInputValue());
+
   const queueQuery = useQuery({
     queryKey: ["manager-operations", "queue"],
     queryFn: getOperationsQueue,
@@ -77,73 +85,21 @@ export function ManagerOperationsPage() {
     queryFn: getEligibleSessionBookings,
     refetchInterval: 15_000,
   });
-
-  const refresh = () => {
-    void queryClient.invalidateQueries({ queryKey: ["manager-operations"] });
-  };
-
-  const createMutation = useMutation({
-    mutationFn: (bookingId: string) => createWashSession(bookingId),
-    onSuccess: (_data, bookingId) => {
-      refresh();
-      toast.success("Đã tạo session và tự động phân staff.");
-      const booking = eligibleBookings.find((item) => item.bookingId === bookingId);
-      pushManagerNotification({
-        kind: "success",
-        title: "Đã tạo wash session",
-        message: booking ? `${booking.vehiclePlate} đã được tạo session và tự động phân staff.` : "Session mới đã được tạo thành công.",
-        target: booking?.assignedStaffName ?? "Manager",
-        plate: booking?.vehiclePlate,
-        href: "/manager/operations",
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      const message = getErrorMessage(error);
-      toast.error(message);
-      pushManagerNotification({
-        kind: "error",
-        title: "Tạo session không thành công",
-        message,
-        target: "Manager",
-        href: "/manager/operations",
-      });
-    },
-  });
-
-  const checkInMutation = useMutation({
-    mutationFn: (sessionId: string) => checkInWashSession(sessionId),
-    onSuccess: (_data, sessionId) => {
-      refresh();
-      toast.success("Đã check-in xe. Staff có thể bắt đầu rửa.");
-      const session = sessions.find((item) => item.sessionId === sessionId);
-      pushManagerNotification({
-        kind: "success",
-        title: "Đã check-in xe",
-        message: session ? `${session.vehiclePlate} đã check-in, staff có thể bắt đầu rửa.` : "Xe đã check-in thành công.",
-        target: session?.assignedStaffName ?? "Manager",
-        plate: session?.vehiclePlate,
-        href: "/manager/operations",
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      const message = getErrorMessage(error);
-      toast.error(message);
-      pushManagerNotification({
-        kind: "error",
-        title: "Check-in không thành công",
-        message,
-        target: "Manager",
-        href: "/manager/operations",
-      });
-    },
+  const staffQuery = useQuery({
+    queryKey: ["manager-operations", "staff-options"],
+    queryFn: getActiveStaffOptions,
+    refetchInterval: 30_000,
   });
 
   const sessions = useMemo(() => flattenSessions(queueQuery.data), [queueQuery.data]);
   const eligibleBookings = eligibleQuery.data ?? [];
+  const staffOptions = staffQuery.data ?? [];
   const rows = useMemo(() => buildRows(eligibleBookings, sessions), [eligibleBookings, sessions]);
   const rowsForSelectedDate = useMemo(() => rows.filter((row) => isSameDate(row.bookingDate, selectedDate)), [rows, selectedDate]);
   const filteredRows = useMemo(() => applyTableFilters(rowsForSelectedDate, filter, search), [filter, rowsForSelectedDate, search]);
   const eligibleBookingsForSelectedDate = eligibleBookings.filter((booking) => isSameDate(booking.bookingDate, selectedDate));
+  const staffWorkload = useMemo(() => buildStaffWorkload(staffOptions, sessions), [staffOptions, sessions]);
+  const waitingCount = rowsForSelectedDate.filter((row) => row.status === "PENDING" || row.status === "QUEUED").length;
   const checkedInCount = rowsForSelectedDate.filter((row) => row.status === "CHECKED_IN").length;
   const washingCount = rowsForSelectedDate.filter((row) => row.status === "IN_PROGRESS").length;
   const completedCount = rowsForSelectedDate.filter((row) => row.status === "COMPLETED").length;
@@ -151,55 +107,155 @@ export function ManagerOperationsPage() {
   const hasError = queueQuery.isError || eligibleQuery.isError;
   const error = (queueQuery.error ?? eligibleQuery.error) as unknown as ApiErrorResponse;
 
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["manager-operations"] });
+  };
+
+  const handleActionSuccess = (message: string) => {
+    refresh();
+    toast.success(message);
+  };
+
+  const handleActionError = (title: string, actionError: ApiErrorResponse) => {
+    const message = getErrorMessage(actionError);
+    toast.error(message);
+    pushManagerNotification({
+      kind: "error",
+      title,
+      message,
+      target: "Manager",
+      href: "/manager/operations",
+    });
+  };
+
+  const createMutation = useMutation({
+    mutationFn: (bookingId: string) => createWashSession(bookingId),
+    onSuccess: (_data, bookingId) => {
+      handleActionSuccess("Đã tạo session và tự động phân staff.");
+      const booking = eligibleBookings.find((item) => item.bookingId === bookingId);
+      pushManagerNotification({
+        kind: "success",
+        title: "Đã tạo wash session",
+        message: booking ? `${booking.vehiclePlate} đã được tạo session.` : "Session mới đã được tạo thành công.",
+        target: booking?.assignedStaffName ?? "Manager",
+        plate: booking?.vehiclePlate,
+        href: "/manager/operations",
+      });
+    },
+    onError: (actionError: ApiErrorResponse) => handleActionError("Tạo session không thành công", actionError),
+  });
+
+  const checkInMutation = useMutation({
+    mutationFn: (sessionId: string) => checkInWashSession(sessionId),
+    onSuccess: () => handleActionSuccess("Đã check-in xe. Staff có thể bắt đầu rửa."),
+    onError: (actionError: ApiErrorResponse) => handleActionError("Check-in không thành công", actionError),
+  });
+
+  const startMutation = useMutation({
+    mutationFn: (sessionId: string) => startWashSession(sessionId),
+    onSuccess: () => handleActionSuccess("Đã chuyển xe sang trạng thái đang rửa."),
+    onError: (actionError: ApiErrorResponse) => handleActionError("Bắt đầu rửa không thành công", actionError),
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: (sessionId: string) => completeWashSession(sessionId),
+    onSuccess: () => handleActionSuccess("Đã hoàn thành phiên rửa và cộng điểm nếu đủ điều kiện."),
+    onError: (actionError: ApiErrorResponse) => handleActionError("Hoàn thành phiên rửa không thành công", actionError),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: ({ sessionId, reason }: { sessionId: string; reason: string }) => cancelWashSession(sessionId, reason, "CUSTOMER_FAULT"),
+    onSuccess: () => handleActionSuccess("Đã hủy phiên rửa."),
+    onError: (actionError: ApiErrorResponse) => handleActionError("Hủy phiên rửa không thành công", actionError),
+  });
+
+  const transferMutation = useMutation({
+    mutationFn: ({ sessionId, toStaffId }: { sessionId: string; toStaffId: string }) => transferWashSession(sessionId, toStaffId, "Manager điều phối lại workload"),
+    onSuccess: () => handleActionSuccess("Đã chuyển staff phụ trách."),
+    onError: (actionError: ApiErrorResponse) => handleActionError("Chuyển staff không thành công", actionError),
+  });
+
+  const refreshDisabled = queueQuery.isFetching || eligibleQuery.isFetching || staffQuery.isFetching;
+
   return (
     <WorkspacePage className="space-y-4">
-      <div className="flex justify-end">
-        <Button variant="outline" size="sm" className="h-9 rounded-xl border-cyan-100 bg-white px-3 text-xs shadow-sm" onClick={refresh} disabled={queueQuery.isFetching || eligibleQuery.isFetching}>
-          <RefreshCcw className={`h-4 w-4 ${queueQuery.isFetching || eligibleQuery.isFetching ? "animate-spin" : ""}`} />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-black text-slate-950">Operations command center</h1>
+          <p className="text-sm font-semibold text-slate-500">Theo dõi booking, check-in và điều phối staff cho luồng MVP.</p>
+        </div>
+        <Button variant="outline" size="sm" className="h-9 rounded-xl border-cyan-100 bg-white px-3 text-xs shadow-sm" onClick={refresh} disabled={refreshDisabled}>
+          <RefreshCcw className={`h-4 w-4 ${refreshDisabled ? "animate-spin" : ""}`} />
           Làm mới
         </Button>
       </div>
 
-      <section className="grid gap-3 md:grid-cols-3">
-        <MetricCard icon={Clock3} label="Đang chờ rửa" value={`${checkedInCount} xe`} tone="blue" />
+      <section className="grid gap-3 md:grid-cols-4">
+        <MetricCard icon={Clock3} label="Chờ xử lý" value={`${waitingCount} xe`} tone="blue" />
+        <MetricCard icon={CheckCircle2} label="Đã check-in" value={`${checkedInCount} xe`} tone="cyan" />
         <MetricCard icon={Timer} label="Đang trong buồng" value={`${washingCount} xe`} tone="amber" />
         <MetricCard icon={CheckCircle2} label="Hoàn thành hôm nay" value={`${completedCount} xe`} tone="green" />
       </section>
 
-      <Card className="overflow-hidden rounded-2xl border-amber-200 bg-[#fffdf4] shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-          <div>
-            <h2 className="text-base font-black text-amber-950">Booking cần tiếp nhận</h2>
-            <p className="text-xs text-amber-800">Tạo session trước; hệ thống tự động chọn staff phù hợp.</p>
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <Card className="overflow-hidden rounded-2xl border-amber-200 bg-[#fffdf4] shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+            <div>
+              <h2 className="text-base font-black text-amber-950">Booking cần tiếp nhận</h2>
+              <p className="text-xs text-amber-800">Tạo session từ booking đã xác nhận để staff có thể xử lý tại quầy.</p>
+            </div>
+            <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-black text-amber-800">{eligibleBookingsForSelectedDate.length}</span>
           </div>
-          <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-black text-amber-800">{eligibleBookingsForSelectedDate.length}</span>
-        </div>
-        <div className="grid gap-2 px-4 pb-4 md:grid-cols-2 xl:grid-cols-3">
-          {eligibleBookingsForSelectedDate.map((booking) => (
-            <div key={booking.bookingId} className="flex items-center justify-between gap-2 rounded-xl border border-amber-200 bg-white px-3 py-2">
-              <div className="min-w-0">
-                <p className="text-sm font-black text-slate-950">{booking.vehiclePlate}</p>
-                <p className="truncate text-xs text-slate-500">
-                  {booking.customerName} · {booking.bookingTime} · {formatCurrency(booking.finalAmount)}
-                </p>
+          <div className="grid gap-2 px-4 pb-4 md:grid-cols-2">
+            {eligibleBookingsForSelectedDate.map((booking) => (
+              <div key={booking.bookingId} className="flex items-center justify-between gap-2 rounded-xl border border-amber-200 bg-white px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-slate-950">{booking.vehiclePlate}</p>
+                  <p className="truncate text-xs text-slate-500">
+                    {booking.customerName} · {booking.bookingTime} · {formatCurrency(booking.finalAmount)}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  className="h-8 shrink-0 rounded-lg bg-cyan-500 px-3 text-xs font-black text-slate-950 hover:bg-cyan-400"
+                  onClick={() => createMutation.mutate(booking.bookingId)}
+                  disabled={createMutation.isPending}
+                >
+                  {createMutation.isPending && createMutation.variables === booking.bookingId ? <Loader2 className="h-4 w-4 animate-spin" /> : "Tạo session"}
+                </Button>
               </div>
-              <Button
-                size="sm"
-                className="h-8 shrink-0 rounded-lg bg-cyan-500 px-3 text-xs font-black text-slate-950 hover:bg-cyan-400"
-                onClick={() => createMutation.mutate(booking.bookingId)}
-                disabled={createMutation.isPending}
-              >
-                {createMutation.isPending && createMutation.variables === booking.bookingId ? <Loader2 className="h-4 w-4 animate-spin" /> : "Tạo session"}
-              </Button>
-            </div>
-          ))}
-          {!eligibleQuery.isPending && eligibleBookingsForSelectedDate.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-amber-200 bg-white/60 px-3 py-4 text-center text-xs font-semibold text-amber-700 md:col-span-2 xl:col-span-3">
-              Không có booking cần tạo session trong ngày {formatDate(selectedDate)}.
-            </div>
-          ) : null}
-        </div>
-      </Card>
+            ))}
+            {!eligibleQuery.isPending && eligibleBookingsForSelectedDate.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-amber-200 bg-white/60 px-3 py-4 text-center text-xs font-semibold text-amber-700 md:col-span-2">
+                Không có booking cần tạo session trong ngày {formatDate(selectedDate)}.
+              </div>
+            ) : null}
+          </div>
+        </Card>
+
+        <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-black text-slate-950">Staff workload</h2>
+            <span className="text-xs font-black text-cyan-700">{staffWorkload.length} active</span>
+          </div>
+          <div className="space-y-2">
+            {staffWorkload.map((staff) => (
+              <div key={staff.staffId} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-black text-slate-900">{staff.staffName}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${staff.activeCount >= 3 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700"}`}>
+                    {staff.activeCount} active
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] font-semibold text-slate-500">{staff.completedCount} completed today</p>
+              </div>
+            ))}
+            {!staffQuery.isPending && staffWorkload.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-200 px-3 py-5 text-center text-xs font-semibold text-slate-400">Chưa có staff active.</div>
+            ) : null}
+          </div>
+        </Card>
+      </section>
 
       <Card className="relative z-40 overflow-visible rounded-2xl border-slate-200 bg-white p-3 shadow-sm">
         <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
@@ -238,7 +294,7 @@ export function ManagerOperationsPage() {
 
       <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1040px] border-collapse text-left">
+          <table className="w-full min-w-[1120px] border-collapse text-left">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-black uppercase tracking-wide text-slate-700">
                 <th className="px-3 py-3">Biển số</th>
@@ -270,10 +326,19 @@ export function ManagerOperationsPage() {
                   <OperationTableRow
                     key={row.id}
                     row={row}
+                    staffOptions={staffOptions}
                     onCreate={() => createMutation.mutate(row.bookingId)}
                     onCheckIn={() => row.sessionId && checkInMutation.mutate(row.sessionId)}
+                    onStart={() => row.sessionId && startMutation.mutate(row.sessionId)}
+                    onComplete={() => row.sessionId && completeMutation.mutate(row.sessionId)}
+                    onCancel={() => row.sessionId && requestCancel(row, cancelMutation.mutate)}
+                    onTransfer={(toStaffId) => row.sessionId && transferMutation.mutate({ sessionId: row.sessionId, toStaffId })}
                     creating={createMutation.isPending && createMutation.variables === row.bookingId}
                     checkingIn={Boolean(row.sessionId && checkInMutation.isPending && checkInMutation.variables === row.sessionId)}
+                    starting={Boolean(row.sessionId && startMutation.isPending && startMutation.variables === row.sessionId)}
+                    completing={Boolean(row.sessionId && completeMutation.isPending && completeMutation.variables === row.sessionId)}
+                    cancelling={Boolean(row.sessionId && cancelMutation.isPending && cancelMutation.variables?.sessionId === row.sessionId)}
+                    transferring={Boolean(row.sessionId && transferMutation.isPending && transferMutation.variables?.sessionId === row.sessionId)}
                   />
                 ))
               )}
@@ -287,17 +352,37 @@ export function ManagerOperationsPage() {
 
 function OperationTableRow({
   row,
+  staffOptions,
   onCreate,
   onCheckIn,
+  onStart,
+  onComplete,
+  onCancel,
+  onTransfer,
   creating,
   checkingIn,
+  starting,
+  completing,
+  cancelling,
+  transferring,
 }: {
   row: OperationRow;
+  staffOptions: StaffOption[];
   onCreate: () => void;
   onCheckIn: () => void;
+  onStart: () => void;
+  onComplete: () => void;
+  onCancel: () => void;
+  onTransfer: (staffId: string) => void;
   creating: boolean;
   checkingIn: boolean;
+  starting: boolean;
+  completing: boolean;
+  cancelling: boolean;
+  transferring: boolean;
 }) {
+  const transferableStaff = staffOptions.filter((staff) => staff.staffId !== row.assignedStaffId);
+
   return (
     <tr className="text-xs transition hover:bg-cyan-50/40">
       <td className="px-3 py-2.5">
@@ -305,7 +390,7 @@ function OperationTableRow({
       </td>
       <td className="px-3 py-2.5">
         <div className="font-bold text-slate-950">{row.customerName}</div>
-        <div className="text-[11px] text-slate-500">{row.customerPhone}</div>
+        <div className="text-[11px] text-slate-500">{row.customerPhone || "Chưa có SĐT"}</div>
       </td>
       <td className="px-3 py-2.5">
         <div className="font-black text-[#00236f]">{row.servicePackage}</div>
@@ -333,37 +418,104 @@ function OperationTableRow({
           {row.amount ? formatCurrency(row.amount) : "Chưa tính"}
         </span>
       </td>
-      <td className="px-3 py-2.5 text-right">
-        {row.type === "booking" ? (
-          <Button size="sm" className="h-8 rounded-lg bg-[#00236f] px-3 text-xs text-white hover:bg-[#001b55]" onClick={onCreate} disabled={creating}>
-            {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-            Tạo session
-          </Button>
-        ) : row.status === "QUEUED" || row.status === "PENDING" ? (
-          <Button size="sm" className="h-8 rounded-lg bg-[#00236f] px-3 text-xs text-white hover:bg-[#001b55]" onClick={onCheckIn} disabled={checkingIn}>
-            {checkingIn ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-            Check-in
-          </Button>
-        ) : row.status === "COMPLETED" ? (
-          <span className="inline-flex items-center justify-end gap-1 font-black text-emerald-600">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Hoàn tất
-          </span>
-        ) : row.status === "IN_PROGRESS" ? (
-          <span className="inline-flex items-center justify-end gap-1 font-black text-amber-700">
-            <Timer className="h-3.5 w-3.5" />
-            Staff đang rửa
-          </span>
-        ) : row.status === "CHECKED_IN" ? (
-          <span className="inline-flex items-center justify-end gap-1 font-black text-cyan-700">
-            <Clock3 className="h-3.5 w-3.5" />
-            Chờ Staff
-          </span>
-        ) : (
-          <span className="font-black text-slate-400">Không khả dụng</span>
-        )}
+      <td className="px-3 py-2.5">
+        <div className="flex min-w-[17rem] justify-end gap-1.5">
+          {row.type === "booking" ? (
+            <ActionButton label="Tạo session" icon={Play} loading={creating} onClick={onCreate} />
+          ) : row.status === "QUEUED" || row.status === "PENDING" ? (
+            <>
+              <ActionButton label="Check-in" icon={Check} loading={checkingIn} onClick={onCheckIn} />
+              <SecondaryActionButton label="Hủy" icon={AlertTriangle} loading={cancelling} onClick={onCancel} />
+            </>
+          ) : row.status === "CHECKED_IN" ? (
+            <>
+              <ActionButton label="Bắt đầu" icon={Play} loading={starting} onClick={onStart} />
+              <TransferSelect staffOptions={transferableStaff} disabled={transferring} onTransfer={onTransfer} />
+            </>
+          ) : row.status === "IN_PROGRESS" ? (
+            <>
+              <ActionButton label="Hoàn thành" icon={CheckCircle2} loading={completing} onClick={onComplete} />
+              <TransferSelect staffOptions={transferableStaff} disabled={transferring} onTransfer={onTransfer} />
+            </>
+          ) : row.status === "COMPLETED" ? (
+            <span className="inline-flex items-center justify-end gap-1 font-black text-emerald-600">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Hoàn tất
+            </span>
+          ) : (
+            <span className="font-black text-slate-400">Không khả dụng</span>
+          )}
+        </div>
       </td>
     </tr>
+  );
+}
+
+function ActionButton({
+  label,
+  icon: Icon,
+  loading,
+  onClick,
+}: {
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  loading: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button size="sm" className="h-8 rounded-lg bg-[#00236f] px-3 text-xs text-white hover:bg-[#001b55]" onClick={onClick} disabled={loading}>
+      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3.5 w-3.5" />}
+      {label}
+    </Button>
+  );
+}
+
+function SecondaryActionButton({
+  label,
+  icon: Icon,
+  loading,
+  onClick,
+}: {
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  loading: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button size="sm" variant="outline" className="h-8 rounded-lg border-rose-200 px-3 text-xs font-black text-rose-600 hover:bg-rose-50" onClick={onClick} disabled={loading}>
+      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3.5 w-3.5" />}
+      {label}
+    </Button>
+  );
+}
+
+function TransferSelect({
+  staffOptions,
+  disabled,
+  onTransfer,
+}: {
+  staffOptions: StaffOption[];
+  disabled: boolean;
+  onTransfer: (staffId: string) => void;
+}) {
+  return (
+    <select
+      className="h-8 max-w-[8.75rem] rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-black text-slate-700 outline-none disabled:opacity-60"
+      defaultValue=""
+      disabled={disabled || staffOptions.length === 0}
+      onChange={(event) => {
+        if (!event.target.value) return;
+        onTransfer(event.target.value);
+        event.target.value = "";
+      }}
+    >
+      <option value="">Chuyển staff</option>
+      {staffOptions.map((staff) => (
+        <option key={staff.staffId} value={staff.staffId}>
+          {staff.staffName}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -376,10 +528,11 @@ function MetricCard({
   icon: ComponentType<{ className?: string }>;
   label: string;
   value: string;
-  tone: "blue" | "amber" | "green";
+  tone: "blue" | "cyan" | "amber" | "green";
 }) {
   const styles = {
     blue: "border-l-blue-500 text-blue-700 bg-blue-50",
+    cyan: "border-l-cyan-500 text-cyan-700 bg-cyan-50",
     amber: "border-l-amber-400 text-amber-700 bg-amber-50",
     green: "border-l-emerald-500 text-emerald-700 bg-emerald-50",
   };
@@ -413,22 +566,26 @@ function StatusBadge({ status }: { status: WashSessionStatus }) {
 }
 
 function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueueSession[]): OperationRow[] {
-  const bookingRows: OperationRow[] = bookings.map((booking) => ({
-    id: `booking-${booking.bookingId}`,
-    type: "booking",
-    bookingId: booking.bookingId,
-    customerName: booking.customerName,
-    customerPhone: booking.customerPhone,
-    vehiclePlate: booking.vehiclePlate,
-    servicePackage: getServiceName(booking.packageId),
-    bookingDate: booking.bookingDate,
-    bookingTime: booking.bookingTime,
-    status: "PENDING",
-    assignedStaffName: booking.assignedStaffName,
-    amount: booking.finalAmount,
-    estimatedDurationMinutes: booking.estimatedDurationMinutes,
-    notes: null,
-  }));
+  const sessionBookingIds = new Set(sessions.map((session) => session.bookingId));
+  const bookingRows: OperationRow[] = bookings
+    .filter((booking) => !sessionBookingIds.has(booking.bookingId))
+    .map((booking) => ({
+      id: `booking-${booking.bookingId}`,
+      type: "booking",
+      bookingId: booking.bookingId,
+      customerName: booking.customerName,
+      customerPhone: booking.customerPhone,
+      vehiclePlate: booking.vehiclePlate,
+      servicePackage: getServiceName(booking.packageId),
+      bookingDate: booking.bookingDate,
+      bookingTime: booking.bookingTime,
+      status: "PENDING",
+      assignedStaffId: booking.assignedStaffId,
+      assignedStaffName: booking.assignedStaffName,
+      amount: booking.finalAmount,
+      estimatedDurationMinutes: booking.estimatedDurationMinutes,
+      notes: null,
+    }));
 
   const sessionRows: OperationRow[] = sessions.map((session) => ({
     id: `session-${session.sessionId}`,
@@ -442,6 +599,7 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
     bookingDate: session.bookingDate,
     bookingTime: session.bookingTime,
     status: session.status,
+    assignedStaffId: session.assignedStaffId ?? null,
     assignedStaffName: session.assignedStaffName ?? null,
     amount: session.feeAmount ?? null,
     estimatedDurationMinutes: session.estimatedDurationMinutes ?? null,
@@ -449,6 +607,20 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
   }));
 
   return [...bookingRows, ...sessionRows].sort((left, right) => left.bookingTime.localeCompare(right.bookingTime));
+}
+
+function buildStaffWorkload(staffOptions: StaffOption[], sessions: OperationsQueueSession[]) {
+  return staffOptions
+    .map((staff) => {
+      const assignedSessions = sessions.filter((session) => session.assignedStaffId === staff.staffId);
+      return {
+        staffId: staff.staffId,
+        staffName: staff.staffName,
+        activeCount: assignedSessions.filter((session) => session.status === "CHECKED_IN" || session.status === "IN_PROGRESS").length,
+        completedCount: assignedSessions.filter((session) => session.status === "COMPLETED").length,
+      };
+    })
+    .sort((left, right) => right.activeCount - left.activeCount || left.staffName.localeCompare(right.staffName));
 }
 
 function applyTableFilters(rows: OperationRow[], filter: QueueFilter, search: string) {
@@ -487,6 +659,13 @@ function getServiceName(packageId: string | null) {
     "quick-wash": "Quick Wash",
   };
   return packageId ? names[packageId] ?? "Gói rửa xe" : "Gói rửa xe";
+}
+
+function requestCancel(row: OperationRow, mutate: (variables: { sessionId: string; reason: string }) => void) {
+  if (!row.sessionId) return;
+  const reason = window.prompt(`Nhập lý do hủy session của xe ${row.vehiclePlate}:`, "Khách không đến hoặc yêu cầu hủy");
+  if (!reason?.trim()) return;
+  mutate({ sessionId: row.sessionId, reason: reason.trim() });
 }
 
 function formatCurrency(value: number) {
