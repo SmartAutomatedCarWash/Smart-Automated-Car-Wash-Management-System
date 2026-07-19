@@ -4,12 +4,13 @@ import Link from "next/link";
 import { RefreshCcw } from "lucide-react";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { formatLoyaltyPoints, formatLoyaltyTransactionType } from "@/features/loyalty/lib/customer-loyalty";
 import { useCustomerLoyaltyTransactions } from "@/features/loyalty/hooks/use-customer-loyalty";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 export function CustomerLoyaltyHistoryPageContent() {
+  const getErrorMessage = useErrorMessage();
   const { language } = useLanguageStore();
   const transactionsQuery = useCustomerLoyaltyTransactions(1, 50);
   const locale = language === "vi" ? "vi-VN" : "en-US";
@@ -47,7 +48,7 @@ export function CustomerLoyaltyHistoryPageContent() {
               <div className="h-64 animate-pulse rounded-3xl bg-slate-100" />
             ) : transactionsQuery.isError ? (
               <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
-                {getDisplayErrorMessage(transactionsQuery.error)}
+                {getErrorMessage(transactionsQuery.error)}
               </div>
             ) : !transactionsQuery.data || transactionsQuery.data.items.length === 0 ? (
               <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">

@@ -1,8 +1,17 @@
 package com.autowash.service.impl;
 
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+import java.util.Locale;
+
+import java.util.UUID;
+
+import java.util.Map;
+
+
 import com.autowash.dto.ImageUploadResponse;
 import com.autowash.service.ImageUploadService;
-import com.autowash.shared.exception.ApiException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -20,9 +29,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.io.IOException;
-import java.util.Locale;
 import java.util.Set;
-import java.util.UUID;
 
 @Service
 @ConditionalOnProperty(prefix = "autowash.storage.s3", name = "enabled", havingValue = "true")
@@ -113,7 +120,7 @@ public class S3ImageUploadServiceImpl implements ImageUploadService {
             return new ImageUploadResponse(url, fileName, file.getSize());
 
         } catch (IOException | S3Exception exception) {
-            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not store image to S3", "UPLOAD_FAILED");
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not store image to S3", ErrorCode.UPLOAD_FAILED);
         }
     }
 
@@ -143,8 +150,8 @@ public class S3ImageUploadServiceImpl implements ImageUploadService {
         return new ApiException(
                 HttpStatus.BAD_REQUEST,
                 "Validation failed",
-                "VALIDATION_ERROR",
-                java.util.Map.of("field", field, "message", message)
+                ErrorCode.VALIDATION_ERROR,
+                Map.of("field", field, "message", message)
         );
     }
 }

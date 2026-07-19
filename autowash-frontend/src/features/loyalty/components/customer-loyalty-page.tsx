@@ -29,7 +29,7 @@ import {
 } from "@/shared/ui/ui/dialog";
 import { Input } from "@/shared/ui/ui/input";
 import { Label } from "@/shared/ui/ui/label";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
   buildLoyaltySummary,
   formatLoyaltyPoints,
@@ -43,7 +43,7 @@ import {
   usePublicTierConfigs,
   usePublicTierVoucherOffers,
 } from "@/features/loyalty/hooks/use-customer-loyalty";
-import { useCustomerVouchers, useClaimCustomerVoucher } from "@/features/vouchers/hooks/use-customer-vouchers";
+import { useCustomerDiscounts, useClaimCustomerDiscount } from "@/features/discounts/hooks/use-customer-discounts";
 import { cn } from "@/shared/lib/utils";
 import type { RedeemPointsResponse, TierVoucherOffer } from "@/entities/loyalty";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
@@ -59,11 +59,12 @@ const TIER_ORDER: readonly string[] = ["BRONZE", "SILVER", "GOLD", "PLATINUM", "
 
 export function CustomerLoyaltyPageContent() {
   const { language } = useLanguageStore();
+  const getErrorMessage = useErrorMessage();
   const accountQuery = useCustomerLoyaltyAccount();
   const tiersQuery = usePublicTierConfigs();
   const offersQuery = usePublicTierVoucherOffers();
   const transactionsQuery = useCustomerLoyaltyTransactions(1, 50);
-  const redeemMutation = useClaimCustomerVoucher();
+  const redeemMutation = useClaimCustomerDiscount();
   const [selectedOffer, setSelectedOffer] = useState<VoucherOfferState | null>(null);
   const [isSuccessVoucher, setIsSuccessVoucher] = useState(false);
 
@@ -119,7 +120,7 @@ export function CustomerLoyaltyPageContent() {
         <Card className="mx-auto max-w-3xl rounded-lg border-rose-200 bg-white">
           <CardHeader>
             <CardTitle>{translate(language, "Không thể tải tài khoản tích điểm", "Unable to load loyalty account")}</CardTitle>
-            <CardDescription>{getDisplayErrorMessage(accountQuery.error)}</CardDescription>
+            <CardDescription>{getErrorMessage(accountQuery.error)}</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -258,7 +259,7 @@ export function CustomerLoyaltyPageContent() {
 
         {redeemMutation.isError ? (
           <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-            {getDisplayErrorMessage(redeemMutation.error)}
+            {getErrorMessage(redeemMutation.error)}
           </div>
         ) : null}
 
@@ -324,7 +325,7 @@ export function CustomerLoyaltyPageContent() {
                   <div className="h-40 animate-pulse rounded-xl bg-slate-100" />
                 ) : transactionsQuery.isError ? (
                   <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                    {getDisplayErrorMessage(transactionsQuery.error)}
+                    {getErrorMessage(transactionsQuery.error)}
                   </div>
                 ) : !transactionsQuery.data || transactionsQuery.data.items.length === 0 ? (
                   <div className="rounded-xl border border-slate-200 bg-white px-4 py-12 text-center text-sm text-slate-600 shadow-sm">
@@ -362,8 +363,8 @@ export function CustomerLoyaltyPageContent() {
               {selectedOffer
                 ? translate(
                     language,
-                    `Bạn sẽ dùng ${selectedOffer.pointsCost.toLocaleString("vi-VN")} điểm để đổi ${selectedOffer.title}, trị giá ${selectedOffer.voucherValue.toLocaleString("vi-VN")} VND.`,
-                    `You will spend ${selectedOffer.pointsCost.toLocaleString("en-US")} points to redeem ${selectedOffer.title}, worth ${selectedOffer.voucherValue.toLocaleString("en-US")} VND.`,
+                    `Bạn sẽ dùng ${selectedOffer.pointsCost.toLocaleString("vi-VN")} điểm để đổi ${selectedOffer.title}, trị giá ${selectedOffer.discountValue.toLocaleString("vi-VN")} VND.`,
+                    `You will spend ${selectedOffer.pointsCost.toLocaleString("en-US")} points to redeem ${selectedOffer.title}, worth ${selectedOffer.discountValue.toLocaleString("en-US")} VND.`,
                   )
                 : ""}
             </DialogDescription>
@@ -456,7 +457,7 @@ function ExchangeVoucherCard({
       <div className="relative z-10 mt-5 flex-1">
         <h3 className="text-[17px] font-black text-slate-900 leading-tight">{offer.title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-700">
-          {offer.voucherValue.toLocaleString(locale)} VND voucher {translate(language, "cho thành viên", "for")} <span className="font-bold" style={{ color: metal.text }}>{formatTierLabel(offer.minTier, tierConfigs)}</span> {translate(language, "trở lên", "and above")}.
+          {offer.discountValue.toLocaleString(locale)} VND voucher {translate(language, "cho thành viên", "for")} <span className="font-bold" style={{ color: metal.text }}>{formatTierLabel(offer.minTier, tierConfigs)}</span> {translate(language, "trở lên", "and above")}.
         </p>
       </div>
 
@@ -523,7 +524,8 @@ function RuleRow({ label, value }: { label: string; value: string }) {
 }
 
 function MyVouchersList({ language, locale }: { language: string, locale: string }) {
-  const vouchersQuery = useCustomerVouchers();
+  const getErrorMessage = useErrorMessage();
+  const vouchersQuery = useCustomerDiscounts();
 
   if (vouchersQuery.isPending) {
     return (
@@ -540,7 +542,7 @@ function MyVouchersList({ language, locale }: { language: string, locale: string
       <Card className="border-rose-200 bg-white">
         <CardHeader>
           <CardTitle>{translate(language as any, "Không thể tải voucher", "Unable to load vouchers")}</CardTitle>
-          <CardDescription>{getDisplayErrorMessage(vouchersQuery.error)}</CardDescription>
+          <CardDescription>{getErrorMessage(vouchersQuery.error)}</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -565,26 +567,29 @@ function MyVouchersList({ language, locale }: { language: string, locale: string
 
   return (
     <div className="grid gap-6 xl:grid-cols-2 items-start">
-      {vouchersQuery.data.items.map((voucher) => (
+      {vouchersQuery.data.items.map((item) => {
+        const voucher = item.discount;
+        if (!voucher) return null;
+        return (
         <LuxuryVoucherCard
-          key={voucher.code}
+          key={voucher.code ?? item.id}
           title={voucher.name}
-          amountText={voucher.discountType === "PERCENT" ? `${voucher.discountValue}` : `${voucher.discountValue.toLocaleString(locale)}`}
-          unitText={voucher.discountType === "PERCENT" ? "% OFF" : "VND"}
-          code={voucher.code}
+          amountText={voucher.discountType === "PERCENTAGE" ? `${voucher.discountValue}` : `${voucher.discountValue.toLocaleString(locale)}`}
+          unitText={voucher.discountType === "PERCENTAGE" ? "% OFF" : "VND"}
+          code={voucher.code ?? "NO CODE"}
           tier={
-            voucher.targetTiers.length > 0
-              ? voucher.targetTiers.map(t => formatTierLabel(t as any)).join(", ")
+            voucher.applicableTierIds && voucher.applicableTierIds.length > 0
+              ? voucher.applicableTierIds.map(t => formatTierLabel(t as any)).join(", ")
               : translate(language as any, "Tất cả hạng", "All Tiers")
           }
-          validUntil={voucher.expiredAt ? new Date(voucher.expiredAt).toLocaleDateString(locale) : "Không giới hạn"}
+          validUntil={voucher.endAt ? new Date(voucher.endAt).toLocaleDateString(locale) : "Không giới hạn"}
           minOrder={
-            voucher.minOrderAmount > 0
+            voucher.minOrderAmount && voucher.minOrderAmount > 0
               ? `${voucher.minOrderAmount.toLocaleString(locale)} VND`
               : translate(language as any, "Không yêu cầu", "None")
           }
         />
-      ))}
+      )})}
     </div>
   );
 }

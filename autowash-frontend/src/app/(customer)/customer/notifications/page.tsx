@@ -4,13 +4,14 @@ import { Bell, BellRing, CheckCheck, Loader2, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
   useCustomerNotifications,
   useMarkCustomerNotificationAsRead,
 } from "@/features/notifications/hooks/use-customer-notifications";
 
 export default function CustomerNotificationsPage() {
+  const getErrorMessage = useErrorMessage();
   const notificationsQuery = useCustomerNotifications();
   const markAsReadMutation = useMarkCustomerNotificationAsRead();
 
@@ -67,7 +68,7 @@ export default function CustomerNotificationsPage() {
             <Card className="border-rose-200 dark:border-rose-950/50 bg-white dark:bg-slate-950/40">
               <CardHeader>
                 <CardTitle className="text-base text-slate-900 dark:text-slate-100">Unable to load notifications</CardTitle>
-                <CardDescription className="text-slate-500 dark:text-slate-400">{getDisplayErrorMessage(notificationsQuery.error)}</CardDescription>
+                <CardDescription className="text-slate-500 dark:text-slate-400">{getErrorMessage(notificationsQuery.error)}</CardDescription>
               </CardHeader>
             </Card>
           ) : !notificationsQuery.data || notificationsQuery.data.length === 0 ? (
@@ -126,7 +127,7 @@ export default function CustomerNotificationsPage() {
                                 await markAsReadMutation.mutateAsync(item.notificationId);
                                 toast.success("Notification marked as read.");
                               } catch (error) {
-                                toast.error(getDisplayErrorMessage(error));
+                                toast.error(getErrorMessage(error));
                               }
                             }}
                           >

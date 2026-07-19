@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent 
 import { Camera, Loader2, RefreshCcw, User, Mail, Phone, CheckCircle2, UserPlus, Calendar, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { validateProfileForm } from "@/features/profile/lib/profile-form-validation";
 import { buildUpdateUserProfileRequest } from "@/features/profile/lib/profile-update-payload";
 import {
@@ -35,6 +35,7 @@ const ALLOWED_AVATAR_TYPES: Record<string, CreateAvatarUploadUrlRequest["content
 };
 
 export default function CustomerProfilePage() {
+  const getErrorMessage = useErrorMessage();
   const profileQuery = useCustomerProfile();
   const updateProfileMutation = useUpdateCustomerProfile();
   const uploadAvatarMutation = useUploadCustomerAvatar();
@@ -100,7 +101,7 @@ export default function CustomerProfilePage() {
       await uploadAvatarMutation.mutateAsync({ file, contentType });
       toast.success("Avatar updated successfully.");
     } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
+      toast.error(getErrorMessage(error));
     }
   };
 

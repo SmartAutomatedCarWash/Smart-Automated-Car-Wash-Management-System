@@ -1,22 +1,35 @@
 package com.autowash.service.impl;
 
+import com.autowash.entity.enums.BookingItemType;
+
+
 import com.autowash.dto.AdminDashboardFullResponse;
-import com.autowash.dto.AdminDashboardFullResponse.*;
+import com.autowash.dto.AdminDashboardFullResponse.BookingTrend;
+import com.autowash.dto.AdminDashboardFullResponse.BookingStatusDist;
+import com.autowash.dto.AdminDashboardFullResponse.CustomerInsights;
+import com.autowash.dto.AdminDashboardFullResponse.Kpis;
+import com.autowash.dto.AdminDashboardFullResponse.LoyaltyTierDist;
+import com.autowash.dto.AdminDashboardFullResponse.NoShowAlert;
+import com.autowash.dto.AdminDashboardFullResponse.PeakHourData;
+import com.autowash.dto.AdminDashboardFullResponse.RealTimeOps;
+import com.autowash.dto.AdminDashboardFullResponse.RecentBooking;
+import com.autowash.dto.AdminDashboardFullResponse.ReviewSummary;
+import com.autowash.dto.AdminDashboardFullResponse.TopServices;
+import com.autowash.dto.AdminDashboardFullResponse.VoucherStats;
 import com.autowash.entity.Booking;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
-import com.autowash.entity.enums.UserVoucherStatus;
+import com.autowash.entity.enums.UserDiscountStatus;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.ComboRepository;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PackageRepository;
-import com.autowash.repository.ReviewRepository;
 import com.autowash.repository.SlotHoldRepository;
 import com.autowash.repository.TierConfigRepository;
 import com.autowash.repository.UserRepository;
-import com.autowash.repository.UserVoucherRepository;
+import com.autowash.repository.UserDiscountRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.AdminDashboardFullService;
 import com.autowash.service.ReviewService;
@@ -26,14 +39,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +54,7 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final LoyaltyAccountRepository loyaltyAccountRepository;
-    private final UserVoucherRepository userVoucherRepository;
+    private final UserDiscountRepository userDiscountRepository;
     private final WashSessionRepository washSessionRepository;
     private final SlotHoldRepository slotHoldRepository;
     private final TierConfigRepository tierConfigRepository;
@@ -56,7 +66,7 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
             BookingRepository bookingRepository,
             UserRepository userRepository,
             LoyaltyAccountRepository loyaltyAccountRepository,
-            UserVoucherRepository userVoucherRepository,
+            UserDiscountRepository userDiscountRepository,
             WashSessionRepository washSessionRepository,
             SlotHoldRepository slotHoldRepository,
             TierConfigRepository tierConfigRepository,
@@ -67,7 +77,7 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.loyaltyAccountRepository = loyaltyAccountRepository;
-        this.userVoucherRepository = userVoucherRepository;
+        this.userDiscountRepository = userDiscountRepository;
         this.washSessionRepository = washSessionRepository;
         this.slotHoldRepository = slotHoldRepository;
         this.tierConfigRepository = tierConfigRepository;
@@ -104,9 +114,11 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
     // -------------------------------------------------------------------------
     private Map<UUID, String> buildServiceNameMap(List<Booking> bookings) {
         List<UUID> packageIds = bookings.stream()
-                .map(Booking::getPackageId).filter(Objects::nonNull).distinct().toList();
+                .map(b -> b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null))
+                .filter(Objects::nonNull).distinct().toList();
         List<UUID> comboIds = bookings.stream()
-                .map(Booking::getComboId).filter(Objects::nonNull).distinct().toList();
+                .map(b -> b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null))
+                .filter(Objects::nonNull).distinct().toList();
         Map<UUID, String> names = new HashMap<>();
         packageRepository.findAllById(packageIds).forEach(p -> names.put(p.getId(), p.getName()));
         comboRepository.findAllById(comboIds).forEach(c -> names.put(c.getId(), c.getName()));
@@ -129,7 +141,8 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
     // Helper: resolve service ID from booking
     // -------------------------------------------------------------------------
     private UUID serviceId(Booking b) {
-        return b.getPackageId() != null ? b.getPackageId() : b.getComboId();
+        UUID pkgId = b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null);
+        return pkgId != null ? pkgId : b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null);
     }
 
     // -------------------------------------------------------------------------
@@ -172,14 +185,14 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
 
         long loyaltyMembers = loyaltyAccountRepository.count();
 
-        long totalVouchers = userVoucherRepository.count();
-        long usedVouchers = userVoucherRepository.countByStatus(UserVoucherStatus.USED);
+        long totalVouchers = userDiscountRepository.count();
+        long usedVouchers = userDiscountRepository.countByStatus(UserDiscountStatus.USED);
         double voucherRedemptionRate = totalVouchers > 0
                 ? (double) usedVouchers / totalVouchers * 100.0 : 0.0;
 
         long totalRevenue = allBookings.stream()
                 .filter(b -> b.getStatus().equals(BookingStatus.COMPLETED))
-                .mapToLong(Booking::getFinalAmount).sum();
+                .mapToLong(b -> b.getPricing() != null ? b.getPricing().getFinalAmount() : 0L).sum();
 
         return new Kpis(todayBookings, delta, completedToday, activeCustomers,
                 noShowRate, loyaltyMembers, voucherRedemptionRate, totalRevenue);
@@ -279,10 +292,10 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
     // Section 4 — Voucher statistics
     // -------------------------------------------------------------------------
     private VoucherStats buildVoucherStats() {
-        long issued = userVoucherRepository.count();
-        long redeemed = userVoucherRepository.countByStatus(UserVoucherStatus.USED);
-        long expired = userVoucherRepository.countByStatus(UserVoucherStatus.EXPIRED);
-        long revoked = userVoucherRepository.countByStatus(UserVoucherStatus.FORFEITED);
+        long issued = userDiscountRepository.count();
+        long redeemed = userDiscountRepository.countByStatus(UserDiscountStatus.USED);
+        long expired = userDiscountRepository.countByStatus(UserDiscountStatus.EXPIRED);
+        long revoked = userDiscountRepository.countByStatus(UserDiscountStatus.FORFEITED);
         return new VoucherStats(issued, redeemed, expired, revoked);
     }
 

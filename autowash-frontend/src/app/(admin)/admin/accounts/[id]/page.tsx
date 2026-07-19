@@ -5,9 +5,10 @@ import { AdminCustomerDetailPageContent } from "@/features/customers/components/
 import { AdminAccountDetailPageContent } from "@/features/accounts/components/admin-account-detail-page";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/shared/ui/ui/card";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 
 export default function AdminAccountDetailPage({ params }: { params: { id: string } }) {
+  const getErrorMessage = useErrorMessage();
   const detailQuery = useAdminAccountDetail(params.id);
 
   if (detailQuery.isPending) {
@@ -27,7 +28,7 @@ export default function AdminAccountDetailPage({ params }: { params: { id: strin
         <div className="mx-auto max-w-5xl">
           <Card className="rounded-md border-rose-200 bg-white shadow-sm">
             <CardContent className="p-5">
-              <p className="text-sm text-rose-700">{getDisplayErrorMessage(detailQuery.error)}</p>
+              <p className="text-sm text-rose-700">{getErrorMessage(detailQuery.error)}</p>
             </CardContent>
           </Card>
         </div>

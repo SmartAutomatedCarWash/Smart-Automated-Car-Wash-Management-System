@@ -1,7 +1,9 @@
 package com.autowash.service;
 
-import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+import com.autowash.entity.enums.WashSessionStatus;
 import org.springframework.http.HttpStatus;
 
 public final class WashSessionLifecycle {
@@ -14,7 +16,7 @@ public final class WashSessionLifecycle {
             throw new ApiException(
                     HttpStatus.CONFLICT,
                     "Invalid transition: " + current + " \u2192 " + next,
-                    "INVALID_STATE_TRANSITION"
+                    ErrorCode.INVALID_STATE
             );
         }
     }

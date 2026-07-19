@@ -1,8 +1,9 @@
 package com.autowash.service;
 
-
-
 import com.autowash.dto.BookingDetailResponse;
+
+
+
 import com.autowash.dto.BookingListItemResponse;
 import com.autowash.dto.CancelBookingResponse;
 import com.autowash.dto.CreateBookingRequest;
@@ -11,8 +12,8 @@ import com.autowash.dto.PayBookingResponse;
 import com.autowash.entity.Booking;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.shared.dto.PaginationMeta;
-import com.autowash.dto.ValidateVoucherRequest;
-import com.autowash.dto.ValidateVoucherResponse;
+
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -27,7 +28,6 @@ public interface BookingService {
     Booking requireBookingForOperations(String bookingId);
     void updateStatus(Booking booking, BookingStatus status);
     BookingDetailResponse toDetailResponse(Booking booking);
-    ValidateVoucherResponse validateVoucher(ValidateVoucherRequest request);
 
     record BookingPage(List<BookingListItemResponse> items, PaginationMeta pagination) {}
 }

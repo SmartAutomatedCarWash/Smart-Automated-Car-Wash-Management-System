@@ -106,7 +106,7 @@ const ADMIN_NAV: WorkspaceNavItem[] = [
   { href: "/admin/bookings", label: "Bookings", labelVi: "Quan ly dat lich", icon: ClipboardList },
   { href: "/admin/accounts", label: "Accounts", labelVi: "Tai khoan", icon: Users },
   { href: "/admin/services", label: "Service Management", labelVi: "Quan ly dich vu", icon: Layers3 },
-  { href: "/admin/offers?tab=promotions", label: "Offers Management", labelVi: "Uu dai va Voucher", icon: Gift },
+  { href: "/admin/discounts", label: "Discounts & Offers", labelVi: "Khuyến mãi & Ưu đãi", icon: Gift },
   { href: "/admin/blog", label: "Content & Feedback", labelVi: "Noi dung va Phan hoi", icon: BookOpen },
   { href: "/admin/operations", label: "Operations", labelVi: "Van hanh", icon: Wrench },
   { href: "/admin/reports", label: "Reports", labelVi: "Bao cao", icon: BarChart3 },

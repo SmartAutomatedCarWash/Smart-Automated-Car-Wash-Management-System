@@ -6,7 +6,7 @@ import com.autowash.repository.UserRepository;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.entity.enums.ActiveStatus;
-import com.autowash.repository.PromotionRepository;
+import com.autowash.repository.DiscountRepository;
 import com.autowash.service.AdminDashboardMetricsService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,31 +18,31 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminDashboardMetricsServiceImpl implements AdminDashboardMetricsService {
 
     private final BookingRepository bookingRepository;
-    private final PromotionRepository promotionRepository;
-    private final UserRepository UserRepository;
+    private final DiscountRepository discountRepository;
+    private final UserRepository userRepository;
 
     public AdminDashboardMetricsServiceImpl(
             BookingRepository bookingRepository,
-            PromotionRepository promotionRepository,
-            UserRepository UserRepository
+            DiscountRepository discountRepository,
+            UserRepository userRepository
     ) {
         this.bookingRepository = bookingRepository;
-        this.promotionRepository = promotionRepository;
-        this.UserRepository = UserRepository;
+        this.discountRepository = discountRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
     public DashboardMetricsDto getMetrics() {
         long totalBookings = bookingRepository.count();
         long totalRevenue = bookingRepository.sumFinalAmountByStatus(BookingStatus.CONFIRMED);
-        long totalCustomers = UserRepository.countByRole(UserRole.CUSTOMER);
-        long activePromotions = promotionRepository.countByStatus(ActiveStatus.ACTIVE);
+        long totalCustomers = userRepository.countByRole(UserRole.CUSTOMER);
+        long activeDiscounts = discountRepository.countByStatus(ActiveStatus.ACTIVE);
 
         return new DashboardMetricsDto(
                 totalBookings,
                 totalRevenue,
                 totalCustomers,
-                activePromotions
+                activeDiscounts
         );
     }
 }

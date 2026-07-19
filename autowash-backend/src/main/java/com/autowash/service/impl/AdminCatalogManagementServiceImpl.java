@@ -1,25 +1,29 @@
 package com.autowash.service.impl;
 
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.UUID;
+import org.springframework.stereotype.Service;
 import com.autowash.dto.AdminPackageRequest;
 import com.autowash.dto.AdminServiceRequest;
 import com.autowash.dto.PackageResponse;
 import com.autowash.dto.ServiceResponse;
 import com.autowash.entity.Package;
 import com.autowash.entity.PackageService;
-import com.autowash.entity.Service;
 import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.repository.PackageRepository;
 import com.autowash.repository.PackageServiceRepository;
 import com.autowash.repository.ServiceRepository;
 import com.autowash.service.AdminCatalogManagementService;
-import com.autowash.shared.exception.ApiException;
 import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 
-@org.springframework.stereotype.Service
+@Service
 public class AdminCatalogManagementServiceImpl implements AdminCatalogManagementService {
 
     private final ServiceRepository serviceRepository;
@@ -53,7 +57,7 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
     @Override
     @Transactional
     public ServiceResponse createService(AdminServiceRequest request) {
-        Service service = serviceRepository.save(new Service(
+        com.autowash.entity.Service service = serviceRepository.save(new com.autowash.entity.Service(
                 request.name(),
                 request.description(),
                 request.price(),
@@ -67,7 +71,7 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
     @Override
     @Transactional
     public ServiceResponse updateService(String serviceId, AdminServiceRequest request) {
-        Service service = requireService(serviceId);
+        com.autowash.entity.Service service = requireService(serviceId);
         service.update(
                 request.name(),
                 request.description(),
@@ -82,7 +86,7 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
     @Override
     @Transactional
     public ServiceResponse deleteService(String serviceId) {
-        Service service = requireService(serviceId);
+        com.autowash.entity.Service service = requireService(serviceId);
         service.deactivate();
         return toServiceResponse(service);
     }
@@ -155,7 +159,7 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
                     if (!seen.add(optionId)) {
                         throw validationError("Duplicate service option in package");
                     }
-                    Service service = serviceRepository.findByIdAndStatus(optionId, ActiveStatus.ACTIVE)
+                    com.autowash.entity.Service service = serviceRepository.findByIdAndStatus(optionId, ActiveStatus.ACTIVE)
                             .orElseThrow(() -> validationError("Service option not found or inactive"));
                     return new PackageService(
                             pkg.getId(),
@@ -172,21 +176,21 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
         packageServiceRepository.saveAll(packageServices);
     }
 
-    private Service requireService(String serviceId) {
+    private com.autowash.entity.Service requireService(String serviceId) {
         return serviceRepository.findById(parseUuid(serviceId, "Service not found"))
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Service not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Service not found", ErrorCode.RESOURCE_NOT_FOUND));
     }
 
     private Package requirePackage(String packageId) {
         return packageRepository.findById(parseUuid(packageId, "Package not found"))
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Package not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Package not found", ErrorCode.RESOURCE_NOT_FOUND));
     }
 
     private UUID parseUuid(String id, String message) {
         try {
             return UUID.fromString(id);
         } catch (RuntimeException exception) {
-            throw new ApiException(HttpStatus.NOT_FOUND, message, "RESOURCE_NOT_FOUND");
+            throw new ApiException(HttpStatus.NOT_FOUND, message, ErrorCode.RESOURCE_NOT_FOUND);
         }
     }
 
@@ -195,10 +199,10 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
     }
 
     private ApiException validationError(String message) {
-        return new ApiException(HttpStatus.BAD_REQUEST, message, "VALIDATION_ERROR");
+        return new ApiException(HttpStatus.BAD_REQUEST, message, ErrorCode.VALIDATION_ERROR);
     }
 
-    private ServiceResponse toServiceResponse(Service service) {
+    private ServiceResponse toServiceResponse(com.autowash.entity.Service service) {
         return new ServiceResponse(
                 service.getId().toString(),
                 service.getName(),
@@ -240,6 +244,6 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
     }
 
     private List<String> split(String str) {
-        return str == null || str.isEmpty() ? new java.util.ArrayList<>() : java.util.Arrays.asList(str.split(","));
+        return str == null || str.isEmpty() ? new ArrayList<>() : Arrays.asList(str.split(","));
     }
 }

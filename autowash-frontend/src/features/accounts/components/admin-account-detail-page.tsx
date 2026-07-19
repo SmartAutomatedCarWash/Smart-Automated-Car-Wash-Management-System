@@ -8,7 +8,7 @@ import { ArrowLeft, Loader2, RefreshCcw, UserCircle2 } from "lucide-react";
 import { Badge } from "@/shared/ui/ui/badge";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { useAdminAccountDetail, useUpdateAdminCustomerStatus, useUpdateAdminCustomerPoints } from "@/features/reports/hooks/use-admin-reporting";
 import type { AdminEditableAccountRole } from "@/entities/reports";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
@@ -40,6 +40,7 @@ function translateEnumLabel(value: string, lang: "vi" | "en") {
 export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailPageContentProps) {
   const router = useRouter();
   const { language } = useLanguageStore();
+  const getErrorMessage = useErrorMessage();
   const detailQuery = useAdminAccountDetail(accountId);
   const updateStatusMutation = useUpdateAdminCustomerStatus(accountId);
   const updatePointsMutation = useUpdateAdminCustomerPoints(accountId);
@@ -88,7 +89,7 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
         ) : detailQuery.isError ? (
           <Card className="rounded-md border-rose-200 bg-white shadow-sm">
             <CardContent className="p-5">
-              <ErrorInline message={getDisplayErrorMessage(detailQuery.error)} />
+              <ErrorInline message={getErrorMessage(detailQuery.error)} />
             </CardContent>
           </Card>
         ) : !account ? (
@@ -151,7 +152,7 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
                           void detailQuery.refetch();
                         }
                       } catch (error) {
-                        setFeedback(getDisplayErrorMessage(error));
+                        setFeedback(getErrorMessage(error));
                       }
                     }}
                     disabled={updateStatusMutation.isPending || statusDraft === account?.status}
@@ -215,7 +216,7 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
                         setPointsReason("");
                         void detailQuery.refetch();
                       } catch (error) {
-                        setPointsFeedback(getDisplayErrorMessage(error));
+                        setPointsFeedback(getErrorMessage(error));
                       }
                     }}
                     disabled={updatePointsMutation.isPending}

@@ -30,7 +30,7 @@ public class AdminDashboardMetricsController {
     }
 
     @GetMapping("/metrics")
-    @Operation(summary = "Get admin dashboard metrics", description = "Trả về các chỉ số vận hành tổng quan: tổng bookings, doanh thu, khách hàng, và số promotion đang active.")
+    @Operation(summary = "Get admin dashboard metrics", description = "Trả về các chỉ số vận hành tổng quan: tổng bookings, doanh thu, khách hàng, và số discount đang active.")
     public ApiResponse<DashboardMetricsDto> getMetrics() {
         return ApiResponse.ok("Dashboard metrics retrieved", metricsService.getMetrics());
     }

@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
                 "success", false,
                 "statusCode", 400,
                 "message", "Validation failed",
-                "errorCode", "VALIDATION_ERROR",
+                "errorCode", ErrorCode.VALIDATION_ERROR.name(),
                 "errors", errors,
                 "timestamp", Instant.now().toString()
         ));
@@ -48,7 +48,7 @@ public class GlobalExceptionHandler {
                 .map(violation -> Map.of(
                         "field", extractConstraintField(violation.getPropertyPath().toString()),
                         "message", violation.getMessage() == null ? "Invalid value" : violation.getMessage(),
-                        "code", "INVALID_FORMAT"
+                        "code", ErrorCode.INVALID_FORMAT.name()
                 ))
                 .toList();
 
@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
                 "success", false,
                 "statusCode", 400,
                 "message", "Validation failed",
-                "errorCode", "VALIDATION_ERROR",
+                "errorCode", ErrorCode.VALIDATION_ERROR.name(),
                 "errors", errors,
                 "timestamp", Instant.now().toString()
         ));
@@ -68,11 +68,11 @@ public class GlobalExceptionHandler {
                 "success", false,
                 "statusCode", 400,
                 "message", "Validation failed",
-                "errorCode", "VALIDATION_ERROR",
+                "errorCode", ErrorCode.VALIDATION_ERROR.name(),
                 "errors", List.of(Map.of(
                         "field", exception.getName(),
                         "message", "Invalid value",
-                        "code", "INVALID_FORMAT"
+                        "code", ErrorCode.INVALID_FORMAT.name()
                 )),
                 "timestamp", Instant.now().toString()
         ));
@@ -85,7 +85,7 @@ public class GlobalExceptionHandler {
                 "success", false,
                 "statusCode", 400,
                 "message", "Validation failed",
-                "errorCode", "VALIDATION_ERROR",
+                "errorCode", ErrorCode.VALIDATION_ERROR.name(),
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -110,7 +110,7 @@ public class GlobalExceptionHandler {
                 "success", false,
                 "statusCode", 403,
                 "message", "Access denied",
-                "errorCode", "ACCESS_DENIED",
+                "errorCode", ErrorCode.ACCESS_DENIED.name(),
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -121,7 +121,7 @@ public class GlobalExceptionHandler {
                 "success", false,
                 "statusCode", 404,
                 "message", "Resource not found",
-                "errorCode", "RESOURCE_NOT_FOUND",
+                "errorCode", ErrorCode.RESOURCE_NOT_FOUND.name(),
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -133,7 +133,7 @@ public class GlobalExceptionHandler {
                 "success", false,
                 "statusCode", 500,
                 "message", "Unexpected server error",
-                "errorCode", "INTERNAL_SERVER_ERROR",
+                "errorCode", ErrorCode.INTERNAL_SERVER_ERROR.name(),
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -142,7 +142,7 @@ public class GlobalExceptionHandler {
         return Map.of(
                 "field", error.getField(),
                 "message", error.getDefaultMessage() == null ? "Invalid value" : error.getDefaultMessage(),
-                "code", "INVALID_FORMAT"
+                "code", ErrorCode.INVALID_FORMAT.name()
         );
     }
 

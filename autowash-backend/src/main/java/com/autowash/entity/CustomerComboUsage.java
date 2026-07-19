@@ -1,13 +1,19 @@
 package com.autowash.entity;
 
+import jakarta.persistence.OneToOne;
+
+import jakarta.persistence.JoinColumn;
+
+import jakarta.persistence.FetchType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,18 +28,20 @@ public class CustomerComboUsage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "customer_combo_id", nullable = false)
-    private UUID customerComboId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "customer_combo_id", nullable = false)
+    private CustomerCombo customerCombo;
 
-    @Column(name = "booking_id", nullable = false, unique = true)
-    private UUID bookingId;
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "booking_id", nullable = false, unique = true)
+    private Booking booking;
 
     @Column(name = "used_at", nullable = false)
     private Instant usedAt;
 
-    public CustomerComboUsage(UUID customerComboId, UUID bookingId) {
-        this.customerComboId = customerComboId;
-        this.bookingId = bookingId;
+    public CustomerComboUsage(CustomerCombo customerCombo, Booking booking) {
+        this.customerCombo = customerCombo;
+        this.booking = booking;
         this.usedAt = Instant.now();
     }
 }

@@ -97,7 +97,7 @@ export function useWashStore() {
       ),
     lastTransaction: store.lastTransaction,
     transactions: visibleTransactions,
-    promotions: store.promotions,
+    discounts: store.discounts,
     servicesCatalog: store.services,
     staffAvailability: store.staffAvailability,
     assignStaffToSession: store.assignStaffToSession,

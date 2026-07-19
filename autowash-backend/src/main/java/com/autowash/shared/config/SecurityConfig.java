@@ -1,5 +1,7 @@
 package com.autowash.shared.config;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import com.autowash.shared.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,7 +67,7 @@ public class SecurityConfig {
                 .build();
     }
 
-    @org.springframework.beans.factory.annotation.Value("${AUTOWASH_FRONTEND_BASE_URL:http://localhost:3000}")
+    @Value("${AUTOWASH_FRONTEND_BASE_URL:http://localhost:3000}")
     private String frontendBaseUrl;
 
     @Bean

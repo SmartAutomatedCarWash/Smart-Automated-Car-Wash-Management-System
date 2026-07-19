@@ -13,20 +13,20 @@ export function useLoyalty() {
     store.role === "Customer"
       ? store.ledger.filter((entry) => entry.customerId === store.currentCustomerId)
       : store.ledger;
-  const visiblePromotions =
+  const visibleDiscountRecords =
     store.role === "Customer"
-      ? store.promotions.filter((promotion) => {
+      ? store.discounts.filter((discount) => {
           const customer = store.customers.find((item) => item.id === store.currentCustomerId);
           if (!customer) return false;
           const today = new Date().toISOString().slice(0, 10);
           return (
-            promotion.active &&
-            promotion.startDate <= today &&
-            promotion.endDate >= today &&
-            promotion.tiers.includes(customer.tier)
+            discount.active &&
+            discount.startDate <= today &&
+            discount.endDate >= today &&
+            discount.tiers.includes(customer.tier)
           );
         })
-      : store.promotions;
+      : store.discounts;
   return {
     tiers: store.tiers.map((tier) => ({
       name: tier.name,
@@ -46,7 +46,7 @@ export function useLoyalty() {
     })),
     rewards: store.rewards,
     ledger: visibleLedger,
-    promotions: visiblePromotions,
+    discounts: visibleDiscountRecords,
     audit: store.tierHistory,
     activeCustomerId: store.currentCustomerId,
     setActiveCustomerId: store.setCurrentCustomerId,
@@ -75,7 +75,7 @@ export function useLoyalty() {
         }) satisfies TierRule[],
       ),
     redeemReward: store.redeemReward,
-    addPromotion: (promotion: {
+    addDiscountRecord: (discount: {
       code: string;
       discountType: "Percentage" | "Flat";
       amount: number;
@@ -84,8 +84,8 @@ export function useLoyalty() {
       startDate: string;
       endDate: string;
       stackable: boolean;
-    }) => store.addPromotion(promotion),
-    togglePromotion: store.togglePromotion,
+    }) => store.addDiscountRecord(discount),
+    toggleDiscountRecord: store.toggleDiscountRecord,
     computeTier: (points: number) =>
       [...store.tiers]
         .sort((a, b) => b.minPoints - a.minPoints)

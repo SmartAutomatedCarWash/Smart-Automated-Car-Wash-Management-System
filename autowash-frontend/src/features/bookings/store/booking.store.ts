@@ -3,19 +3,19 @@
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { BookingDraft, CreateBookingResponse, VoucherValidationResult } from "@/entities/bookings";
+import type { BookingDraft, CreateBookingResponse, DiscountValidationResult } from "@/entities/bookings";
 
 type BookingState = {
   draft: BookingDraft;
   expiresAt: number | null;
-  validatedVoucher: VoucherValidationResult | null;
+  validatedDiscount: DiscountValidationResult | null;
   lastCreatedBooking: CreateBookingResponse | null;
 };
 
 type BookingActions = {
   updateDraft: (patch: Partial<BookingDraft>) => void;
   setExpiresAt: (ts: number | null) => void;
-  setValidatedVoucher: (voucher: VoucherValidationResult | null) => void;
+  setValidatedDiscount: (voucher: DiscountValidationResult | null) => void;
   resetDraft: () => void;
   setLastCreatedBooking: (booking: CreateBookingResponse | null) => void;
 };
@@ -30,7 +30,7 @@ export const EMPTY_BOOKING_DRAFT: BookingDraft = {
   addonIds: [],
   bookingDate: "",
   bookingTime: "",
-  voucherCode: "",
+  discountCode: "",
   confirmationEmail: "",
   paymentMethod: null,
 };
@@ -40,7 +40,7 @@ const bookingStore = createStore<BookingStore>()(
     (set) => ({
       draft: EMPTY_BOOKING_DRAFT,
       expiresAt: null,
-      validatedVoucher: null,
+      validatedDiscount: null,
       lastCreatedBooking: null,
       updateDraft: (patch) =>
         set((state) => ({
@@ -53,15 +53,15 @@ const bookingStore = createStore<BookingStore>()(
         set(() => ({
           expiresAt: ts,
         })),
-      setValidatedVoucher: (voucher) =>
+      setValidatedDiscount: (voucher) =>
         set(() => ({
-          validatedVoucher: voucher,
+          validatedDiscount: voucher,
         })),
       resetDraft: () =>
         set(() => ({
           draft: EMPTY_BOOKING_DRAFT,
           expiresAt: null,
-          validatedVoucher: null,
+          validatedDiscount: null,
         })),
       setLastCreatedBooking: (booking) =>
         set(() => ({
@@ -74,7 +74,7 @@ const bookingStore = createStore<BookingStore>()(
       partialize: (state) => ({
         draft: state.draft,
         expiresAt: state.expiresAt,
-        validatedVoucher: state.validatedVoucher,
+        validatedDiscount: state.validatedDiscount,
         lastCreatedBooking: state.lastCreatedBooking,
       }),
     },
@@ -97,8 +97,8 @@ export function setBookingExpiresAt(ts: number | null) {
   bookingStore.getState().setExpiresAt(ts);
 }
 
-export function setBookingValidatedVoucher(voucher: VoucherValidationResult | null) {
-  bookingStore.getState().setValidatedVoucher(voucher);
+export function setBookingValidatedVoucher(voucher: DiscountValidationResult | null) {
+  bookingStore.getState().setValidatedDiscount(voucher);
 }
 
 export function setLastCreatedBooking(booking: CreateBookingResponse | null) {

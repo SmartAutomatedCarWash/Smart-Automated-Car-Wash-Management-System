@@ -40,7 +40,8 @@ import {
   useVerifyCustomerOtp,
   useVerifyForgotPasswordOtp,
 } from "@/features/auth/hooks/use-auth";
-import { getDisplayErrorMessage, getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { getAuthRedirectPath } from "@/features/auth/lib/auth-session";
 import { getLoginIdentifierValidationMessage, normalizeLoginIdentifier } from "@/features/auth/lib/login-identifier";
 import { getPasswordVisibilityState } from "@/features/auth/lib/password-visibility";
@@ -259,6 +260,7 @@ export function ModernAuthPopupModal({
   language,
   setLanguage,
 }: ModernAuthPopupModalProps) {
+  const getErrorMessage = useErrorMessage();
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
@@ -296,7 +298,7 @@ export function ModernAuthPopupModal({
   const loginIdError = getLoginIdentifierValidationMessage(loginEmailNormalized);
   const loginPassError = loginPass.length > 0 && loginPass.length < 8 ? copy.loginPasswordError : null;
   const canLoginSubmit = loginIdError === null && loginPass.length >= 8 && !loginMutation.isPending;
-  const loginErrorMessage = loginMutation.error ? getDisplayErrorMessage(loginMutation.error) : null;
+  const loginErrorMessage = loginMutation.error ? getErrorMessage(loginMutation.error) : null;
 
   const registerMutation = useCustomerRegister();
   const [regName, setRegName] = useState("");
@@ -320,7 +322,7 @@ export function ModernAuthPopupModal({
       !registerMutation.isPending,
     [regConfirmPass, regEmail, regName, regPass, registerMutation.isPending],
   );
-  const registerErrorMessage = registerMutation.error ? getDisplayErrorMessage(registerMutation.error) : null;
+  const registerErrorMessage = registerMutation.error ? getErrorMessage(registerMutation.error) : null;
 
   const sendOtpMutation = useSendCustomerOtp();
   const verifyOtpMutation = useVerifyCustomerOtp();
@@ -332,7 +334,7 @@ export function ModernAuthPopupModal({
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const otpValue = digits.join("");
   const readyVerify = otpPattern.test(otpValue) && emailPattern.test(otpEmail) && secondsLeft > 0;
-  const otpVerifyError = verifyOtpMutation.error ? getDisplayErrorMessage(verifyOtpMutation.error) : null;
+  const otpVerifyError = verifyOtpMutation.error ? getErrorMessage(verifyOtpMutation.error) : null;
 
   const forgotRequestMutation = useForgotPasswordRequest();
   const forgotVerifyMutation = useVerifyForgotPasswordOtp();
@@ -349,9 +351,9 @@ export function ModernAuthPopupModal({
   const forgotOtpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const forgotOtpValue = forgotOtpDigits.join("");
   const normalizedForgotEmail = forgotEmail.trim().toLowerCase();
-  const forgotRequestErrorMessage = forgotRequestMutation.error ? getDisplayErrorMessage(forgotRequestMutation.error) : null;
-  const forgotVerifyErrorMessage = forgotVerifyMutation.error ? getDisplayErrorMessage(forgotVerifyMutation.error) : null;
-  const forgotResetErrorMessage = forgotResetMutation.error ? getDisplayErrorMessage(forgotResetMutation.error) : null;
+  const forgotRequestErrorMessage = forgotRequestMutation.error ? getErrorMessage(forgotRequestMutation.error) : null;
+  const forgotVerifyErrorMessage = forgotVerifyMutation.error ? getErrorMessage(forgotVerifyMutation.error) : null;
+  const forgotResetErrorMessage = forgotResetMutation.error ? getErrorMessage(forgotResetMutation.error) : null;
   const forgotFieldErrors = forgotResetMutation.error?.fieldErrors;
   const forgotEmailError =
     forgotEmail.length > 0 && !emailPattern.test(normalizedForgotEmail) ? "Email khong hop le." : null;

@@ -1,7 +1,8 @@
 package com.autowash.repository;
 
-import com.autowash.entity.User;
 import com.autowash.entity.WashSession;
+
+import com.autowash.entity.User;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.entity.Vehicle;
 import java.time.Instant;
@@ -40,7 +41,7 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
     );
 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle"})
-    java.util.List<WashSession> findByBookingCustomerAndStatusOrderByCompletedAtDesc(
+    List<WashSession> findByBookingCustomerAndStatusOrderByCompletedAtDesc(
             User customer,
             WashSessionStatus status
     );
@@ -49,13 +50,13 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
     Optional<WashSession> findFirstByBooking_IdOrderByCompletedAtDesc(UUID bookingId);
 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
-    java.util.List<WashSession> findAllByOrderByCreatedAtDesc();
+    List<WashSession> findAllByOrderByCreatedAtDesc();
 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
-    java.util.List<WashSession> findByAssignedStaffOrderByCreatedAtDesc(User assignedStaff);
+    List<WashSession> findByAssignedStaffOrderByCreatedAtDesc(User assignedStaff);
 
     @EntityGraph(attributePaths = {"booking"})
-    java.util.List<WashSession> findByAssignedStaffAndStatusIn(User assignedStaff, Collection<WashSessionStatus> statuses);
+    List<WashSession> findByAssignedStaffAndStatusIn(User assignedStaff, Collection<WashSessionStatus> statuses);
 
     long countByAssignedStaffAndStatus(User assignedStaff, WashSessionStatus status);
 

@@ -5,6 +5,7 @@ import com.autowash.entity.SystemSettings;
 import com.autowash.repository.SystemSettingsRepository;
 import com.autowash.shared.dto.ApiResponse;
 import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
@@ -32,7 +33,7 @@ public class PublicSettingsController {
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.INTERNAL_SERVER_ERROR,
                         "System settings not found.",
-                        "SYSTEM_ERROR"
+                        ErrorCode.SYSTEM_ERROR
                 ));
         return ApiResponse.ok("Public settings retrieved", new PublicSettingsResponse(
                 settings.getOperatingStartTime(),

@@ -1,11 +1,15 @@
 package com.autowash.controller;
 
+import com.autowash.entity.SystemSettings;
+
+import com.autowash.repository.SystemSettingsRepository;
+
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
 import com.autowash.dto.SystemSettingsRequest;
 import com.autowash.dto.SystemSettingsResponse;
-import com.autowash.entity.SystemSettings;
-import com.autowash.repository.SystemSettingsRepository;
 import com.autowash.shared.dto.ApiResponse;
-import com.autowash.shared.exception.ApiException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -66,7 +70,7 @@ public class AdminSettingsController {
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.INTERNAL_SERVER_ERROR,
                         "System settings not found. Please check database migration.",
-                        "SYSTEM_ERROR"
+                        ErrorCode.SYSTEM_ERROR
                 ));
     }
 

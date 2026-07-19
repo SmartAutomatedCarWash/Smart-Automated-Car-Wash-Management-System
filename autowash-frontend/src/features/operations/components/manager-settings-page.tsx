@@ -23,7 +23,7 @@ import { Card } from "@/shared/ui/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/shared/ui/ui/dialog";
 import { DatePickerButton, getTodayInputValue } from "@/shared/ui/date-picker-button";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { getActiveStaffOptions, getOperationsQueue } from "@/features/operations/lib/operations-service";
 import { useManagerNotificationStore } from "@/features/operations/store/manager-notification.store";
 import type { OperationsQueueSession, StaffOption } from "@/entities/operations";
@@ -62,6 +62,7 @@ const QUICK_TEMPLATES = [
 ];
 
 export function ManagerSettingsPage() {
+  const getErrorMessage = useErrorMessage();
   const [selectedDate, setSelectedDate] = useState(getTodayInputValue());
   const [shiftSettings, setShiftSettings] = useState(DEFAULT_SHIFTS);
   const [messageType, setMessageType] = useState<NotificationType>("reminder");
@@ -256,7 +257,7 @@ export function ManagerSettingsPage() {
       </section>
 
       {hasError ? (
-        <WorkspaceEmptyState title="Không thể tải dữ liệu setting" description={getDisplayErrorMessage(error)} />
+        <WorkspaceEmptyState title="Không thể tải dữ liệu setting" description={getErrorMessage(error)} />
       ) : null}
 
       <section className="grid gap-3 md:grid-cols-4">

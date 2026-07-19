@@ -10,9 +10,10 @@ import { Input } from "@/shared/ui/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/ui/table";
 import { Plus, X, Send, Clock, Users, Tag, Target } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 
 export function AdminNotificationCampaignsPage() {
+  const getErrorMessage = useErrorMessage();
   const { language } = useLanguageStore();
   const t = (vi: string, en: string) => translate(language, vi, en);
 
@@ -55,7 +56,7 @@ export function AdminNotificationCampaignsPage() {
           setScheduledAt("");
         },
         onError: (err) => {
-          setError(getDisplayErrorMessage(err));
+          setError(getErrorMessage(err));
         },
       }
     );

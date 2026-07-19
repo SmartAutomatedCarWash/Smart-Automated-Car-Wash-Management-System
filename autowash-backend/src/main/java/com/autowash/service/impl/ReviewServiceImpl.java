@@ -1,5 +1,12 @@
 package com.autowash.service.impl;
 
+import com.autowash.service.LoyaltyService;
+
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+import org.springframework.stereotype.Service;
+
 import com.autowash.dto.ReviewRequest;
 import com.autowash.dto.ReviewResponse;
 import com.autowash.entity.Booking;
@@ -9,9 +16,7 @@ import com.autowash.entity.enums.BookingStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.ReviewRepository;
 import com.autowash.service.CurrentUserService;
-import com.autowash.service.LoyaltyService;
 import com.autowash.service.ReviewService;
-import com.autowash.shared.exception.ApiException;
 import com.autowash.dto.BookingReviewCheckResponse;
 import com.autowash.dto.ReviewStatsResponse;
 import org.springframework.data.domain.Page;
@@ -24,7 +29,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 
-@org.springframework.stereotype.Service
+@Service
 public class ReviewServiceImpl implements ReviewService {
 
     private final ReviewRepository reviewRepository;
@@ -135,16 +140,16 @@ public class ReviewServiceImpl implements ReviewService {
         try {
             return UUID.fromString(id);
         } catch (RuntimeException exception) {
-            throw new ApiException(HttpStatus.NOT_FOUND, message, "RESOURCE_NOT_FOUND");
+            throw new ApiException(HttpStatus.NOT_FOUND, message, ErrorCode.RESOURCE_NOT_FOUND);
         }
     }
 
     private ApiException notFound(String message) {
-        return new ApiException(HttpStatus.NOT_FOUND, message, "RESOURCE_NOT_FOUND");
+        return new ApiException(HttpStatus.NOT_FOUND, message, ErrorCode.RESOURCE_NOT_FOUND);
     }
 
     private ApiException validationError(String message) {
-        return new ApiException(HttpStatus.BAD_REQUEST, message, "VALIDATION_ERROR");
+        return new ApiException(HttpStatus.BAD_REQUEST, message, ErrorCode.VALIDATION_ERROR);
     }
 
     private ReviewResponse toResponse(Review review) {

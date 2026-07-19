@@ -45,7 +45,7 @@ export type AdminBookingsPage = {
 export type AdminBookingListPage = AdminBookingsPage;
 
 export type ReportRangeKey = "LAST_7_DAYS" | "LAST_30_DAYS" | "THIS_MONTH" | "THIS_QUARTER";
-export type ReportAnalysisGroup = "revenue" | "service" | "promotion" | "channel";
+export type ReportAnalysisGroup = "revenue" | "service" | "discount" | "channel";
 
 export type AdminReportPeriod = {
   key: string;
@@ -98,7 +98,7 @@ export type AdminBusinessHealthReport = {
   breakdowns: {
     revenue: AdminReportBreakdown;
     service: AdminReportBreakdown;
-    promotion: AdminReportBreakdown;
+    discount: AdminReportBreakdown;
     channel: AdminReportBreakdown;
   };
   insights: Array<{
@@ -111,7 +111,7 @@ export type AdminBusinessHealthReport = {
   };
   capabilities: {
     channelAvailable: boolean;
-    promotionAttributionExact: boolean;
+    discountAttributionExact: boolean;
   };
 };
 

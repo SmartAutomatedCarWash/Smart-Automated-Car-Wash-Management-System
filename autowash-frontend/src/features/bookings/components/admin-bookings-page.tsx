@@ -19,7 +19,7 @@ import {
 } from "@/shared/ui/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/ui/table";
 import { Badge } from "@/shared/ui/ui/badge";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { useAdminBookings } from "@/features/bookings/hooks/use-admin-bookings";
 
 import { useLanguageStore, translate } from "@/shared/store/language.store";
@@ -50,6 +50,7 @@ function translateStatus(status: string, lang: "vi" | "en") {
 }
 
 export function AdminBookingsPageContent() {
+  const getErrorMessage = useErrorMessage();
   const { language } = useLanguageStore();
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
@@ -200,7 +201,7 @@ export function AdminBookingsPageContent() {
           </Card>
         ) : bookingsQuery.isError ? (
           <Card className="border-rose-200 bg-rose-50 p-10 text-center text-sm text-rose-700">
-            {getDisplayErrorMessage(bookingsQuery.error)}
+            {getErrorMessage(bookingsQuery.error)}
           </Card>
         ) : !bookingsQuery.data || bookingsQuery.data.items.length === 0 ? (
           <Card className="border-border/50 bg-card/60 p-10 text-center text-sm text-muted-foreground backdrop-blur-xl">

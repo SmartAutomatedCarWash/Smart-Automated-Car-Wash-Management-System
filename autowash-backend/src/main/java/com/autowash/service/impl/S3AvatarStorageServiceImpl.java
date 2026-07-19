@@ -1,7 +1,9 @@
 package com.autowash.service.impl;
 
-import com.autowash.service.AvatarStorageService;
 import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+import com.autowash.service.AvatarStorageService;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
@@ -182,12 +184,12 @@ public class S3AvatarStorageServiceImpl implements AvatarStorageService, Initial
             );
             validateExistingObject(object);
         } catch (NoSuchKeyException exception) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Uploaded avatar was not found", "RESOURCE_NOT_FOUND");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Uploaded avatar was not found", ErrorCode.RESOURCE_NOT_FOUND);
         } catch (S3Exception exception) {
             if (exception.statusCode() == 404) {
-                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Uploaded avatar was not found", "RESOURCE_NOT_FOUND");
+                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Uploaded avatar was not found", ErrorCode.RESOURCE_NOT_FOUND);
             }
-            throw new ApiException(HttpStatus.BAD_GATEWAY, "Unable to verify uploaded avatar", "STORAGE_UNAVAILABLE");
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "Unable to verify uploaded avatar", ErrorCode.STORAGE_UNAVAILABLE);
         }
         return buildPublicUrl(objectKey);
     }
@@ -195,11 +197,11 @@ public class S3AvatarStorageServiceImpl implements AvatarStorageService, Initial
     private void validateExistingObject(HeadObjectResponse object) {
         String contentType = object.contentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Uploaded avatar must be a JPG, PNG, or WEBP image", "VALIDATION_ERROR");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Uploaded avatar must be a JPG, PNG, or WEBP image", ErrorCode.VALIDATION_ERROR);
         }
         Long contentLength = object.contentLength();
         if (contentLength != null && contentLength > maxAvatarSizeBytes) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Uploaded avatar exceeds the size limit", "VALIDATION_ERROR");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Uploaded avatar exceeds the size limit", ErrorCode.VALIDATION_ERROR);
         }
     }
 
@@ -208,7 +210,7 @@ public class S3AvatarStorageServiceImpl implements AvatarStorageService, Initial
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
                     "Avatar content type must be image/jpeg, image/png, or image/webp",
-                    "VALIDATION_ERROR"
+                    ErrorCode.VALIDATION_ERROR
             );
         }
     }
@@ -235,7 +237,7 @@ public class S3AvatarStorageServiceImpl implements AvatarStorageService, Initial
     private void requireOwnedObjectKey(UUID userId, String objectKey) {
         String expectedPrefix = "avatars/%s/".formatted(userId);
         if (objectKey == null || objectKey.isBlank() || !objectKey.startsWith(expectedPrefix)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Avatar object key is invalid", "VALIDATION_ERROR");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Avatar object key is invalid", ErrorCode.VALIDATION_ERROR);
         }
     }
 

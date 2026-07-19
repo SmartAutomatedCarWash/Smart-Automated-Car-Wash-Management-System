@@ -1,5 +1,9 @@
 package com.autowash.controller;
 
+import com.autowash.dto.StaffKpiItem;
+
+import org.springframework.web.bind.annotation.RequestParam;
+
 import com.autowash.dto.AdminAccountResponse;
 import com.autowash.dto.AdminStaffWorkloadResponse;
 import com.autowash.dto.CreateAdminStaffRequest;
@@ -82,8 +86,8 @@ public class AdminStaffController {
 
     @GetMapping("/kpi")
     @Operation(summary = "List all staff KPI for admin dashboard")
-    public ApiResponse<List<com.autowash.dto.StaffKpiItem>> listStaffKpi(
-            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "TODAY") String range
+    public ApiResponse<List<StaffKpiItem>> listStaffKpi(
+            @RequestParam(defaultValue = "TODAY") String range
     ) {
         return ApiResponse.ok("Staff KPI retrieved", adminReportingService.listStaffKpi(range));
     }

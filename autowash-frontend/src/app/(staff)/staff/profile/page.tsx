@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/ui/ui/card";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { buildUpdateUserProfileRequest } from "@/features/profile/lib/profile-update-payload";
 import { emailPattern, phonePattern } from "@/shared/lib/validators";
 import { useStaffProfile, useUpdateStaffProfile } from "@/features/profile/hooks/use-staff-profile";
@@ -29,6 +29,7 @@ const EMPTY_FORM: ProfileFormState = {
 };
 
 export default function StaffProfilePage() {
+  const getErrorMessage = useErrorMessage();
   const profileQuery = useStaffProfile();
   const updateProfileMutation = useUpdateStaffProfile();
   const [form, setForm] = useState<ProfileFormState>(EMPTY_FORM);
@@ -95,7 +96,7 @@ export default function StaffProfilePage() {
   if (profileQuery.isError) {
     return (
       <ProfileErrorState
-        description={getDisplayErrorMessage(profileQuery.error)}
+        description={getErrorMessage(profileQuery.error)}
         onRetry={() => profileQuery.refetch()}
       />
     );
@@ -109,7 +110,7 @@ export default function StaffProfilePage() {
   const submitMessage = updateProfileMutation.isError
     ? updateProfileMutation.error.errors
         ?.map((item) => item.message)
-        .join(" ") || getDisplayErrorMessage(updateProfileMutation.error)
+        .join(" ") || getErrorMessage(updateProfileMutation.error)
     : null;
 
   return (

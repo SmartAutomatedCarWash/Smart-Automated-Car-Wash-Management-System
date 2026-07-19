@@ -13,7 +13,7 @@ import type {
   BookingCombo,
   BookingDraft,
   BookingPackage,
-  VoucherValidationResult,
+  DiscountValidationResult,
 } from "@/entities/bookings";
 
 const PACKAGES: BookingPackage[] = [
@@ -61,8 +61,8 @@ const COMBOS: BookingCombo[] = [
   },
 ];
 
-const VOUCHER: VoucherValidationResult = {
-  voucherCode: "WELCOME20",
+const VOUCHER: DiscountValidationResult = {
+  discountCode: "WELCOME20",
   isValid: true,
   discountType: "PERCENTAGE",
   discountValue: 20,
@@ -93,7 +93,7 @@ test("builds a package booking payload with trimmed note and voucher code", () =
     addonIds: ["addon_001"],
     bookingDate: "2026-06-10",
     bookingTime: "14:00",
-    voucherCode: " welcome20 ",
+    discountCode: " welcome20 ",
     paymentMethod: "E_WALLET",
   };
 
@@ -103,7 +103,7 @@ test("builds a package booking payload with trimmed note and voucher code", () =
     options: ["addon_001"],
     bookingDate: "2026-06-10",
     bookingTime: "14:00",
-    voucherCode: "WELCOME20",
+    discountCode: "WELCOME20",
     paymentMethod: "E_WALLET",
   });
 });
@@ -117,7 +117,7 @@ test("builds a combo booking payload without package id", () => {
     addonIds: [],
     bookingDate: "2026-06-10",
     bookingTime: "10:00",
-    voucherCode: "",
+    discountCode: "",
     paymentMethod: "CASH_AT_COUNTER",
   };
 
@@ -141,7 +141,7 @@ test("builds a checkout summary with package, add-on, and voucher totals", () =>
       addonIds: ["addon_001"],
       bookingDate: "2026-06-10",
       bookingTime: "14:00",
-      voucherCode: "WELCOME20",
+      discountCode: "WELCOME20",
       paymentMethod: "E_WALLET",
     },
     {
@@ -172,7 +172,7 @@ test("validates the required customer booking selections", () => {
         addonIds: [],
         bookingDate: "",
         bookingTime: "",
-        voucherCode: "",
+        discountCode: "",
         paymentMethod: null,
       },
       null,
@@ -198,11 +198,11 @@ test("rejects voucher codes that are not uppercase or contain spaces", () => {
         addonIds: [],
         bookingDate: "2026-06-10",
         bookingTime: "14:00",
-        voucherCode: "welcome 20",
+        discountCode: "welcome 20",
         paymentMethod: "E_WALLET",
       },
       null,
-    ).voucherCode,
+    ).discountCode,
     "Mã giảm giá phải viết hoa và không chứa khoảng trắng.",
   );
 });

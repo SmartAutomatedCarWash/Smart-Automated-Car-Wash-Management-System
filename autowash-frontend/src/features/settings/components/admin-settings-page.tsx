@@ -10,7 +10,7 @@ import { useSystemSettings, useUpdateSystemSettings } from "@/features/settings/
 import { useDeleteTierConfig, useTierConfigs, useUpdateTierConfig } from "@/features/settings/hooks/use-admin-tiers";
 import type { SystemSettings } from "@/features/settings/lib/admin-settings-service";
 import { uploadTierImage, type TierConfig } from "@/features/settings/lib/admin-tiers-service";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { useLanguageStore } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
 
@@ -136,6 +136,7 @@ function toForm(data: SystemSettings): SettingsForm {
 
 export function AdminSettingsPage() {
   const { language } = useLanguageStore();
+  const getErrorMessage = useErrorMessage();
   const copy = ADMIN_SETTINGS_COPY[language as keyof typeof ADMIN_SETTINGS_COPY] || ADMIN_SETTINGS_COPY.vi;
   const settingsQuery = useSystemSettings();
   const updateMutation = useUpdateSystemSettings();
@@ -157,7 +158,7 @@ export function AdminSettingsPage() {
       await updateMutation.mutateAsync(form);
       toast.success(copy.successMsg);
     } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
+      toast.error(getErrorMessage(error));
     }
   }
 
@@ -186,7 +187,7 @@ export function AdminSettingsPage() {
             </div>
           ) : settingsQuery.isError ? (
             <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {getDisplayErrorMessage(settingsQuery.error)}
+              {getErrorMessage(settingsQuery.error)}
             </div>
           ) : form ? (
             <div className="space-y-4">
@@ -235,7 +236,7 @@ export function AdminSettingsPage() {
               {/* Save button */}
               {updateMutation.isError ? (
                 <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  {getDisplayErrorMessage(updateMutation.error)}
+                  {getErrorMessage(updateMutation.error)}
                 </div>
               ) : null}
               <div className="flex justify-end border-t border-border/60 pt-6">
@@ -413,6 +414,7 @@ function FieldSelect({ label, value, options, onChange, disabled }: { label: str
 }
 
 function LoyaltyTiersSection({ copy }: { copy: any }) {
+  const getErrorMessage = useErrorMessage();
   const tiersQuery = useTierConfigs();
 
   return (
@@ -423,7 +425,7 @@ function LoyaltyTiersSection({ copy }: { copy: any }) {
         </div>
       ) : tiersQuery.isError ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {getDisplayErrorMessage(tiersQuery.error)}
+          {getErrorMessage(tiersQuery.error)}
         </div>
       ) : (
         <div className="space-y-4">
@@ -439,6 +441,7 @@ function LoyaltyTiersSection({ copy }: { copy: any }) {
 }
 
 function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfig }) {
+  const getErrorMessage = useErrorMessage();
   const updateMutation = useUpdateTierConfig();
   const deleteMutation = useDeleteTierConfig();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -475,7 +478,7 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
       });
       toast.success(copy.successMsg);
     } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
+      toast.error(getErrorMessage(error));
     }
   }
 
@@ -484,7 +487,7 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
       await deleteMutation.mutateAsync(initialConfig.tier);
       toast.success(copy.successMsg);
     } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
+      toast.error(getErrorMessage(error));
     }
   }
 
@@ -581,7 +584,7 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
 
           {updateMutation.isError && (
             <div className="mt-3 text-[10px] text-rose-600 font-medium">
-              {getDisplayErrorMessage(updateMutation.error)}
+              {getErrorMessage(updateMutation.error)}
             </div>
           )}
 

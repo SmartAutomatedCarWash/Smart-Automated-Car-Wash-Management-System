@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/shared/ui/ui/button";
 import { toast } from "sonner";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { uploadReviewImage } from "@/features/bookings/lib/review-service";
 
 interface BookingCompletionPopupProps {
@@ -28,6 +28,7 @@ export function BookingCompletionPopup({
   onClose,
   onSubmitReview,
 }: BookingCompletionPopupProps) {
+  const getErrorMessage = useErrorMessage();
   const { language } = useLanguageStore();
   const [stars, setStars] = useState(5);
   const [hoverStars, setHoverStars] = useState<number | null>(null);
@@ -284,6 +285,7 @@ export function BookingCompletionPopup({
 }
 
 function ReviewImageUploadField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  const getErrorMessage = useErrorMessage();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -296,7 +298,7 @@ function ReviewImageUploadField({ label, value, onChange }: { label: string; val
       onChange(uploaded.url);
       toast.success("Image uploaded.");
     } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
+      toast.error(getErrorMessage(error));
     } finally {
       setUploading(false);
       event.target.value = "";

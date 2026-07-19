@@ -42,7 +42,7 @@ public record AdminBusinessHealthReportResponse(
     public record Breakdowns(
             Breakdown revenue,
             Breakdown service,
-            Breakdown promotion,
+            Breakdown discount,
             Breakdown channel
     ) {}
 
@@ -59,5 +59,5 @@ public record AdminBusinessHealthReportResponse(
     public record TopItems(List<BreakdownItem> services) {}
 
     @Builder
-    public record Capabilities(boolean channelAvailable, boolean promotionAttributionExact) {}
+    public record Capabilities(boolean channelAvailable, boolean discountAttributionExact) {}
 }

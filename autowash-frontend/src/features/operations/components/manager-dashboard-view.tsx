@@ -7,12 +7,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { getEligibleSessionBookings, getOperationsQueue, getActiveStaffOptions } from "@/features/operations/lib/operations-service";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { OperationsQueueSession } from "@/entities/operations";
 
 export function ManagerDashboardView() {
+  const getErrorMessage = useErrorMessage();
   const queueQuery = useQuery({
     queryKey: ["manager-operations", "queue"],
     queryFn: getOperationsQueue,
@@ -61,7 +62,7 @@ export function ManagerDashboardView() {
           </div>
           <div className="divide-y divide-slate-100">
             {eligibleQuery.isError || queueQuery.isError ? (
-              <div className="p-5"><WorkspaceEmptyState title="Không thể tải queue" description={getDisplayErrorMessage((eligibleQuery.error ?? queueQuery.error) as unknown as ApiErrorResponse)} /></div>
+              <div className="p-5"><WorkspaceEmptyState title="Không thể tải queue" description={getErrorMessage((eligibleQuery.error ?? queueQuery.error) as unknown as ApiErrorResponse)} /></div>
             ) : eligibleQuery.isPending || queueQuery.isPending ? (
               <div className="m-5 h-36 animate-pulse rounded-2xl bg-slate-100" />
             ) : delayedSessions.length === 0 && (eligibleQuery.data?.length ?? 0) === 0 ? (

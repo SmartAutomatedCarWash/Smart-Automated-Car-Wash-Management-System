@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 export type Language = "vi" | "en";
 const LANGUAGE_STORAGE_KEY = "aura-lang-v2";
+const LANGUAGE_COOKIE_KEY = "locale";
 export const DEFAULT_LANGUAGE: Language = "en";
 
 interface LanguageState {
@@ -20,12 +21,19 @@ function syncDocumentLanguage(lang: Language) {
   }
 }
 
+function syncLanguageCookie(lang: Language) {
+  if (typeof document !== "undefined") {
+    document.cookie = `${LANGUAGE_COOKIE_KEY}=${lang}; path=/; max-age=31536000; samesite=lax`;
+  }
+}
+
 export const useLanguageStore = create<LanguageState>((set) => ({
   language: DEFAULT_LANGUAGE,
   setLanguage: (lang: Language) => {
     if (typeof window !== "undefined") {
       localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
     }
+    syncLanguageCookie(lang);
     syncDocumentLanguage(lang);
     set({ language: lang });
   },
@@ -37,6 +45,7 @@ export const useLanguageStore = create<LanguageState>((set) => ({
     if (!isLanguage(stored)) {
       localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
     }
+    syncLanguageCookie(nextLanguage);
     syncDocumentLanguage(nextLanguage);
     set({ language: nextLanguage });
   },

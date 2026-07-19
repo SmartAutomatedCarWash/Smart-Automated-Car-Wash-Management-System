@@ -9,7 +9,7 @@ import { Card } from "@/shared/ui/ui/card";
 import { Input } from "@/shared/ui/ui/input";
 import { DatePickerButton } from "@/shared/ui/date-picker-button";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { getOperationsQueue } from "@/features/operations/lib/operations-service";
 import { cn } from "@/shared/lib/utils";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
@@ -21,6 +21,7 @@ const ALL_STAFF_VALUE = "__all_staff__";
 type PeriodFilterMode = "all" | "day" | "month" | "year";
 
 export function StaffSessionHistoryView() {
+  const getErrorMessage = useErrorMessage();
   const [search, setSearch] = useState("");
   const [packageFilter, setPackageFilter] = useState(ALL_PACKAGE_VALUE);
   const [staffFilter, setStaffFilter] = useState(ALL_STAFF_VALUE);
@@ -51,9 +52,9 @@ export function StaffSessionHistoryView() {
     const needle = search.trim().toLowerCase();
 
     return completedSessions.filter((session) => {
-      const packageName = session.servicePackage ?? session.packageId ?? "";
+      const primaryItemName = session.servicePackage ?? session.packageId ?? "";
       const staffName = session.assignedStaffName ?? "Chưa phân công";
-      const matchesPackage = packageFilter === ALL_PACKAGE_VALUE || packageName === packageFilter;
+      const matchesPackage = packageFilter === ALL_PACKAGE_VALUE || primaryItemName === packageFilter;
       const matchesStaff = staffFilter === ALL_STAFF_VALUE || staffName === staffFilter;
       const matchesPeriod = matchesPeriodFilter(session, periodMode, {
         day: dayFilter,
@@ -67,7 +68,7 @@ export function StaffSessionHistoryView() {
         session.customerName.toLowerCase().includes(needle) ||
         session.vehiclePlate.toLowerCase().includes(needle) ||
         session.customerPhone.toLowerCase().includes(needle) ||
-        packageName.toLowerCase().includes(needle);
+        primaryItemName.toLowerCase().includes(needle);
 
       return matchesPackage && matchesStaff && matchesPeriod && matchesHour && matchesSearch;
     });
@@ -203,7 +204,7 @@ export function StaffSessionHistoryView() {
           {queueQuery.isError ? (
             <WorkspaceEmptyState
               title="Không thể tải lịch sử phiên rửa"
-              description={getDisplayErrorMessage(queueQuery.error as unknown as ApiErrorResponse)}
+              description={getErrorMessage(queueQuery.error as unknown as ApiErrorResponse)}
             />
           ) : queueQuery.isPending ? (
             <div className="h-72 animate-pulse rounded-3xl bg-muted" />
@@ -266,7 +267,7 @@ function SummaryCard({ label, value, detail }: { label: string; value: number | 
 
 function HistorySessionRow({ session }: { session: OperationsQueueSession }) {
   const duration = getDurationLabel(session);
-  const packageName = session.servicePackage ?? session.packageId ?? "Gói rửa";
+  const primaryItemName = session.servicePackage ?? session.packageId ?? "Gói rửa";
 
   return (
     <div className="grid gap-3 rounded-3xl border border-cyan-100/80 bg-gradient-to-r from-white via-white to-cyan-50/55 px-4 py-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg xl:grid-cols-[minmax(0,1.3fr)_1fr_1.25fr] xl:items-center">
@@ -283,7 +284,7 @@ function HistorySessionRow({ session }: { session: OperationsQueueSession }) {
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-xs">
-        <Info label="Gói rửa" value={packageName} />
+        <Info label="Gói rửa" value={primaryItemName} />
         <Info label="Nhân viên" value={session.assignedStaffName ?? "Chưa phân công"} />
       </div>
 

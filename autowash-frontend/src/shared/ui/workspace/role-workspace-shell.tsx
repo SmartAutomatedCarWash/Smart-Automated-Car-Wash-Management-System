@@ -82,7 +82,7 @@ const PAGE_TITLE_VI: Record<string, string> = {
   "Wash Tracking": "Theo dõi rửa xe",
   "Wash History": "Lịch sử rửa xe",
   "Loyalty & Rewards": "Tích điểm & Phần thưởng",
-  "Promotions": "Khuyến mãi",
+  "Discounts": "Khuyến mãi",
   "Customer Workspace": "Không gian khách hàng",
   "Admin Control Panel": "Bảng điều khiển Admin",
   "Booking Management": "Quản lý đặt lịch",

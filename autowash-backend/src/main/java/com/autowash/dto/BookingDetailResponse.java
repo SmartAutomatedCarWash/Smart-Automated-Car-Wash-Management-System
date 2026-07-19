@@ -15,9 +15,8 @@ public record BookingDetailResponse(
         String vehiclePlate,
         String vehicleBrand,
         String vehicleModel,
-        String packageId,
-        String packageName,
-        List<BookingOptionResponse> options,
+        String primaryItemName,
+        List<BookingDetailDto> details,
         Pricing pricing,
         Scheduling scheduling,
         Payment payment,
@@ -33,12 +32,9 @@ public record BookingDetailResponse(
         List<BookingStatusHistoryItem> statusHistory
 ) {
     public record Pricing(
-            long basePrice,
-            long optionsTotal,
             long subtotal,
-            String voucherCode,
-            long voucherDiscount,
-            long promotionDiscount,
+            String discountCode,
+            long discountAmount,
             long finalAmount,
             String currency
     ) {}

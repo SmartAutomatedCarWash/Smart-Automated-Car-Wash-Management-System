@@ -92,7 +92,7 @@ public class ResendBookingEmailDeliveryServiceImpl implements BookingEmailDelive
                 .addVariable("bookingId", booking.getId().toString())
                 .addVariable("bookingDate", booking.getBookingDate().toString())
                 .addVariable("bookingTime", booking.getBookingTime().toString())
-                .addVariable("finalAmount", String.format("%,d", booking.getFinalAmount()))
+                .addVariable("finalAmount", String.format("%,d", (booking.getPricing() != null ? booking.getPricing().getFinalAmount() : 0L)))
                 .addVariable("status", booking.getStatus().name())
                 .build();
     }
@@ -103,7 +103,7 @@ public class ResendBookingEmailDeliveryServiceImpl implements BookingEmailDelive
                 .addVariable("bookingId", booking.getId().toString())
                 .addVariable("bookingDate", booking.getBookingDate().toString())
                 .addVariable("bookingTime", booking.getBookingTime().toString())
-                .addVariable("finalAmount", String.format("%,d", booking.getFinalAmount()))
+                .addVariable("finalAmount", String.format("%,d", (booking.getPricing() != null ? booking.getPricing().getFinalAmount() : 0L)))
                 .addVariable("otp", otp)
                 .addVariable("minutes", String.valueOf(minutes))
                 .build();
@@ -117,7 +117,7 @@ public class ResendBookingEmailDeliveryServiceImpl implements BookingEmailDelive
                 .addVariable("bookingId", booking.getId().toString())
                 .addVariable("bookingDate", booking.getBookingDate().toString())
                 .addVariable("bookingTime", booking.getBookingTime().toString())
-                .addVariable("finalAmount", String.format("%,d", booking.getFinalAmount()))
+                .addVariable("finalAmount", String.format("%,d", (booking.getPricing() != null ? booking.getPricing().getFinalAmount() : 0L)))
                 .addVariable("status", booking.getStatus().name())
                 .build();
     }

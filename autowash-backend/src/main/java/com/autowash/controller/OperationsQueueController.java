@@ -18,7 +18,7 @@ import java.util.List;
 @RequestMapping("/api/v1/operations")
 @Tag(name = "Operations")
 @SecurityRequirement(name = "bearerAuth")
-@PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+@PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
 public class OperationsQueueController {
 
     private final OperationsService operationsService;

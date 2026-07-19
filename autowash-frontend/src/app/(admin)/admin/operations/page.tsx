@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
 import {
@@ -41,6 +41,7 @@ const STATUS_CONFIG: Record<WashSessionStatus, { label: string; labelVi: string;
 
 export default function AdminOperationsPage() {
   const { language } = useLanguageStore();
+  const getErrorMessage = useErrorMessage();
   const t = (vi: string, en: string) => translate(language, vi, en);
   const queryClient = useQueryClient();
 
@@ -65,7 +66,7 @@ export default function AdminOperationsPage() {
       ]);
       toast.success(t("Đã tạo phiên rửa xe thành công!", "Wash session created."));
     },
-    onError: (err) => toast.error(getDisplayErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const summary = queueQuery.data?.summary;
@@ -169,7 +170,7 @@ export default function AdminOperationsPage() {
             </div>
           ) : queueQuery.isError ? (
             <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {getDisplayErrorMessage(queueQuery.error)}
+              {getErrorMessage(queueQuery.error)}
             </div>
           ) : columns.length === 0 ? (
             <div className="py-12 text-center text-slate-400 text-sm font-semibold">
@@ -231,7 +232,7 @@ export default function AdminOperationsPage() {
             </div>
           ) : eligibleQuery.isError ? (
             <div className="m-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {getDisplayErrorMessage(eligibleQuery.error)}
+              {getErrorMessage(eligibleQuery.error)}
             </div>
           ) : !eligibleQuery.data || eligibleQuery.data.length === 0 ? (
             <div className="py-12 text-center">

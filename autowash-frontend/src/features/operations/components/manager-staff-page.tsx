@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Progress } from "@/shared/ui/ui/progress";
 import { DatePickerButton, getTodayInputValue } from "@/shared/ui/date-picker-button";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { getActiveStaffOptions, getOperationsQueue } from "@/features/operations/lib/operations-service";
 import { useManagerNotificationStore } from "@/features/operations/store/manager-notification.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
@@ -71,6 +71,7 @@ const DEFAULT_STAFF_DETAILS: Record<string, Omit<StaffRecord, "id" | "name">> = 
 const SHIFT_OPTIONS: StaffShift[] = ["Sáng", "Chiều", "Tối", "Nghỉ"];
 
 export function ManagerStaffPage() {
+  const getErrorMessage = useErrorMessage();
   const staffQuery = useQuery({
     queryKey: ["manager-operations", "staff"],
     queryFn: getActiveStaffOptions,
@@ -387,7 +388,7 @@ export function ManagerStaffPage() {
       </div>
 
       {staffQuery.isError || queueQuery.isError ? (
-        <WorkspaceEmptyState title="Không thể tải dữ liệu staff" description={getDisplayErrorMessage((staffQuery.error ?? queueQuery.error) as unknown as ApiErrorResponse)} />
+        <WorkspaceEmptyState title="Không thể tải dữ liệu staff" description={getErrorMessage((staffQuery.error ?? queueQuery.error) as unknown as ApiErrorResponse)} />
       ) : (
         <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
           <div className="space-y-4">

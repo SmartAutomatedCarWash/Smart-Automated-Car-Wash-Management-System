@@ -78,21 +78,20 @@ export type CustomerCombo = {
   lastUsedAt: string | null;
 };
 
-export type VoucherValidationRequest = {
-  voucherCode: string;
+export type DiscountValidationRequest = {
+  discountCode: string;
   packageId?: string;
   amount: number;
 };
 
-export type VoucherValidationResult = {
-  voucherCode: string;
+export type DiscountValidationResult = {
+  discountCode: string;
   isValid: boolean;
   discountType: string;
   discountValue: number;
   discountAmount: number;
   finalAmount: number;
   expiresAt: string;
-  isPromotion?: boolean;
 };
 
 export type CreateBookingRequest = {
@@ -102,7 +101,7 @@ export type CreateBookingRequest = {
   options: string[];
   bookingDate: string;
   bookingTime: string;
-  voucherCode?: string;
+  discountCode?: string;
   confirmationEmail?: string;
   paymentMethod: PaymentMethod;
 };
@@ -128,16 +127,14 @@ export type CreateBookingResponse = {
   customerId: string;
   vehicleId: string;
   vehiclePlate: string;
-  packageId: string | null;
-  packageName: string;
-  addons?: BookingAddonSelection[];
-  options?: BookingAddonSelection[];
-  basePrice: number;
-  addonsTotal?: number;
-  optionsTotal?: number;
-  voucherDiscount: number;
-  promotionDiscount: number;
-  finalAmount: number;
+  primaryItemName: string;
+  pricing: {
+    subtotal: number;
+    discountCode: string | null;
+    discountAmount: number;
+    finalAmount: number;
+    currency: string;
+  };
   bookingDate: string;
   bookingTime: string;
   estimatedDuration: number;
@@ -148,15 +145,13 @@ export type CreateBookingResponse = {
   createdAt: string;
   confirmationNumber: string;
   confirmationEmail: string | null;
-  comboId: string | null;
-  customerComboId: string | null;
   comboPurchased: boolean;
 };
 
 export type BookingListItem = {
   bookingId: string;
   vehiclePlate: string;
-  packageName: string | null;
+  primaryItemName: string | null;
   bookingDate: string;
   bookingTime: string;
   finalAmount: number;
@@ -164,6 +159,25 @@ export type BookingListItem = {
   washStatus: string | null;
   createdAt: string;
   completedAt: string | null;
+};
+
+export type BookingDetailDto = {
+  id: string;
+  itemType: string;
+  refId: string;
+  snapshotName: string;
+  snapshotPrice: number;
+  quantity: number;
+  subtotal: number;
+  durationMinutes: number;
+};
+
+export type BookingStatusHistoryItem = {
+  oldStatus: string | null;
+  newStatus: string;
+  changedByName: string | null;
+  reason: string | null;
+  changedAt: string;
 };
 
 export type BookingDetail = {
@@ -177,20 +191,12 @@ export type BookingDetail = {
   vehiclePlate: string;
   vehicleBrand: string;
   vehicleModel: string;
-  packageId: string | null;
-  packageName: string | null;
-  addons?: BookingAddonSelection[];
-  options?: BookingAddonSelection[];
+  primaryItemName: string | null;
+  details: BookingDetailDto[];
   pricing: {
-    basePrice: number;
-    addonsTotal?: number;
-    optionsTotal?: number;
     subtotal: number;
-    voucherCode: string | null;
-    voucherDiscount: number;
-    promotionDiscount: number;
-    pointsRedeemed: number;
-    pointsDiscount: number;
+    discountCode: string | null;
+    discountAmount: number;
     finalAmount: number;
     currency: string;
   };
@@ -214,6 +220,8 @@ export type BookingDetail = {
   washStatus: string | null;
   notes: string | null;
   createdAt: string;
+  devOtp?: string;
+  statusHistory?: BookingStatusHistoryItem[];
 };
 
 export type BookingListPage = {
@@ -304,7 +312,7 @@ export type BookingDraft = {
   addonIds: string[];
   bookingDate: string;
   bookingTime: string;
-  voucherCode: string;
+  discountCode: string;
   confirmationEmail?: string;
   paymentMethod: PaymentMethod | null;
 };
@@ -319,11 +327,10 @@ export type BookingSummary = {
   addonsTotal: number;
   subtotal: number;
   discountAmount: number;
-  promotionDiscountAmount: number;
   finalAmount: number;
   estimatedDurationLabel: string;
   selectedAddons: BookingAddon[];
-  selectedVoucherCode: string | null;
+  selectedDiscountCode: string | null;
   paymentMethod: PaymentMethod | null;
 };
 

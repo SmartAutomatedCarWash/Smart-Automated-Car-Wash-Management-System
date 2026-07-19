@@ -2001,3 +2001,82 @@ admin_accounts_view (accountId, role, displayName, phone, email, status, tier, d
 Generated for AutoWash Pro Backend Development  
 Stack: Spring Boot + PostgreSQL (Modular Monolith)  
 Analysis: May 2026
+
+---
+
+## APPENDIX C: Backend Error Contract for Frontend i18n
+
+Frontend error display is translated by `next-intl`; backend must return stable machine-readable `errorCode` values and must not rely on localized backend messages for UI copy.
+
+Required error response shape:
+
+```json
+{
+  "success": false,
+  "statusCode": 401,
+  "message": "Incorrect password",
+  "errorCode": "INCORRECT_PASSWORD",
+  "timestamp": "2026-07-19T03:35:55.305Z"
+}
+```
+
+Optional field errors should use the existing `errors` array:
+
+```json
+{
+  "success": false,
+  "statusCode": 400,
+  "message": "Validation failed",
+  "errorCode": "VALIDATION_ERROR",
+  "errors": [
+    { "field": "email", "message": "Email must be valid", "code": "INVALID_EMAIL" }
+  ]
+}
+```
+
+Frontend behavior depends on these rules:
+
+- `errorCode` must be stable and uppercase snake case.
+- Field errors, when present, are displayed before generic translated messages.
+- Backend `message` is a fallback/debug string, not the primary localized UI copy.
+- Keep auth/booking/combo errors mapped to explicit codes instead of generic 500s.
+
+Important error codes currently verified or expected by frontend:
+
+| errorCode | Backend scenario | Frontend expected VI | Frontend expected EN |
+|-----------|------------------|----------------------|----------------------|
+| `INCORRECT_PASSWORD` | Login with existing email and wrong password | `Mật khẩu không đúng.` | `The password is incorrect.` |
+| `BOOKING_SLOT_FULL` | Booking slot has reached capacity | `Khung giờ này đã hết chỗ.` | `This booking slot is full.` |
+| `VALIDATION_ERROR` | Request body/field validation failed | From `messages/vi.json` | From `messages/en.json` |
+| `TOKEN_EXPIRED` | Expired access token | From `messages/vi.json` | From `messages/en.json` |
+| `TOKEN_INVALID` | Invalid access token/session | From `messages/vi.json` | From `messages/en.json` |
+| `INTERNAL_SERVER_ERROR` | Unexpected backend failure | From `messages/vi.json` | From `messages/en.json` |
+
+Manual QA rerun on local ports:
+
+- Backend: `http://localhost:8080`
+- Frontend: `http://localhost:3000`
+
+Verified backend/API facts:
+
+- `POST /api/v1/auth/login` with `customer@autowash.com` and wrong password returns `401` with `errorCode: INCORRECT_PASSWORD`.
+- `POST /api/v1/auth/login` with `customer@autowash.com` and seeded password succeeds.
+- `GET /api/v1/packages` returns package data for booking form.
+- `GET /api/v1/services` returns active services/add-ons.
+- `GET /api/v1/combos/available` returns combo data for checkout.
+- `GET /api/v1/customers/vehicles` returns customer vehicle data when authenticated.
+- `GET /api/v1/settings/public` returns operating hours and slot capacity settings.
+
+Frontend smoke results dependent on backend:
+
+| Item | Result | Backend note |
+|------|--------|--------------|
+| Login error | Pass | `INCORRECT_PASSWORD` returned correctly. |
+| Booking flow | Pass partial | Booking form rendered real backend data; a booking was created successfully. `BOOKING_SLOT_FULL` still needs seeded full-slot data. |
+| Combo checkout | Pass | Combo checkout rendered real backend data and purchase succeeded. |
+| Google OAuth callback | Pass partial | Invalid callback state/code surfaces an error page; successful OAuth still needs staging credentials. |
+
+Pending backend/data support for final QA:
+
+- Seed or prepare a full booking slot to reproduce `BOOKING_SLOT_FULL` deterministically.
+- Provide staging Google OAuth credentials/environment for successful OAuth callback testing.

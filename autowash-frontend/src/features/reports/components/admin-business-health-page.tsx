@@ -3,9 +3,9 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { AlertTriangle, ArrowUpRight, Award, BarChart3, CalendarDays, CircleDollarSign, HelpCircle, ReceiptText, Sparkles, TrendingDown, TrendingUp, Send, Bot, User, Loader2, RefreshCw, Search } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { useAdminBusinessHealthReport } from "@/features/reports/hooks/use-admin-business-health-report";
-import { useAdminVoucherRedemptions } from "@/features/vouchers/hooks/use-admin-vouchers";
+import { useAdminDiscountRedemptions } from "@/features/discounts/hooks/use-admin-discount-redemptions";
 import { useLanguageStore } from "@/shared/store/language.store";
 import { Button } from "@/shared/ui/ui/button";
 import { Input } from "@/shared/ui/ui/input";
@@ -167,13 +167,13 @@ const STATIC_TRANSLATIONS: Record<string, { vi: string; en: string }> = {
     vi: "Ghi nhận theo chiến dịch",
     en: "Campaign-attributed",
   },
-  "Voucher/discount proxy": {
+  "Discount proxy": {
     vi: "Ước tính theo voucher/khuyến mãi",
-    en: "Voucher/discount proxy",
+    en: "Discount proxy",
   },
-  "promotion visibility": {
+  "discount visibility": {
     vi: "hiệu quả khuyến mãi",
-    en: "promotion visibility",
+    en: "discount visibility",
   },
   "selected range": {
     vi: "khoảng thời gian đã chọn",
@@ -203,9 +203,9 @@ const STATIC_TRANSLATIONS: Record<string, { vi: string; en: string }> = {
     vi: "Đã áp dụng giảm giá",
     en: "DISCOUNT_APPLIED",
   },
-  "Promotion contribution is approximated from voucher and discount-assisted bookings.": {
+  "Discount contribution is approximated from discount-assisted bookings.": {
     vi: "Đóng góp khuyến mãi được ước tính từ voucher và lịch đặt giảm giá.",
-    en: "Promotion contribution is approximated from voucher and discount-assisted bookings.",
+    en: "Discount contribution is approximated from discount-assisted bookings.",
   },
   "vs": {
     vi: "so với",
@@ -312,7 +312,7 @@ function translateInsight(title: string, summary: string, lang: "vi" | "en"): { 
   if (title === "Revenue momentum") translatedTitle = "Đà tăng trưởng doanh thu";
   else if (title === "Top service contributor") translatedTitle = "Dịch vụ đóng góp hàng đầu";
   else if (title === "Cancellation pressure") translatedTitle = "Áp lực hủy lịch";
-  else if (title === "Promotion visibility") translatedTitle = "Hiệu quả khuyến mãi";
+  else if (title === "Discount visibility") translatedTitle = "Hiệu quả khuyến mãi";
   else translatedTitle = translateText(title, lang);
 
   const revUpMatch = summary.match(/Revenue is up ([0-9.]+)% compared with the previous period/i);
@@ -379,7 +379,7 @@ function getInsightMeta(title: string, tone: string) {
     };
   }
   
-  if (lowerTitle.includes("promotion") || lowerTitle.includes("discount")) {
+  if (lowerTitle.includes("discount")) {
     return {
       Icon: Sparkles,
       iconBg: "bg-teal-950/60 text-teal-400 border border-teal-800/40 shadow-inner",
@@ -449,6 +449,7 @@ const CHART_CONFIG = {
 } as const;
 
 export function AdminBusinessHealthPage() {
+  const getErrorMessage = useErrorMessage();
   const { language } = useLanguageStore();
   const [range, setRange] = useState<ReportRangeKey>("LAST_30_DAYS");
   const [analysisGroup, setAnalysisGroup] = useState<ReportAnalysisGroup>("revenue");
@@ -462,7 +463,7 @@ export function AdminBusinessHealthPage() {
     return (
       <WorkspaceErrorState
         title={translateText("Unable to load business health report", language)}
-        description={reportQuery.isError ? getDisplayErrorMessage(reportQuery.error) : translateText("No report data available.", language)}
+        description={reportQuery.isError ? getErrorMessage(reportQuery.error) : translateText("No report data available.", language)}
         onRetry={() => reportQuery.refetch()}
       />
     );
@@ -553,8 +554,8 @@ function AdminBusinessHealthReportView({
     {
       title: translateText("Discount-assisted revenue", language),
       value: formatCurrency(report.kpis.discountAssistedRevenue),
-      delta: translateText(report.capabilities.promotionAttributionExact ? "Campaign-attributed" : "Voucher/discount proxy", language),
-      detail: translateText("promotion visibility", language),
+      delta: translateText(report.capabilities.discountAttributionExact ? "Campaign-attributed" : "Discount proxy", language),
+      detail: translateText("discount visibility", language),
       icon: BarChart3,
     },
     {
@@ -888,7 +889,7 @@ function EmptyReportState({ message }: { message: string }) {
 function ReportsVoucherRedemptions({ language }: { language: "vi" | "en" }) {
   const [draftSearch, setDraftSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const redemptionsQuery = useAdminVoucherRedemptions(1, 20, searchQuery);
+  const redemptionsQuery = useAdminDiscountRedemptions(1, 20, searchQuery);
 
   return (
     <section className="space-y-3">
@@ -944,7 +945,7 @@ function ReportsVoucherRedemptions({ language }: { language: "vi" | "en" }) {
                       <div className="text-xs text-slate-500">{item.customerPhone}</div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{item.voucherCode}</Badge>
+                      <Badge variant="outline">{item.discountCode}</Badge>
                     </TableCell>
                     <TableCell className="text-right font-semibold">
                       {item.pointsRedeemed.toLocaleString(language === "vi" ? "vi-VN" : "en-US")}

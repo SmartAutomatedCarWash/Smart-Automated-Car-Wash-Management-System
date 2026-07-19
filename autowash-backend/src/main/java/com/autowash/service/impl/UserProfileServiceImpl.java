@@ -1,5 +1,10 @@
 package com.autowash.service.impl;
 
+import com.autowash.service.LoyaltyService;
+
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
 import com.autowash.dto.CreateAvatarUploadUrlRequest;
 import com.autowash.dto.CreateAvatarUploadUrlResponse;
 import com.autowash.entity.User;
@@ -10,9 +15,7 @@ import com.autowash.repository.UserPreferenceRepository;
 import com.autowash.service.AvatarStorageService;
 import com.autowash.service.CurrentUserService;
 import com.autowash.service.CustomerLoyaltyService;
-import com.autowash.service.LoyaltyService;
 import com.autowash.service.UserProfileService;
-import com.autowash.shared.exception.ApiException;
 import com.autowash.dto.UpdateUserProfileRequest;
 import com.autowash.dto.UpdateUserAvatarRequest;
 import com.autowash.dto.UpdateUserAvatarResponse;
@@ -21,6 +24,7 @@ import com.autowash.dto.UpdateUserPreferencesRequest;
 import com.autowash.dto.UpdateUserPreferencesResponse;
 import com.autowash.dto.UserPreferencesDto;
 import com.autowash.dto.UserProfileResponse;
+import com.autowash.mapper.UserProfileMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +39,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final CustomerLoyaltyService customerLoyaltyService;
     private final LoyaltyService loyaltyService;
     private final AvatarStorageService avatarStorageService;
+    private final UserProfileMapper userProfileMapper;
 
     public UserProfileServiceImpl(
             CurrentUserService currentUserService,
@@ -43,7 +48,8 @@ public class UserProfileServiceImpl implements UserProfileService {
             UserPreferenceRepository userPreferenceRepository,
             CustomerLoyaltyService customerLoyaltyService,
             LoyaltyService loyaltyService,
-            AvatarStorageService avatarStorageService
+            AvatarStorageService avatarStorageService,
+            UserProfileMapper userProfileMapper
     ) {
         this.currentUserService = currentUserService;
         this.UserRepository = UserRepository;
@@ -52,6 +58,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         this.customerLoyaltyService = customerLoyaltyService;
         this.loyaltyService = loyaltyService;
         this.avatarStorageService = avatarStorageService;
+        this.userProfileMapper = userProfileMapper;
     }
 
     @Override
@@ -75,13 +82,7 @@ public class UserProfileServiceImpl implements UserProfileService {
                 user.isBirthdayLocked(),
                 customerLoyaltyService.getCurrentBalance(user),
                 user.getCreatedAt(),
-                new UserPreferencesDto(
-                        preference.getLanguage().name(),
-                        preference.getTheme().name(),
-                        preference.isNotificationsEnabled(),
-                        preference.isEmailNotifications(),
-                        preference.isSmsNotifications()
-                )
+                userProfileMapper.toPreferencesDto(preference)
         );
     }
 
@@ -104,11 +105,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         User user = currentUserService.getCurrentUser();
         String avatarUrl = avatarStorageService.resolveAvatarUrl(user.getId(), request.objectKey());
         user.setAvatarUrl(avatarUrl);
-        return new UpdateUserAvatarResponse(
-                user.getId().toString(),
-                user.getAvatarUrl(),
-                user.getUpdatedAt()
-        );
+        return userProfileMapper.toAvatarResponse(user);
     }
 
     @Override
@@ -119,12 +116,12 @@ public class UserProfileServiceImpl implements UserProfileService {
         String normalizedPhone = request.phone() == null || request.phone().isBlank() ? null : request.phone().trim();
 
         if (normalizedPhone != null && UserRepository.existsByPhoneAndIdNot(normalizedPhone, user.getId())) {
-            throw new ApiException(HttpStatus.CONFLICT, "Phone number already in use", "DUPLICATE_PHONE");
+            throw new ApiException(HttpStatus.CONFLICT, "Phone number already in use", ErrorCode.DUPLICATE_PHONE);
         }
         if (!hasGoogleAuth
                 && request.email() != null
                 && UserRepository.existsByEmailIgnoreCaseAndIdNot(request.email(), user.getId())) {
-            throw new ApiException(HttpStatus.CONFLICT, "Email already in use", "DUPLICATE_EMAIL");
+            throw new ApiException(HttpStatus.CONFLICT, "Email already in use", ErrorCode.DUPLICATE_EMAIL);
         }
 
         user.setFullName(request.fullName());
@@ -137,19 +134,13 @@ public class UserProfileServiceImpl implements UserProfileService {
             if (!user.isBirthdayLocked()) {
                 user.updateDateOfBirth(request.dateOfBirth());
             } else if (!request.dateOfBirth().equals(user.getDateOfBirth())) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Date of birth is locked and cannot be changed", "VALIDATION_ERROR");
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Date of birth is locked and cannot be changed", ErrorCode.VALIDATION_ERROR);
             }
         }
         
         user.markNotNewCustomer();
 
-        return new UpdateUserProfileResponse(
-                user.getId().toString(),
-                user.getFullName(),
-                user.getPhone(),
-                user.getEmail(),
-                user.getUpdatedAt()
-        );
+        return userProfileMapper.toUpdateProfileResponse(user);
     }
 
     @Override
@@ -157,13 +148,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     public UserPreferencesDto getCurrentUserPreferences() {
         User user = currentUserService.getCurrentUser();
         UserPreference preference = loadOrCreatePreference(user);
-        return new UserPreferencesDto(
-                preference.getLanguage().name(),
-                preference.getTheme().name(),
-                preference.isNotificationsEnabled(),
-                preference.isEmailNotifications(),
-                preference.isSmsNotifications()
-        );
+        return userProfileMapper.toPreferencesDto(preference);
     }
 
     @Override
@@ -179,12 +164,7 @@ public class UserProfileServiceImpl implements UserProfileService {
                 request.smsNotifications()
         );
 
-        return new UpdateUserPreferencesResponse(
-                preference.getLanguage().name(),
-                preference.getTheme().name(),
-                preference.isNotificationsEnabled(),
-                user.getUpdatedAt()
-        );
+        return userProfileMapper.toUpdatePreferencesResponse(preference, user);
     }
 
     private UserPreference loadOrCreatePreference(User user) {

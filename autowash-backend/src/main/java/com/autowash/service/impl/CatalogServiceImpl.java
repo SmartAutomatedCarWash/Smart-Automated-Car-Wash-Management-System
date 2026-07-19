@@ -1,15 +1,30 @@
 package com.autowash.service.impl;
 
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+import java.util.List;
+
+import java.util.ArrayList;
+
+import java.util.Arrays;
+
+import java.util.UUID;
+
+import java.util.Map;
+
+
 import com.autowash.dto.ComboServiceItem;
 import com.autowash.dto.ComboResponse;
 import com.autowash.dto.PackageResponse;
 import com.autowash.dto.ServiceResponse;
-import com.autowash.dto.ValidateVoucherResponse;
+
 import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.Combo;
 import com.autowash.entity.ComboService;
 import com.autowash.entity.Package;
 import com.autowash.entity.PackageService;
+import com.autowash.mapper.CatalogMapper;
 import com.autowash.repository.ServiceRepository;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.ComboRepository;
@@ -19,14 +34,9 @@ import com.autowash.repository.PackageServiceRepository;
 import com.autowash.repository.ReviewRepository;
 import com.autowash.service.CatalogService;
 import com.autowash.shared.dto.PaginationMeta;
-import com.autowash.shared.exception.ApiException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
@@ -45,6 +55,7 @@ public class CatalogServiceImpl implements CatalogService {
     private final ComboServiceRepository comboServiceRepository;
     private final ReviewRepository reviewRepository;
     private final BookingRepository bookingRepository;
+    private final CatalogMapper catalogMapper;
 
     public CatalogServiceImpl(
             PackageRepository PackageRepository,
@@ -53,7 +64,8 @@ public class CatalogServiceImpl implements CatalogService {
             PackageServiceRepository packageServiceRepository,
             ComboServiceRepository comboServiceRepository,
             ReviewRepository reviewRepository,
-            BookingRepository bookingRepository
+            BookingRepository bookingRepository,
+            CatalogMapper catalogMapper
     ) {
         this.PackageRepository = PackageRepository;
         this.serviceRepository = serviceRepository;
@@ -62,6 +74,7 @@ public class CatalogServiceImpl implements CatalogService {
         this.comboServiceRepository = comboServiceRepository;
         this.reviewRepository = reviewRepository;
         this.bookingRepository = bookingRepository;
+        this.catalogMapper = catalogMapper;
     }
 
     @Transactional(readOnly = true)
@@ -95,22 +108,18 @@ public class CatalogServiceImpl implements CatalogService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    public ValidateVoucherResponse validateVoucher(String voucherCode, long amount) {
-        throw new UnsupportedOperationException("Not supported in new voucher system");
-    }
 
     @Transactional(readOnly = true)
     public Package requireActivePackage(String packageId) {
-        return PackageRepository.findById(java.util.UUID.fromString(packageId))
+        return PackageRepository.findById(UUID.fromString(packageId))
                 .filter(pkg -> pkg.getStatus() == ActiveStatus.ACTIVE)
-                .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Package is not available", "BUSINESS_RULE_VIOLATION"));
+                .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Package is not available", ErrorCode.BUSINESS_RULE_VIOLATION));
     }
 
     @Transactional(readOnly = true)
     public Combo requireActiveCombo(String comboId) {
         return ComboRepository.findByIdAndActiveTrue(comboId)
-                .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo is not available", "BUSINESS_RULE_VIOLATION"));
+                .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo is not available", ErrorCode.BUSINESS_RULE_VIOLATION));
     }
 
     @Transactional(readOnly = true)
@@ -197,17 +206,11 @@ public ComboResponse getComboById(String comboId) {
             popularity = "BEST_SELLER";
         }
 
-        return new PackageResponse(
-                pkg.getId().toString(),
-                pkg.getName(),
-                pkg.getDescription(),
-                pkg.getBasePrice(),
-                pkg.getDurationMinutes(),
-                pkg.getCategory(),
+        return catalogMapper.toPackageResponse(
+                pkg,
                 features,
                 null,
                 split(pkg.getImageUrl()),
-                pkg.getStatus().name(),
                 popularity,
                 avgRating != null ? avgRating : 0.0,
                 reviewCount != null ? reviewCount : 0L
@@ -215,36 +218,16 @@ public ComboResponse getComboById(String comboId) {
     }
 
     private ServiceResponse toServiceResponse(com.autowash.entity.Service service) {
-        return new ServiceResponse(
-                service.getId().toString(),
-                service.getName(),
-                service.getDescription(),
-                service.getPrice(),
-                service.getDurationMinutes(),
-                service.getStatus().name(),
-                split(service.getImageUrl())
-        );
+        return catalogMapper.toServiceResponse(service, split(service.getImageUrl()));
     }
 
     private ComboResponse toComboResponse(Combo combo) {
     List<ComboService> rows = comboServiceRepository.findByComboIdOrderBySortOrderAsc(combo.getId());
     List<ComboServiceItem> services = rows.stream()
-            .map(s -> new ComboServiceItem(
-                    s.getOptionId().toString(),
-                    s.getOptionName(),
-                    s.getOptionDescription(),
-                    s.getOptionPrice(),
-                    s.getOptionDurationMinutes(),
-                    s.getQuantity(),
-                    s.getSortOrder()
-            ))
+            .map(catalogMapper::toComboServiceItem)
             .toList();
-    return new ComboResponse(
-            combo.getId().toString(),
-            combo.getName(),
-            combo.getDescription(),
-            combo.getPrice(),
-            combo.getOriginalPrice(),
+    return catalogMapper.toComboResponse(
+            combo,
             combo.getDurationDays() == null ? 0 : combo.getDurationDays(),
             combo.getMaxUsages() == null ? 0 : combo.getMaxUsages(),
             services,
@@ -256,7 +239,7 @@ public ComboResponse getComboById(String comboId) {
 }
 
     private List<String> split(String str) {
-        return str == null || str.isEmpty() ? new ArrayList<>() : java.util.Arrays.asList(str.split(","));
+        return str == null || str.isEmpty() ? new ArrayList<>() : Arrays.asList(str.split(","));
     }
 
     private List<UUID> parseUniqueOptionIds(List<String> optionIds) {
@@ -293,7 +276,7 @@ public ComboResponse getComboById(String comboId) {
     }
 
     private ApiException optionUnavailable() {
-        return new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Service option is not available", "BUSINESS_RULE_VIOLATION");
+        return new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Service option is not available", ErrorCode.BUSINESS_RULE_VIOLATION);
     }
 }
 

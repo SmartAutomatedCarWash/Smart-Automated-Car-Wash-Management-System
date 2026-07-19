@@ -12,7 +12,8 @@ import {
 } from "react";
 import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/shared/ui/ui/button";
-import { getDisplayErrorMessage, getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { useSendCustomerOtp, useVerifyCustomerOtp } from "@/features/auth/hooks/use-auth";
 import { emailPattern, otpPattern } from "@/shared/lib/validators";
 import { cn } from "@/shared/lib/utils";
@@ -28,6 +29,7 @@ export function VerifyOtpForm({
   initialEmail: string;
   initialExpiresIn: number;
 }) {
+  const getErrorMessage = useErrorMessage();
   const [email, setEmail] = useState(initialEmail);
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
   const [secondsLeft, setSecondsLeft] = useState(initialEmail ? initialExpiresIn : 0);
@@ -70,10 +72,10 @@ export function VerifyOtpForm({
     (otp.length > 0 && !otpPattern.test(otp) ? "OTP must be exactly 6 digits." : null) ??
     getFieldErrorMessage(verifyOtpMutation.error?.fieldErrors, "otp");
   const sendErrorMessage = useMemo(() => {
-    return sendOtpMutation.error ? getDisplayErrorMessage(sendOtpMutation.error) : null;
+    return sendOtpMutation.error ? getErrorMessage(sendOtpMutation.error) : null;
   }, [sendOtpMutation.error]);
   const verifyErrorMessage = useMemo(() => {
-    return verifyOtpMutation.error ? getDisplayErrorMessage(verifyOtpMutation.error) : null;
+    return verifyOtpMutation.error ? getErrorMessage(verifyOtpMutation.error) : null;
   }, [verifyOtpMutation.error]);
 
   const handleDigitChange = (index: number, value: string) => {

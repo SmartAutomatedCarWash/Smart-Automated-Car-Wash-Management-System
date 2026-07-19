@@ -17,7 +17,7 @@ import { Badge } from "@/shared/ui/ui/badge";
 import { Button } from "@/shared/ui/ui/button";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useAdminDashboardFull, useStaffKpi } from "@/features/dashboard/hooks/use-admin-dashboard-metrics";
-import { useAdminVoucherRedemptions } from "@/features/vouchers/hooks/use-admin-vouchers";
+import { useAdminDiscountRedemptions } from "@/features/discounts/hooks/use-admin-discount-redemptions";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
 import type {
@@ -138,7 +138,7 @@ export function AdminDashboardView() {
   const [redeemView, setRedeemView] = useState<"voucher" | "history">("voucher");
   const [staffKpiRange, setStaffKpiRange] = useState<StaffKpiRange>("TODAY");
   const staffKpiQuery = useStaffKpi(staffKpiRange);
-  const redemptionsQuery = useAdminVoucherRedemptions(1, 15);
+  const redemptionsQuery = useAdminDiscountRedemptions(1, 15);
 
   const kpis = data?.kpis;
   const trend = data?.bookingTrend?.points ?? [];
@@ -428,7 +428,7 @@ export function AdminDashboardView() {
                 <CardTitle className="text-sm font-black text-slate-800">
                   {t("Thống kê Voucher", "Voucher Statistics")}
                 </CardTitle>
-                <Link href="/admin/offers?tab=vouchers" className="flex items-center gap-0.5 text-[11px] font-bold text-cyan-600 hover:text-cyan-700">
+                <Link href="/admin/tier-voucher-offers" className="flex items-center gap-0.5 text-[11px] font-bold text-cyan-600 hover:text-cyan-700">
                   {t("Quản lý", "Manage")} <ChevronRight className="h-3 w-3" />
                 </Link>
               </div>
@@ -737,7 +737,7 @@ export function AdminDashboardView() {
                   </button>
                 </div>
                 <Link
-                  href="/admin/offers?tab=vouchers"
+                  href="/admin/tier-voucher-offers"
                   className="flex items-center gap-0.5 text-[11px] font-bold text-cyan-600 hover:text-cyan-700"
                 >
                   {t("Xem chi tiết", "View all")} <ChevronRight className="h-3 w-3" />
@@ -804,7 +804,7 @@ export function AdminDashboardView() {
                             <span className="text-[11px] text-slate-400 ml-2">{item.customerPhone}</span>
                           </div>
                           <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[11px] font-black text-emerald-700">
-                            {item.voucherCode}
+                            {item.discountCode}
                           </span>
                           <span className="text-[11px] font-black text-rose-600">−{item.pointsRedeemed} pts</span>
                         </div>
@@ -852,7 +852,7 @@ export function AdminDashboardView() {
                           <div>
                             <span className="inline-flex items-center gap-1 rounded-lg bg-violet-50 border border-violet-100 px-2 py-0.5 text-[11px] font-black text-violet-700">
                               <Ticket className="h-2.5 w-2.5" />
-                              {item.voucherCode}
+                              {item.discountCode}
                             </span>
                           </div>
                           {/* Points used */}
@@ -883,7 +883,7 @@ export function AdminDashboardView() {
                     {/* Footer link */}
                     <div className="border-t border-slate-100 px-5 py-3 flex justify-end">
                       <Link
-                        href="/admin/offers?tab=vouchers"
+                        href="/admin/tier-voucher-offers"
                         className="flex items-center gap-1 text-[11px] font-bold text-cyan-600 hover:text-cyan-700"
                       >
                         {t("Xem toàn bộ lịch sử đổi điểm", "View full redemption history")}
@@ -1114,8 +1114,8 @@ export function AdminDashboardView() {
             { href: "/admin/bookings", label: t("Đặt lịch", "Bookings"), icon: CalendarDays, color: "text-cyan-700 bg-cyan-50 border-cyan-200" },
             { href: "/admin/customers", label: t("Khách hàng", "Customers"), icon: Users, color: "text-slate-700 bg-slate-50 border-slate-200" },
             { href: "/admin/services", label: t("Dịch vụ", "Services"), icon: Zap, color: "text-violet-700 bg-violet-50 border-violet-200" },
-            { href: "/admin/offers?tab=promotions", label: t("Khuyến mãi", "Promotions"), icon: BadgePercent, color: "text-amber-700 bg-amber-50 border-amber-200" },
-            { href: "/admin/offers?tab=vouchers", label: t("Vouchers", "Vouchers"), icon: Ticket, color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+            { href: "/admin/discounts", label: t("Ưu đãi", "Discounts"), icon: BadgePercent, color: "text-amber-700 bg-amber-50 border-amber-200" },
+            { href: "/admin/tier-voucher-offers", label: t("Đổi voucher", "Voucher Offers"), icon: Ticket, color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
             { href: "/admin/reviews", label: t("Đánh giá", "Reviews"), icon: Star, color: "text-rose-700 bg-rose-50 border-rose-200" },
             { href: "/admin/reports", label: t("Báo cáo", "Reports"), icon: BarChart3, color: "text-blue-700 bg-blue-50 border-blue-200" },
             { href: "/admin/settings", label: t("Cài đặt", "Settings"), icon: Settings2, color: "text-slate-600 bg-slate-100 border-slate-200" },

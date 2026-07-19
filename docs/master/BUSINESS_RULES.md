@@ -17,8 +17,7 @@
 |---|---|---|---|
 | BR-001 | Each customer must have a unique phone number. | ✅ | `users.phone UNIQUE`, `AuthServiceImpl` throws `DUPLICATE_PHONE` |
 | BR-002 | One phone number cannot create multiple active accounts. | ✅ | `UserRepository.existsByPhone()` checked on register |
-| BR-003 | Customer must provide full name, phone number, **email**, password, and confirm password. | ✅ | `RegisterRequest`: all five `@NotBlank` |
-| BR-004 | Phone number must follow Vietnamese format `^0[0-9]{9}$`. | ✅ | `@Pattern` in `RegisterRequest`, `AuthServiceImpl.PHONE_PATTERN` |
+| BR-004 | Phone number must follow Vietnamese format `^0[0-9]{9}$` when provided/updated. | ✅ | `@Pattern` in `UpdateUserProfileRequest`; registration currently uses email, full name, password, and confirm password only. |
 | BR-005 | New customer starts at tier `BRONZE` with 0 points and `PENDING` status. | ✅ | `User` constructor, `LoyaltyAccount` constructor |
 | BR-006 | Account activates only after OTP verification. | ✅ | `AuthServiceImpl.verifyRegistrationOtp()` → `user.activate()` |
 | BR-007 | Password must be 8–128 characters with uppercase, lowercase, digit, and special character. | ✅ | `@Pattern` regex in `RegisterRequest` |
@@ -345,4 +344,4 @@
 | BR-211 | Blog comments display commenter name and creation timestamp. Customers can only delete their own comments. | ✅ | `BlogCommentResponse` includes `userName`, `createdAt`; ownership check on delete |
 
 ---
-
+

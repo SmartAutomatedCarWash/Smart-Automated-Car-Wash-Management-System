@@ -1,7 +1,7 @@
 package com.autowash.repository;
 
 
-import com.autowash.entity.*;
+import com.autowash.entity.LoyaltyAccount;
 import jakarta.persistence.LockModeType;
 import java.util.Optional;
 import java.util.UUID;

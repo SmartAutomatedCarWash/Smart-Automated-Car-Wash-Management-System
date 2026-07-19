@@ -25,7 +25,7 @@ import { Card, CardContent } from "@/shared/ui/ui/card";
 import { Input } from "@/shared/ui/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/ui/table";
 import { DateTimePickerButton } from "@/shared/ui/date-picker-button";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { AdminCustomerStatus, AdminEditableAccountRole } from "@/entities/reports";
 import {
@@ -103,6 +103,7 @@ function translateEnumLabel(value: string, lang: "vi" | "en") {
 export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDetailPageContentProps) {
   const router = useRouter();
   const { language } = useLanguageStore();
+  const getErrorMessage = useErrorMessage();
   const [activeTab, setActiveTab] = useState<CustomerTab>("overview");
   const [vehiclesPage, setVehiclesPage] = useState(1);
   const [bookingsPage, setBookingsPage] = useState(1);
@@ -312,7 +313,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
                         await detailQuery.refetch();
                         setStatusFeedback(translate(language, "Cập nhật trạng thái khách hàng thành công.", "Customer status updated."));
                       } catch (error) {
-                        setStatusFeedback(getDisplayErrorMessage(error));
+                        setStatusFeedback(getErrorMessage(error));
                       }
                     }}
                     isUpdatingStatus={updateStatusMutation.isPending}
@@ -339,7 +340,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
                         setPointsReason("");
                         await detailQuery.refetch();
                       } catch (error) {
-                        setPointsFeedback(getDisplayErrorMessage(error));
+                        setPointsFeedback(getErrorMessage(error));
                       }
                     }}
                     isUpdatingPoints={updatePointsMutation.isPending}
@@ -353,7 +354,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
                         setTierFeedback(translate(language, "Cập nhật hạng thành viên thành công.", "Tier updated."));
                         await detailQuery.refetch();
                       } catch (error) {
-                        setTierFeedback(getDisplayErrorMessage(error));
+                        setTierFeedback(getErrorMessage(error));
                       }
                     }}
                     isUpdatingTier={updateTierMutation.isPending}
@@ -403,6 +404,8 @@ function CustomerProfilePanel({
   language: "vi" | "en";
   customerId: string;
 }) {
+  const getErrorMessage = useErrorMessage();
+
   if (query.isPending) {
     return (
       <Card className="rounded-md border-slate-200 bg-white shadow-sm">
@@ -417,7 +420,7 @@ function CustomerProfilePanel({
     return (
       <Card className="rounded-md border-rose-200 bg-white shadow-sm">
         <CardContent className="p-5">
-          <ErrorInline message={getDisplayErrorMessage(query.error)} />
+          <ErrorInline message={getErrorMessage(query.error)} />
         </CardContent>
       </Card>
     );
@@ -666,11 +669,13 @@ function OverviewTab({
   query: ReturnType<typeof useAdminCustomerDetail>;
   language: "vi" | "en";
 }) {
+  const getErrorMessage = useErrorMessage();
+
   if (query.isPending) {
     return <LoadingInline message={translate(language, "Đang tải chi tiết khách hàng...", "Loading customer detail...")} />;
   }
   if (query.isError) {
-    return <ErrorInline message={getDisplayErrorMessage(query.error)} />;
+    return <ErrorInline message={getErrorMessage(query.error)} />;
   }
   if (!query.data) {
     return <EmptyInline message={translate(language, "Không tìm thấy khách hàng.", "Customer not found.")} />;
@@ -804,11 +809,13 @@ function BookingsTab({
   onPageChange: (page: number) => void;
   language: "vi" | "en";
 }) {
+  const getErrorMessage = useErrorMessage();
+
   if (query.isPending) {
     return <LoadingInline message={translate(language, "Đang tải danh sách đặt lịch...", "Loading customer bookings...")} />;
   }
   if (query.isError) {
-    return <ErrorInline message={getDisplayErrorMessage(query.error)} />;
+    return <ErrorInline message={getErrorMessage(query.error)} />;
   }
   if (!query.data || query.data.items.length === 0) {
     return <EmptyInline message={translate(language, "Khách hàng này chưa có lịch đặt nào.", "No bookings for this customer.")} />;
@@ -883,6 +890,7 @@ function WashHistoryTab({
   onClear: () => void;
   language: "vi" | "en";
 }) {
+  const getErrorMessage = useErrorMessage();
   const items = query.data?.items ?? [];
   const activeSessions = items.filter((item) => item.status !== "COMPLETED" && item.status !== "CANCELLED").length;
   const completedSessions = items.filter((item) => item.status === "COMPLETED").length;
@@ -930,7 +938,7 @@ function WashHistoryTab({
       {query.isPending ? (
         <LoadingInline message={translate(language, "Đang tải lịch sử rửa xe...", "Loading wash history...")} />
       ) : query.isError ? (
-        <ErrorInline message={getDisplayErrorMessage(query.error)} />
+        <ErrorInline message={getErrorMessage(query.error)} />
       ) : !query.data || items.length === 0 ? (
         <EmptyInline message={translate(language, "Khách hàng này chưa có phiên rửa xe nào.", "No wash sessions for this customer.")} />
       ) : (
@@ -1068,6 +1076,8 @@ function PointTransactionsTab({
   onApply: () => void;
   language: "vi" | "en";
 }) {
+  const getErrorMessage = useErrorMessage();
+
   return (
     <div className="space-y-4">
       <h2 className="text-base font-semibold text-slate-950">{translate(language, "Lịch sử giao dịch điểm", "Point transaction history")}</h2>
@@ -1103,7 +1113,7 @@ function PointTransactionsTab({
       {query.isPending ? (
         <LoadingInline message={translate(language, "Đang tải giao dịch điểm...", "Loading point transactions...")} />
       ) : query.isError ? (
-        <ErrorInline message={getDisplayErrorMessage(query.error)} />
+        <ErrorInline message={getErrorMessage(query.error)} />
       ) : !query.data || query.data.items.length === 0 ? (
         <EmptyInline message={translate(language, "Khách hàng này chưa có giao dịch điểm nào.", "No point transactions for this customer.")} />
       ) : (

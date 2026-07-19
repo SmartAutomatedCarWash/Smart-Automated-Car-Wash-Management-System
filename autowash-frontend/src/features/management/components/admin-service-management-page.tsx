@@ -8,7 +8,7 @@ import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { AdminManagementTabs } from "@/features/management/components/admin-management-tabs";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { cn } from "@/shared/lib/utils";
 import {
   useAdminCatalogPackages,
@@ -86,6 +86,7 @@ export function AdminServiceManagementPage() {
 
 function LiveServicesPanel() {
   const { language } = useLanguageStore();
+  const getErrorMessage = useErrorMessage();
   const servicesQuery = useAdminCatalogServices();
   const createServiceMutation = useCreateAdminService();
   const deleteServiceMutation = useDeleteAdminService();
@@ -173,8 +174,8 @@ function LiveServicesPanel() {
             </select>
           </label>
 
-          {createServiceMutation.isError ? <ErrorPanel message={getDisplayErrorMessage(createServiceMutation.error)} /> : null}
-          {updateServiceMutation.isError ? <ErrorPanel message={getDisplayErrorMessage(updateServiceMutation.error)} /> : null}
+          {createServiceMutation.isError ? <ErrorPanel message={getErrorMessage(createServiceMutation.error)} /> : null}
+          {updateServiceMutation.isError ? <ErrorPanel message={getErrorMessage(updateServiceMutation.error)} /> : null}
 
           <div className="flex justify-end gap-3">
             {editingServiceId && (
@@ -201,7 +202,7 @@ function LiveServicesPanel() {
                     setSubmitted(false);
                   }
                 } catch (error) {
-                  toast.error(getDisplayErrorMessage(error));
+                  toast.error(getErrorMessage(error));
                 }
               }}
             >
@@ -232,7 +233,7 @@ function LiveServicesPanel() {
           {servicesQuery.isPending ? (
             <LoadingPanel />
           ) : servicesQuery.isError ? (
-            <ErrorPanel message={getDisplayErrorMessage(servicesQuery.error)} />
+            <ErrorPanel message={getErrorMessage(servicesQuery.error)} />
           ) : (
             <>
               <div className="grid gap-4 md:grid-cols-1">
@@ -278,7 +279,7 @@ function LiveServicesPanel() {
                                 await deleteServiceMutation.mutateAsync(service.serviceId);
                                 toast.success(translate(language, "Đã ngưng hoạt động dịch vụ.", "Service deactivated."));
                               } catch (error) {
-                                toast.error(getDisplayErrorMessage(error));
+                                toast.error(getErrorMessage(error));
                               }
                             }}
                           >
@@ -301,6 +302,7 @@ function LiveServicesPanel() {
 
 function LivePackagesPanel() {
   const { language } = useLanguageStore();
+  const getErrorMessage = useErrorMessage();
   const packagesQuery = useAdminCatalogPackages();
   const servicesQuery = useAdminCatalogServices();
   const createPackageMutation = useCreateAdminPackage();
@@ -404,7 +406,7 @@ function LivePackagesPanel() {
             onChange={(ids) => setForm((current) => ({ ...current, serviceIds: ids }))}
             isLoading={servicesQuery.isPending}
             isError={servicesQuery.isError}
-            errorMessage={servicesQuery.isError ? getDisplayErrorMessage(servicesQuery.error) : undefined}
+            errorMessage={servicesQuery.isError ? getErrorMessage(servicesQuery.error) : undefined}
             validationError={visibleErrors.serviceIds}
             language={language as "vi" | "en"}
           />
@@ -421,8 +423,8 @@ function LivePackagesPanel() {
             </select>
           </label>
 
-          {createPackageMutation.isError ? <ErrorPanel message={getDisplayErrorMessage(createPackageMutation.error)} /> : null}
-          {updatePackageMutation.isError ? <ErrorPanel message={getDisplayErrorMessage(updatePackageMutation.error)} /> : null}
+          {createPackageMutation.isError ? <ErrorPanel message={getErrorMessage(createPackageMutation.error)} /> : null}
+          {updatePackageMutation.isError ? <ErrorPanel message={getErrorMessage(updatePackageMutation.error)} /> : null}
 
           <div className="flex justify-end gap-3">
             {editingPackageId && (
@@ -449,7 +451,7 @@ function LivePackagesPanel() {
                     setSubmitted(false);
                   }
                 } catch (error) {
-                  toast.error(getDisplayErrorMessage(error));
+                  toast.error(getErrorMessage(error));
                 }
               }}
             >
@@ -480,7 +482,7 @@ function LivePackagesPanel() {
           {packagesQuery.isPending ? (
             <LoadingPanel />
           ) : packagesQuery.isError ? (
-            <ErrorPanel message={getDisplayErrorMessage(packagesQuery.error)} />
+            <ErrorPanel message={getErrorMessage(packagesQuery.error)} />
           ) : (
             <>
               <div className="grid gap-4 md:grid-cols-1">
@@ -537,7 +539,7 @@ function LivePackagesPanel() {
                               await deletePackageMutation.mutateAsync(pkg.packageId);
                               toast.success(translate(language, "Đã ngưng hoạt động gói dịch vụ.", "Package deactivated."));
                             } catch (error) {
-                              toast.error(getDisplayErrorMessage(error));
+                              toast.error(getErrorMessage(error));
                             }
                           }}
                         >
@@ -560,6 +562,7 @@ function LivePackagesPanel() {
 
 function LiveCombosPanel() {
   const { language } = useLanguageStore();
+  const getErrorMessage = useErrorMessage();
   const servicesQuery = useAdminCatalogServices();
   const combosQuery = useAdminCombosCatalog();
   const createComboMutation = useCreateAdminCombo();
@@ -661,13 +664,13 @@ function LiveCombosPanel() {
             onChange={(ids) => setForm((current) => ({ ...current, optionIds: ids }))}
             isLoading={servicesQuery.isPending}
             isError={servicesQuery.isError}
-            errorMessage={servicesQuery.isError ? getDisplayErrorMessage(servicesQuery.error) : undefined}
+            errorMessage={servicesQuery.isError ? getErrorMessage(servicesQuery.error) : undefined}
             validationError={visibleErrors.optionIds}
             language={language as "vi" | "en"}
           />
 
-          {createComboMutation.isError ? <ErrorPanel message={getDisplayErrorMessage(createComboMutation.error)} /> : null}
-          {updateComboMutation.isError ? <ErrorPanel message={getDisplayErrorMessage(updateComboMutation.error)} /> : null}
+          {createComboMutation.isError ? <ErrorPanel message={getErrorMessage(createComboMutation.error)} /> : null}
+          {updateComboMutation.isError ? <ErrorPanel message={getErrorMessage(updateComboMutation.error)} /> : null}
 
           <div className="flex justify-end gap-3">
             {editingComboId && (
@@ -694,7 +697,7 @@ function LiveCombosPanel() {
                     setSubmitted(false);
                   }
                 } catch (error) {
-                  toast.error(getDisplayErrorMessage(error));
+                  toast.error(getErrorMessage(error));
                 }
               }}
             >
@@ -725,7 +728,7 @@ function LiveCombosPanel() {
           {combosQuery.isPending ? (
             <LoadingPanel />
           ) : combosQuery.isError ? (
-            <ErrorPanel message={getDisplayErrorMessage(combosQuery.error)} />
+            <ErrorPanel message={getErrorMessage(combosQuery.error)} />
           ) : !combosQuery.data || combosQuery.data.length === 0 ? (
             <Card className="border-slate-200 bg-slate-50/50">
               <CardContent className="p-5 text-sm text-slate-500">{translate(language, "Không tìm thấy Combo nào.", "No combos found.")}</CardContent>
@@ -772,7 +775,7 @@ function LiveCombosPanel() {
                               await deleteComboMutation.mutateAsync(combo.comboId);
                               toast.success(translate(language, "Đã ngưng hoạt động Combo.", "Combo deactivated."));
                             } catch (error) {
-                              toast.error(getDisplayErrorMessage(error));
+                              toast.error(getErrorMessage(error));
                             }
                           }}
                         >
@@ -1201,6 +1204,7 @@ function ImageUploadField({
   onChange: (value: string[]) => void;
   language: "vi" | "en";
 }) {
+  const getErrorMessage = useErrorMessage();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -1217,7 +1221,7 @@ function ImageUploadField({
       onChange(newUrls);
       toast.success(translate(language, "Tải ảnh lên thành công.", "Images uploaded."));
     } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
+      toast.error(getErrorMessage(error));
     } finally {
       setIsUploading(false);
       event.target.value = "";

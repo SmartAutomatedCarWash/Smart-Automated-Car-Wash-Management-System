@@ -6,7 +6,7 @@ import { Bell, Globe, Loader2, Moon, RefreshCcw, Save, Settings2, Sun } from "lu
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
   useCustomerPreferences,
   useUpdateCustomerPreferences,
@@ -15,6 +15,7 @@ import { useLanguageStore } from "@/shared/store/language.store";
 import type { CustomerPreferences } from "@/entities/preferences";
 
 export default function CustomerSettingsPage() {
+  const getErrorMessage = useErrorMessage();
   const preferencesQuery = useCustomerPreferences();
   const updatePreferencesMutation = useUpdateCustomerPreferences();
   const [form, setForm] = useState<CustomerPreferences | null>(null);
@@ -70,7 +71,7 @@ export default function CustomerSettingsPage() {
             </div>
           ) : preferencesQuery.isError ? (
             <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {getDisplayErrorMessage(preferencesQuery.error)}
+              {getErrorMessage(preferencesQuery.error)}
             </div>
           ) : (
             <>
@@ -179,7 +180,7 @@ export default function CustomerSettingsPage() {
 
               {updatePreferencesMutation.isError && (
                 <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  {getDisplayErrorMessage(updatePreferencesMutation.error)}
+                  {getErrorMessage(updatePreferencesMutation.error)}
                 </div>
               )}
 
@@ -193,7 +194,7 @@ export default function CustomerSettingsPage() {
                       await updatePreferencesMutation.mutateAsync(form);
                       toast.success("Settings saved.");
                     } catch (error) {
-                      toast.error(getDisplayErrorMessage(error));
+                      toast.error(getErrorMessage(error));
                     }
                   }}
                   className="rounded-xl gap-2"

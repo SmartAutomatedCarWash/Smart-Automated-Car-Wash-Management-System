@@ -1,6 +1,5 @@
 package com.autowash.dto;
 
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -10,14 +9,9 @@ public record CreateBookingResponse(
         String customerId,
         String vehicleId,
         String vehiclePlate,
-        String packageId,
-        String packageName,
-        List<BookingOptionResponse> options,
-        long basePrice,
-        long optionsTotal,
-        long voucherDiscount,
-        long promotionDiscount,
-        long finalAmount,
+        String primaryItemName,
+        List<BookingDetailDto> details,
+        Pricing pricing,
         LocalDate bookingDate,
         String bookingTime,
         int estimatedDuration,
@@ -35,5 +29,12 @@ public record CreateBookingResponse(
         boolean comboPurchased,
         String devOtp
 ) {
+    public record Pricing(
+            long subtotal,
+            String discountCode,
+            long discountAmount,
+            long finalAmount,
+            String currency
+    ) {
+    }
 }
-

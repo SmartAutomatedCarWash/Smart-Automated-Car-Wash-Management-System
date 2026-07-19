@@ -10,7 +10,7 @@ import {
   exchangeGoogleAuthTicket,
   getGoogleAuthTicket,
 } from "@/features/auth/lib/auth-service";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { setAuthSession } from "@/features/auth/store/auth.store";
 import type { GoogleAuthTicketResponse } from "@/entities/auth";
 
@@ -24,6 +24,7 @@ export default function GoogleAuthCallbackPage() {
 
 function GoogleAuthCallbackContent() {
   const router = useRouter();
+  const getErrorMessage = useErrorMessage();
   const searchParams = useSearchParams();
   const state = searchParams.get("state");
   const callbackStatus = searchParams.get("status");
@@ -52,7 +53,7 @@ function GoogleAuthCallbackContent() {
         setTicket(response);
       })
       .catch((error) => {
-        setErrorMessage(getDisplayErrorMessage(error));
+        setErrorMessage(getErrorMessage(error));
       })
       .finally(() => {
         setIsLoading(false);
@@ -78,7 +79,7 @@ function GoogleAuthCallbackContent() {
       })
       .catch((error) => {
         exchangeStartedRef.current = false;
-        setErrorMessage(getDisplayErrorMessage(error));
+        setErrorMessage(getErrorMessage(error));
       });
   }, [state, ticket]);
 
@@ -94,7 +95,7 @@ function GoogleAuthCallbackContent() {
       const nextPath = getAuthRedirectPath(response.role);
       window.location.replace(nextPath);
     } catch (error) {
-      setErrorMessage(getDisplayErrorMessage(error));
+      setErrorMessage(getErrorMessage(error));
     } finally {
       setIsConfirming(false);
     }

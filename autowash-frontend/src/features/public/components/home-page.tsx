@@ -37,7 +37,8 @@ import { useCustomerLogin, useCustomerRegister, useSendCustomerOtp, useVerifyCus
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import { useLanguageStore } from "@/shared/store/language.store";
 import { emailPattern, otpPattern, passwordPattern, phonePattern } from "@/shared/lib/validators";
-import { getDisplayErrorMessage, getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { getAuthRedirectPath } from "@/features/auth/lib/auth-session";
 import { getPasswordVisibilityState } from "@/features/auth/lib/password-visibility";
 import { getLoginIdentifierValidationMessage, normalizeLoginIdentifier } from "@/features/auth/lib/login-identifier";

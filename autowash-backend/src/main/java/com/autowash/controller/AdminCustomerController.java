@@ -1,17 +1,24 @@
 package com.autowash.controller;
 
+import com.autowash.service.LoyaltyService;
+
+import com.autowash.dto.PointTransactionResponse;
+
+import com.autowash.dto.AdjustPointsRequest;
+
+import com.autowash.dto.UpdateAdminCustomerTierRequest;
+
+import com.autowash.dto.UpdateAdminCustomerRoleResponse;
+
 import com.autowash.dto.AdminAccountResponse;
 import com.autowash.dto.AdminBookingResponse;
 import com.autowash.dto.AdminCustomerDetailResponse;
 import com.autowash.dto.AdminCustomerVehicleResponse;
 import com.autowash.dto.AdminTierHistoryResponse;
 import com.autowash.dto.AdminWashHistoryResponse;
-import com.autowash.dto.PointTransactionResponse;
 import com.autowash.dto.UpdateAdminCustomerRoleRequest;
-import com.autowash.dto.UpdateAdminCustomerRoleResponse;
 import com.autowash.dto.UpdateUserStatusRequest;
 import com.autowash.service.AdminReportingService;
-import com.autowash.service.LoyaltyService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -99,7 +106,7 @@ public class AdminCustomerController {
     @Operation(summary = "Update customer loyalty tier for admin")
     public ApiResponse<UpdateAdminCustomerRoleResponse> updateCustomerTier(
             @PathVariable UUID customerId,
-            @Valid @RequestBody com.autowash.dto.UpdateAdminCustomerTierRequest request
+            @Valid @RequestBody UpdateAdminCustomerTierRequest request
     ) {
         return ApiResponse.ok(
                 "Customer tier updated",
@@ -111,7 +118,7 @@ public class AdminCustomerController {
     @Operation(summary = "Add/deduct customer active points for admin")
     public ApiResponse<Void> updateCustomerPoints(
             @PathVariable UUID customerId,
-            @Valid @RequestBody com.autowash.dto.AdjustPointsRequest request
+            @Valid @RequestBody AdjustPointsRequest request
     ) {
         adminReportingService.adjustActivePoints(customerId, request.points(), request.reason());
         return ApiResponse.ok("Customer points adjusted", null);

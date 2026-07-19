@@ -5,7 +5,7 @@ export type DashboardMetrics = {
   totalBookings: number;
   totalRevenue: number;
   totalCustomers: number;
-  activePromotions: number;
+  activeDiscounts: number;
 };
 
 // ── Full dashboard types ──────────────────────────────────────────────────────

@@ -7,5 +7,5 @@ public record DashboardMetricsDto(
         long totalBookings,
         long totalRevenue,
         long totalCustomers,
-        long activePromotions
+        long activeDiscounts
 ) {}

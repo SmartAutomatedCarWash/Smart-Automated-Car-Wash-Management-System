@@ -1,54 +1,44 @@
 package com.autowash.entity;
 
-import com.autowash.entity.enums.LoyaltyTier;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.UUID;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "tier_voucher_offers")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class TierVoucherOffer {
 
     @Id
-    @Column(length = 50)
-    private String id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "discount_id", nullable = false)
+    private Discount discount;
 
     @Column(nullable = false, length = 100)
     private String title;
 
-    @Column(name = "min_tier", nullable = false, length = 50)
-    private String minTier;
-
-    public TierVoucherOffer(
-            String id,
-            String title,
-            LoyaltyTier minTier,
-            int pointsCost,
-            int voucherValue,
-            String accent,
-            String badge,
-            Instant createdAt,
-            Instant updatedAt
-    ) {
-        this.id = id;
-        this.title = title;
-        this.minTier = minTier.name();
-        this.pointsCost = pointsCost;
-        this.voucherValue = voucherValue;
-        this.accent = accent;
-        this.badge = badge;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "min_tier", referencedColumnName = "tier", nullable = false)
+    private TierConfig minTier;
 
     @Column(name = "points_cost", nullable = false)
     private int pointsCost;
@@ -63,8 +53,10 @@ public class TierVoucherOffer {
     private String badge;
 
     @Column(name = "created_at", nullable = false, updatable = false)
+    @Builder.Default
     private Instant createdAt = Instant.now();
 
     @Column(name = "updated_at", nullable = false)
+    @Builder.Default
     private Instant updatedAt = Instant.now();
 }

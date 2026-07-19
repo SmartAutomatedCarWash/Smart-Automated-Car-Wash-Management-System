@@ -20,7 +20,8 @@ import { Input } from "@/shared/ui/ui/input";
 import { Label } from "@/shared/ui/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/ui/table";
 import { useAdminAccounts, useCreateAdminStaff } from "@/features/reports/hooks/use-admin-reporting";
-import { getDisplayErrorMessage, getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type {
   AdminAccount,
@@ -78,6 +79,7 @@ function translateTier(tier: string, lang: "vi" | "en") {
 }
 
 export function AdminAccountsPageContent() {
+  const getErrorMessage = useErrorMessage();
   const router = useRouter();
   const { language } = useLanguageStore();
   const [activeTab, setActiveTab] = useState<"customers" | "staff_admin">("customers");
@@ -186,7 +188,7 @@ export function AdminAccountsPageContent() {
       setPage(1);
       void accountsQuery.refetch();
     } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -327,7 +329,7 @@ export function AdminAccountsPageContent() {
                 {accountsQuery.isPending ? (
                   <StatePanel icon={<Loader2 className="h-4 w-4 animate-spin" />} message={translate(language, "Đang tải danh sách tài khoản...", "Loading accounts...")} />
                 ) : accountsQuery.isError ? (
-                  <StatePanel tone="danger" message={getDisplayErrorMessage(accountsQuery.error)} />
+                  <StatePanel tone="danger" message={getErrorMessage(accountsQuery.error)} />
                 ) : accounts.length === 0 ? (
                   <StatePanel message={translate(language, "Không tìm thấy tài khoản nào khớp với bộ lọc.", "No accounts match the current filters.")} />
                 ) : (
@@ -486,7 +488,7 @@ export function AdminAccountsPageContent() {
 
             {createStaffMutation.isError ? (
               <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {getDisplayErrorMessage(createStaffMutation.error)}
+                {getErrorMessage(createStaffMutation.error)}
               </div>
             ) : null}
 

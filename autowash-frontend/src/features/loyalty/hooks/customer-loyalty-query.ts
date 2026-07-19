@@ -14,6 +14,3 @@ export function washHistoryQueryKey(userId?: string | null, page = 1, limit = 20
   return [...customerLoyaltyScope(userId), "wash-history", page, limit] as const;
 }
 
-export function customerPromotionsQueryKey(userId?: string | null) {
-  return [...customerLoyaltyScope(userId), "promotions"] as const;
-}

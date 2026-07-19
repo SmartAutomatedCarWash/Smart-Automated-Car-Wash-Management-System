@@ -1,5 +1,14 @@
 package com.autowash.service.impl;
 
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+import java.util.Optional;
+
+import java.time.Instant;
+
+import java.util.UUID;
+
 import com.autowash.dto.LoginRequest;
 import com.autowash.dto.LoginResponse;
 import com.autowash.dto.RefreshTokenResponse;
@@ -22,9 +31,6 @@ import com.autowash.service.AuthService;
 import com.autowash.service.EmailDeliveryService;
 import com.autowash.service.JwtService;
 import com.autowash.service.OtpService;
-import com.autowash.shared.exception.ApiException;
-import java.time.Instant;
-import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -80,7 +86,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public RegisterResponse register(RegisterRequest request, RequestMetadata metadata) {
         if (UserRepository.existsByEmailIgnoreCase(request.email())) {
-            throw new ApiException(HttpStatus.CONFLICT, "Email already registered", "DUPLICATE_EMAIL");
+            throw new ApiException(HttpStatus.CONFLICT, "Email already registered", ErrorCode.DUPLICATE_EMAIL);
         }
 
         User user = new User(
@@ -107,7 +113,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public SendOtpResponse sendRegistrationOtp(String email, RequestMetadata metadata) {
         User user = resolveEmailUser(email)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", ErrorCode.RESOURCE_NOT_FOUND));
         requirePendingUser(user);
         enforceResendLimit(user);
 
@@ -127,7 +133,7 @@ public class AuthServiceImpl implements AuthService {
         try {
             emailDeliveryService.sendRegistrationOtp(user.getEmail(), user.getFullName(), code, (int) otpExpirationSeconds);
         } catch (RuntimeException exception) {
-            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to send OTP email", "OTP_SEND_FAILED");
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to send OTP email", ErrorCode.OTP_SEND_FAILED);
         }
         return new SendOtpResponse(
                 user.getEmail(),
@@ -143,26 +149,26 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(noRollbackFor = ApiException.class)
     public LoginResponse verifyRegistrationOtp(String email, String otp, RequestMetadata metadata) {
         User user = resolveEmailUser(email)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", ErrorCode.RESOURCE_NOT_FOUND));
         requirePendingUser(user);
 
         OtpVerification OtpVerification = OtpVerificationRepository.findFirstByUserAndPurposeAndVerifiedAtIsNullOrderByCreatedAtDesc(user, OtpPurpose.EMAIL_REGISTRATION)
-                .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", "INVALID_OTP"));
+                .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", ErrorCode.INVALID_OTP));
 
         if (OtpVerification.getExpiresAt().isBefore(Instant.now())) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP has expired", "OTP_EXPIRED");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP has expired", ErrorCode.OTP_EXPIRED);
         }
 
         if (OtpVerification.getAttempts() >= otpMaxAttempts) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", "RATE_LIMIT_EXCEEDED");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", ErrorCode.RATE_LIMIT_EXCEEDED);
         }
 
         if (!passwordEncoder.matches(otp, OtpVerification.getCodeHash())) {
             OtpVerification.incrementAttempts();
             if (OtpVerification.getAttempts() >= otpMaxAttempts) {
-                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", "RATE_LIMIT_EXCEEDED");
+                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", ErrorCode.RATE_LIMIT_EXCEEDED);
             }
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", "INVALID_OTP");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", ErrorCode.INVALID_OTP);
         }
 
         OtpVerification.markVerified();
@@ -177,18 +183,18 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public LoginResponse login(LoginRequest request) {
         User user = resolveEmailUser(request.email())
-                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Account not found", "ACCOUNT_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Account not found", ErrorCode.ACCOUNT_NOT_FOUND));
 
         if (user.getStatus() == UserStatus.BLOCKED) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Account blocked", "ACCOUNT_BLOCKED");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Account blocked", ErrorCode.ACCOUNT_BLOCKED);
         }
 
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Account is not active", "ACCOUNT_NOT_ACTIVE");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Account is not active", ErrorCode.ACCOUNT_NOT_ACTIVE);
         }
 
         if (user.getPasswordHash() == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "Incorrect password", "INCORRECT_PASSWORD");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Incorrect password", ErrorCode.INCORRECT_PASSWORD);
         }
 
         String accessToken = jwtService.generateAccessToken(user);
@@ -200,7 +206,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public SendOtpResponse requestForgotPassword(String email, RequestMetadata metadata) {
         User user = resolveEmailUser(email)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", ErrorCode.RESOURCE_NOT_FOUND));
         requireActiveUser(user);
         enforcePasswordResetResendLimit(user);
 
@@ -210,7 +216,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(noRollbackFor = ApiException.class)
     public void verifyForgotPasswordOtp(String email, String otp, RequestMetadata metadata) {
         User user = resolveEmailUser(email)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", ErrorCode.RESOURCE_NOT_FOUND));
         requireActiveUser(user);
         verifyOtpForPurpose(user, OtpPurpose.PASSWORD_RESET, otp);
     }
@@ -224,11 +230,11 @@ public class AuthServiceImpl implements AuthService {
             RequestMetadata metadata
     ) {
         if (!newPassword.equals(newPasswordConfirm)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Passwords do not match", "VALIDATION_ERROR");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Passwords do not match", ErrorCode.VALIDATION_ERROR);
         }
 
         User user = resolveEmailUser(email)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", ErrorCode.RESOURCE_NOT_FOUND));
         requireActiveUser(user);
         verifyOtpForPurpose(user, OtpPurpose.PASSWORD_RESET, otp);
         user.setPasswordHash(passwordEncoder.encode(newPassword));
@@ -237,14 +243,14 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public RefreshTokenResponse refresh(String token) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid refresh token", "TOKEN_INVALID"));
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid refresh token", ErrorCode.TOKEN_INVALID));
 
         if (refreshToken.isRevoked()) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid refresh token", "TOKEN_INVALID");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid refresh token", ErrorCode.TOKEN_INVALID);
         }
 
         if (refreshToken.getExpiresAt().isBefore(Instant.now())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "Refresh token expired", "TOKEN_EXPIRED");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Refresh token expired", ErrorCode.TOKEN_EXPIRED);
         }
 
         return new RefreshTokenResponse(
@@ -256,7 +262,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void logout(String token) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid refresh token", "TOKEN_INVALID"));
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid refresh token", ErrorCode.TOKEN_INVALID));
         refreshToken.revoke();
     }
 
@@ -307,23 +313,23 @@ public class AuthServiceImpl implements AuthService {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Account is not pending OTP verification",
-                    "RESOURCE_LOCKED"
+                    ErrorCode.RESOURCE_LOCKED
             );
         }
     }
 
     private void requireActiveUser(User user) {
         if (user.getStatus() == UserStatus.BLOCKED) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Account blocked", "ACCOUNT_BLOCKED");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Account blocked", ErrorCode.ACCOUNT_BLOCKED);
         }
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Account is not active", "RESOURCE_LOCKED");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Account is not active", ErrorCode.RESOURCE_LOCKED);
         }
     }
 
-    private java.util.Optional<User> resolveEmailUser(String email) {
+    private Optional<User> resolveEmailUser(String email) {
         if (email == null || email.isBlank()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Email is required", "VALIDATION_ERROR");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Email is required", ErrorCode.VALIDATION_ERROR);
         }
         return UserRepository.findByEmailIgnoreCase(email.trim());
     }
@@ -332,14 +338,14 @@ public class AuthServiceImpl implements AuthService {
     private void enforceResendLimit(User user) {
         Instant windowStart = Instant.now().minusSeconds(3600);
         if (OtpVerificationRepository.countByUserAndPurposeAndCreatedAtAfter(user, OtpPurpose.EMAIL_REGISTRATION, windowStart) >= 3) {
-            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Too many OTP resend requests", "RATE_LIMIT_EXCEEDED");
+            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Too many OTP resend requests", ErrorCode.RATE_LIMIT_EXCEEDED);
         }
     }
 
     private void enforcePasswordResetResendLimit(User user) {
         Instant windowStart = Instant.now().minusSeconds(3600);
         if (OtpVerificationRepository.countByUserAndPurposeAndCreatedAtAfter(user, OtpPurpose.PASSWORD_RESET, windowStart) >= 3) {
-            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Too many OTP resend requests", "RATE_LIMIT_EXCEEDED");
+            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Too many OTP resend requests", ErrorCode.RATE_LIMIT_EXCEEDED);
         }
     }
 
@@ -356,7 +362,7 @@ public class AuthServiceImpl implements AuthService {
         try {
             emailDeliveryService.sendRegistrationOtp(user.getEmail(), user.getFullName(), code, (int) otpExpirationSeconds);
         } catch (RuntimeException exception) {
-            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to send OTP email", "OTP_SEND_FAILED");
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to send OTP email", ErrorCode.OTP_SEND_FAILED);
         }
         return new SendOtpResponse(
                 user.getEmail(),
@@ -371,22 +377,22 @@ public class AuthServiceImpl implements AuthService {
 
     private void verifyOtpForPurpose(User user, OtpPurpose purpose, String otp) {
         OtpVerification OtpVerification = OtpVerificationRepository.findFirstByUserAndPurposeOrderByCreatedAtDesc(user, purpose)
-                .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", "INVALID_OTP"));
+                .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", ErrorCode.INVALID_OTP));
 
         if (OtpVerification.getExpiresAt().isBefore(Instant.now())) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP has expired", "OTP_EXPIRED");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP has expired", ErrorCode.OTP_EXPIRED);
         }
 
         if (OtpVerification.getAttempts() >= otpMaxAttempts) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", "RATE_LIMIT_EXCEEDED");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", ErrorCode.RATE_LIMIT_EXCEEDED);
         }
 
         if (!passwordEncoder.matches(otp, OtpVerification.getCodeHash())) {
             OtpVerification.incrementAttempts();
             if (OtpVerification.getAttempts() >= otpMaxAttempts) {
-                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", "RATE_LIMIT_EXCEEDED");
+                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", ErrorCode.RATE_LIMIT_EXCEEDED);
             }
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", "INVALID_OTP");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", ErrorCode.INVALID_OTP);
         }
 
         if (!OtpVerification.isVerified()) {

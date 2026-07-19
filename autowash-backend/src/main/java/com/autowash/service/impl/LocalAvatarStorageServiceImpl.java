@@ -1,7 +1,9 @@
 package com.autowash.service.impl;
 
-import com.autowash.service.AvatarStorageService;
 import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+import com.autowash.service.AvatarStorageService;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -39,14 +41,14 @@ public class LocalAvatarStorageServiceImpl implements AvatarStorageService {
 
     private void validateContentType(String contentType) {
         if (contentType == null || contentType.isBlank()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Avatar content type is required", "VALIDATION_ERROR");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Avatar content type is required", ErrorCode.VALIDATION_ERROR);
         }
         String normalized = contentType.toLowerCase();
         if (!normalized.equals("image/jpeg") && !normalized.equals("image/png") && !normalized.equals("image/webp")) {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
                     "Avatar content type must be image/jpeg, image/png, or image/webp",
-                    "VALIDATION_ERROR"
+                    ErrorCode.VALIDATION_ERROR
             );
         }
     }
@@ -78,7 +80,7 @@ public class LocalAvatarStorageServiceImpl implements AvatarStorageService {
     private void requireOwnedObjectKey(UUID userId, String objectKey) {
         String expectedPrefix = "avatars/%s/".formatted(userId);
         if (objectKey == null || objectKey.isBlank() || !objectKey.startsWith(expectedPrefix)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Avatar object key is invalid", "VALIDATION_ERROR");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Avatar object key is invalid", ErrorCode.VALIDATION_ERROR);
         }
     }
 }

@@ -1,11 +1,13 @@
 package com.autowash.controller;
 
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
 import com.autowash.dto.AnnouncementRequest;
 import com.autowash.dto.AnnouncementResponse;
 import com.autowash.entity.Announcement;
 import com.autowash.repository.AnnouncementRepository;
 import com.autowash.shared.dto.ApiResponse;
-import com.autowash.shared.exception.ApiException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,7 +24,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -85,7 +86,7 @@ public class AnnouncementController {
             @PathVariable UUID id,
             @Valid @RequestBody AnnouncementRequest request) {
         Announcement announcement = announcementRepository.findById(id)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Announcement not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Announcement not found", ErrorCode.RESOURCE_NOT_FOUND));
         announcement.update(
                 request.title(), request.message(), request.linkUrl(), request.linkLabel(),
                 request.type(), request.active(), request.priority(), request.expiresAt()
@@ -100,7 +101,7 @@ public class AnnouncementController {
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> delete(@PathVariable UUID id) {
         if (!announcementRepository.existsById(id)) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Announcement not found", "RESOURCE_NOT_FOUND");
+            throw new ApiException(HttpStatus.NOT_FOUND, "Announcement not found", ErrorCode.RESOURCE_NOT_FOUND);
         }
         announcementRepository.deleteById(id);
         return ApiResponse.ok("Announcement deleted", null);

@@ -38,8 +38,8 @@ export type RedeemPointsResponse = {
   transactionId: string;
   pointsRedeemed: number;
   newBalance: number;
-  voucherCode: string;
-  voucherValue: number;
+  discountCode: string;
+  discountValue: number;
   expiresAt: string;
   status: "SUCCESS";
 };
@@ -49,7 +49,7 @@ export type TierVoucherOffer = {
   title: string;
   minTier: LoyaltyTier;
   pointsCost: number;
-  voucherValue: number;
+  discountValue: number;
   accent: "sky" | "violet" | "amber" | "rose" | "fuchsia";
   badge: string;
 };
@@ -58,7 +58,7 @@ export type WashHistoryItem = {
   sessionId: string;
   bookingId: string;
   vehiclePlate: string;
-  packageName: string | null;
+  primaryItemName: string | null;
   bookingDate: string;
   bookingTime: string;
   finalAmount: number;
@@ -67,20 +67,3 @@ export type WashHistoryItem = {
   completedAt: string;
 };
 
-export type PromotionType = "ALL_TIERS" | "SELECTED_TIERS" | "SPECIFIC_TIERS" | "NEW_CUSTOMERS";
-
-export type CustomerPromotion = {
-  promotionId: string;
-  name: string;
-  description: string | null;
-  promotionType: PromotionType;
-  targetTiers: LoyaltyTier[];
-  pointMultiplier: number | null;
-  discountType: "NONE" | "PERCENT" | "FIXED_AMOUNT";
-  discountValue: number;
-  minAmount?: number | null;
-  newCustomerOnly?: boolean;
-  startDate: string;
-  expiresAt: string;
-  status: "ACTIVE" | "INACTIVE";
-};
