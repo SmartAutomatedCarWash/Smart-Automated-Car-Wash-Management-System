@@ -7,6 +7,7 @@ import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
 import type { CustomerVehicleListItem } from "@/entities/vehicles";
 import { useDeleteCustomerVehicle, useSetPrimaryCustomerVehicle } from "@/features/vehicles/hooks/use-customer-vehicles";
+import { getVehicleDisplayColor, getVehicleDisplayName } from "@/features/vehicles/lib/vehicle-display";
 import { translate } from "@/shared/store/language.store";
 
 export function CustomerVehicleListCard({
@@ -23,6 +24,7 @@ export function CustomerVehicleListCard({
   const router = useRouter();
   const setPrimaryMutation = useSetPrimaryCustomerVehicle(vehicle.vehicleId);
   const deleteMutation = useDeleteCustomerVehicle(vehicle.vehicleId);
+  const vehicleDisplayName = getVehicleDisplayName(vehicle, language);
 
   const handleSetPrimary = async () => {
     try {
@@ -67,10 +69,10 @@ export function CustomerVehicleListCard({
               ) : null}
             </div>
             <div className="text-sm text-slate-600">
-              {vehicle.brand} {vehicle.model}
+              {vehicleDisplayName}
             </div>
             <div className="text-sm text-slate-500">
-              {translate(language, "Mau sac", "Color")}: {vehicle.color ?? translate(language, "Chua cung cap", "Not provided")}
+              {translate(language, "Mau sac", "Color")}: {getVehicleDisplayColor(vehicle.color, language)}
             </div>
           </div>
         </div>

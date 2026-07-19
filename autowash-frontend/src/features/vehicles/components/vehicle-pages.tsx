@@ -30,6 +30,11 @@ import {
   validateCustomerVehicleForm,
 } from "@/features/vehicles/lib/vehicle-form";
 import {
+  getVehicleDisplayColor,
+  getVehicleDisplayField,
+  getVehicleDisplayName,
+} from "@/features/vehicles/lib/vehicle-display";
+import {
   useCreateCustomerVehicle,
   useCustomerVehicleDetail,
   useCustomerVehicles,
@@ -89,8 +94,15 @@ export function CustomerVehiclesListClientPage() {
               </div>
               <div>
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-                  {translate(language, "Quan ly xe da luu.", "Manage saved vehicles.")}
+                  {translate(language, "Tat ca xe da luu", "All saved vehicles")}
                 </h1>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                  {translate(
+                    language,
+                    "Xem danh sach xe cua ban, chon Xem chi tiet tren tung xe de mo thong tin day du.",
+                    "Review your vehicle list, then use View details on any vehicle to open the full profile.",
+                  )}
+                </p>
               </div>
             </div>
 
@@ -227,6 +239,7 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
   }
 
   const vehicle = vehicleQuery.data;
+  const vehicleDisplayName = getVehicleDisplayName(vehicle, language);
   const submitErrors = getSubmitErrors(updateMutation.error, clientErrors, showValidation);
   const hasChanges =
     form.brand !== vehicle.brand ||
@@ -289,7 +302,7 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
             </div>
             <div className="space-y-2">
               <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-                {vehicle.brand} {vehicle.model}
+                {vehicleDisplayName}
               </h1>
               <div className="flex flex-wrap items-center gap-2 text-sm text-white/75">
                 <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 font-semibold">
@@ -324,7 +337,7 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
             <VehicleHeroMetric
               icon={Palette}
               label={translate(language, "Mau sac", "Color")}
-              value={vehicle.color ?? translate(language, "Chua cung cap", "Not provided")}
+              value={getVehicleDisplayColor(vehicle.color, language)}
             />
             <VehicleHeroMetric
               icon={CalendarClock}
@@ -349,7 +362,7 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
         </div>
 
         <CustomerVehicleFormCard
-          title={`${vehicle.brand} ${vehicle.model}`}
+          title={vehicleDisplayName}
           description={translate(language, "Cap nhat cac truong xe co the chinh sua. Bien so va loai xe chi doc de giu lich su xe nhat quan.", "Update editable vehicle fields. Plate and type stay read-only to keep vehicle history consistent.")}
           form={form}
           errors={submitErrors}
@@ -390,10 +403,10 @@ function VehicleInfoSummaryCard({
   const details = [
     { label: translate(language, "Bien so", "Plate"), value: vehicle.plate },
     { label: translate(language, "Loai xe", "Type"), value: vehicle.type },
-    { label: translate(language, "Hang xe", "Brand"), value: vehicle.brand },
-    { label: translate(language, "Dong xe", "Model"), value: vehicle.model },
+    { label: translate(language, "Hang xe", "Brand"), value: getVehicleDisplayField("brand", vehicle.brand, language) },
+    { label: translate(language, "Dong xe", "Model"), value: getVehicleDisplayField("model", vehicle.model, language) },
     { label: translate(language, "Nam san xuat", "Year"), value: String(vehicle.year) },
-    { label: translate(language, "Mau sac", "Color"), value: vehicle.color ?? translate(language, "Chua cung cap", "Not provided") },
+    { label: translate(language, "Mau sac", "Color"), value: getVehicleDisplayColor(vehicle.color, language) },
     { label: translate(language, "Ngay tao", "Created"), value: formatDateTime(vehicle.createdAt, locale) },
   ];
 
@@ -593,6 +606,7 @@ function VehicleListCard({
   const router = useRouter();
   const setPrimaryMutation = useSetPrimaryCustomerVehicle(vehicle.vehicleId);
   const deleteMutation = useDeleteCustomerVehicle(vehicle.vehicleId);
+  const vehicleDisplayName = getVehicleDisplayName(vehicle, language);
 
   const handleSetPrimary = async () => {
     try {
@@ -637,10 +651,10 @@ function VehicleListCard({
               ) : null}
             </div>
             <div className="text-sm text-slate-600">
-              {vehicle.brand} {vehicle.model}
+              {vehicleDisplayName}
             </div>
             <div className="text-sm text-slate-500">
-              {translate(language, "Mau sac", "Color")}: {vehicle.color ?? translate(language, "Chua cung cap", "Not provided")}
+              {translate(language, "Mau sac", "Color")}: {getVehicleDisplayColor(vehicle.color, language)}
             </div>
           </div>
         </div>

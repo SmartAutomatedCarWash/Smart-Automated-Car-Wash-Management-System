@@ -12,7 +12,7 @@ public interface LoyaltyService {
     LoyaltyAccountResponse getAccount(UUID customerId);
     int calculateEarnPoints(UUID sessionId);
     EarnPointsResponse postEarnTransaction(UUID customerId, UUID sessionId);
-    void postBonusTransaction(UUID customerId, int points, String reason);
+    int postBonusTransaction(UUID customerId, int points, String reason);
     void adjustActivePoints(UUID customerId, int points, String reason);
     RedeemPointsResponse redeemOffer(UUID customerId, UUID offerId);
 

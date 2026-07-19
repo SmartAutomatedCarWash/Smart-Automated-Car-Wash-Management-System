@@ -160,14 +160,17 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     }
 
     @Transactional
-    public void postBonusTransaction(UUID customerId, int points, String reason) {
-        if (points == 0) return;
+    public int postBonusTransaction(UUID customerId, int points, String reason) {
+        if (points == 0) return 0;
         User customer = requireCustomer(customerId);
         LoyaltyAccount account = getOrCreateAccountForUpdate(customer);
         
         int actualPoints = points;
         if (points < 0) {
             actualPoints = Math.max(points, -account.getCurrentPoints());
+        }
+        if (actualPoints == 0) {
+            return 0;
         }
         
         account.addPoints(actualPoints);
@@ -180,6 +183,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 reason
         ));
         evaluateTierUpgrade(account);
+        return actualPoints;
     }
 
     @Transactional

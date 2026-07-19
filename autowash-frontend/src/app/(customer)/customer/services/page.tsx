@@ -164,7 +164,7 @@ export default function ServiceCatalogPage() {
         ) : (
           <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredItems.map((item) => (
-              <Card key={item.id} onClick={() => setSelectedItem(item)} className="overflow-hidden rounded-3xl border border-black/[0.04] bg-white shadow-sm hover:shadow-md transition-all duration-300 flex flex-col group cursor-pointer">
+              <Card key={item.id} onClick={() => setSelectedItem(item)} className="overflow-hidden rounded-2xl border border-black/[0.04] bg-white shadow-sm hover:shadow-md transition-all duration-300 flex flex-col group cursor-pointer">
                 {/* Ảnh thumbnail */}
                 {item.images && item.images.length > 0 && (
                   <div className="w-full aspect-video overflow-hidden bg-slate-100 shrink-0">
@@ -206,12 +206,12 @@ export default function ServiceCatalogPage() {
                     ))}
                   </div>
 
-                  <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
+                  <div className="mt-auto flex flex-col gap-3 border-t border-slate-100 pt-4">
                     <div className="space-y-0.5">
                       <span className="text-[10px] font-bold text-slate-400 block uppercase">
                         {t("Giá bán", "Price")}
                       </span>
-                      <span className="text-xl font-black text-slate-950">
+                      <span className="block whitespace-nowrap text-xl font-black text-slate-950">
                         {formatBookingCurrency(item.price)}
                       </span>
                     </div>
@@ -220,7 +220,7 @@ export default function ServiceCatalogPage() {
                         e.stopPropagation();
                         handleQuickBook(item);
                       }}
-                      className="rounded-xl bg-[#0566D9]/10 text-[#0566D9] hover:bg-[#0566D9] hover:text-white px-5 py-2 text-xs font-black shadow-none transition-all duration-200"
+                      className="h-10 w-full shrink-0 rounded-xl bg-[#0566D9]/10 px-3 text-xs font-black text-[#0566D9] shadow-none transition-all duration-200 hover:bg-[#0566D9] hover:text-white"
                     >
                       {t("Quick Book", "Quick Book")}
                     </Button>

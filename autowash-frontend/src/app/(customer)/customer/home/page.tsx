@@ -118,6 +118,12 @@ const mockPromo = {
   ss: 52,
 };
 
+function formatRating(value: number | string | null | undefined) {
+  const rating = Number(value ?? 5);
+  if (!Number.isFinite(rating)) return "5";
+  return Number.isInteger(rating) ? String(rating) : rating.toFixed(1).replace(/\.0$/, "");
+}
+
 function toLiveSessionStatus(status: string): "PENDING" | "SCHEDULED" | "CHECKED_IN" | "IN_PROGRESS" | "COMPLETED" {
   if (status === "CHECKED_IN" || status === "IN_PROGRESS" || status === "COMPLETED" || status === "PENDING") {
     return status;
@@ -257,7 +263,7 @@ export default function CustomerHomePage() {
         description: p.description,
         price: formatBookingCurrency(p.basePrice),
         duration: `${p.duration} ${t("phút", "mins")}`,
-        rating: p.averageRating ? Number(p.averageRating).toFixed(1) : "5.0",
+        rating: formatRating(p.averageRating),
         reviews: `${p.reviewCount || 0} reviews`,
         badge: idx === 1 ? { label: t("Bán chạy", "Best Seller"), tone: "amber" } : undefined,
         feedback: idx === 0 
