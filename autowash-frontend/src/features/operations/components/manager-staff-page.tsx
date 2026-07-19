@@ -161,7 +161,7 @@ function StaffCard({ staff, selected, onSelect }: { staff: StaffWorkload; select
             <p className="truncate text-base font-black text-slate-950">{staff.staffName}</p>
             <p className="mt-0.5 flex items-center gap-1 text-xs font-bold text-slate-500">
               <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-              {staff.rating}/5 · {staff.completedSessions.length} completed
+              {formatRating(staff.rating)}/5 · {staff.completedSessions.length} completed
             </p>
           </div>
         </div>
@@ -313,6 +313,10 @@ function buildStaffWorkloads(staffOptions: StaffOption[], sessions: OperationsQu
       };
     })
     .sort((left, right) => right.activeSessions.length - left.activeSessions.length || left.staffName.localeCompare(right.staffName));
+}
+
+function formatRating(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
 function getStatusLabel(status: WashSessionStatus) {
