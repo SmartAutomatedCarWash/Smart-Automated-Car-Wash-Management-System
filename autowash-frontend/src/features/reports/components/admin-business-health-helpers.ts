@@ -10,7 +10,7 @@ export const REPORT_RANGE_OPTIONS: Array<{ value: ReportRangeKey; label: string;
 export const REPORT_GROUP_OPTIONS: Array<{ value: ReportAnalysisGroup; label: string; labelVi: string }> = [
   { value: "revenue", label: "Revenue", labelVi: "Doanh thu" },
   { value: "service", label: "Service", labelVi: "Dịch vụ" },
-  { value: "promotion", label: "Promotion", labelVi: "Khuyến mãi" },
+  { value: "discount", label: "Discount", labelVi: "Ưu đãi" },
   { value: "channel", label: "Channel", labelVi: "Kênh" },
 ];
 
@@ -62,7 +62,7 @@ export function breakdownForGroup(
   breakdowns: {
     revenue: AdminReportBreakdown;
     service: AdminReportBreakdown;
-    promotion: AdminReportBreakdown;
+    discount: AdminReportBreakdown;
     channel: AdminReportBreakdown;
   },
 ) {

@@ -3,7 +3,6 @@ import type {
   LoyaltyTier,
   LoyaltyTransactionType,
   TierVoucherOffer,
-  PromotionType,
 } from "@/entities/loyalty";
 
 import type { TierConfig } from "@/features/settings/lib/admin-tiers-service";
@@ -49,17 +48,6 @@ export function formatLoyaltyTransactionType(type: LoyaltyTransactionType) {
 export function formatLoyaltyPoints(points: number) {
   const prefix = points > 0 ? "+" : "";
   return `${prefix}${points.toLocaleString("vi-VN")} pts`;
-}
-
-export function formatPromotionType(type: PromotionType) {
-  switch (type) {
-    case "ALL_TIERS":
-      return "All members";
-    case "SELECTED_TIERS":
-      return "Selected tiers";
-    case "NEW_CUSTOMERS":
-      return "New customers";
-  }
 }
 
 export function getTierProgress(tier: LoyaltyTier, currentPoints: number, configs: TierConfig[]) {

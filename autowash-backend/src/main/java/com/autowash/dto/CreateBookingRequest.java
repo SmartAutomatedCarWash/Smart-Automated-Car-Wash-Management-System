@@ -21,7 +21,7 @@ public record CreateBookingRequest(
         @NotBlank(message = "Booking time is required")
         @Pattern(regexp = "^([01]\\d|2[0-3]):[0-5]\\d$", message = "Booking time must be in HH:mm format")
         String bookingTime,
-        String voucherCode,
+        String discountCode,
         @Email(message = "Confirmation email must be valid")
         String confirmationEmail,
         @NotNull(message = "Payment method is required")

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CalendarClock, CarFront, CheckCircle2, ClipboardList, Languages, Loader2, RefreshCcw, Timer } from "lucide-react";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
 import { useActiveWashTracking, useCustomerBookingDetail } from "@/features/bookings/hooks/use-bookings";
 import { ApplyPointsPanel } from "@/features/bookings/components/apply-points-panel";
@@ -123,6 +123,7 @@ function toLiveTrackingStatus(status: WashTrackingSession["status"]) {
 }
 
 export function CustomerWashTrackingPage() {
+  const getErrorMessage = useErrorMessage();
   const { language, setLanguage } = useLanguageStore();
   const copy = COPY[language];
   const activeQuery = useActiveWashTracking();
@@ -173,7 +174,7 @@ export function CustomerWashTrackingPage() {
           <Card className="border-rose-200 bg-white">
             <CardHeader>
               <CardTitle>{copy.trackingErrorTitle}</CardTitle>
-              <CardDescription>{getDisplayErrorMessage(activeQuery.error)}</CardDescription>
+              <CardDescription>{getErrorMessage(activeQuery.error)}</CardDescription>
             </CardHeader>
           </Card>
         ) : !activeSession ? (
@@ -204,8 +205,8 @@ export function CustomerWashTrackingPage() {
                 <ApplyPointsPanel
                   bookingId={bookingQuery.data.bookingId}
                   finalAmount={bookingQuery.data.pricing.finalAmount}
-                  pointsRedeemed={bookingQuery.data.pricing.pointsRedeemed}
-                  pointsDiscount={bookingQuery.data.pricing.pointsDiscount}
+                  pointsRedeemed={0}
+                  pointsDiscount={bookingQuery.data.pricing.discountAmount}
                   disabled={bookingQuery.data.status !== "CONFIRMED"}
                   language={language}
                 />

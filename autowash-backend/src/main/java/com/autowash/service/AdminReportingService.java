@@ -1,5 +1,11 @@
 package com.autowash.service;
 
+import com.autowash.dto.UpdateAdminCustomerRoleResponse;
+
+import com.autowash.dto.BookingDetailResponse;
+
+import com.autowash.dto.StaffKpiItem;
+
 import com.autowash.dto.AdminBookingResponse;
 import com.autowash.dto.AdminBusinessHealthReportResponse;
 import com.autowash.dto.AdminAccountResponse;
@@ -24,17 +30,17 @@ public interface AdminReportingService {
     AdminAccountResponse updateStaffStatus(UUID staffId, String status);
     AdminAccountResponse deleteStaff(UUID staffId);
     AdminStaffWorkloadResponse getStaffWorkload(UUID staffId);
-    List<com.autowash.dto.StaffKpiItem> listStaffKpi(String range);
+    List<StaffKpiItem> listStaffKpi(String range);
     AdminAccountResponse updateCustomerStatus(UUID customerId, String status);
     AdminOperationsDashboardResponse getOperationsDashboard();
     AccountPage listAccounts(String role, String status, String searchQuery, int page, int limit);
     AdminAccountResponse getAccountDetail(UUID accountId);
     AdminBusinessHealthReportResponse getBusinessHealthReport(String range, String analysisGroup, LocalDate customDateFrom, LocalDate customDateTo);
     BookingPage listBookings(String status, LocalDate dateFrom, LocalDate dateTo, UUID customerId, String searchQuery, int page, int limit);
-    com.autowash.dto.BookingDetailResponse getBookingDetail(String bookingId);
+    BookingDetailResponse getBookingDetail(String bookingId);
     AdminCustomerDetailResponse getCustomerDetail(UUID customerId);
-    com.autowash.dto.UpdateAdminCustomerRoleResponse updateCustomerRole(UUID customerId, String role);
-    com.autowash.dto.UpdateAdminCustomerRoleResponse updateCustomerTier(UUID customerId, String tier);
+    UpdateAdminCustomerRoleResponse updateCustomerRole(UUID customerId, String role);
+    UpdateAdminCustomerRoleResponse updateCustomerTier(UUID customerId, String tier);
     void adjustActivePoints(UUID customerId, int points, String reason);
     WashHistoryPage getWashHistory(UUID customerId, Instant dateFrom, Instant dateTo, int page, int limit);
     LoyaltyService.TransactionPage getPointHistory(UUID customerId, String type, Instant dateFrom, Instant dateTo, int page, int limit);

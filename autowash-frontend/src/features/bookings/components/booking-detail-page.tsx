@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
   formatBookingCurrency,
   getPaymentMethodLabel,
@@ -51,7 +51,13 @@ function formatShortDate(date: string, lang: "vi" | "en") {
 }
 
 function getBookingOptions(booking: BookingDetail): BookingAddonSelection[] {
-  return booking.addons ?? booking.options ?? [];
+  return (booking.details ?? [])
+    .filter((detail) => detail.itemType === "ADDON" || detail.itemType === "OPTION")
+    .map((detail) => ({
+      addonId: detail.refId,
+      addonName: detail.snapshotName,
+      addonPrice: detail.snapshotPrice,
+    }));
 }
 
 // ── Status timeline config ───────────────────────────────────────────────────
@@ -95,6 +101,7 @@ function useCountdown(bookingDate: string, bookingTime: string) {
 }
 
 function CountdownBadge({ bookingDate, bookingTime, language }: { bookingDate: string; bookingTime: string; language: "vi" | "en" }) {
+  const getErrorMessage = useErrorMessage();
   const diff = useCountdown(bookingDate, bookingTime);
   if (diff === null) return null;
   if (diff <= 0) {
@@ -122,6 +129,7 @@ function CountdownBadge({ bookingDate, bookingTime, language }: { bookingDate: s
 }
 
 export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) {
+  const getErrorMessage = useErrorMessage();
   const { language } = useLanguageStore();
   const bookingQuery = useCustomerBookingDetail(bookingId);
   const profileQuery = useCustomerProfile();
@@ -166,7 +174,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
             <CardTitle>{translate(language, "Không thể tải chi tiết lịch đặt", "Unable to load booking details")}</CardTitle>
             <CardDescription>
               {bookingQuery.isError
-                ? getDisplayErrorMessage(bookingQuery.error)
+                ? getErrorMessage(bookingQuery.error)
                 : translate(language, "Không tìm thấy lịch đặt.", "Booking not found.")}
             </CardDescription>
           </CardHeader>
@@ -232,7 +240,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
       setShowCancelForm(false);
       setCancelReason("");
     } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -364,7 +372,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 [translate(language, "Email", "Email"), customerEmail],
                 [translate(language, "Xe", "Vehicle"), `${booking.vehicleBrand} ${booking.vehicleModel}`],
                 [translate(language, "Biển số", "Plate"), booking.vehiclePlate],
-                [translate(language, "Dịch vụ", "Service"), booking.packageName ?? "--"],
+                [translate(language, "Dịch vụ", "Service"), booking.primaryItemName ?? "--"],
               ]}
             />
             <DetailSection
@@ -410,7 +418,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
               </SidebarBlock>
 
               <SidebarBlock icon={<FileText className="h-4 w-4" />} title={translate(language, "Tóm tắt đơn hàng", "Order summary")}>
-                <SummaryLine label={booking.packageName ?? translate(language, "Dịch vụ", "Service")} value={formatBookingCurrency(booking.pricing.basePrice)} />
+                <SummaryLine label={booking.primaryItemName ?? translate(language, "Dịch vụ", "Service")} value={formatBookingCurrency(booking.pricing.subtotal)} />
                 {bookingOptions.map((addon) => (
                   <SummaryLine
                     key={addon.addonId}
@@ -420,11 +428,11 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                   />
                 ))}
                 <SummaryLine label={translate(language, "Tạm tính", "Subtotal")} value={formatBookingCurrency(booking.pricing.subtotal)} muted />
-                {booking.pricing.voucherDiscount > 0 ? (
-                  <SummaryLine label={translate(language, "Giảm giá voucher", "Voucher discount")} value={`-${formatBookingCurrency(booking.pricing.voucherDiscount)}`} muted />
+                {booking.pricing.discountAmount > 0 ? (
+                  <SummaryLine label={translate(language, "Giảm giá voucher", "Voucher discount")} value={`-${formatBookingCurrency(booking.pricing.discountAmount)}`} muted />
                 ) : null}
-                {booking.pricing.pointsDiscount > 0 ? (
-                  <SummaryLine label={translate(language, "Giảm điểm", "Points discount")} value={`-${formatBookingCurrency(booking.pricing.pointsDiscount)}`} muted />
+                {booking.pricing.discountAmount > 0 ? (
+                  <SummaryLine label={translate(language, "Giảm điểm", "Points discount")} value={`-${formatBookingCurrency(booking.pricing.discountAmount)}`} muted />
                 ) : null}
                 <SummaryLine label={translate(language, "Tổng cộng", "Total")} value={formatBookingCurrency(booking.pricing.finalAmount)} strong />
               </SidebarBlock>

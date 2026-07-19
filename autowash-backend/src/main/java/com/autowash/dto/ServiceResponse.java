@@ -1,5 +1,7 @@
 package com.autowash.dto;
 
+import java.util.List;
+
 public record ServiceResponse(
         String serviceId,
         String name,
@@ -7,6 +9,6 @@ public record ServiceResponse(
         long price,
         int duration,
         String status,
-        java.util.List<String> imageUrls
+        List<String> imageUrls
 ) {
 }

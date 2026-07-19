@@ -1,7 +1,8 @@
 package com.autowash.repository;
 
-import com.autowash.entity.User;
 import com.autowash.entity.Notification;
+
+import com.autowash.entity.User;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;

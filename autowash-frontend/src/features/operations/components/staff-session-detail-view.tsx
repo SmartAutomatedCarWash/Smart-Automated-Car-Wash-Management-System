@@ -7,23 +7,24 @@ import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { completeWashSession, getOperationsQueue, startWashSession } from "@/features/operations/lib/operations-service";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { OperationsQueueSession } from "@/entities/operations";
 
 export function StaffSessionDetailView({ sessionId }: { sessionId: string }) {
+  const getErrorMessage = useErrorMessage();
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.userId);
   const queueQuery = useQuery({ queryKey: ["staff-my-sessions", "queue"], queryFn: getOperationsQueue, refetchInterval: 15_000 });
   const session = queueQuery.data?.columns.flatMap((column) => column.sessions).find((item) => item.sessionId === sessionId && item.assignedStaffId === userId);
   const invalidate = () => { void queryClient.invalidateQueries({ queryKey: ["staff-my-sessions"] }); void queryClient.invalidateQueries({ queryKey: ["staff-dashboard"] }); };
-  const startMutation = useMutation({ mutationFn: startWashSession, onSuccess: () => { invalidate(); toast.success("Đã bắt đầu rửa xe."); }, onError: (error: ApiErrorResponse) => toast.error(getDisplayErrorMessage(error)) });
-  const completeMutation = useMutation({ mutationFn: completeWashSession, onSuccess: () => { invalidate(); toast.success("Đã hoàn tất phiên rửa."); }, onError: (error: ApiErrorResponse) => toast.error(getDisplayErrorMessage(error)) });
+  const startMutation = useMutation({ mutationFn: startWashSession, onSuccess: () => { invalidate(); toast.success("Đã bắt đầu rửa xe."); }, onError: (error: ApiErrorResponse) => toast.error(getErrorMessage(error)) });
+  const completeMutation = useMutation({ mutationFn: completeWashSession, onSuccess: () => { invalidate(); toast.success("Đã hoàn tất phiên rửa."); }, onError: (error: ApiErrorResponse) => toast.error(getErrorMessage(error)) });
 
   if (queueQuery.isPending) return <WorkspacePage><div className="h-64 animate-pulse rounded-3xl bg-slate-100" /></WorkspacePage>;
-  if (queueQuery.isError) return <WorkspacePage><WorkspaceEmptyState title="Không thể tải session" description={getDisplayErrorMessage(queueQuery.error as unknown as ApiErrorResponse)} /></WorkspacePage>;
+  if (queueQuery.isError) return <WorkspacePage><WorkspaceEmptyState title="Không thể tải session" description={getErrorMessage(queueQuery.error as unknown as ApiErrorResponse)} /></WorkspacePage>;
   if (!session) return <WorkspacePage><WorkspaceEmptyState title="Không tìm thấy session" description="Session không tồn tại hoặc không được phân công cho tài khoản này." /></WorkspacePage>;
   const isReady = session.status === "CHECKED_IN";
   const isWashing = session.status === "IN_PROGRESS";

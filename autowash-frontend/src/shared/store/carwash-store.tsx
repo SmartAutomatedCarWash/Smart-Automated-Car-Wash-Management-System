@@ -18,7 +18,7 @@ export type BookingStatus =
   | "Cancelled"
   | "No-show";
 export type WashStatus = "Queued" | "In Progress" | "Ready for Checkout" | "Completed";
-export type NotificationType = "Booking" | "Reminder" | "Loyalty" | "Promotion" | "Support";
+export type NotificationType = "Booking" | "Reminder" | "Loyalty" | "DiscountRecord" | "Support";
 export type RewardType = "discount" | "free wash" | "add-on";
 export type RefundStatus = "NONE" | "PENDING" | "COMPLETED";
 export type ReviewAlertStatus = "OPEN" | "ACKNOWLEDGED";
@@ -131,7 +131,7 @@ export interface ReviewRecord {
   alertStatus: ReviewAlertStatus;
 }
 
-export interface VoucherTemplateRecord {
+export interface TierVoucherOfferRecord {
   id: string;
   name: string;
   discountLabel: string;
@@ -141,10 +141,10 @@ export interface VoucherTemplateRecord {
   expiryDays: number;
 }
 
-export interface CustomerVoucherRecord {
+export interface UserDiscountRecord {
   id: string;
   customerId: string;
-  templateId: string;
+  offerId: string;
   name: string;
   discountLabel: string;
   code: string;
@@ -188,7 +188,7 @@ export interface WashSessionRecord {
   walkIn?: boolean;
 }
 
-export interface Promotion {
+export interface DiscountRecord {
   id: string;
   code: string;
   discountType: "Percentage" | "Flat";
@@ -256,8 +256,8 @@ export interface Transaction {
   services: Service[];
   subtotal: number;
   tierDiscount: number;
-  promoDiscount: number;
-  promoCode?: string;
+  discountDiscount: number;
+  discountCode?: string;
   pointsRedeemed: number;
   pointsValue: number;
   finalAmount: number;
@@ -438,7 +438,7 @@ interface PersistedStore {
   isAuthenticated: boolean;
   tiers: TierRule[];
   services: Service[];
-  promotions: Promotion[];
+  discounts: DiscountRecord[];
   currentCustomerId: string;
   customers: CustomerRecord[];
   staffMembers: StaffRecord[];
@@ -454,8 +454,8 @@ interface PersistedStore {
   ledger: LedgerEntry[];
   tierHistory: TierHistoryEntry[];
   reviews: ReviewRecord[];
-  voucherTemplates: VoucherTemplateRecord[];
-  customerVouchers: CustomerVoucherRecord[];
+  tierVoucherOffers: TierVoucherOfferRecord[];
+  customerDiscounts: UserDiscountRecord[];
   supportThreads: SupportChatThread[];
   notifications: Array<Omit<NotificationItem, "timestamp"> & { timestamp: string }>;
   adjustments: Array<Omit<Adjustment, "timestamp"> & { timestamp: string }>;
@@ -477,7 +477,7 @@ interface Store {
   logout: () => void;
   tiers: TierRule[];
   services: Service[];
-  promotions: Promotion[];
+  discounts: DiscountRecord[];
   rewards: Reward[];
   currentCustomerId: string;
   customers: CustomerRecord[];
@@ -495,8 +495,8 @@ interface Store {
   ledger: LedgerEntry[];
   tierHistory: TierHistoryEntry[];
   reviews: ReviewRecord[];
-  voucherTemplates: VoucherTemplateRecord[];
-  customerVouchers: CustomerVoucherRecord[];
+  tierVoucherOffers: TierVoucherOfferRecord[];
+  customerDiscounts: UserDiscountRecord[];
   supportThreads: SupportChatThread[];
   notifications: NotificationItem[];
   adjustments: Adjustment[];
@@ -573,7 +573,7 @@ interface Store {
   createOrUpdateSessionDraft: (draft: SessionDraft | null) => void;
   prepareSessionForBooking: (bookingId: string) => string;
   completeCheckout: (input: {
-    promoCode?: string | null;
+    discountCode?: string | null;
     pointsRedeemed: number;
     paymentMethod: string;
   }) => Transaction | null;
@@ -583,9 +583,9 @@ interface Store {
   addService: (service: Omit<Service, "id">) => Service;
   updateService: (id: string, patch: Partial<Omit<Service, "id">>) => void;
   removeService: (id: string) => { ok: boolean; error?: string };
-  addPromotion: (promotion: Omit<Promotion, "id">) => void;
-  updatePromotion: (id: string, patch: Partial<Omit<Promotion, "id">>) => void;
-  togglePromotion: (id: string) => void;
+  addDiscountRecord: (discount: Omit<DiscountRecord, "id">) => void;
+  updateDiscountRecord: (id: string, patch: Partial<Omit<DiscountRecord, "id">>) => void;
+  toggleDiscountRecord: (id: string) => void;
   cancelBookingWithRefund: (
     bookingId: string,
     actor: "Customer" | "Admin",
@@ -598,10 +598,10 @@ interface Store {
     comment?: string;
   }) => ReviewRecord;
   acknowledgeReview: (reviewId: string) => void;
-  addVoucherTemplate: (input: Omit<VoucherTemplateRecord, "id">) => VoucherTemplateRecord;
-  updateVoucherTemplate: (id: string, patch: Partial<Omit<VoucherTemplateRecord, "id">>) => void;
-  toggleVoucherTemplate: (id: string) => void;
-  redeemVoucherTemplate: (customerId: string, templateId: string) => CustomerVoucherRecord;
+  addTierVoucherOffer: (input: Omit<TierVoucherOfferRecord, "id">) => TierVoucherOfferRecord;
+  updateTierVoucherOffer: (id: string, patch: Partial<Omit<TierVoucherOfferRecord, "id">>) => void;
+  toggleTierVoucherOffer: (id: string) => void;
+  redeemTierVoucherOffer: (customerId: string, offerId: string) => UserDiscountRecord;
   simulateCustomerSpend: (customerId: string, amountVnd: number) => void;
   ensureSupportThread: (customerId: string) => SupportChatThread;
   sendSupportMessage: (input: {
@@ -647,7 +647,7 @@ const tierSeed: TierRule[] = [
     bookingWindowDays: 12,
     discountPercent: 10,
     multiplier: 2,
-    perks: "Premium promotion eligibility and double points.",
+    perks: "Premium discount eligibility and double points.",
   },
   {
     name: "Platinum",
@@ -706,7 +706,7 @@ const serviceSeed: Service[] = [
   },
 ];
 
-const promotionSeed: Promotion[] = [
+const discountSeed: DiscountRecord[] = [
   {
     id: "p1",
     code: "WELCOME50K",
@@ -748,7 +748,7 @@ const rewardSeed: Reward[] = [
   { id: "r3", name: "50K Wash Voucher", cost: 300, icon: "Ticket", type: "discount" },
 ];
 
-const voucherTemplateSeed: VoucherTemplateRecord[] = [
+const tierVoucherOfferSeed: TierVoucherOfferRecord[] = [
   {
     id: "vt-basic-10",
     name: "10% Off Wash",
@@ -1074,11 +1074,11 @@ const reviewSeed: ReviewRecord[] = [
   },
 ];
 
-const customerVoucherSeed: CustomerVoucherRecord[] = [
+const userDiscountSeed: UserDiscountRecord[] = [
   {
     id: "cv-001",
     customerId: "c2",
-    templateId: "vt-flat-30k",
+    offerId: "vt-flat-30k",
     name: "30,000 VND Off",
     discountLabel: "30,000 VND off",
     code: "AURA-30K-SAMPLE",
@@ -1169,7 +1169,7 @@ const transactionSeed: Transaction[] = [
     services: [serviceSeed[0], serviceSeed[2]],
     subtotal: 180000,
     tierDiscount: 9000,
-    promoDiscount: 0,
+    discountDiscount: 0,
     pointsRedeemed: 0,
     pointsValue: 0,
     finalAmount: 171000,
@@ -1383,30 +1383,30 @@ export function getRolling12MonthPoints(
 export function calculateCheckoutPricing(input: {
   subtotal: number;
   tierDiscountPercent: number;
-  promo?: Promotion | null;
+  discount?: DiscountRecord | null;
 }) {
   const tierDiscount = Math.round(input.subtotal * (input.tierDiscountPercent / 100));
   const afterTier = Math.max(0, input.subtotal - tierDiscount);
-  const rawPromoDiscount = input.promo
-    ? input.promo.discountType === "Percentage"
-      ? Math.round(afterTier * (input.promo.amount / 100))
-      : Math.min(input.promo.amount, afterTier)
+  const rawPromoDiscount = input.discount
+    ? input.discount.discountType === "Percentage"
+      ? Math.round(afterTier * (input.discount.amount / 100))
+      : Math.min(input.discount.amount, afterTier)
     : 0;
   const bestSingleDiscount = Math.max(tierDiscount, rawPromoDiscount);
   const effectiveTierDiscount =
-    input.promo?.stackable === false
+    input.discount?.stackable === false
       ? tierDiscount >= rawPromoDiscount
         ? tierDiscount
         : 0
       : tierDiscount;
-  const promoDiscount =
-    input.promo?.stackable === false
+  const discountDiscount =
+    input.discount?.stackable === false
       ? rawPromoDiscount > tierDiscount
         ? rawPromoDiscount
         : 0
       : rawPromoDiscount;
   const afterPromo =
-    input.promo?.stackable === false
+    input.discount?.stackable === false
       ? Math.max(0, input.subtotal - bestSingleDiscount)
       : Math.max(0, input.subtotal - tierDiscount - rawPromoDiscount);
 
@@ -1414,7 +1414,7 @@ export function calculateCheckoutPricing(input: {
     tierDiscount,
     rawPromoDiscount,
     effectiveTierDiscount,
-    promoDiscount,
+    discountDiscount,
     afterPromo,
   };
 }
@@ -1458,8 +1458,8 @@ function refundRateForBooking(booking: Booking) {
   return 0;
 }
 
-function generateVoucherCode(templateId: string) {
-  return `${templateId
+function generateVoucherCode(offerId: string) {
+  return `${offerId
     .replace(/[^A-Z0-9]/gi, "")
     .toUpperCase()
     .slice(0, 6)}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -1497,7 +1497,7 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [tiers, setTiers] = React.useState<TierRule[]>(tierSeed);
   const [services, setServices] = React.useState<Service[]>(serviceSeed);
-  const [promotions, setPromotions] = React.useState<Promotion[]>(promotionSeed);
+  const [discounts, setDiscountRecords] = React.useState<DiscountRecord[]>(discountSeed);
   const [rewards] = React.useState<Reward[]>(rewardSeed);
   const [currentCustomerId, setCurrentCustomerId] = React.useState("c1");
   const [customers, setCustomers] = React.useState<CustomerRecord[]>(customerSeed);
@@ -1517,10 +1517,10 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
   const [ledger, setLedger] = React.useState<LedgerEntry[]>(ledgerSeed);
   const [tierHistory, setTierHistory] = React.useState<TierHistoryEntry[]>(tierHistorySeed);
   const [reviews, setReviews] = React.useState<ReviewRecord[]>(reviewSeed);
-  const [voucherTemplates, setVoucherTemplates] =
-    React.useState<VoucherTemplateRecord[]>(voucherTemplateSeed);
-  const [customerVouchers, setCustomerVouchers] =
-    React.useState<CustomerVoucherRecord[]>(customerVoucherSeed);
+  const [tierVoucherOffers, setTierVoucherOffers] =
+    React.useState<TierVoucherOfferRecord[]>(tierVoucherOfferSeed);
+  const [customerDiscounts, setCustomerVouchers] =
+    React.useState<UserDiscountRecord[]>(userDiscountSeed);
   const [supportThreads, setSupportThreads] =
     React.useState<SupportChatThread[]>(supportThreadSeed);
   const [notifications, setNotifications] = React.useState<NotificationItem[]>(notificationsSeed);
@@ -1552,7 +1552,7 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
     const restoredBookings = mergeSeedBookings(persisted.bookings ?? bookingSeed);
     setTiers(persisted.tiers ?? tierSeed);
     setServices(persisted.services ?? serviceSeed);
-    setPromotions(persisted.promotions ?? promotionSeed);
+    setDiscountRecords(persisted.discounts ?? discountSeed);
     setCurrentCustomerId(persisted.currentCustomerId ?? "c1");
     setCustomers(
       (persisted.customers ?? customerSeed).map((customer) => ({
@@ -1641,8 +1641,8 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
     setLedger(persisted.ledger ?? ledgerSeed);
     setTierHistory(persisted.tierHistory ?? tierHistorySeed);
     setReviews(persisted.reviews ?? reviewSeed);
-    setVoucherTemplates(persisted.voucherTemplates ?? voucherTemplateSeed);
-    setCustomerVouchers(persisted.customerVouchers ?? customerVoucherSeed);
+    setTierVoucherOffers(persisted.tierVoucherOffers ?? tierVoucherOfferSeed);
+    setCustomerVouchers(persisted.customerDiscounts ?? userDiscountSeed);
     setSupportThreads(normalizeSupportThreads(persisted.supportThreads));
     setNotifications(
       (persisted.notifications ?? notificationsSeed).map((notification) => ({
@@ -3125,57 +3125,57 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
     );
   }, []);
 
-  const addVoucherTemplate = React.useCallback((input: Omit<VoucherTemplateRecord, "id">) => {
+  const addTierVoucherOffer = React.useCallback((input: Omit<TierVoucherOfferRecord, "id">) => {
     const nextTemplate = { ...input, id: crypto.randomUUID() };
-    setVoucherTemplates((prev) => [nextTemplate, ...prev]);
+    setTierVoucherOffers((prev) => [nextTemplate, ...prev]);
     return nextTemplate;
   }, []);
 
-  const updateVoucherTemplate = React.useCallback(
-    (id: string, patch: Partial<Omit<VoucherTemplateRecord, "id">>) => {
-      setVoucherTemplates((prev) =>
-        prev.map((template) => (template.id === id ? { ...template, ...patch } : template)),
+  const updateTierVoucherOffer = React.useCallback(
+    (id: string, patch: Partial<Omit<TierVoucherOfferRecord, "id">>) => {
+      setTierVoucherOffers((prev) =>
+        prev.map((offer) => (offer.id === id ? { ...offer, ...patch } : offer)),
       );
     },
     [],
   );
 
-  const toggleVoucherTemplate = React.useCallback((id: string) => {
-    setVoucherTemplates((prev) =>
-      prev.map((template) =>
-        template.id === id ? { ...template, active: !template.active } : template,
+  const toggleTierVoucherOffer = React.useCallback((id: string) => {
+    setTierVoucherOffers((prev) =>
+      prev.map((offer) =>
+        offer.id === id ? { ...offer, active: !offer.active } : offer,
       ),
     );
   }, []);
 
-  const redeemVoucherTemplate = React.useCallback(
-    (customerId: string, templateId: string) => {
+  const redeemTierVoucherOffer = React.useCallback(
+    (customerId: string, offerId: string) => {
       const customer = customers.find((item) => item.id === customerId);
-      const template = voucherTemplates.find((item) => item.id === templateId);
-      if (!customer || !template) {
-        throw new Error("Customer or voucher template not found.");
+      const offer = tierVoucherOffers.find((item) => item.id === offerId);
+      if (!customer || !offer) {
+        throw new Error("Customer or voucher offer not found.");
       }
-      if (!template.active) {
-        throw new Error("This voucher template is inactive.");
+      if (!offer.active) {
+        throw new Error("This voucher offer is inactive.");
       }
-      if (tierRank(customer.tier) < tierRank(template.minTier)) {
+      if (tierRank(customer.tier) < tierRank(offer.minTier)) {
         throw new Error("Customer tier is too low for this voucher.");
       }
-      if (customer.points < template.pointCost) {
+      if (customer.points < offer.pointCost) {
         throw new Error("Customer does not have enough points.");
       }
 
-      const voucher: CustomerVoucherRecord = {
+      const voucher: UserDiscountRecord = {
         id: crypto.randomUUID(),
         customerId,
-        templateId,
-        name: template.name,
-        discountLabel: template.discountLabel,
-        code: generateVoucherCode(template.id),
-        pointCost: template.pointCost,
+        offerId,
+        name: offer.name,
+        discountLabel: offer.discountLabel,
+        code: generateVoucherCode(offer.id),
+        pointCost: offer.pointCost,
         status: "ACTIVE",
         redeemedAt: new Date().toISOString(),
-        expiresAt: addDays(nowLocalDateISO(), template.expiryDays),
+        expiresAt: addDays(nowLocalDateISO(), offer.expiryDays),
       };
 
       setCustomerVouchers((prev) => [voucher, ...prev]);
@@ -3184,8 +3184,8 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
           item.id === customerId
             ? {
                 ...item,
-                points: item.points - template.pointCost,
-                tier: tierFor(item.points - template.pointCost, tiers),
+                points: item.points - offer.pointCost,
+                tier: tierFor(item.points - offer.pointCost, tiers),
               }
             : item,
         ),
@@ -3196,15 +3196,15 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
           customerId,
           date: nowLocalDateISO(),
           type: "Spent",
-          delta: -template.pointCost,
-          description: `Redeemed ${template.name}`,
+          delta: -offer.pointCost,
+          description: `Redeemed ${offer.name}`,
         },
         ...prev,
       ]);
 
       return voucher;
     },
-    [customers, tiers, voucherTemplates],
+    [customers, tiers, tierVoucherOffers],
   );
 
   const simulateCustomerSpend = React.useCallback(
@@ -3285,11 +3285,11 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
 
   const completeCheckout = React.useCallback(
     ({
-      promoCode,
+      discountCode,
       pointsRedeemed,
       paymentMethod,
     }: {
-      promoCode?: string | null;
+      discountCode?: string | null;
       pointsRedeemed: number;
       paymentMethod: string;
     }) => {
@@ -3310,19 +3310,19 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
       const customer = customers.find((item) => item.id === sessionDraft.customerId);
       const tierRule = customer ? tiers.find((tier) => tier.name === customer.tier) : undefined;
       const subtotal = sessionDraft.services.reduce((sum, service) => sum + service.price, 0);
-      const promo = promotions.find(
+      const discount = discounts.find(
         (item) =>
-          promoCode &&
-          item.code === promoCode &&
+          discountCode &&
+          item.code === discountCode &&
           item.active &&
           item.startDate <= nowLocalDateISO() &&
           item.endDate >= nowLocalDateISO() &&
           (!customer || item.tiers.includes(customer.tier)),
       );
-      const { effectiveTierDiscount, promoDiscount, afterPromo } = calculateCheckoutPricing({
+      const { effectiveTierDiscount, discountDiscount, afterPromo } = calculateCheckoutPricing({
         subtotal,
         tierDiscountPercent: customer && tierRule ? tierRule.discountPercent : 0,
-        promo,
+        discount,
       });
       const requestedPoints = Number.isFinite(pointsRedeemed)
         ? Math.max(0, Math.trunc(pointsRedeemed))
@@ -3353,8 +3353,8 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
         services: sessionDraft.services,
         subtotal,
         tierDiscount: effectiveTierDiscount,
-        promoDiscount,
-        promoCode: promo?.code,
+        discountDiscount,
+        discountCode: discount?.code,
         pointsRedeemed: safePoints,
         pointsValue,
         finalAmount,
@@ -3377,7 +3377,7 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
                   checkoutPaymentMethod: tx.paymentMethod,
                   checkoutPointsEarned: tx.pointsEarned,
                   checkoutPointsRedeemed: tx.pointsRedeemed,
-                  checkoutPromoCode: tx.promoCode,
+                  checkoutPromoCode: tx.discountCode,
                 }
               : booking,
           ),
@@ -3440,7 +3440,7 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
       setSessionDraft(null);
       return tx;
     },
-    [customers, promotions, pushNotification, sessionDraft, staffMembers, tiers, washSessions],
+    [customers, discounts, pushNotification, sessionDraft, staffMembers, tiers, washSessions],
   );
 
   const redeemReward = React.useCallback(
@@ -3606,7 +3606,7 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
       isAuthenticated,
       tiers,
       services,
-      promotions,
+      discounts,
       currentCustomerId,
       customers,
       staffMembers,
@@ -3622,8 +3622,8 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
       ledger,
       tierHistory,
       reviews,
-      voucherTemplates,
-      customerVouchers,
+      tierVoucherOffers,
+      customerDiscounts,
       supportThreads,
       notifications: notifications.map((notification) => ({
         ...notification,
@@ -3655,8 +3655,8 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
     ledger,
     notifications,
     reviews,
-    voucherTemplates,
-    customerVouchers,
+    tierVoucherOffers,
+    customerDiscounts,
     supportThreads,
     pendingRegistration,
     pendingPhoneChange,
@@ -3674,7 +3674,7 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
     transactions,
     vehiclesByCustomer,
     washSessions,
-    promotions,
+    discounts,
     hydrated,
     settings,
   ]);
@@ -3693,7 +3693,7 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
     logout,
     tiers,
     services,
-    promotions,
+    discounts,
     rewards,
     currentCustomerId,
     customers,
@@ -3711,8 +3711,8 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
     ledger,
     tierHistory,
     reviews,
-    voucherTemplates,
-    customerVouchers,
+    tierVoucherOffers,
+    customerDiscounts,
     supportThreads,
     notifications,
     adjustments,
@@ -3851,26 +3851,26 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
       setServices((prev) => prev.filter((service) => service.id !== id));
       return { ok: true };
     },
-    addPromotion: (promotion) => {
-      if (promotion.startDate > promotion.endDate) {
-        throw new Error("Promotion start date cannot be after end date.");
+    addDiscountRecord: (discount) => {
+      if (discount.startDate > discount.endDate) {
+        throw new Error("DiscountRecord start date cannot be after end date.");
       }
-      setPromotions((prev) => [{ ...promotion, id: crypto.randomUUID() }, ...prev]);
+      setDiscountRecords((prev) => [{ ...discount, id: crypto.randomUUID() }, ...prev]);
     },
-    updatePromotion: (id, patch) =>
-      setPromotions((prev) =>
-        prev.map((promotion) => (promotion.id === id ? { ...promotion, ...patch } : promotion)),
+    updateDiscountRecord: (id, patch) =>
+      setDiscountRecords((prev) =>
+        prev.map((discount) => (discount.id === id ? { ...discount, ...patch } : discount)),
       ),
-    togglePromotion: (id) =>
-      setPromotions((prev) =>
-        prev.map((promotion) =>
-          promotion.id === id ? { ...promotion, active: !promotion.active } : promotion,
+    toggleDiscountRecord: (id) =>
+      setDiscountRecords((prev) =>
+        prev.map((discount) =>
+          discount.id === id ? { ...discount, active: !discount.active } : discount,
         ),
       ),
-    addVoucherTemplate,
-    updateVoucherTemplate,
-    toggleVoucherTemplate,
-    redeemVoucherTemplate,
+    addTierVoucherOffer,
+    updateTierVoucherOffer,
+    toggleTierVoucherOffer,
+    redeemTierVoucherOffer,
     simulateCustomerSpend,
     ensureSupportThread,
     sendSupportMessage,

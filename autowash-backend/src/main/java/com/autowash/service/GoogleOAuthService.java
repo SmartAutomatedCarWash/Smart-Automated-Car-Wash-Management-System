@@ -1,6 +1,7 @@
 package com.autowash.service;
 
 import com.autowash.dto.GoogleAuthTicketResponse;
+
 import com.autowash.dto.LoginResponse;
 
 public interface GoogleOAuthService {

@@ -873,7 +873,7 @@ export function AdminBlogManagementPage() {
                 <div className="space-y-1">
                   <label>{t("Loại", "Type")}</label>
                   <select value={annType} onChange={(e) => setAnnType(e.target.value as any)} className="w-full rounded-xl border border-slate-200 p-2.5 text-xs font-semibold">
-                    <option value="PROMO">PROMO — {t("Khuyến mãi / ưu đãi", "Promotion / deal")}</option>
+                    <option value="PROMO">PROMO — {t("Khuyến mãi / ưu đãi", "Discount / deal")}</option>
                     <option value="INFO">INFO — {t("Thông tin chung", "General information")}</option>
                     <option value="WARNING">WARNING — {t("Cảnh báo / lưu ý quan trọng", "Alert / important notice")}</option>
                   </select>

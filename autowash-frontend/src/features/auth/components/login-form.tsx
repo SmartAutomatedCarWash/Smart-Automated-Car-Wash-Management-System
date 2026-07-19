@@ -8,7 +8,7 @@ import { Button } from "@/shared/ui/ui/button";
 import { Checkbox } from "@/shared/ui/ui/checkbox";
 import { Input } from "@/shared/ui/ui/input";
 import { Label } from "@/shared/ui/ui/label";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { getAuthRedirectPath } from "@/features/auth/lib/auth-session";
 import { getLoginIdentifierValidationMessage, normalizeLoginIdentifier } from "@/features/auth/lib/login-identifier";
 import { useCustomerLogin } from "@/features/auth/hooks/use-auth";
@@ -18,6 +18,7 @@ import { cn } from "@/shared/lib/utils";
 export function LoginForm() {
   const router = useRouter();
   const loginMutation = useCustomerLogin();
+  const getErrorMessage = useErrorMessage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
@@ -25,8 +26,8 @@ export function LoginForm() {
   const accessToken = useAuthStore((state) => state.accessToken);
 
   const errorMessage = useMemo(() => {
-    return loginMutation.error ? getDisplayErrorMessage(loginMutation.error) : null;
-  }, [loginMutation.error]);
+    return loginMutation.error ? getErrorMessage(loginMutation.error) : null;
+  }, [getErrorMessage, loginMutation.error]);
 
   useEffect(() => {
     if (accessToken && user) {

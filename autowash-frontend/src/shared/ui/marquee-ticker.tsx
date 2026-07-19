@@ -10,7 +10,7 @@ import type { Announcement } from "@/features/public/components/api/announcement
 const FALLBACK_MESSAGES: Announcement[] = [
   {
     id: "1",
-    title: "🔥 Rainy season promotion: Get 20% off Ceramic Coating & Undercarriage Wash combo!",
+    title: "🔥 Rainy season discount: Get 20% off Ceramic Coating & Undercarriage Wash combo!",
     message: null,
     type: "PROMO",
     active: true,

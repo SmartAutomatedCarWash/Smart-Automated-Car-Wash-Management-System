@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Button } from "@/shared/ui/ui/button";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
   formatBookingCurrency,
   getPaymentMethodLabel,
@@ -28,7 +28,13 @@ import type { BookingAddonSelection, BookingDetail } from "@/entities/bookings";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 function getBookingOptions(booking: BookingDetail): BookingAddonSelection[] {
-  return booking.addons ?? booking.options ?? [];
+  return (booking.details ?? [])
+    .filter((detail) => detail.itemType === "ADDON" || detail.itemType === "OPTION")
+    .map((detail) => ({
+      addonId: detail.refId,
+      addonName: detail.snapshotName,
+      addonPrice: detail.snapshotPrice,
+    }));
 }
 
 function formatDisplayDate(value: string, locale: string) {
@@ -42,6 +48,7 @@ function formatDisplayDate(value: string, locale: string) {
 }
 
 export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string }) {
+  const getErrorMessage = useErrorMessage();
   const { language } = useLanguageStore();
   const bookingQuery = useCustomerBookingDetail(bookingId);
   const profileQuery = useCustomerProfile();
@@ -82,7 +89,7 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
           <CardHeader>
             <CardTitle>{translate(language, "Không thể tải thông tin đặt lịch", "Unable to load booking success details")}</CardTitle>
             <CardDescription>
-              {bookingQuery.isError ? getDisplayErrorMessage(bookingQuery.error) : translate(language, "Không tìm thấy đặt lịch.", "Booking not found.")}
+              {bookingQuery.isError ? getErrorMessage(bookingQuery.error) : translate(language, "Không tìm thấy đặt lịch.", "Booking not found.")}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
@@ -127,7 +134,7 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
             <div className="hidden space-x-4 text-xs font-semibold uppercase tracking-wider text-slate-500 sm:flex">
               <span>{translate(language, "Dịch vụ", "Services")}</span>
               <span>{translate(language, "Combo", "Combos")}</span>
-              <span>{translate(language, "Khuyến mãi", "Promotions")}</span>
+              <span>{translate(language, "Khuyến mãi", "Discounts")}</span>
             </div>
           </div>
           <span className="text-sm font-medium text-slate-600">{customerName}</span>
@@ -305,7 +312,7 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                 </SidebarBlock>
 
                 <SidebarBlock icon={<FileText className="h-4 w-4" />} title={translate(language, "Tóm tắt đơn hàng", "Order Summary")}>
-                  <SummaryLine label={booking.packageName ?? translate(language, "Dịch vụ", "Service")} value={formatBookingCurrency(booking.pricing.basePrice)} />
+                  <SummaryLine label={booking.primaryItemName ?? translate(language, "Dịch vụ", "Service")} value={formatBookingCurrency(booking.pricing.subtotal)} />
                   {bookingOptions.map((addon) => (
                     <SummaryLine
                       key={addon.addonId}
@@ -315,8 +322,8 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                     />
                   ))}
                   <SummaryLine label={translate(language, "Tạm tính", "Subtotal")} value={formatBookingCurrency(booking.pricing.subtotal)} muted />
-                  {booking.pricing.voucherDiscount > 0 ? (
-                    <SummaryLine label={translate(language, "Giảm voucher", "Voucher Discount")} value={`-${formatBookingCurrency(booking.pricing.voucherDiscount)}`} muted />
+                  {booking.pricing.discountAmount > 0 ? (
+                    <SummaryLine label={translate(language, "Giảm voucher", "Voucher Discount")} value={`-${formatBookingCurrency(booking.pricing.discountAmount)}`} muted />
                   ) : null}
                   <SummaryLine label={translate(language, "Tổng cộng", "Total")} value={formatBookingCurrency(booking.pricing.finalAmount)} strong />
                 </SidebarBlock>

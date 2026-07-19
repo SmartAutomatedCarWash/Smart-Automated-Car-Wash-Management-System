@@ -1,7 +1,6 @@
 import { apiClient, apiRequest } from "@/shared/lib/api";
 import type { ApiPaginatedResponse } from "@/shared/types/api.types";
 import type {
-  CustomerPromotion,
   LoyaltyAccount,
   RedeemPointsRequest,
   RedeemPointsResponse,
@@ -9,7 +8,6 @@ import type {
   TierVoucherOffer,
   WashHistoryItem,
 } from "@/entities/loyalty";
-import type { Promotion } from "@/entities/promotions";
 import type { TierConfig } from "@/features/settings/lib/admin-tiers-service";
 
 export async function getCustomerLoyaltyAccount() {
@@ -55,28 +53,6 @@ export async function listCustomerWashHistory(page = 1, limit = 20) {
   };
 }
 
-export function listCustomerPromotions() {
-  return apiClient
-    .get<ApiPaginatedResponse<Promotion>>("/promotions", {
-      params: { page: 1, limit: 20 },
-    })
-    .then((response) =>
-      response.data.data.map((promotion) => ({
-        promotionId: promotion.promotionId,
-        name: promotion.name,
-        description: promotion.description,
-        promotionType: promotion.targetingMode,
-        targetTiers: promotion.applicableTiers,
-        pointMultiplier: promotion.pointMultiplier ?? null,
-        discountType: promotion.discountType || "NONE",
-        discountValue: promotion.discountValue || 0,
-        startDate: promotion.startDate,
-        expiresAt: promotion.endDate,
-        status: promotion.status,
-      })),
-    );
-}
-
 export async function getPublicTierConfigs(): Promise<TierConfig[]> {
   const response = await apiRequest<TierConfig[]>({
     url: "/tiers",
@@ -91,13 +67,4 @@ export async function listPublicTierVoucherOffers(): Promise<TierVoucherOffer[]>
     method: "GET",
   });
   return response;
-}
-
-
-
-export function claimCustomerVoucher(voucherTemplateId: string) {
-  return apiRequest<any>({
-    method: 'POST',
-    url: '/vouchers/' + voucherTemplateId + '/claim'
-  });
 }

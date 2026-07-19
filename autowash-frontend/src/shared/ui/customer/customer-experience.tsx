@@ -246,7 +246,7 @@ export function FeatureSection({ language }: { language: Language }) {
     { icon: Gift, vi: "Tích điểm thành viên", en: "Loyalty Rewards", color: "bg-[#FFD166]/35 text-[#9A6A00]" },
     { icon: WandSparkles, vi: "Detailing cao cấp", en: "Premium Detailing", color: "bg-[#FF8A3D]/15 text-[#C65616]" },
     { icon: Zap, vi: "Check-in nhanh", en: "Fast Check-in", color: "bg-[#06D6A0]/15 text-[#058B69]" },
-    { icon: BellRing, vi: "Ưu đãi độc quyền", en: "Exclusive Promotions", color: "bg-rose-100 text-rose-600" },
+    { icon: BellRing, vi: "Ưu đãi độc quyền", en: "Exclusive Discounts", color: "bg-rose-100 text-rose-600" },
   ];
 
   return (

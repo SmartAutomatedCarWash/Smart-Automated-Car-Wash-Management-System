@@ -1,13 +1,18 @@
 package com.autowash.service.impl;
 
-import com.autowash.service.*;
+import com.autowash.entity.Notification;
+
+import com.autowash.repository.NotificationRepository;
+
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+import com.autowash.service.CurrentUserService;
+import com.autowash.service.NotificationService;
 import com.autowash.dto.NotificationResponse;
 import com.autowash.dto.NotificationTickerItem;
 import com.autowash.dto.NotificationTickerResponse;
 import com.autowash.entity.User;
-import com.autowash.entity.Notification;
-import com.autowash.repository.NotificationRepository;
-import com.autowash.shared.exception.ApiException;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
@@ -40,9 +45,9 @@ public class NotificationServiceImpl implements NotificationService {
     public NotificationResponse markAsRead(UUID notificationId) {
         User user = currentUserService.getCurrentUser();
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Notification not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Notification not found", ErrorCode.RESOURCE_NOT_FOUND));
         if (!notification.getUser().getId().equals(user.getId())) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Notification not found", "RESOURCE_NOT_FOUND");
+            throw new ApiException(HttpStatus.NOT_FOUND, "Notification not found", ErrorCode.RESOURCE_NOT_FOUND);
         }
         notification.markAsRead();
         return toResponse(notification);

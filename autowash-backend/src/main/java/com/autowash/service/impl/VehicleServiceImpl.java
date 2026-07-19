@@ -1,8 +1,10 @@
 package com.autowash.service.impl;
 
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
 import com.autowash.entity.User;
 import com.autowash.shared.dto.PaginationMeta;
-import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;
 import com.autowash.service.VehicleService;
 import com.autowash.dto.CreateVehicleRequest;
@@ -14,6 +16,7 @@ import com.autowash.dto.VehicleDetailResponse;
 import com.autowash.dto.VehicleListItemResponse;
 import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleStatus;
+import com.autowash.mapper.VehicleMapper;
 import com.autowash.repository.VehicleRepository;
 import java.util.List;
 import java.util.UUID;
@@ -29,10 +32,16 @@ public class VehicleServiceImpl implements VehicleService {
 
     private final CurrentUserService currentUserService;
     private final VehicleRepository VehicleRepository;
+    private final VehicleMapper vehicleMapper;
 
-    public VehicleServiceImpl(CurrentUserService currentUserService, VehicleRepository VehicleRepository) {
+    public VehicleServiceImpl(
+            CurrentUserService currentUserService,
+            VehicleRepository VehicleRepository,
+            VehicleMapper vehicleMapper
+    ) {
         this.currentUserService = currentUserService;
         this.VehicleRepository = VehicleRepository;
+        this.vehicleMapper = vehicleMapper;
     }
 
     @Override
@@ -42,7 +51,7 @@ public class VehicleServiceImpl implements VehicleService {
         String normalizedPlate = normalizePlate(request.plate());
 
         if (VehicleRepository.existsByPlate(normalizedPlate)) {
-            throw new ApiException(HttpStatus.CONFLICT, "Plate already exists in the system", "DUPLICATE_PLATE");
+            throw new ApiException(HttpStatus.CONFLICT, "Plate already exists in the system", ErrorCode.DUPLICATE_PLATE);
         }
 
         boolean shouldBePrimary = VehicleRepository.countByOwnerAndStatus(user, VehicleStatus.ACTIVE) == 0;
@@ -57,7 +66,7 @@ public class VehicleServiceImpl implements VehicleService {
                 shouldBePrimary
         );
         VehicleRepository.save(vehicle);
-        return toCreateResponse(vehicle);
+        return vehicleMapper.toCreateResponse(vehicle);
     }
 
     @Override
@@ -72,7 +81,7 @@ public class VehicleServiceImpl implements VehicleService {
         );
 
         List<VehicleListItemResponse> items = vehiclePage.getContent().stream()
-                .map(this::toListItemResponse)
+                .map(vehicleMapper::toListItemResponse)
                 .toList();
 
         PaginationMeta pagination = new PaginationMeta(
@@ -88,7 +97,7 @@ public class VehicleServiceImpl implements VehicleService {
     @Override
     @Transactional(readOnly = true)
     public VehicleDetailResponse getVehicle(UUID vehicleId) {
-        return toDetailResponse(findActiveOwnedVehicle(vehicleId));
+        return vehicleMapper.toDetailResponse(findActiveOwnedVehicle(vehicleId));
     }
 
     @Override
@@ -101,15 +110,7 @@ public class VehicleServiceImpl implements VehicleService {
                 request.year(),
                 trimToNull(request.color())
         );
-        return new UpdateVehicleResponse(
-                vehicle.getId().toString(),
-                vehicle.getPlate(),
-                vehicle.getBrand(),
-                vehicle.getModel(),
-                vehicle.getYear(),
-                vehicle.getColor(),
-                vehicle.getUpdatedAt()
-        );
+        return vehicleMapper.toUpdateResponse(vehicle);
     }
 
     @Override
@@ -124,12 +125,7 @@ public class VehicleServiceImpl implements VehicleService {
 
         targetVehicle.setPrimary(true);
 
-        return new SetPrimaryVehicleResponse(
-                targetVehicle.getId().toString(),
-                targetVehicle.getPlate(),
-                targetVehicle.isPrimary(),
-                targetVehicle.getUpdatedAt()
-        );
+        return vehicleMapper.toSetPrimaryResponse(targetVehicle);
     }
 
     @Override
@@ -149,52 +145,7 @@ public class VehicleServiceImpl implements VehicleService {
     private Vehicle findActiveOwnedVehicle(UUID vehicleId) {
         User user = currentUserService.getCurrentUser();
         return VehicleRepository.findByOwnerAndIdAndStatus(user, vehicleId, VehicleStatus.ACTIVE)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Vehicle not found", "RESOURCE_NOT_FOUND"));
-    }
-
-    private CreateVehicleResponse toCreateResponse(Vehicle vehicle) {
-        return new CreateVehicleResponse(
-                vehicle.getId().toString(),
-                vehicle.getOwner().getId().toString(),
-                vehicle.getPlate(),
-                vehicle.getType().name(),
-                vehicle.getBrand(),
-                vehicle.getModel(),
-                vehicle.getYear(),
-                vehicle.getColor(),
-                vehicle.getStatus().name(),
-                vehicle.isPrimary(),
-                vehicle.getCreatedAt()
-        );
-    }
-
-    private VehicleListItemResponse toListItemResponse(Vehicle vehicle) {
-        return new VehicleListItemResponse(
-                vehicle.getId().toString(),
-                vehicle.getPlate(),
-                vehicle.getType().name(),
-                vehicle.getBrand(),
-                vehicle.getModel(),
-                vehicle.getColor(),
-                vehicle.isPrimary(),
-                vehicle.getStatus().name()
-        );
-    }
-
-    private VehicleDetailResponse toDetailResponse(Vehicle vehicle) {
-        return new VehicleDetailResponse(
-                vehicle.getId().toString(),
-                vehicle.getOwner().getId().toString(),
-                vehicle.getPlate(),
-                vehicle.getType().name(),
-                vehicle.getBrand(),
-                vehicle.getModel(),
-                vehicle.getYear(),
-                vehicle.getColor(),
-                vehicle.getStatus().name(),
-                vehicle.isPrimary(),
-                vehicle.getCreatedAt()
-        );
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Vehicle not found", ErrorCode.RESOURCE_NOT_FOUND));
     }
 
     private String normalizePlate(String plate) {

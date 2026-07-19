@@ -1,6 +1,11 @@
 package com.autowash.service.impl;
 
-
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+import java.util.List;
+import java.time.LocalDate;
+import java.time.Instant;
+import java.util.UUID;
 import com.autowash.entity.User;
 import com.autowash.dto.CustomerComboResponse;
 import com.autowash.dto.PurchaseCustomerComboRequest;
@@ -12,11 +17,8 @@ import com.autowash.repository.CustomerComboRepository;
 import com.autowash.repository.CustomerComboUsageRepository;
 import com.autowash.entity.Combo;
 import com.autowash.repository.ComboRepository;
+import com.autowash.repository.BookingRepository;
 import com.autowash.service.CustomerComboService;
-import com.autowash.shared.exception.ApiException;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,15 +29,18 @@ public class CustomerComboServiceImpl implements CustomerComboService {
     private final CustomerComboRepository customerComboRepository;
     private final CustomerComboUsageRepository customerComboUsageRepository;
     private final ComboRepository ComboRepository;
+    private final BookingRepository bookingRepository;
 
     public CustomerComboServiceImpl(
             CustomerComboRepository customerComboRepository,
             CustomerComboUsageRepository customerComboUsageRepository,
-            ComboRepository ComboRepository
+            ComboRepository ComboRepository,
+            BookingRepository bookingRepository
     ) {
         this.customerComboRepository = customerComboRepository;
         this.customerComboUsageRepository = customerComboUsageRepository;
         this.ComboRepository = ComboRepository;
+        this.bookingRepository = bookingRepository;
     }
 
     @Transactional(readOnly = true)
@@ -70,7 +75,7 @@ public class CustomerComboServiceImpl implements CustomerComboService {
     @Transactional
     public CustomerCombo createOwnedCombo(User customer, String comboId, String purchaseBookingId) {
         Combo Combo = ComboRepository.findByIdAndActiveTrue(comboId)
-                .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo is not available", "BUSINESS_RULE_VIOLATION"));
+                .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo is not available", ErrorCode.BUSINESS_RULE_VIOLATION));
 
         CustomerCombo combo = new CustomerCombo(
                 UUID.randomUUID(),
@@ -89,7 +94,7 @@ public class CustomerComboServiceImpl implements CustomerComboService {
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.UNPROCESSABLE_ENTITY,
                         "Combo is not available",
-                        "BUSINESS_RULE_VIOLATION"
+                        ErrorCode.BUSINESS_RULE_VIOLATION
                 ));
 
         Instant now = Instant.now();
@@ -122,20 +127,20 @@ public class CustomerComboServiceImpl implements CustomerComboService {
     }
 
     @Transactional
-    public void recordUsage(CustomerCombo combo, String bookingId, java.time.LocalDate serviceDate) {
+    public void recordUsage(CustomerCombo combo, String bookingId, LocalDate serviceDate) {
         UUID parsedBookingId = UUID.fromString(bookingId);
         if (customerComboUsageRepository.existsByBookingId(parsedBookingId)) {
             return;
         }
         combo.consumeUsage();
-        customerComboUsageRepository.save(new CustomerComboUsage(combo.getId(), parsedBookingId));
+        customerComboUsageRepository.save(new CustomerComboUsage(combo, bookingRepository.findById(parsedBookingId).orElseThrow()));
     }
 
     @Transactional
     public void releaseUsageForBooking(String bookingId) {
         UUID parsedBookingId = UUID.fromString(bookingId);
         customerComboUsageRepository.findByBookingId(parsedBookingId).ifPresent(usage -> {
-            customerComboRepository.findById(usage.getCustomerComboId()).ifPresent(CustomerCombo::restoreUsage);
+            customerComboRepository.findById(usage.getCustomerCombo().getId()).ifPresent(CustomerCombo::restoreUsage);
             customerComboUsageRepository.delete(usage);
         });
     }

@@ -19,7 +19,7 @@ import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { DatePickerButton, getTodayInputValue } from "@/shared/ui/date-picker-button";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
   checkInWashSession,
   createWashSession,
@@ -61,6 +61,7 @@ const FILTERS: Array<{ value: QueueFilter; label: string }> = [
 ];
 
 export function ManagerOperationsPage() {
+  const getErrorMessage = useErrorMessage();
   const queryClient = useQueryClient();
   const pushManagerNotification = useManagerNotificationStore((state) => state.push);
   const [filter, setFilter] = useState<QueueFilter>("ALL");
@@ -97,7 +98,7 @@ export function ManagerOperationsPage() {
       });
     },
     onError: (error: ApiErrorResponse) => {
-      const message = getDisplayErrorMessage(error);
+      const message = getErrorMessage(error);
       toast.error(message);
       pushManagerNotification({
         kind: "error",
@@ -125,7 +126,7 @@ export function ManagerOperationsPage() {
       });
     },
     onError: (error: ApiErrorResponse) => {
-      const message = getDisplayErrorMessage(error);
+      const message = getErrorMessage(error);
       toast.error(message);
       pushManagerNotification({
         kind: "error",
@@ -233,7 +234,7 @@ export function ManagerOperationsPage() {
         </div>
       </Card>
 
-      {hasError ? <WorkspaceEmptyState title="Không thể tải hàng đợi" description={getDisplayErrorMessage(error)} /> : null}
+      {hasError ? <WorkspaceEmptyState title="Không thể tải hàng đợi" description={getErrorMessage(error)} /> : null}
 
       <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">

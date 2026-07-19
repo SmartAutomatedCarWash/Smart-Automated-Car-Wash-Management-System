@@ -1,24 +1,27 @@
 package com.autowash.service.impl;
 
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.UUID;
+import org.springframework.stereotype.Service;
 import com.autowash.dto.ComboServiceItem;
 import com.autowash.dto.AdminComboRequest;
 import com.autowash.dto.ComboResponse;
 import com.autowash.entity.Combo;
 import com.autowash.entity.ComboService;
-import com.autowash.entity.Service;
 import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.repository.ComboRepository;
 import com.autowash.repository.ComboServiceRepository;
 import com.autowash.repository.ServiceRepository;
 import com.autowash.service.AdminComboService;
-import com.autowash.shared.exception.ApiException;
 import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 
-@org.springframework.stereotype.Service
+@Service
 public class AdminComboServiceImpl implements AdminComboService {
 
     private final ComboRepository comboRepository;
@@ -102,7 +105,7 @@ public class AdminComboServiceImpl implements AdminComboService {
                     if (!seen.add(optionId)) {
                         throw validationError("Duplicate service option in combo");
                     }
-                    Service service = serviceRepository.findByIdAndStatus(optionId, ActiveStatus.ACTIVE)
+                    com.autowash.entity.Service service = serviceRepository.findByIdAndStatus(optionId, ActiveStatus.ACTIVE)
                             .orElseThrow(() -> validationError("Service option not found or inactive"));
                     return new ComboService(
                             combo.getId(),
@@ -121,14 +124,14 @@ public class AdminComboServiceImpl implements AdminComboService {
 
     private Combo requireCombo(String comboId) {
         return comboRepository.findById(parseUuid(comboId, "Combo not found"))
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Combo not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Combo not found", ErrorCode.RESOURCE_NOT_FOUND));
     }
 
     private UUID parseUuid(String id, String message) {
         try {
             return UUID.fromString(id);
         } catch (RuntimeException exception) {
-            throw new ApiException(HttpStatus.NOT_FOUND, message, "RESOURCE_NOT_FOUND");
+            throw new ApiException(HttpStatus.NOT_FOUND, message, ErrorCode.RESOURCE_NOT_FOUND);
         }
     }
 
@@ -166,7 +169,7 @@ public class AdminComboServiceImpl implements AdminComboService {
     }
 
     private List<String> split(String str) {
-        return str == null || str.isEmpty() ? new java.util.ArrayList<>() : java.util.Arrays.asList(str.split(","));
+        return str == null || str.isEmpty() ? new ArrayList<>() : Arrays.asList(str.split(","));
     }
 
     private ActiveStatus statusOrActive(ActiveStatus status) {
@@ -174,6 +177,6 @@ public class AdminComboServiceImpl implements AdminComboService {
     }
 
     private ApiException validationError(String message) {
-        return new ApiException(HttpStatus.BAD_REQUEST, message, "VALIDATION_ERROR");
+        return new ApiException(HttpStatus.BAD_REQUEST, message, ErrorCode.VALIDATION_ERROR);
     }
 }

@@ -1,8 +1,15 @@
 package com.autowash.service.impl;
 
+import com.autowash.entity.WashSession;
+
+import com.autowash.entity.BookingDetail;
+
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+
 import com.autowash.entity.User;
 import com.autowash.entity.Booking;
-import com.autowash.entity.WashSession;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
@@ -10,7 +17,6 @@ import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.WashSessionRepository;
-import com.autowash.shared.exception.ApiException;
 import com.autowash.service.StaffAssignmentService;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -120,7 +126,7 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
             return false;
         }
         Instant targetStart = booking.getScheduledAt();
-        Instant targetEnd = targetStart.plusSeconds((long) booking.getEstimatedDurationMinutes() * 60);
+        Instant targetEnd = targetStart.plusSeconds((long) (booking.getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum()) * 60);
         List<WashSession> activeSessions = washSessionRepository.findByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES);
         return activeSessions.stream()
                 .filter(session -> !session.getBooking().getId().equals(booking.getId()))
@@ -128,16 +134,16 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
                         targetStart,
                         targetEnd,
                         session.getBooking().getScheduledAt(),
-                        session.getBooking().getScheduledAt().plusSeconds((long) session.getBooking().getEstimatedDurationMinutes() * 60)
+                        session.getBooking().getScheduledAt().plusSeconds((long) session.getBooking().getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum() * 60)
                 ));
     }
 
     @Override
     public User requireActiveStaff(UUID staffId) {
         User staff = UserRepository.findById(staffId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", ErrorCode.RESOURCE_NOT_FOUND));
         if (staff.getRole() != UserRole.STAFF || staff.getStatus() != UserStatus.ACTIVE) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Target staff must be active", "BUSINESS_RULE_VIOLATION");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Target staff must be active", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
         return staff;
     }

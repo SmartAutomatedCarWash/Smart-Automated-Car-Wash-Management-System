@@ -1,5 +1,12 @@
 package com.autowash.controller;
 
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+import com.autowash.dto.GoogleAuthTicketResponse;
+
+import java.util.Map;
+
 import com.autowash.dto.ForgotPasswordRequest;
 import com.autowash.dto.LoginRequest;
 import com.autowash.dto.LoginResponse;
@@ -155,7 +162,7 @@ public class AuthController {
 
     @GetMapping("/google/tickets/{state}")
     @Operation(summary = "Get Google auth ticket status")
-    public ApiResponse<com.autowash.dto.GoogleAuthTicketResponse> getGoogleTicket(
+    public ApiResponse<GoogleAuthTicketResponse> getGoogleTicket(
             @PathVariable("state") String state
     ) {
         return ApiResponse.ok("Ticket retrieved", googleOAuthService.getTicket(state));
@@ -164,12 +171,12 @@ public class AuthController {
     @PostMapping("/google/tickets/exchange")
     @Operation(summary = "Exchange a READY Google ticket for a JWT")
     public ApiResponse<LoginResponse> exchangeGoogleTicket(
-            @RequestBody java.util.Map<String, String> body
+            @RequestBody Map<String, String> body
     ) {
         String state = body.get("state");
         if (state == null || state.isBlank()) {
-            throw new com.autowash.shared.exception.ApiException(
-                    HttpStatus.BAD_REQUEST, "state is required", "VALIDATION_ERROR");
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST, "state is required", ErrorCode.VALIDATION_ERROR);
         }
         return ApiResponse.ok("Login successful", googleOAuthService.exchangeTicket(state));
     }
@@ -177,12 +184,12 @@ public class AuthController {
     @PostMapping("/google/tickets/link")
     @Operation(summary = "Confirm linking Google account to an existing local account")
     public ApiResponse<LoginResponse> confirmGoogleLink(
-            @RequestBody java.util.Map<String, String> body
+            @RequestBody Map<String, String> body
     ) {
         String state = body.get("state");
         if (state == null || state.isBlank()) {
-            throw new com.autowash.shared.exception.ApiException(
-                    HttpStatus.BAD_REQUEST, "state is required", "VALIDATION_ERROR");
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST, "state is required", ErrorCode.VALIDATION_ERROR);
         }
         return ApiResponse.ok("Account linked and login successful", googleOAuthService.confirmLink(state));
     }

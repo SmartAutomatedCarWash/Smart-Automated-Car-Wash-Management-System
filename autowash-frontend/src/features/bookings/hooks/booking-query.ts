@@ -30,14 +30,14 @@ export function washTrackingDetailQueryKey(userId?: string | null, washSessionId
 
 export function bookingVoucherQueryKey(
   userId?: string | null,
-  voucherCode?: string | null,
+  discountCode?: string | null,
   amount = 0,
   packageId?: string | null,
 ) {
   return [
     ...bookingQueryScope(userId),
     "voucher",
-    voucherCode ?? "",
+    discountCode ?? "",
     amount,
     packageId ?? "",
   ] as const;

@@ -1,11 +1,13 @@
 package com.autowash.controller;
 
+import com.autowash.service.LoyaltyService;
+
+import com.autowash.dto.PointTransactionResponse;
+
 import com.autowash.dto.EarnPointsRequest;
 import com.autowash.dto.EarnPointsResponse;
-import com.autowash.dto.PointTransactionResponse;
 import com.autowash.dto.RedeemPointsRequest;
 import com.autowash.dto.RedeemPointsResponse;
-import com.autowash.service.LoyaltyService;
 import com.autowash.shared.dto.ApiResponse;
 import com.autowash.service.CurrentUserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -57,10 +59,9 @@ public class LoyaltyController {
     public ApiResponse<RedeemPointsResponse> redeemPoints(@Valid @RequestBody RedeemPointsRequest request) {
         return ApiResponse.ok(
                 "Loyalty points redeemed",
-                loyaltyService.redeemPoints(
+                loyaltyService.redeemOffer(
                         currentUserService.getCurrentUser().getId(),
-                        request.pointsToRedeem(),
-                        request.referenceId()
+                        request.offerId()
                 )
         );
     }

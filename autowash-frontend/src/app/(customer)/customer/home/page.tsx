@@ -856,7 +856,7 @@ export default function CustomerHomePage() {
         <FloatingWashSessionBubble
           language={language}
           bookingCode={displayBooking.bookingId}
-          serviceName={("serviceName" in displayBooking ? displayBooking.serviceName : null) || ("packageName" in displayBooking ? displayBooking.packageName : null) || t("Dịch vụ rửa xe", "Car wash service")}
+          serviceName={("serviceName" in displayBooking ? displayBooking.serviceName : null) || ("primaryItemName" in displayBooking ? displayBooking.primaryItemName : null) || t("Dịch vụ rửa xe", "Car wash service")}
           status={toLiveSessionStatus(displayBooking.status)}
           imageUrl="/images/gallery1.jpg"
           scheduledAt={toBookingDateTime(displayBooking.bookingDate, displayBooking.bookingTime)}

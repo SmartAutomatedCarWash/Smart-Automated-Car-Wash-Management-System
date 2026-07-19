@@ -4,42 +4,49 @@ import com.autowash.dto.TierConfigCreateRequest;
 import com.autowash.dto.TierConfigRequest;
 import com.autowash.dto.TierConfigResponse;
 import com.autowash.entity.TierConfig;
+import com.autowash.mapper.TierConfigMapper;
 import com.autowash.repository.TierConfigRepository;
 import com.autowash.service.TierConfigService;
 import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
 import jakarta.persistence.EntityManager;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
-
+import java.util.Map;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 @Service
 public class TierConfigServiceImpl implements TierConfigService {
 
     private final TierConfigRepository tierConfigRepository;
     private final EntityManager entityManager;
+    private final TierConfigMapper tierConfigMapper;
 
-    public TierConfigServiceImpl(TierConfigRepository tierConfigRepository, EntityManager entityManager) {
+    public TierConfigServiceImpl(
+            TierConfigRepository tierConfigRepository,
+            EntityManager entityManager,
+            TierConfigMapper tierConfigMapper
+    ) {
         this.tierConfigRepository = tierConfigRepository;
         this.entityManager = entityManager;
+        this.tierConfigMapper = tierConfigMapper;
     }
 
     @Override
     @Transactional(readOnly = true)
     public TierConfigResponse getConfig(String tier) {
         TierConfig config = tierConfigRepository.findById(normalizeTier(tier))
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tier config not found", "RESOURCE_NOT_FOUND"));
-        return toResponse(config);
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tier config not found", ErrorCode.RESOURCE_NOT_FOUND));
+        return tierConfigMapper.toResponse(config);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TierConfigResponse> getAllConfigs() {
         return tierConfigRepository.findAllByOrderByRankOrderAsc().stream()
-                .map(this::toResponse)
+                .map(tierConfigMapper::toResponse)
                 .toList();
     }
 
@@ -51,7 +58,7 @@ public class TierConfigServiceImpl implements TierConfigService {
             throw validationError("code", "Tier code is required");
         }
         if (tierConfigRepository.existsById(code)) {
-            throw new ApiException(HttpStatus.CONFLICT, "Tier config already exists", "DUPLICATE_RESOURCE");
+            throw new ApiException(HttpStatus.CONFLICT, "Tier config already exists", ErrorCode.DUPLICATE_RESOURCE);
         }
         int rankOrder = request.rankOrder();
         if (tierConfigRepository.existsByRankOrder(rankOrder)) {
@@ -69,7 +76,7 @@ public class TierConfigServiceImpl implements TierConfigService {
                 normalizeUrl(request.imageUrl())
         );
         validateTierConfig(config.getTier(), config.getMinPoints(), config.getPointMultiplier(), config.getRankOrder());
-        return toResponse(tierConfigRepository.save(config));
+        return tierConfigMapper.toResponse(tierConfigRepository.save(config));
     }
 
     @Override
@@ -77,7 +84,7 @@ public class TierConfigServiceImpl implements TierConfigService {
     public TierConfigResponse updateConfig(String tier, TierConfigRequest request) {
         String code = normalizeTier(tier);
         TierConfig config = tierConfigRepository.findById(code)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tier config not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tier config not found", ErrorCode.RESOURCE_NOT_FOUND));
 
         String name = request.name() == null || request.name().isBlank()
                 ? config.getDisplayName()
@@ -105,7 +112,7 @@ public class TierConfigServiceImpl implements TierConfigService {
                 imageUrl
         );
 
-        return toResponse(tierConfigRepository.save(config));
+        return tierConfigMapper.toResponse(tierConfigRepository.save(config));
     }
 
     @Override
@@ -113,13 +120,13 @@ public class TierConfigServiceImpl implements TierConfigService {
     public void deleteConfig(String tier) {
         String code = normalizeTier(tier);
         TierConfig config = tierConfigRepository.findById(code)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tier config not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tier config not found", ErrorCode.RESOURCE_NOT_FOUND));
         if (config.isSystemTier()) {
             throw validationError("tier", "System tiers cannot be deleted");
         }
         long references = countReferences(code);
         if (references > 0) {
-            throw new ApiException(HttpStatus.CONFLICT, "Tier is currently in use", "RESOURCE_IN_USE");
+            throw new ApiException(HttpStatus.CONFLICT, "Tier is currently in use", ErrorCode.RESOURCE_IN_USE);
         }
         int deletedRank = config.getRankOrder();
         tierConfigRepository.delete(config);
@@ -173,21 +180,6 @@ public class TierConfigServiceImpl implements TierConfigService {
         return tierConfigRepository.findByActiveTrueOrderByRankOrderAsc().stream()
                 .map(TierConfig::getTier)
                 .toList();
-    }
-
-    private TierConfigResponse toResponse(TierConfig config) {
-        return new TierConfigResponse(
-                config.getTier(),
-                config.getDisplayName(),
-                config.getMinPoints(),
-                config.getPointMultiplier().doubleValue(),
-                config.getPriorityScore(),
-                config.getRankOrder(),
-                config.isSystemTier(),
-                config.getImageUrl(),
-                config.isActive(),
-                config.getUpdatedAt()
-        );
     }
 
     private String normalizeTier(String tier) {
@@ -250,9 +242,8 @@ public class TierConfigServiceImpl implements TierConfigService {
     private long countReferences(String tier) {
         return count("select count(account) from LoyaltyAccount account where account.tier = :tier", tier)
                 + count("select count(history) from TierHistory history where history.oldTier = :tier or history.newTier = :tier", tier)
-                + count("select count(promotionTier) from PromotionTier promotionTier where promotionTier.tier = :tier", tier)
-                + count("select count(voucherTier) from VoucherTier voucherTier where voucherTier.tier = :tier", tier)
-                + count("select count(offer) from TierVoucherOffer offer where offer.minTier = :tier", tier);
+                + count("select count(discountTier) from DiscountTier discountTier where discountTier.tier.tier = :tier", tier)
+                + count("select count(offer) from TierVoucherOffer offer where offer.minTier.tier = :tier", tier);
     }
 
     private long count(String query, String tier) {
@@ -265,8 +256,8 @@ public class TierConfigServiceImpl implements TierConfigService {
         return new ApiException(
                 HttpStatus.BAD_REQUEST,
                 "Validation failed",
-                "VALIDATION_ERROR",
-                java.util.Map.of("field", field, "message", message)
+                ErrorCode.VALIDATION_ERROR,
+                Map.of("field", field, "message", message)
         );
     }
 }

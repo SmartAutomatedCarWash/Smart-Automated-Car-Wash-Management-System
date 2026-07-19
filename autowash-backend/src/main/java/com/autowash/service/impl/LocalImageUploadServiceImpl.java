@@ -1,7 +1,16 @@
 package com.autowash.service.impl;
 
-import com.autowash.dto.ImageUploadResponse;
 import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+import java.util.Locale;
+
+import java.util.UUID;
+
+import java.util.Map;
+
+
+import com.autowash.dto.ImageUploadResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -13,11 +22,9 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Locale;
 import java.util.Set;
 import com.autowash.service.ImageUploadService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import java.util.UUID;
 
 @Service
 @ConditionalOnProperty(prefix = "autowash.storage.s3", name = "enabled", havingValue = "false", matchIfMissing = true)
@@ -66,7 +73,7 @@ public class LocalImageUploadServiceImpl implements ImageUploadService {
             Files.createDirectories(targetDir);
             file.transferTo(target);
         } catch (IOException exception) {
-            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not store image", "UPLOAD_FAILED");
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not store image", ErrorCode.UPLOAD_FAILED);
         }
 
         String url = ServletUriComponentsBuilder.fromRequestUri(request)
@@ -104,8 +111,8 @@ public class LocalImageUploadServiceImpl implements ImageUploadService {
         return new ApiException(
                 HttpStatus.BAD_REQUEST,
                 "Validation failed",
-                "VALIDATION_ERROR",
-                java.util.Map.of("field", field, "message", message)
+                ErrorCode.VALIDATION_ERROR,
+                Map.of("field", field, "message", message)
         );
     }
 }

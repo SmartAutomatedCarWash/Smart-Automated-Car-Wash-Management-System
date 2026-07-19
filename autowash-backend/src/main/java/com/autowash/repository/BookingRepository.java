@@ -1,5 +1,7 @@
 package com.autowash.repository;
 
+import com.autowash.entity.Vehicle;
+
 import com.autowash.entity.User;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.Booking;
@@ -20,7 +22,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
-    @Query("SELECT b.packageId FROM Booking b WHERE b.packageId IS NOT NULL AND b.status IN ('COMPLETED', 'CONFIRMED') GROUP BY b.packageId ORDER BY COUNT(b.id) DESC LIMIT 1")
+    @Query("SELECT bd.refId FROM BookingDetail bd JOIN bd.booking b WHERE bd.itemType = 'PACKAGE' AND b.status IN ('COMPLETED', 'CONFIRMED') GROUP BY bd.refId ORDER BY COUNT(bd.id) DESC LIMIT 1")
     Optional<UUID> findTopPackageId();
 
     long countByCustomerAndStatusIn(User customer, Collection<BookingStatus> statuses);
@@ -29,11 +31,11 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     long countByAssignedStaffAndStatus(User assignedStaff, BookingStatus status);
 
-    @Query("select coalesce(sum(booking.finalAmount), 0) from Booking booking where booking.assignedStaff = :staff and booking.status = :status")
+    @Query("select coalesce(sum(booking.pricing.finalAmount), 0) from Booking booking where booking.assignedStaff = :staff and booking.status = :status")
     long sumFinalAmountByAssignedStaffAndStatus(@Param("staff") User staff, @Param("status") BookingStatus status);
 
     @Query("""
-            select coalesce(sum(b.finalAmount), 0) from Booking b
+            select coalesce(sum(b.pricing.finalAmount), 0) from Booking b
             where b.assignedStaff = :staff
               and b.status = 'COMPLETED'
               and b.updatedAt >= :from
@@ -45,7 +47,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             @Param("to") Instant to
     );
 
-    @EntityGraph(attributePaths = {"vehicle"})
+    @EntityGraph(attributePaths = {"customer", "vehicle", "pricing", "details", "assignedStaff"})
     Optional<Booking> findByCustomerAndId(User customer, UUID id);
 
     default Optional<Booking> findByCustomerAndId(User customer, String id) {
@@ -56,16 +58,16 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
         return parseUuid(id).flatMap(this::findById);
     }
 
-    @EntityGraph(attributePaths = {"vehicle"})
+    @EntityGraph(attributePaths = {"vehicle", "pricing"})
     Page<Booking> findByCustomerOrderByCreatedAtDesc(User customer, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"vehicle"})
+    @EntityGraph(attributePaths = {"vehicle", "pricing"})
     Page<Booking> findByCustomerAndStatusOrderByCreatedAtDesc(User customer, BookingStatus status, Pageable pageable);
 
-    @Query("select booking from Booking booking where booking.customer = :customer and booking.voucherId is not null order by booking.createdAt desc")
-    Page<Booking> findByCustomerAndVoucherIdNotNull(@Param("customer") User customer, Pageable pageable);
+    @Query("select booking from Booking booking where booking.customer = :customer and booking.pricing.discountRefId is not null order by booking.createdAt desc")
+    Page<Booking> findByCustomerAndPricingDiscountRefIdNotNull(@Param("customer") User customer, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"vehicle"})
+    @EntityGraph(attributePaths = {"vehicle", "pricing"})
     Page<Booking> findByCustomerAndScheduledAtBetweenOrderByCreatedAtDesc(
             User customer,
             Instant scheduledFrom,
@@ -180,24 +182,25 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
               and booking.status in :statuses
             """)
     long countDuplicateVehicleSlot(
-            @Param("vehicle") com.autowash.entity.Vehicle vehicle,
+            @Param("vehicle") Vehicle vehicle,
             @Param("scheduledAt") Instant scheduledAt,
             @Param("statuses") Collection<BookingStatus> statuses
     );
 
-    boolean existsByCustomerAndVoucherId(User customer, UUID voucherId);
+    @Query("select count(b) > 0 from Booking b where b.customer = :customer and b.pricing.discountRefId = :voucherId")
+    boolean existsByCustomerAndPricingDiscountRefId(@Param("customer") User customer, @Param("voucherId") UUID voucherId);
 
     @Query("select count(booking) from Booking booking where booking.customer = :customer and booking.status = :status")
     long countByCustomerAndStatus(@Param("customer") User customer, @Param("status") BookingStatus status);
 
-    @Query("select coalesce(sum(booking.finalAmount), 0) from Booking booking where booking.customer = :customer and booking.status = :status")
+    @Query("select coalesce(sum(booking.pricing.finalAmount), 0) from Booking booking where booking.customer = :customer and booking.status = :status")
     long sumFinalAmountByCustomerAndStatus(@Param("customer") User customer, @Param("status") BookingStatus status);
 
     Optional<Booking> findFirstByCustomerOrderByCreatedAtDesc(User customer);
 
     long countByStatus(BookingStatus status);
 
-    @Query("select coalesce(sum(b.finalAmount), 0) from Booking b where b.status = :status")
+    @Query("select coalesce(sum(b.pricing.finalAmount), 0) from Booking b where b.status = :status")
     long sumFinalAmountByStatus(@Param("status") BookingStatus status);
 
     List<Booking> findByScheduledAtBetweenAndStatusIn(Instant from, Instant to, Collection<BookingStatus> statuses);

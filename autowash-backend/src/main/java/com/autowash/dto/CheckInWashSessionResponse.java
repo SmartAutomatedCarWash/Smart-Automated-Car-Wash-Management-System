@@ -9,6 +9,12 @@ public record CheckInWashSessionResponse(
         UUID sessionId,
         String status,
         Instant checkedInAt,
+        Fee fee,
         int projectedLoyaltyPoints
 ) {
+    public record Fee(
+            long amount,
+            String currency
+    ) {
+    }
 }

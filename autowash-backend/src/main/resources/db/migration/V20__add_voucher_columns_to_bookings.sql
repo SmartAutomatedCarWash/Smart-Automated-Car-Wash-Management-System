@@ -1,2 +1,0 @@
-ALTER TABLE bookings
-ADD COLUMN voucher_discount BIGINT NOT NULL DEFAULT 0;

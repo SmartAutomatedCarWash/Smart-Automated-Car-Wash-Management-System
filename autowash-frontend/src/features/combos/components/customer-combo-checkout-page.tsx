@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { Badge } from "@/shared/ui/ui/badge";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
   generateTimeSlotsFromRange,
   formatBookingCurrency,
@@ -98,6 +98,7 @@ function buildComboHeroImage(combo: BookingCombo) {
 
 export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPageProps) {
   const router = useRouter();
+  const getErrorMessage = useErrorMessage();
   const combosQuery = useBookingCombos();
   const activeCombosQuery = useActiveCustomerCombos();
   const vehiclesQuery = useCustomerVehicles();
@@ -181,7 +182,7 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
         <Card className="mx-auto max-w-3xl border-rose-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
           <CardHeader>
             <CardTitle>Không tải được trang thanh toán combo</CardTitle>
-            <CardDescription>{getDisplayErrorMessage(error)}</CardDescription>
+            <CardDescription>{getErrorMessage(error)}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Button asChild variant="outline">
@@ -290,7 +291,7 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
           addonIds: [],
           bookingDate,
           bookingTime,
-          voucherCode: "",
+          discountCode: "",
           paymentMethod,
         });
 
@@ -307,7 +308,7 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
       toast.success("Đã mua combo thành công. Bạn có thể dùng gói này để đặt lịch ngay bây giờ.");
       router.push("/customer/home");
     } catch (submitError) {
-      toast.error(getDisplayErrorMessage(submitError));
+      toast.error(getErrorMessage(submitError));
     }
   };
 
@@ -520,7 +521,7 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
             {/* Error */}
             {(createBookingMutation.isError || purchaseComboMutation.isError) && (
               <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {getDisplayErrorMessage(createBookingMutation.error ?? purchaseComboMutation.error ?? null)}
+                {getErrorMessage(createBookingMutation.error ?? purchaseComboMutation.error ?? null)}
               </div>
             )}
 

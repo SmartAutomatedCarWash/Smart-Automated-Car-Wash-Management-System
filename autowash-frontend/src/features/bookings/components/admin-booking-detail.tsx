@@ -8,7 +8,7 @@ import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
 import { Badge } from "@/shared/ui/ui/badge";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 
 
 function translateStatus(st: string, lang: "vi" | "en") {
@@ -55,6 +55,7 @@ function translateWashStatus(status: string, lang: "vi" | "en") {
 }
 
 export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
+  const getErrorMessage = useErrorMessage();
   const router = useRouter();
   const { language } = useLanguageStore();
   const { data: booking, isPending, isError, error } = useAdminBookingDetail(bookingId);
@@ -72,7 +73,7 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
     return (
       <div className="rounded-md border border-rose-200 bg-rose-50 p-6 text-rose-700 m-8">
         <h2 className="text-lg font-bold mb-2">{translate(language, "Lỗi khi tải lịch đặt", "Error Loading Booking")}</h2>
-        <p>{getDisplayErrorMessage(error)}</p>
+        <p>{getErrorMessage(error)}</p>
         <Button onClick={() => router.back()} variant="outline" className="mt-4">
           {translate(language, "Quay lại", "Go Back")}
         </Button>
@@ -161,21 +162,21 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
               <div className="mb-4 pb-4 border-b">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-medium text-lg">{booking.packageName || translate(language, "Dịch vụ tùy chỉnh", "Custom Service")}</h3>
+                    <h3 className="font-medium text-lg">{booking.primaryItemName || translate(language, "Dịch vụ tùy chỉnh", "Custom Service")}</h3>
                     <p className="text-sm text-slate-500">{translate(language, "Thời lượng", "Duration")}: ~{booking.scheduling.estimatedDuration} {translate(language, "phút", "mins")}</p>
                   </div>
-                  <div className="font-bold text-lg">{formatCurrency(booking.pricing.basePrice)}</div>
+                  <div className="font-bold text-lg">{formatCurrency(booking.pricing.subtotal)}</div>
                 </div>
               </div>
 
-              {booking.addons && booking.addons.length > 0 && (
+              {booking.details.filter(d => d.itemType === "ADDON") && booking.details.filter(d => d.itemType === "ADDON").length > 0 && (
                 <div className="mb-4 pb-4 border-b">
                   <h4 className="font-medium mb-3 text-slate-700">{translate(language, "Dịch vụ thêm", "Add-ons")}</h4>
                   <ul className="space-y-2">
-                    {booking.addons.map((addon) => (
-                      <li key={addon.addonId} className="flex justify-between text-sm">
-                        <span>{addon.addonName}</span>
-                        <span>{formatCurrency(addon.addonPrice)}</span>
+                    {booking.details.filter(d => d.itemType === "ADDON").map((addon) => (
+                      <li key={addon.id} className="flex justify-between text-sm">
+                        <span>{addon.snapshotName}</span>
+                        <span>{formatCurrency(addon.snapshotPrice)}</span>
                       </li>
                     ))}
                   </ul>
@@ -187,10 +188,10 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
                   <span className="text-slate-500">{translate(language, "Tạm tính", "Subtotal")}</span>
                   <span>{formatCurrency(booking.pricing.subtotal)}</span>
                 </div>
-                {booking.pricing.voucherDiscount > 0 && (
+                {booking.pricing.discountAmount > 0 && (
                   <div className="flex justify-between text-sm text-emerald-600">
-                    <span>{translate(language, "Giảm giá", "Discount")} ({booking.pricing.voucherCode})</span>
-                    <span>-{formatCurrency(booking.pricing.voucherDiscount)}</span>
+                    <span>{translate(language, "Giảm giá", "Discount")} ({booking.pricing.discountCode})</span>
+                    <span>-{formatCurrency(booking.pricing.discountAmount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-lg pt-4 border-t mt-4">

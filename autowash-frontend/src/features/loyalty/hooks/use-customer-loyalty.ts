@@ -3,7 +3,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   customerLoyaltyScope,
-  customerPromotionsQueryKey,
   loyaltyAccountQueryKey,
   loyaltyTransactionsQueryKey,
   washHistoryQueryKey,
@@ -12,7 +11,7 @@ import {
   getCustomerLoyaltyAccount,
   redeemCustomerLoyaltyPoints,
   listCustomerLoyaltyTransactions,
-  listCustomerPromotions,
+  
   listCustomerWashHistory,
   getPublicTierConfigs,
   listPublicTierVoucherOffers,
@@ -20,7 +19,6 @@ import {
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type {
-  CustomerPromotion,
   LoyaltyAccount,
   RedeemPointsRequest,
   RedeemPointsResponse,
@@ -74,16 +72,6 @@ export function useCustomerWashHistory(page = 1, limit = 20) {
   return useQuery<PaginatedData<WashHistoryItem>, ApiErrorResponse>({
     queryKey: washHistoryQueryKey(userId, page, limit),
     queryFn: () => listCustomerWashHistory(page, limit),
-    enabled,
-  });
-}
-
-export function useCustomerPromotions() {
-  const { enabled, userId } = useCustomerLoyaltyContext();
-
-  return useQuery<CustomerPromotion[], ApiErrorResponse>({
-    queryKey: customerPromotionsQueryKey(userId),
-    queryFn: listCustomerPromotions,
     enabled,
   });
 }

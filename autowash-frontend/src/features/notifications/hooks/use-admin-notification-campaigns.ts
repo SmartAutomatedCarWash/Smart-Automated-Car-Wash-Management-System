@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminNotificationCampaignsService, NotificationCampaignRequest } from "../api/admin-notification-campaigns-service";
 import { toast } from "sonner";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 
 export const NOTIFICATION_CAMPAIGNS_QUERY_KEY = ["admin-notification-campaigns"];
 

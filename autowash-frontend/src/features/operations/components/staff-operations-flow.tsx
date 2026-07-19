@@ -41,7 +41,7 @@ import {
   cancelWashSession,
 } from "@/features/operations/lib/operations-service";
 import { toast } from "sonner";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { cn } from "@/shared/lib/utils";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type {
@@ -70,6 +70,7 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 function TierBadge({ tier }: { tier: string | null | undefined }) {
+  const getErrorMessage = useErrorMessage();
   if (!tier || !PRIORITY_TIERS.has(tier)) return null;
   return (
     <span
@@ -1003,6 +1004,7 @@ function TransferPanel({
   session: OperationsQueueSession;
   onTransferred: () => void;
 }) {
+  const getErrorMessage = useErrorMessage();
   const queryClient = useQueryClient();
   const [toStaffId, setToStaffId] = useState("");
   const [reason, setReason] = useState("");
@@ -1025,7 +1027,7 @@ function TransferPanel({
       window.setTimeout(onTransferred, 450);
     },
     onError: (error) => {
-      setMessage(getDisplayErrorMessage(error));
+      setMessage(getErrorMessage(error));
     },
   });
 

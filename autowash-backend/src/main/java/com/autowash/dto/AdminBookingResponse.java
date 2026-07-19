@@ -1,6 +1,5 @@
 package com.autowash.dto;
 
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -13,8 +12,7 @@ public record AdminBookingResponse(
         String customerName,
         String customerPhone,
         String vehiclePlate,
-        String servicePackageId,
-        String servicePackageName,
+        String primaryItemName,
         LocalDate bookingDate,
         LocalTime bookingTime,
         long finalAmount,
@@ -27,4 +25,3 @@ public record AdminBookingResponse(
         String staffName
 ) {
 }
-

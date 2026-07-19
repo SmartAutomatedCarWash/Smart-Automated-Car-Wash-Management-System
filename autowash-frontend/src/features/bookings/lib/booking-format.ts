@@ -9,7 +9,7 @@ import type {
   BookingSummary,
   CreateBookingRequest,
   PaymentMethod,
-  VoucherValidationResult,
+  DiscountValidationResult,
 } from "../../../entities/bookings/index.ts";
 import { getVoucherCodeFormatError, sanitizeVoucherCodeInput } from "../../../shared/lib/validators.ts";
 
@@ -49,9 +49,9 @@ export function buildCreateBookingPayload(draft: BookingDraft): CreateBookingReq
     payload.comboId = draft.comboId;
   }
 
-  const voucherCode = normalizeOptionalText(sanitizeVoucherCodeInput(draft.voucherCode));
-  if (voucherCode) {
-    payload.voucherCode = voucherCode;
+  const discountCode = normalizeOptionalText(sanitizeVoucherCodeInput(draft.discountCode));
+  if (discountCode) {
+    payload.discountCode = discountCode;
   }
 
   const confirmationEmail = normalizeOptionalText(draft.confirmationEmail ?? "");
@@ -68,8 +68,7 @@ export function buildBookingSummary(
     packages: BookingPackage[];
     addons: BookingAddon[];
     combos: BookingCombo[];
-    voucher: VoucherValidationResult | null;
-    promotions?: import("../../../entities/loyalty/index.ts").CustomerPromotion[];
+    voucher: DiscountValidationResult | null;
     ownedComboApplied?: boolean;
   },
 ): BookingSummary | null {
@@ -83,25 +82,7 @@ export function buildBookingSummary(
     }
 
     const subtotal = selectedPackage.basePrice + addonsTotal;
-    let voucherDiscountAmount = 0;
-    let promotionDiscountAmount = 0;
-    if (input.voucher) {
-      if (input.voucher.isPromotion) {
-        promotionDiscountAmount = input.voucher.discountAmount;
-      } else {
-        voucherDiscountAmount = input.voucher.discountAmount;
-      }
-    }
-    
-    let totalDiscountAmount = voucherDiscountAmount + promotionDiscountAmount;
-    if (totalDiscountAmount > subtotal) {
-      totalDiscountAmount = subtotal;
-      if (promotionDiscountAmount > 0) {
-        promotionDiscountAmount = totalDiscountAmount;
-      } else {
-        voucherDiscountAmount = totalDiscountAmount;
-      }
-    }
+    const totalDiscountAmount = Math.min(input.voucher?.discountAmount ?? 0, subtotal);
     
     const finalAmount = Math.max(subtotal - totalDiscountAmount, 0);
 
@@ -112,12 +93,11 @@ export function buildBookingSummary(
       baseAmount: selectedPackage.basePrice,
       addonsTotal,
       subtotal,
-      discountAmount: voucherDiscountAmount,
-      promotionDiscountAmount,
+      discountAmount: totalDiscountAmount,
       finalAmount,
       estimatedDurationLabel: `${selectedPackage.duration + selectedAddons.reduce((sum, addon) => sum + addon.duration, 0)} min`,
       selectedAddons,
-      selectedVoucherCode: input.voucher?.voucherCode ?? null,
+      selectedDiscountCode: input.voucher?.discountCode ?? null,
       paymentMethod: draft.paymentMethod,
     };
   }
@@ -128,25 +108,7 @@ export function buildBookingSummary(
   }
 
   const subtotal = input.ownedComboApplied ? 0 : selectedCombo.basePrice;
-  let voucherDiscountAmount = 0;
-  let promotionDiscountAmount = 0;
-  if (input.voucher) {
-    if (input.voucher.isPromotion) {
-      promotionDiscountAmount = input.voucher.discountAmount;
-    } else {
-      voucherDiscountAmount = input.voucher.discountAmount;
-    }
-  }
-  
-  let totalDiscountAmount = voucherDiscountAmount + promotionDiscountAmount;
-  if (totalDiscountAmount > subtotal) {
-    totalDiscountAmount = subtotal;
-    if (promotionDiscountAmount > 0) {
-      promotionDiscountAmount = totalDiscountAmount;
-    } else {
-      voucherDiscountAmount = totalDiscountAmount;
-    }
-  }
+  const totalDiscountAmount = Math.min(input.voucher?.discountAmount ?? 0, subtotal);
   
   const finalAmount = Math.max(subtotal - totalDiscountAmount, 0);
 
@@ -157,12 +119,11 @@ export function buildBookingSummary(
     baseAmount: selectedCombo.basePrice,
     addonsTotal: 0,
     subtotal,
-    discountAmount: voucherDiscountAmount,
-    promotionDiscountAmount,
+    discountAmount: totalDiscountAmount,
     finalAmount,
     estimatedDurationLabel: `${selectedCombo.durationDays} day combo`,
     selectedAddons: [],
-    selectedVoucherCode: input.voucher?.voucherCode ?? null,
+    selectedDiscountCode: input.voucher?.discountCode ?? null,
     paymentMethod: draft.paymentMethod,
   };
 }
@@ -196,12 +157,12 @@ export function validateBookingDraft(
   if (requirePaymentMethod && !draft.paymentMethod) {
     errors.paymentMethod = "Please select a payment method.";
   }
-  if (draft.voucherCode.trim().length > 0) {
-    const formatError = getVoucherCodeFormatError(draft.voucherCode);
+  if (draft.discountCode.trim().length > 0) {
+    const formatError = getVoucherCodeFormatError(draft.discountCode);
     if (formatError) {
-      errors.voucherCode = formatError;
-    } else if (!summary?.selectedVoucherCode) {
-      errors.voucherCode = "Please validate the voucher before checkout.";
+      errors.discountCode = formatError;
+    } else if (!summary?.selectedDiscountCode) {
+      errors.discountCode = "Please validate the voucher before checkout.";
     }
   }
 

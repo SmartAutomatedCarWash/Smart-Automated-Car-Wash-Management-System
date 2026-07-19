@@ -1,14 +1,31 @@
 package com.autowash.service.impl;
 
+import com.autowash.entity.WashSession;
+import com.autowash.assembler.BookingResponseAssembler;
+import com.autowash.service.LoyaltyService;
+import com.autowash.entity.Notification;
+import com.autowash.entity.SystemSettings;
+import com.autowash.repository.NotificationRepository;
+import com.autowash.repository.SystemSettingsRepository;
+import com.autowash.entity.BookingDetail;
+import com.autowash.entity.enums.BookingItemType;
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+import com.autowash.dto.BookingDetailResponse;
+import java.util.List;
+import java.util.Comparator;
+import java.time.LocalDate;
+import java.util.Locale;
+import java.time.Instant;
+import java.time.Duration;
+import java.time.ZoneId;
+import java.util.UUID;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import com.autowash.dto.BookingStatusHistoryItem;
 import com.autowash.entity.User;
-
-
-import com.autowash.entity.Notification;
 import com.autowash.entity.enums.NotificationType;
-import com.autowash.repository.NotificationRepository;
-import com.autowash.dto.BookingOptionResponse;
-import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.BookingListItemResponse;
 import com.autowash.dto.CancelBookingResponse;
 import com.autowash.dto.CreateBookingRequest;
@@ -17,39 +34,30 @@ import com.autowash.dto.PayBookingResponse;
 import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.UserStatus;
-import com.autowash.dto.ValidateVoucherRequest;
-import com.autowash.dto.ValidateVoucherResponse;
 import com.autowash.entity.Booking;
-import com.autowash.entity.BookingOption;
-import com.autowash.entity.BookingPromotion;
+import com.autowash.entity.BookingPricing;
+import com.autowash.entity.Discount;
+import com.autowash.entity.UserDiscount;
 import com.autowash.entity.BookingStatusHistory;
 import com.autowash.entity.Payment;
-import com.autowash.entity.Promotion;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.repository.BookingRepository;
-import com.autowash.repository.BookingOptionRepository;
-import com.autowash.repository.BookingPromotionRepository;
+import com.autowash.repository.BookingDetailRepository;
 import com.autowash.repository.BookingStatusHistoryRepository;
 import com.autowash.repository.PaymentRepository;
+import com.autowash.repository.DiscountRepository;
+import com.autowash.repository.UserDiscountRepository;
 import com.autowash.entity.Combo;
 import com.autowash.entity.Package;
-import com.autowash.entity.SystemSettings;
-import com.autowash.repository.ComboRepository;
-import com.autowash.repository.PackageRepository;
-import com.autowash.repository.SystemSettingsRepository;
 import com.autowash.repository.SlotHoldRepository;
 import com.autowash.repository.ViolationRecordRepository;
 import com.autowash.entity.ViolationRecord;
 import com.autowash.service.BookingService;
 import com.autowash.service.CatalogService;
 import com.autowash.service.CustomerComboService;
-import com.autowash.service.VoucherRedemptionService;
-
-import com.autowash.service.LoyaltyService;
-import com.autowash.service.PromotionService;
+import com.autowash.service.DiscountRedemptionService;
 import com.autowash.shared.dto.PaginationMeta;
-import com.autowash.shared.exception.ApiException;
 import com.autowash.service.BookingEmailDeliveryService;
 import com.autowash.service.CurrentUserService;
 import com.autowash.repository.WashSessionRepository;
@@ -57,14 +65,8 @@ import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleStatus;
 import com.autowash.repository.VehicleRepository;
 import java.time.LocalDateTime;
-import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.Instant;
-import java.time.Duration;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -100,65 +102,62 @@ public class BookingServiceImpl implements BookingService {
     private final VehicleRepository VehicleRepository;
     private final BookingRepository BookingRepository;
     private final CatalogService catalogService;
-    private final PackageRepository PackageRepository;
-    private final ComboRepository ComboRepository;
     private final WashSessionRepository washSessionRepository;
     private final LoyaltyService loyaltyService;
     private final CustomerComboService customerComboService;
-    private final BookingOptionRepository bookingOptionRepository;
-    private final BookingPromotionRepository bookingPromotionRepository;
+    private final BookingDetailRepository bookingDetailRepository;
     private final PaymentRepository paymentRepository;
     private final BookingStatusHistoryRepository bookingStatusHistoryRepository;
     private final BookingEmailDeliveryService bookingEmailDeliveryService;
-    private final PromotionService promotionService;
+    private final DiscountRedemptionService discountRedemptionService;
+    private final DiscountRepository discountRepository;
+    private final UserDiscountRepository userDiscountRepository;
     private final SystemSettingsRepository systemSettingsRepository;
-    private final VoucherRedemptionService voucherRedemptionService;
     private final SlotHoldRepository slotHoldRepository;
     private final ViolationRecordRepository violationRecordRepository;
     private final NotificationRepository notificationRepository;
+    private final BookingResponseAssembler bookingResponseAssembler;
 
     public BookingServiceImpl(
             CurrentUserService currentUserService,
             VehicleRepository VehicleRepository,
             BookingRepository BookingRepository,
             CatalogService catalogService,
-            PackageRepository PackageRepository,
-            ComboRepository ComboRepository,
             WashSessionRepository washSessionRepository,
             LoyaltyService loyaltyService,
             CustomerComboService customerComboService,
-            BookingOptionRepository bookingOptionRepository,
-            BookingPromotionRepository bookingPromotionRepository,
+            BookingDetailRepository bookingDetailRepository,
             PaymentRepository paymentRepository,
             BookingStatusHistoryRepository bookingStatusHistoryRepository,
             BookingEmailDeliveryService bookingEmailDeliveryService,
-            PromotionService promotionService,
+            DiscountRedemptionService discountRedemptionService,
+            DiscountRepository discountRepository,
+            UserDiscountRepository userDiscountRepository,
             SystemSettingsRepository systemSettingsRepository,
-            VoucherRedemptionService voucherRedemptionService,
             SlotHoldRepository slotHoldRepository,
             ViolationRecordRepository violationRecordRepository,
-            NotificationRepository notificationRepository
+            NotificationRepository notificationRepository,
+            BookingResponseAssembler bookingResponseAssembler
     ) {
         this.currentUserService = currentUserService;
         this.VehicleRepository = VehicleRepository;
         this.BookingRepository = BookingRepository;
         this.catalogService = catalogService;
-        this.PackageRepository = PackageRepository;
-        this.ComboRepository = ComboRepository;
         this.washSessionRepository = washSessionRepository;
         this.loyaltyService = loyaltyService;
         this.customerComboService = customerComboService;
-        this.bookingOptionRepository = bookingOptionRepository;
-        this.bookingPromotionRepository = bookingPromotionRepository;
+        this.bookingDetailRepository = bookingDetailRepository;
         this.paymentRepository = paymentRepository;
         this.bookingStatusHistoryRepository = bookingStatusHistoryRepository;
         this.bookingEmailDeliveryService = bookingEmailDeliveryService;
-        this.promotionService = promotionService;
+        this.discountRedemptionService = discountRedemptionService;
+        this.discountRepository = discountRepository;
+        this.userDiscountRepository = userDiscountRepository;
         this.systemSettingsRepository = systemSettingsRepository;
-        this.voucherRedemptionService = voucherRedemptionService;
         this.slotHoldRepository = slotHoldRepository;
         this.violationRecordRepository = violationRecordRepository;
         this.notificationRepository = notificationRepository;
+        this.bookingResponseAssembler = bookingResponseAssembler;
     }
 
     @Transactional
@@ -169,10 +168,10 @@ public class BookingServiceImpl implements BookingService {
         SystemSettings settings = loadSettings();
         validateBookingTime(request.bookingDate(), requestedBookingTime, settings);
         LocalDateTime scheduledLocalDateTime = request.bookingDate().atTime(requestedBookingTime);
-        Instant scheduledAt = scheduledLocalDateTime.atZone(java.time.ZoneId.systemDefault()).toInstant();
+        Instant scheduledAt = scheduledLocalDateTime.atZone(ZoneId.systemDefault()).toInstant();
         validateSlotCapacity(scheduledLocalDateTime, settings.getMaxBookingsPerTimeSlot(), user);
         if (BookingRepository.countByCustomerAndStatusIn(user, ACTIVE_BOOKING_STATUSES) >= 3) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Maximum active bookings exceeded", "MAX_ACTIVE_BOOKINGS_EXCEEDED");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Maximum active bookings exceeded", ErrorCode.MAX_ACTIVE_BOOKINGS_EXCEEDED);
         }
 
         Vehicle vehicle = VehicleRepository.findByOwnerAndIdAndStatus(
@@ -180,15 +179,14 @@ public class BookingServiceImpl implements BookingService {
                         UUID.fromString(request.vehicleId()),
                         VehicleStatus.ACTIVE
                 )
-                .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Vehicle not found or not owned", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Vehicle not found or not owned", ErrorCode.RESOURCE_NOT_FOUND));
         validateNoDuplicateBooking(vehicle, scheduledAt);
 
         Package Package = null;
         Combo Combo = null;
         CustomerCombo ownedCombo = null;
-        long basePrice;
-        int baseDuration;
-        String responsePackageId = null;
+        long basePrice = 0;
+        int baseDuration = 0;
         String responsePackageName;
         String customerComboId = null;
         boolean comboPurchased = false;
@@ -197,7 +195,6 @@ public class BookingServiceImpl implements BookingService {
             Package = catalogService.requireActivePackage(request.packageId());
             basePrice = Package.getBasePrice();
             baseDuration = Package.getDurationMinutes();
-            responsePackageId = Package.getId().toString();
             responsePackageName = Package.getName();
         } else {
             Combo = catalogService.requireActiveCombo(request.comboId());
@@ -207,10 +204,10 @@ public class BookingServiceImpl implements BookingService {
             if (ownedCombo != null) {
                 if (ownedCombo.isExpired()) {
                     customerComboService.markExpired(ownedCombo);
-                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo is expired", "BUSINESS_RULE_VIOLATION");
+                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo is expired", ErrorCode.BUSINESS_RULE_VIOLATION);
                 }
                 if (!ownedCombo.hasRemainingUsages()) {
-                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo has no remaining usages", "BUSINESS_RULE_VIOLATION");
+                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo has no remaining usages", ErrorCode.BUSINESS_RULE_VIOLATION);
                 }
                 basePrice = 0;
                 customerComboId = ownedCombo.getId().toString();
@@ -228,86 +225,92 @@ public class BookingServiceImpl implements BookingService {
                 : catalogService.requireActiveComboOptions(Combo, request.options());
         long optionsTotal = options.stream().mapToLong(CatalogService.CatalogOption::price).sum();
         long subtotal = basePrice + optionsTotal;
-        UUID userVoucherId = null;
-        long voucherDiscount = 0;
-        long promotionDiscount = 0;
-        List<Promotion> activePromotions = new java.util.ArrayList<>();
-
-        if (request.voucherCode() != null && !request.voucherCode().isBlank()) {
-            java.util.Optional<Promotion> promoOpt = promotionService.getActivePromotionByNameForCustomer(request.voucherCode(), user);
-            if (promoOpt.isPresent()) {
-                Promotion p = promoOpt.get();
-                activePromotions.add(p);
-                if (p.getDiscountType() == com.autowash.entity.enums.DiscountType.PERCENT) {
-                    promotionDiscount = (subtotal * (p.getDiscountValue() != null ? p.getDiscountValue() : 0)) / 100;
-                } else if (p.getDiscountType() == com.autowash.entity.enums.DiscountType.FIXED_AMOUNT) {
-                    promotionDiscount = (p.getDiscountValue() != null ? p.getDiscountValue() : 0);
-                }
-            } else {
-                com.autowash.entity.UserVoucher userVoucher;
-                try {
-                    userVoucher = voucherRedemptionService.getUserVoucherByCode(user.getId(), request.voucherCode());
-                } catch (ApiException e) {
-                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Voucher or Promotion invalid, already used or expired", "VOUCHER_ALREADY_USED");
-                }
-                userVoucherId = userVoucher.getId();
-                voucherDiscount = voucherRedemptionService.calculateDiscount(userVoucherId, subtotal, 
-                        options.stream().map(CatalogService.CatalogOption::optionId).toList());
-            }
-        }
-
-        long totalDiscount = voucherDiscount + promotionDiscount;
-        if (totalDiscount > subtotal) {
-            totalDiscount = subtotal;
-            if (promotionDiscount > 0) {
-                promotionDiscount = totalDiscount;
-            } else {
-                voucherDiscount = totalDiscount;
-            }
-        }
+        int totalDuration = baseDuration + options.stream().mapToInt(CatalogService.CatalogOption::durationMinutes).sum();
 
         Booking booking = new Booking(
                 UUID.randomUUID(),
                 user,
                 vehicle,
-                Package == null ? null : Package.getId(),
-                Combo == null ? null : Combo.getId(),
-                userVoucherId == null ? null : voucherRedemptionService.getTemplateIdForUserVoucher(userVoucherId),
-                scheduledAt,
-                requestedBookingTime,
-                request.paymentMethod(),
-                basePrice,
-                optionsTotal,
-                voucherDiscount,
-                promotionDiscount,
-                subtotal - totalDiscount,
-                baseDuration + options.stream().mapToInt(CatalogService.CatalogOption::durationMinutes).sum()
+                scheduledAt
         );
         booking.setConfirmationEmail(resolveConfirmationEmail(request.confirmationEmail(), user));
+        
+        BookingPricing pricing = BookingPricing.builder()
+                .booking(booking)
+                .bookingId(booking.getId())
+                .subtotal(subtotal)
+                .finalAmount(subtotal)
+                .estimatedDurationMinutes(totalDuration)
+                .build();
+        booking.setPricing(pricing);
+        
+        if (Package != null) {
+            booking.addDetail(BookingDetail.builder()
+                .itemType(BookingItemType.PACKAGE)
+                .refId(Package.getId())
+                .snapshotName(Package.getName())
+                .snapshotPrice(Package.getBasePrice())
+                .subtotal(Package.getBasePrice())
+                .durationMinutes(Package.getDurationMinutes())
+                .build());
+        } else if (Combo != null) {
+            booking.addDetail(BookingDetail.builder()
+                .itemType(BookingItemType.COMBO)
+                .refId(Combo.getId())
+                .snapshotName(Combo.getName())
+                .snapshotPrice(0)
+                .subtotal(0)
+                .durationMinutes(Combo.getDurationMinutes())
+                .build());
+        }
+        
+        for (CatalogService.CatalogOption opt : options) {
+            booking.addDetail(BookingDetail.builder()
+                .itemType(BookingItemType.ADDON)
+                .refId(opt.optionId())
+                .snapshotName(opt.name())
+                .snapshotPrice(opt.price())
+                .subtotal(opt.price())
+                .durationMinutes(opt.durationMinutes())
+                .build());
+        }
+
         BookingRepository.save(booking);
+
+        // Apply discount if provided
+        if (request.discountCode() != null && !request.discountCode().isBlank()) {
+            Discount discount = discountRepository.findByCodeIgnoreCase(request.discountCode()).orElse(null);
+            if (discount != null) {
+                discountRedemptionService.redeemDiscount(booking, discount);
+            } else {
+                // Check user discount
+                UserDiscount ud = null;
+                try {
+                    UUID udId = UUID.fromString(request.discountCode());
+                    ud = userDiscountRepository.findById(udId).orElse(null);
+                } catch(Exception ignored) {}
+                
+                if (ud != null && ud.getUser().getId().equals(user.getId())) {
+                    discountRedemptionService.redeemUserDiscount(booking, ud);
+                } else {
+                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid discount code", ErrorCode.INVALID_DISCOUNT);
+                }
+            }
+        }
+
         long totalBookings = BookingRepository.countByCustomer(user);
         if (totalBookings == 1) {
             loyaltyService.postBonusTransaction(user.getId(), 30, "First booking bonus");
         }
-        List<BookingOption> bookingOptions = options.stream()
-                .map(option -> new BookingOption(booking, option.optionId(), option.name(), option.price()))
-                .toList();
-        bookingOptionRepository.saveAll(bookingOptions);
-        List<BookingPromotion> bookingPromotions = activePromotions.stream()
-                .map(promotion -> new BookingPromotion(booking, promotion.getId(), promotion.getPointMultiplier()))
-                .toList();
-        bookingPromotionRepository.saveAll(bookingPromotions);
+        
         Payment payment = paymentRepository.save(new Payment(
                 booking,
                 request.paymentMethod(),
                 initialPaymentStatus(request.paymentMethod()),
-                booking.getFinalAmount()
+                booking.getPricing().getFinalAmount()
         ));
-        if (userVoucherId != null) {
-            voucherRedemptionService.applyVoucher(userVoucherId, booking.getId(), subtotal, options.stream().map(CatalogService.CatalogOption::optionId).toList());
-        }
         
-        slotHoldRepository.findByCustomerAndSlotTime(user, scheduledLocalDateTime.atZone(java.time.ZoneId.systemDefault()).toInstant())
+        slotHoldRepository.findByCustomerAndSlotTime(user, scheduledLocalDateTime.atZone(ZoneId.systemDefault()).toInstant())
                 .ifPresent(slotHoldRepository::delete);
 
         recordStatusHistory(booking, null, booking.getStatus(), user, "Booking created");
@@ -336,17 +339,18 @@ public class BookingServiceImpl implements BookingService {
                 user.getId().toString(),
                 vehicle.getId().toString(),
                 vehicle.getPlate(),
-                responsePackageId,
                 responsePackageName,
-                toOptionSelections(booking),
-                booking.getBaseAmount(),
-                booking.getOptionsAmount(),
-                booking.getVoucherDiscount(),
-                booking.getPromotionDiscount(),
-                booking.getFinalAmount(),
+                bookingResponseAssembler.toBookingDetailDtos(booking),
+                new CreateBookingResponse.Pricing(
+                        booking.getPricing().getSubtotal(),
+                        booking.getPricing().getDiscountRefSnapshot(),
+                        booking.getPricing().getDiscountAmount(),
+                        booking.getPricing().getFinalAmount(),
+                        "VND"
+                ),
                 booking.getBookingDate(),
                 booking.getBookingTime().toString(),
-                booking.getEstimatedDurationMinutes(),
+                booking.getPricing().getEstimatedDurationMinutes(),
                 payment.getMethod().name(),
                 payment.getStatus().name(),
                 booking.getStatus().name(),
@@ -380,7 +384,15 @@ public class BookingServiceImpl implements BookingService {
             );
         }
 
-        List<BookingListItemResponse> items = bookings.getContent().stream().map(this::toListItem).toList();
+        Map<UUID, WashSession> washSessionsByBookingId = latestWashSessionsByBookingId(bookings.getContent());
+        Map<UUID, List<BookingDetail>> detailsByBookingId = detailsByBookingId(bookings.getContent());
+        List<BookingListItemResponse> items = bookings.getContent().stream()
+                .map(booking -> bookingResponseAssembler.toListItem(
+                        booking,
+                        washSessionsByBookingId.get(booking.getId()),
+                        detailsByBookingId.getOrDefault(booking.getId(), List.of())
+                ))
+                .toList();
         PaginationMeta pagination = new PaginationMeta(
                 bookings.getNumber() + 1,
                 bookings.getSize(),
@@ -396,13 +408,33 @@ public class BookingServiceImpl implements BookingService {
         return toDetailResponse(findOwnedBooking(bookingId));
     }
 
+    @Override
+    public BookingDetailResponse toDetailResponse(Booking booking) {
+        WashSession washSession = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
+                .orElse(null);
+        BookingResponseAssembler.PaymentInfo payment = resolvePaymentInfo(booking);
+        List<BookingStatusHistoryItem> statusHistory = bookingStatusHistoryRepository
+                .findByBooking_IdOrderByChangedAtAsc(booking.getId())
+                .stream()
+                .map(h -> new BookingStatusHistoryItem(
+                        h.getOldStatus(),
+                        h.getNewStatus(),
+                        h.getChangedBy() == null ? null : h.getChangedBy().getFullName(),
+                        h.getReason(),
+                        h.getChangedAt()
+                ))
+                .toList();
+
+        return bookingResponseAssembler.toDetailResponse(booking, washSession, payment, statusHistory);
+    }
+
     @Transactional
     public CancelBookingResponse cancelBooking(String bookingId, String reason) {
         Booking booking = findOwnedBooking(bookingId);
         if (!CANCELLABLE_BOOKING_STATUSES.contains(booking.getStatus())) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking cannot be cancelled", "RESOURCE_LOCKED");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking cannot be cancelled", ErrorCode.RESOURCE_LOCKED);
         }
-        java.time.Duration timeUntilScheduled = java.time.Duration.between(Instant.now(), booking.getScheduledAt());
+        Duration timeUntilScheduled = Duration.between(Instant.now(), booking.getScheduledAt());
         if (timeUntilScheduled.compareTo(Duration.ofHours(2)) < 0) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
@@ -419,26 +451,23 @@ public class BookingServiceImpl implements BookingService {
         
         if (hoursUntilScheduled > 24) {
             customerComboService.releaseUsageForBooking(booking.getId().toString());
-            if (booking.getVoucherId() != null) {
-                voucherRedemptionService.releaseVoucherForBooking(booking.getId());
+            if (booking.getPricing().getDiscountType() != null) {
+                discountRedemptionService.revertRedemption(booking);
                 voucherRefundStatus = "REFUNDED";
             }
         } else if (hoursUntilScheduled >= 6) {
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled between 6 and 24 hours"));
-            if (booking.getVoucherId() != null) {
-                voucherRedemptionService.forfeitVoucherForBooking(booking.getId());
+            if (booking.getPricing().getDiscountType() != null) {
                 voucherRefundStatus = "FORFEITED";
             }
         } else if (hoursUntilScheduled >= 1) {
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled between 1 and 6 hours"));
-            if (booking.getVoucherId() != null) {
-                voucherRedemptionService.forfeitVoucherForBooking(booking.getId());
+            if (booking.getPricing().getDiscountType() != null) {
                 voucherRefundStatus = "FORFEITED";
             }
         } else {
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled under 1 hour"));
-            if (booking.getVoucherId() != null) {
-                voucherRedemptionService.forfeitVoucherForBooking(booking.getId());
+            if (booking.getPricing().getDiscountType() != null) {
                 voucherRefundStatus = "FORFEITED";
             }
         }
@@ -455,8 +484,6 @@ public class BookingServiceImpl implements BookingService {
         );
     }
 
-
-
     @Transactional
     public PayBookingResponse payBooking(String bookingId, String transactionRef) {
         throw new ApiException(
@@ -471,7 +498,7 @@ public class BookingServiceImpl implements BookingService {
     public PayBookingResponse markBookingPaidForOperations(String bookingId, String transactionRef) {
         Booking booking = requireBookingForOperations(bookingId);
         if (booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.NO_SHOW) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking cannot be paid", "BUSINESS_RULE_VIOLATION");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking cannot be paid", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
 
         Payment payment = paymentRepository.findByBooking(booking)
@@ -479,11 +506,11 @@ public class BookingServiceImpl implements BookingService {
                         booking,
                         PaymentMethod.CASH_AT_COUNTER,
                         PaymentStatus.UNPAID,
-                        booking.getFinalAmount()
+                        booking.getPricing().getFinalAmount()
                 )));
 
         if (payment.getStatus() != PaymentStatus.PAID) {
-            payment.updateAmount(booking.getFinalAmount());
+            payment.updateAmount(booking.getPricing().getFinalAmount());
             payment.markPaid(resolveTransactionRef(booking, transactionRef));
             if (booking.getStatus() == BookingStatus.PENDING) {
                 BookingStatus oldStatus = booking.getStatus();
@@ -507,8 +534,8 @@ public class BookingServiceImpl implements BookingService {
 
     @Transactional(readOnly = true)
     public Booking requireBookingForOperations(String bookingId) {
-        return BookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", "RESOURCE_NOT_FOUND"));
+        return BookingRepository.findById(UUID.fromString(bookingId))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", ErrorCode.RESOURCE_NOT_FOUND));
     }
 
     @Transactional
@@ -528,7 +555,7 @@ public class BookingServiceImpl implements BookingService {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Booking time must be within operating hours",
-                    "BUSINESS_RULE_VIOLATION"
+                    ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
         LocalDate today = LocalDate.now();
@@ -536,14 +563,14 @@ public class BookingServiceImpl implements BookingService {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Booking date exceeds maximum advance booking window",
-                    "BUSINESS_RULE_VIOLATION"
+                    ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
         if (bookingDate.atTime(bookingTime).isBefore(LocalDateTime.now())) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Booking time cannot be in the past",
-                    "BUSINESS_RULE_VIOLATION"
+                    ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
     }
@@ -551,8 +578,8 @@ public class BookingServiceImpl implements BookingService {
     private void validateSlotCapacity(LocalDateTime scheduledAt, int maxBookingsPerTimeSlot, User customerToExclude) {
         LocalDateTime slotStartLocal = scheduledAt.withMinute(0).withSecond(0).withNano(0);
         LocalDateTime slotEndLocal = slotStartLocal.plusHours(1);
-        Instant slotStart = slotStartLocal.atZone(java.time.ZoneId.systemDefault()).toInstant();
-        Instant slotEnd = slotEndLocal.atZone(java.time.ZoneId.systemDefault()).toInstant();
+        Instant slotStart = slotStartLocal.atZone(ZoneId.systemDefault()).toInstant();
+        Instant slotEnd = slotEndLocal.atZone(ZoneId.systemDefault()).toInstant();
 
         long existingBookings = BookingRepository.countByScheduledAtSlot(
                 slotStart,
@@ -563,19 +590,19 @@ public class BookingServiceImpl implements BookingService {
                 ? slotHoldRepository.countActiveHoldsForSlot(slotStart, slotEnd, Instant.now())
                 : slotHoldRepository.countActiveHoldsForSlotExcludingCustomer(slotStart, slotEnd, Instant.now(), customerToExclude);
         if (existingBookings + activeHolds >= maxBookingsPerTimeSlot) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking slot is full", "BOOKING_SLOT_FULL");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking slot is full", ErrorCode.BOOKING_SLOT_FULL);
         }
     }
 
     private void validateCustomerCanCreateBooking(User user) {
         if (user.getStatus() == UserStatus.BLOCKED) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Blocked accounts cannot create bookings", "ACCOUNT_BLOCKED");
+            throw new ApiException(HttpStatus.FORBIDDEN, "Blocked accounts cannot create bookings", ErrorCode.ACCOUNT_BLOCKED);
         }
         if (user.getStatus() == UserStatus.SUSPENDED) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Suspended accounts cannot create bookings", "ACCOUNT_SUSPENDED");
+            throw new ApiException(HttpStatus.FORBIDDEN, "Suspended accounts cannot create bookings", ErrorCode.ACCOUNT_SUSPENDED);
         }
         if (user.getBookingSuspendedUntil() != null && user.getBookingSuspendedUntil().isAfter(Instant.now())) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Booking is suspended until " + user.getBookingSuspendedUntil(), "ACCOUNT_SUSPENDED");
+            throw new ApiException(HttpStatus.FORBIDDEN, "Booking is suspended until " + user.getBookingSuspendedUntil(), ErrorCode.ACCOUNT_SUSPENDED);
         }
     }
 
@@ -591,140 +618,60 @@ public class BookingServiceImpl implements BookingService {
 
     private SystemSettings loadSettings() {
         return systemSettingsRepository.findById(1)
-                .orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "System settings not found", "SYSTEM_ERROR"));
+                .orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "System settings not found", ErrorCode.SYSTEM_ERROR));
     }
 
     private Booking findOwnedBooking(String bookingId) {
         User user = currentUserService.getCurrentUser();
-        return BookingRepository.findByCustomerAndId(user, bookingId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", "RESOURCE_NOT_FOUND"));
+        return BookingRepository.findByCustomerAndId(user, UUID.fromString(bookingId))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", ErrorCode.RESOURCE_NOT_FOUND));
     }
 
-    private BookingListItemResponse toListItem(Booking booking) {
-        String packageName = resolvePackageName(booking);
-        var washSession = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
-                .orElse(null);
-        String washStatus = washSession == null ? null : washSession.getStatus().name();
-        return new BookingListItemResponse(
-                booking.getId().toString(),
-                booking.getVehicle().getPlate(),
-                packageName,
-                booking.getBookingDate(),
-                booking.getBookingTime().toString(),
-                booking.getFinalAmount(),
-                booking.getStatus().name(),
-                washStatus,
-                booking.getCreatedAt(),
-                washSession == null ? null : washSession.getCompletedAt()
-        );
-    }
-
-    public BookingDetailResponse toDetailResponse(Booking booking) {
-        String packageName = resolvePackageName(booking);
-        var washSession = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
-                .orElse(null);
-        PaymentInfo payment = resolvePaymentInfo(booking);
-        List<BookingStatusHistoryItem> statusHistory = bookingStatusHistoryRepository
-            .findByBooking_IdOrderByChangedAtAsc(booking.getId())
-            .stream()
-            .map(h -> new BookingStatusHistoryItem(
-                    h.getOldStatus(),
-                    h.getNewStatus(),
-                    h.getChangedBy() == null ? null : h.getChangedBy().getFullName(),
-                    h.getReason(),
-                    h.getChangedAt()
-            ))
-            .toList();
-
-        return new BookingDetailResponse(
-                booking.getId().toString(),
-                booking.getId().toString(),
-                booking.getCustomer().getId().toString(),
-                booking.getCustomer().getFullName(),
-                booking.getCustomer().getPhone(),
-                booking.getConfirmationEmail(),
-                booking.getVehicle().getId().toString(),
-                booking.getVehicle().getPlate(),
-                booking.getVehicle().getBrand(),
-                booking.getVehicle().getModel(),
-                booking.getPackageId() != null ? booking.getPackageId().toString() : null,
-                packageName,
-                toOptionSelections(booking),
-                new BookingDetailResponse.Pricing(
-                        booking.getBaseAmount(),
-                        booking.getOptionsAmount(),
-                        booking.getBaseAmount() + booking.getOptionsAmount(),
-                        booking.getVoucherId() != null ? booking.getVoucherId().toString() : null,
-                        booking.getVoucherDiscount(),
-                        booking.getPromotionDiscount(),
-                        booking.getFinalAmount(),
-                        "VND"
-                ),
-                new BookingDetailResponse.Scheduling(
-                        booking.getBookingDate(),
-                        booking.getBookingTime().toString(),
-                        booking.getEstimatedDurationMinutes(),
-                        booking.getBookingTime().plusMinutes(booking.getEstimatedDurationMinutes()).format(DateTimeFormatter.ofPattern("HH:mm"))
-                ),
-                new BookingDetailResponse.Payment(
-                        payment.method().name(),
-                        payment.status().name(),
-                        payment.transactionRef(),
-                        payment.paidAt()
-                ),
-                booking.getStatus().name(),
-                booking.getConfirmationStatus().name(),
-                booking.getConfirmationExpiresAt(),
-                washSession == null ? null : washSession.getId().toString(),
-                resolveAssignedStaffName(booking, washSession),
-                washSession == null ? null : washSession.getStatus().name(),
-                washSession == null ? null : washSession.getNotes(),
-                booking.getCreatedAt(),
-                null,
-                statusHistory
-        );
-    }
-
-    private String resolveAssignedStaffName(Booking booking, com.autowash.entity.WashSession washSession) {
-        if (washSession != null && washSession.getAssignedStaff() != null) {
-            return washSession.getAssignedStaff().getFullName();
+    private Map<UUID, WashSession> latestWashSessionsByBookingId(List<Booking> bookings) {
+        if (bookings.isEmpty()) {
+            return Map.of();
         }
-        return booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getFullName();
-    }
-
-    private String resolvePackageName(Booking booking) {
-        if (booking.getPackageId() != null) {
-            return PackageRepository.findById(booking.getPackageId())
-                    .map(Package::getName)
-                    .orElse(booking.getPackageId().toString());
-        }
-        if (booking.getComboId() != null) {
-            return ComboRepository.findById(booking.getComboId())
-                    .map(Combo::getName)
-                    .orElse(booking.getComboId().toString());
-        }
-        return null;
-    }
-
-    private List<BookingOptionResponse> toOptionSelections(Booking booking) {
-        return bookingOptionRepository.findByBooking_Id(booking.getId()).stream()
-                .map(option -> new BookingOptionResponse(option.getOptionId().toString(), option.getOptionName(), option.getOptionPrice()))
+        List<UUID> bookingIds = bookings.stream()
+                .map(Booking::getId)
                 .toList();
+
+        Comparator<WashSession> latestCompletedFirst = Comparator
+                .comparing(WashSession::getCompletedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                .reversed();
+
+        return washSessionRepository.findByBooking_IdIn(bookingIds).stream()
+                .sorted(latestCompletedFirst)
+                .collect(Collectors.toMap(
+                        session -> session.getBooking().getId(),
+                        Function.identity(),
+                        (first, ignored) -> first
+                ));
+    }
+
+    private Map<UUID, List<BookingDetail>> detailsByBookingId(List<Booking> bookings) {
+        if (bookings.isEmpty()) {
+            return Map.of();
+        }
+        List<UUID> bookingIds = bookings.stream()
+                .map(Booking::getId)
+                .toList();
+        return bookingDetailRepository.findByBooking_IdIn(bookingIds).stream()
+                .collect(Collectors.groupingBy(detail -> detail.getBooking().getId()));
     }
 
     private PaymentStatus initialPaymentStatus(PaymentMethod method) {
         return method == PaymentMethod.CASH_AT_COUNTER ? PaymentStatus.UNPAID : PaymentStatus.PENDING_PAYMENT;
     }
 
-    private PaymentInfo resolvePaymentInfo(Booking booking) {
+    private BookingResponseAssembler.PaymentInfo resolvePaymentInfo(Booking booking) {
         return paymentRepository.findByBooking(booking)
-                .map(payment -> new PaymentInfo(
+                .map(payment -> new BookingResponseAssembler.PaymentInfo(
                         payment.getMethod(),
                         payment.getStatus(),
                         payment.getTransactionRef(),
                         payment.getPaidAt()
                 ))
-                .orElseGet(() -> new PaymentInfo(PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, null, null));
+                .orElseGet(() -> new BookingResponseAssembler.PaymentInfo(PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, null, null));
     }
 
     private String resolveTransactionRef(Booking booking, String transactionRef) {
@@ -802,63 +749,9 @@ public class BookingServiceImpl implements BookingService {
 
     private String resolveConfirmationEmail(String requestedEmail, User customer) {
         if (requestedEmail != null && !requestedEmail.isBlank()) {
-            return requestedEmail.trim().toLowerCase(java.util.Locale.ROOT);
+            return requestedEmail.trim().toLowerCase(Locale.ROOT);
         }
         return customer.getEmail();
     }
 
-
-    private record PaymentInfo(
-            PaymentMethod method,
-            PaymentStatus status,
-            String transactionRef,
-            java.time.Instant paidAt
-    ) {
-    }
-    
-    @Override
-    public ValidateVoucherResponse validateVoucher(ValidateVoucherRequest request) {
-        User user = currentUserService.getCurrentUser();
-        java.util.Optional<Promotion> promoOpt = promotionService.getActivePromotionByNameForCustomer(request.voucherCode(), user);
-        
-        if (promoOpt.isPresent()) {
-            Promotion p = promoOpt.get();
-            long discount = 0;
-            if (p.getDiscountType() == com.autowash.entity.enums.DiscountType.PERCENT) {
-                discount = (request.amount() * (p.getDiscountValue() != null ? p.getDiscountValue() : 0)) / 100;
-            } else if (p.getDiscountType() == com.autowash.entity.enums.DiscountType.FIXED_AMOUNT) {
-                discount = (p.getDiscountValue() != null ? p.getDiscountValue() : 0);
-            }
-            long finalAmount = Math.max(0, request.amount() - discount);
-            return new ValidateVoucherResponse(
-                    request.voucherCode(),
-                    true,
-                    p.getDiscountType().name(),
-                    (int) (p.getDiscountValue() != null ? p.getDiscountValue() : 0),
-                    discount,
-                    finalAmount,
-                    p.getEndAt(),
-                    true
-            );
-        }
-        
-        com.autowash.entity.UserVoucher userVoucher = voucherRedemptionService.getUserVoucherByCode(user.getId(), request.voucherCode());
-        
-        List<java.util.UUID> serviceIds = new java.util.ArrayList<>();
-        long discount = voucherRedemptionService.calculateDiscount(userVoucher.getId(), request.amount(), serviceIds);
-        long finalAmount = Math.max(0, request.amount() - discount);
-        
-        return new ValidateVoucherResponse(
-                request.voucherCode(), 
-                true, 
-                userVoucher.getVoucherTemplate().getDiscountType().name(),
-                (int) userVoucher.getVoucherTemplate().getDiscountValue(),
-                discount, 
-                finalAmount,
-                userVoucher.getExpiredAt(),
-                false
-        );
-    }
 }
-
-

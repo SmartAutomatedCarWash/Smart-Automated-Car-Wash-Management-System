@@ -1,5 +1,12 @@
 package com.autowash.service.impl;
 
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+
 import com.autowash.dto.BlogArticleRequest;
 import com.autowash.dto.BlogArticleResponse;
 import com.autowash.dto.BlogCategoryRequest;
@@ -12,7 +19,6 @@ import com.autowash.repository.BlogArticleRepository;
 import com.autowash.repository.BlogCategoryRepository;
 import com.autowash.service.BlogService;
 import com.autowash.service.CurrentUserService;
-import com.autowash.shared.exception.ApiException;
 import com.autowash.dto.BlogLikeResult;
 import com.autowash.dto.BlogCommentResponse;
 import com.autowash.entity.BlogLike;
@@ -27,7 +33,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 
-@org.springframework.stereotype.Service
+@Service
 public class BlogServiceImpl implements BlogService {
 
     private final BlogCategoryRepository blogCategoryRepository;
@@ -180,16 +186,16 @@ public class BlogServiceImpl implements BlogService {
         try {
             return UUID.fromString(id);
         } catch (RuntimeException exception) {
-            throw new ApiException(HttpStatus.NOT_FOUND, message, "RESOURCE_NOT_FOUND");
+            throw new ApiException(HttpStatus.NOT_FOUND, message, ErrorCode.RESOURCE_NOT_FOUND);
         }
     }
 
     private ApiException notFound(String message) {
-        return new ApiException(HttpStatus.NOT_FOUND, message, "RESOURCE_NOT_FOUND");
+        return new ApiException(HttpStatus.NOT_FOUND, message, ErrorCode.RESOURCE_NOT_FOUND);
     }
 
     private ApiException validationError(String message) {
-        return new ApiException(HttpStatus.BAD_REQUEST, message, "VALIDATION_ERROR");
+        return new ApiException(HttpStatus.BAD_REQUEST, message, ErrorCode.VALIDATION_ERROR);
     }
 
     private BlogCategoryResponse toCategoryResponse(BlogCategory category) {
@@ -230,7 +236,7 @@ public class BlogServiceImpl implements BlogService {
         User user = currentUserService.getCurrentUser();
         BlogArticle article = requireArticle(articleId);
         
-        java.util.Optional<BlogLike> existingLike = blogLikeRepository.findByArticleIdAndCustomerId(article.getId(), user.getId());
+        Optional<BlogLike> existingLike = blogLikeRepository.findByArticleIdAndCustomerId(article.getId(), user.getId());
         boolean hasLiked;
         if (existingLike.isPresent()) {
             blogLikeRepository.delete(existingLike.get());

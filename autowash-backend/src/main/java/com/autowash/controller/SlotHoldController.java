@@ -1,5 +1,7 @@
 package com.autowash.controller;
 
+import java.time.Instant;
+
 import com.autowash.dto.HoldSlotRequest;
 import com.autowash.dto.HoldSlotResponse;
 import com.autowash.service.CurrentUserService;
@@ -32,20 +34,20 @@ public class SlotHoldController {
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<HoldSlotResponse> holdSlot(@RequestBody @Valid HoldSlotRequest request) {
-        java.time.Instant slotTime = calculateSlotTime(request.bookingDate(), request.bookingTime());
-        java.time.Instant expiresAt = slotHoldService.holdSlot(currentUserService.getCurrentUser().getId(), slotTime);
+        Instant slotTime = calculateSlotTime(request.bookingDate(), request.bookingTime());
+        Instant expiresAt = slotHoldService.holdSlot(currentUserService.getCurrentUser().getId(), slotTime);
         return ResponseEntity.ok(new HoldSlotResponse(slotTime, expiresAt));
     }
 
     @DeleteMapping
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<Void> releaseSlot(@RequestBody @Valid HoldSlotRequest request) {
-        java.time.Instant slotTime = calculateSlotTime(request.bookingDate(), request.bookingTime());
+        Instant slotTime = calculateSlotTime(request.bookingDate(), request.bookingTime());
         slotHoldService.releaseSlot(currentUserService.getCurrentUser().getId(), slotTime);
         return ResponseEntity.noContent().build();
     }
 
-    private java.time.Instant calculateSlotTime(LocalDate date, String time) {
+    private Instant calculateSlotTime(LocalDate date, String time) {
         LocalTime localTime = LocalTime.parse(time);
         ZonedDateTime zdt = date.atTime(localTime).atZone(ZoneId.systemDefault());
         return zdt.toInstant();

@@ -1,5 +1,7 @@
 package com.autowash.repository;
 
+import com.autowash.entity.enums.ActiveStatus;
+
 import com.autowash.entity.Combo;
 import java.util.List;
 import java.util.Optional;
@@ -7,10 +9,10 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ComboRepository extends JpaRepository<Combo, UUID> {
-    List<Combo> findByStatusOrderByIdAsc(com.autowash.entity.enums.ActiveStatus status);
+    List<Combo> findByStatusOrderByIdAsc(ActiveStatus status);
 
     default List<Combo> findByActiveTrueOrderByIdAsc() {
-        return findByStatusOrderByIdAsc(com.autowash.entity.enums.ActiveStatus.ACTIVE);
+        return findByStatusOrderByIdAsc(ActiveStatus.ACTIVE);
     }
 
     default Optional<Combo> findById(String id) {
@@ -18,7 +20,7 @@ public interface ComboRepository extends JpaRepository<Combo, UUID> {
     }
 
     default Optional<Combo> findByIdAndActiveTrue(String id) {
-        return findById(id).filter(c -> c.getStatus() == com.autowash.entity.enums.ActiveStatus.ACTIVE);
+        return findById(id).filter(c -> c.getStatus() == ActiveStatus.ACTIVE);
     }
 
     private static Optional<UUID> parseUuid(String id) {

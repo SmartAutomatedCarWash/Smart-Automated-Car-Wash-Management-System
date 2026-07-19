@@ -20,7 +20,8 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
-import { getDisplayErrorMessage, getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
   EMPTY_CUSTOMER_VEHICLE_FORM,
   buildCreateCustomerVehicleRequest,
@@ -48,6 +49,7 @@ import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 export function CustomerVehiclesListClientPage() {
   const { language } = useLanguageStore();
+  const getErrorMessage = useErrorMessage();
   const vehiclesQuery = useCustomerVehicles();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -59,7 +61,7 @@ export function CustomerVehiclesListClientPage() {
     return (
       <VehiclePageErrorState
         title={translate(language, "Khong the tai danh sach xe", "Unable to load vehicles")}
-        description={getDisplayErrorMessage(vehiclesQuery.error)}
+        description={getErrorMessage(vehiclesQuery.error)}
         onRetry={() => vehiclesQuery.refetch()}
         language={language}
       />
@@ -119,6 +121,7 @@ export function CustomerVehiclesListClientPage() {
 
 export function CustomerVehicleCreateClientPage() {
   const { language } = useLanguageStore();
+  const getErrorMessage = useErrorMessage();
   const router = useRouter();
   const createVehicleMutation = useCreateCustomerVehicle();
   const [form, setForm] = useState<CustomerVehicleFormValues>(EMPTY_CUSTOMER_VEHICLE_FORM);
@@ -149,7 +152,7 @@ export function CustomerVehicleCreateClientPage() {
       backLabel={translate(language, "Quay lai danh sach xe", "Back to vehicles")}
       notice={
         createVehicleMutation.isError
-          ? getDisplayErrorMessage(createVehicleMutation.error)
+          ? getErrorMessage(createVehicleMutation.error)
           : translate(language, "Them xe moi cua ban.", "Create a vehicle using the live customer vehicle contract.")
       }
     >
@@ -175,6 +178,7 @@ export function CustomerVehicleCreateClientPage() {
 
 export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: string }) {
   const { language } = useLanguageStore();
+  const getErrorMessage = useErrorMessage();
   const router = useRouter();
   const vehicleQuery = useCustomerVehicleDetail(vehicleId);
   const updateMutation = useUpdateCustomerVehicle(vehicleId);
@@ -204,7 +208,7 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
     return (
       <VehiclePageErrorState
         title={translate(language, "Khong the tai xe", "Unable to load vehicle")}
-        description={getDisplayErrorMessage(vehicleQuery.error)}
+        description={getErrorMessage(vehicleQuery.error)}
         onRetry={() => vehicleQuery.refetch()}
         language={language}
       />

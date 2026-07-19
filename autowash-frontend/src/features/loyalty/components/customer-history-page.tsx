@@ -5,7 +5,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { RefreshCcw } from "lucide-react";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { buildLoyaltySummary, formatLoyaltyPoints, formatLoyaltyTransactionType } from "@/features/loyalty/lib/customer-loyalty";
 import { formatBookingCurrency, getBookingStatusLabel, humanizeCode } from "@/features/bookings/lib/booking-format";
 import { useCustomerBookings } from "@/features/bookings/hooks/use-bookings";
@@ -20,6 +20,7 @@ import { useLanguageStore, translate } from "@/shared/store/language.store";
 const HISTORY_BOOKING_STATUSES = new Set(["COMPLETED", "CANCELLED", "NO_SHOW"]);
 
 export function CustomerHistoryPageContent() {
+  const getErrorMessage = useErrorMessage();
   const { language } = useLanguageStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"bookings" | "washes" | "points">("bookings");
@@ -107,7 +108,7 @@ export function CustomerHistoryPageContent() {
               <Card className="border-rose-200 bg-white">
                 <CardHeader>
                   <CardTitle>{translate(language, "Lich su dat lich", "Booking history")}</CardTitle>
-                  <CardDescription>{getDisplayErrorMessage(bookingsQuery.error)}</CardDescription>
+                  <CardDescription>{getErrorMessage(bookingsQuery.error)}</CardDescription>
                 </CardHeader>
               </Card>
             ) : historyBookings.length === 0 ? (
@@ -138,7 +139,7 @@ export function CustomerHistoryPageContent() {
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-base font-black text-slate-900">
-                            {booking.packageName ?? translate(language, "Dat lich", "Booking")}
+                            {booking.primaryItemName ?? translate(language, "Dat lich", "Booking")}
                           </h3>
                           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                             {getBookingStatusLabel(booking.status)}
@@ -146,7 +147,7 @@ export function CustomerHistoryPageContent() {
                         </div>
                         <div className="grid gap-1 text-sm text-slate-600 md:grid-cols-2">
                           <p>{translate(language, "Xe", "Vehicle")}: <span className="font-medium text-slate-900">{booking.vehiclePlate}</span></p>
-                          <p>{translate(language, "Dich vu", "Service")}: <span className="font-medium text-slate-900">{booking.packageName ?? "--"}</span></p>
+                          <p>{translate(language, "Dich vu", "Service")}: <span className="font-medium text-slate-900">{booking.primaryItemName ?? "--"}</span></p>
                           <p>{translate(language, "Lich hen", "Schedule")}: <span className="font-medium text-slate-900">{formatSchedule(booking.bookingDate, booking.bookingTime)}</span></p>
                           <p>{translate(language, "Rua xe", "Wash")}: <span className="font-medium text-slate-900">{booking.washStatus ? humanizeCode(booking.washStatus) : translate(language, "Chua bat dau", "Not started")}</span></p>
                         </div>
@@ -178,7 +179,7 @@ export function CustomerHistoryPageContent() {
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-base font-black text-slate-900">
-                            {wash.packageName ?? translate(language, "Phien rua xe", "Wash session")}
+                            {wash.primaryItemName ?? translate(language, "Phien rua xe", "Wash session")}
                           </h3>
                           <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                             {humanizeCode(wash.status)}
@@ -186,7 +187,7 @@ export function CustomerHistoryPageContent() {
                         </div>
                         <div className="grid gap-1 text-sm text-slate-600 md:grid-cols-2">
                           <p>{translate(language, "Xe", "Vehicle")}: <span className="font-medium text-slate-900">{wash.vehiclePlate}</span></p>
-                          <p>{translate(language, "Dich vu", "Service")}: <span className="font-medium text-slate-900">{wash.packageName ?? "--"}</span></p>
+                          <p>{translate(language, "Dich vu", "Service")}: <span className="font-medium text-slate-900">{wash.primaryItemName ?? "--"}</span></p>
                           <p>{translate(language, "Lich hen", "Booked for")}: <span className="font-medium text-slate-900">{formatSchedule(wash.bookingDate, wash.bookingTime)}</span></p>
                           <p>{translate(language, "Hoan thanh", "Completed")}: <span className="font-medium text-slate-900">{formatDateTime(wash.completedAt, locale)}</span></p>
                         </div>
@@ -304,6 +305,8 @@ function HistorySection({
   isEmpty: boolean;
   children: ReactNode;
 }) {
+  const getErrorMessage = useErrorMessage();
+
   if (isPending) {
     return <div className="h-64 animate-pulse rounded-3xl bg-slate-100" />;
   }
@@ -313,7 +316,7 @@ function HistorySection({
       <Card className="border-rose-200 bg-white">
         <CardHeader>
           <CardTitle>{title}</CardTitle>
-          <CardDescription>{getDisplayErrorMessage(error)}</CardDescription>
+          <CardDescription>{getErrorMessage(error)}</CardDescription>
         </CardHeader>
       </Card>
     );

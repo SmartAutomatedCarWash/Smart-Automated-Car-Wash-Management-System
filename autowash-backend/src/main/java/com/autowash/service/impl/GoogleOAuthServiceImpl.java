@@ -1,6 +1,10 @@
 package com.autowash.service.impl;
 
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
 import com.autowash.dto.GoogleAuthTicketResponse;
+
 import com.autowash.dto.GoogleOAuthUserInfo;
 import com.autowash.dto.LoginResponse;
 import com.autowash.entity.GoogleAuthTicket;
@@ -19,7 +23,6 @@ import com.autowash.repository.UserRepository;
 import com.autowash.service.GoogleOAuthClient;
 import com.autowash.service.GoogleOAuthService;
 import com.autowash.service.JwtService;
-import com.autowash.shared.exception.ApiException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -111,7 +114,7 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
     @Transactional
     public String handleCallback(String code, String state) {
         GoogleAuthTicket ticket = ticketRepository.findByState(state)
-                .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Invalid OAuth state", "INVALID_STATE"));
+                .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Invalid OAuth state", ErrorCode.INVALID_STATE));
 
         if (ticket.isExpired()) {
             ticket.markExpired();
@@ -174,7 +177,7 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
     @Transactional(readOnly = true)
     public GoogleAuthTicketResponse getTicket(String state) {
         GoogleAuthTicket ticket = ticketRepository.findByState(state)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Ticket not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Ticket not found", ErrorCode.RESOURCE_NOT_FOUND));
 
         boolean expired = ticket.isExpired();
         return new GoogleAuthTicketResponse(
@@ -249,12 +252,12 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
 
         if (!ticket.getStatus().name().equals("LINK_REQUIRED") || ticket.getUserId() == null) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "No link confirmation required for this ticket", "INVALID_STATE");
+                    "No link confirmation required for this ticket", ErrorCode.INVALID_STATE);
         }
 
         User user = userRepository.findById(ticket.getUserId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,
-                        "Account not found", "RESOURCE_NOT_FOUND"));
+                        "Account not found", ErrorCode.RESOURCE_NOT_FOUND));
 
         requireNotBlocked(user);
 
@@ -278,13 +281,13 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
     private GoogleAuthTicket requireValidTicket(String state) {
         GoogleAuthTicket ticket = ticketRepository.findByState(state)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,
-                        "Ticket not found", "RESOURCE_NOT_FOUND"));
+                        "Ticket not found", ErrorCode.RESOURCE_NOT_FOUND));
         if (ticket.isExpired()) {
             ticket.markExpired();
-            throw new ApiException(HttpStatus.GONE, "OAuth ticket has expired", "TICKET_EXPIRED");
+            throw new ApiException(HttpStatus.GONE, "OAuth ticket has expired", ErrorCode.TICKET_EXPIRED);
         }
         if (ticket.getStatus().name().equals("CONSUMED")) {
-            throw new ApiException(HttpStatus.CONFLICT, "Ticket already used", "TICKET_CONSUMED");
+            throw new ApiException(HttpStatus.CONFLICT, "Ticket already used", ErrorCode.TICKET_CONSUMED);
         }
         return ticket;
     }
@@ -325,7 +328,7 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
 
     private void requireNotBlocked(User user) {
         if ("BLOCKED".equals(user.getStatus().name())) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Account is blocked", "ACCOUNT_BLOCKED");
+            throw new ApiException(HttpStatus.FORBIDDEN, "Account is blocked", ErrorCode.ACCOUNT_BLOCKED);
         }
     }
 

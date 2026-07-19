@@ -17,7 +17,7 @@ import {
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
 import { Badge } from "@/shared/ui/ui/badge";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
 import { useCustomerBookings, useActiveCustomerCombos } from "@/features/bookings/hooks/use-bookings";
 import { cn } from "@/shared/lib/utils";
@@ -188,7 +188,7 @@ function ActiveBookingCard({ booking, language }: { booking: BookingListItem; la
                 />
               </div>
               <p className="mt-1 truncate text-sm font-black text-slate-900">
-                {booking.packageName ?? t("Combo", "Combo")}
+                {booking.primaryItemName ?? t("Combo", "Combo")}
               </p>
               <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-500">
                 <span className="flex items-center gap-1">
@@ -214,6 +214,7 @@ function ActiveBookingCard({ booking, language }: { booking: BookingListItem; la
 }
 
 export function CustomerBookingListPage() {
+  const getErrorMessage = useErrorMessage();
   const { language } = useLanguageStore();
   const t = (vi: string, en: string) => translate(language, vi, en);
 
@@ -250,7 +251,7 @@ export function CustomerBookingListPage() {
             </div>
           ) : bookingsQuery.isError ? (
             <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-              {getDisplayErrorMessage(bookingsQuery.error)}
+              {getErrorMessage(bookingsQuery.error)}
             </div>
           ) : activeBookings.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-8 text-center text-sm text-slate-400">

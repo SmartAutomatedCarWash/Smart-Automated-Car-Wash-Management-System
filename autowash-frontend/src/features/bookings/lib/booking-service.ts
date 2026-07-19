@@ -16,8 +16,8 @@ import type {
   CancelBookingResponse,
   PurchaseCustomerComboRequest,
   PurchaseCustomerComboResponse,
-  VoucherValidationRequest,
-  VoucherValidationResult,
+  DiscountValidationRequest,
+  DiscountValidationResult,
   WashTrackingSession,
   HoldSlotRequest,
   HoldSlotResponse,
@@ -61,8 +61,8 @@ export async function listActiveCustomerCombos(): Promise<CustomerCombo[]> {
   return response.data.data as CustomerCombo[];
 }
 
-export function validateBookingVoucher(payload: VoucherValidationRequest) {
-  return apiRequest<VoucherValidationResult, VoucherValidationRequest>({
+export function validateBookingDiscount(payload: DiscountValidationRequest) {
+  return apiRequest<DiscountValidationResult, DiscountValidationRequest>({
     method: "POST",
     url: "/customers/bookings/validate-voucher",
     data: payload,

@@ -1,5 +1,55 @@
 package com.autowash.service.impl;
 
+import com.autowash.entity.WashSession;
+
+import com.autowash.service.LoyaltyService;
+
+import com.autowash.entity.TierConfig;
+
+import com.autowash.entity.BookingDetail;
+
+import com.autowash.entity.enums.BookingItemType;
+
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+import com.autowash.dto.UpdateAdminCustomerRoleResponse;
+
+import com.autowash.dto.BookingDetailDto;
+
+import com.autowash.dto.BookingDetailResponse;
+
+import com.autowash.dto.StaffKpiItem;
+
+
+
+import java.util.List;
+
+import java.util.function.ToLongFunction;
+
+import java.util.Comparator;
+
+import java.time.format.DateTimeFormatter;
+
+import java.time.ZoneOffset;
+
+import java.time.DayOfWeek;
+
+import java.time.LocalDate;
+
+import java.time.Instant;
+
+import java.time.ZoneId;
+
+import java.util.ArrayList;
+
+import java.util.Arrays;
+
+import java.util.UUID;
+
+import java.util.Map;
+
+
 import com.autowash.dto.AdminBookingResponse;
 import com.autowash.dto.AdminBusinessHealthReportResponse;
 import com.autowash.dto.AdminAccountResponse;
@@ -11,7 +61,6 @@ import com.autowash.dto.CreateAdminStaffRequest;
 import com.autowash.dto.UpdateAdminStaffRequest;
 import com.autowash.dto.AdminTierHistoryResponse;
 import com.autowash.dto.AdminWashHistoryResponse;
-import com.autowash.dto.UpdateAdminCustomerRoleResponse;
 import com.autowash.entity.User;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
@@ -29,33 +78,22 @@ import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.entity.PointTransaction;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PointTransactionRepository;
-import com.autowash.service.LoyaltyService;
 import com.autowash.service.AdminReportingService;
-import com.autowash.entity.WashSession;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.dto.PaginationMeta;
-import com.autowash.shared.exception.ApiException;
 import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleStatus;
 import com.autowash.repository.VehicleRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.Month;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
@@ -115,10 +153,10 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     @Transactional
     public AdminAccountResponse createStaff(CreateAdminStaffRequest request) {
         if (UserRepository.existsByPhone(request.phone())) {
-            throw new ApiException(HttpStatus.CONFLICT, "Phone number already registered", "DUPLICATE_PHONE");
+            throw new ApiException(HttpStatus.CONFLICT, "Phone number already registered", ErrorCode.DUPLICATE_PHONE);
         }
         if (UserRepository.existsByEmailIgnoreCase(request.email())) {
-            throw new ApiException(HttpStatus.CONFLICT, "Email already registered", "DUPLICATE_EMAIL");
+            throw new ApiException(HttpStatus.CONFLICT, "Email already registered", ErrorCode.DUPLICATE_EMAIL);
         }
         
         UserRole assignedRole = UserRole.STAFF;
@@ -126,7 +164,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             try {
                 assignedRole = UserRole.valueOf(request.role().toUpperCase());
             } catch (IllegalArgumentException e) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid role", "VALIDATION_ERROR");
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid role", ErrorCode.VALIDATION_ERROR);
             }
         }
 
@@ -148,9 +186,9 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     @Transactional
     public AdminAccountResponse updateStaff(UUID staffId, UpdateAdminStaffRequest request) {
         User staff = UserRepository.findById(staffId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", ErrorCode.RESOURCE_NOT_FOUND));
         if (staff.getRole() != UserRole.STAFF) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Target account is not staff", "BUSINESS_RULE_VIOLATION");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Target account is not staff", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
 
         if (request.fullName() != null && !request.fullName().isBlank()) {
@@ -158,13 +196,13 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         }
         if (request.phone() != null && !request.phone().isBlank()) {
             if (UserRepository.existsByPhoneAndIdNot(request.phone(), staffId)) {
-                throw new ApiException(HttpStatus.CONFLICT, "Phone number already registered", "DUPLICATE_PHONE");
+                throw new ApiException(HttpStatus.CONFLICT, "Phone number already registered", ErrorCode.DUPLICATE_PHONE);
             }
             staff.setPhone(request.phone().trim());
         }
         if (request.email() != null && !request.email().isBlank()) {
             if (UserRepository.existsByEmailIgnoreCaseAndIdNot(request.email(), staffId)) {
-                throw new ApiException(HttpStatus.CONFLICT, "Email already registered", "DUPLICATE_EMAIL");
+                throw new ApiException(HttpStatus.CONFLICT, "Email already registered", ErrorCode.DUPLICATE_EMAIL);
             }
             staff.setEmail(request.email().trim());
         }
@@ -185,9 +223,9 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     @Transactional
     public AdminAccountResponse updateStaffStatus(UUID staffId, String status) {
         User staff = UserRepository.findById(staffId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", ErrorCode.RESOURCE_NOT_FOUND));
         if (staff.getRole() != UserRole.STAFF) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Target account is not staff", "BUSINESS_RULE_VIOLATION");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Target account is not staff", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
         staff.updateStatus(UserStatus.valueOf(status.toUpperCase()));
         return toAccountResponse(UserRepository.save(staff));
@@ -196,18 +234,18 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     @Transactional
     public AdminAccountResponse deleteStaff(UUID staffId) {
         User staff = UserRepository.findById(staffId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", ErrorCode.RESOURCE_NOT_FOUND));
         if (staff.getRole() != UserRole.STAFF) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Target account is not staff", "BUSINESS_RULE_VIOLATION");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Target account is not staff", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
         staff.updateStatus(UserStatus.INACTIVE);
         return toAccountResponse(UserRepository.save(staff));
     }
 
     @Transactional(readOnly = true)
-    public List<com.autowash.dto.StaffKpiItem> listStaffKpi(String range) {
-        java.time.ZoneId zone = java.time.ZoneId.systemDefault();
-        java.time.Instant rangeStart = resolveRangeStart(range, zone);
+    public List<StaffKpiItem> listStaffKpi(String range) {
+        ZoneId zone = ZoneId.systemDefault();
+        Instant rangeStart = resolveRangeStart(range, zone);
 
         Set<WashSessionStatus> ACTIVE_SESSION_STATUSES = Set.of(
                 WashSessionStatus.PENDING,
@@ -221,11 +259,11 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 .map(staff -> {
                     // Completed sessions in range
                     long completedInRange = washSessionRepository.countByAssignedStaffAndStatusAndCompletedAtBetween(
-                            staff, WashSessionStatus.COMPLETED, rangeStart, java.time.Instant.now());
+                            staff, WashSessionStatus.COMPLETED, rangeStart, Instant.now());
 
                     // Revenue from completed bookings in range
                     long revenueInRange = bookingRepository
-                            .sumCompletedRevenueByAssignedStaffAndRange(staff, rangeStart, java.time.Instant.now());
+                            .sumCompletedRevenueByAssignedStaffAndRange(staff, rangeStart, Instant.now());
 
                     // Currently active sessions
                     long activeSessions = washSessionRepository.countByAssignedStaffAndStatusIn(staff, ACTIVE_SESSION_STATUSES);
@@ -238,7 +276,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
 
                     boolean isOnline = activeSessions > 0;
 
-                    return new com.autowash.dto.StaffKpiItem(
+                    return new StaffKpiItem(
                             staff.getId(),
                             staff.getFullName(),
                             staff.getStatus().name(),
@@ -251,24 +289,24 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                             isOnline
                     );
                 })
-                .sorted(java.util.Comparator.comparingLong(com.autowash.dto.StaffKpiItem::completedBookings).reversed())
+                .sorted(Comparator.comparingLong(StaffKpiItem::completedBookings).reversed())
                 .toList();
     }
 
-    private java.time.Instant resolveRangeStart(String range, java.time.ZoneId zone) {
+    private Instant resolveRangeStart(String range, ZoneId zone) {
         return switch (range == null ? "TODAY" : range.toUpperCase()) {
-            case "WEEK" -> java.time.LocalDate.now(zone).with(java.time.DayOfWeek.MONDAY).atStartOfDay(zone).toInstant();
-            case "MONTH" -> java.time.LocalDate.now(zone).withDayOfMonth(1).atStartOfDay(zone).toInstant();
-            default -> java.time.LocalDate.now(zone).atStartOfDay(zone).toInstant(); // TODAY
+            case "WEEK" -> LocalDate.now(zone).with(DayOfWeek.MONDAY).atStartOfDay(zone).toInstant();
+            case "MONTH" -> LocalDate.now(zone).withDayOfMonth(1).atStartOfDay(zone).toInstant();
+            default -> LocalDate.now(zone).atStartOfDay(zone).toInstant(); // TODAY
         };
     }
 
     @Transactional(readOnly = true)
     public AdminStaffWorkloadResponse getStaffWorkload(UUID staffId) {
         User staff = UserRepository.findById(staffId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", ErrorCode.RESOURCE_NOT_FOUND));
         if (staff.getRole() != UserRole.STAFF) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Staff not found", "RESOURCE_NOT_FOUND");
+            throw new ApiException(HttpStatus.NOT_FOUND, "Staff not found", ErrorCode.RESOURCE_NOT_FOUND);
         }
         long activeBookings = bookingRepository.countByAssignedStaffAndStatusIn(staff, REVENUE_STATUSES);
         long activeSessions = washSessionRepository.countByAssignedStaffAndStatusIn(staff, Set.of(
@@ -285,9 +323,9 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     @Transactional
     public AdminAccountResponse updateCustomerStatus(UUID customerId, String status) {
         User customer = UserRepository.findById(customerId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Customer not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Customer not found", ErrorCode.RESOURCE_NOT_FOUND));
         if (customer.getRole() != UserRole.CUSTOMER) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Customer not found", "RESOURCE_NOT_FOUND");
+            throw new ApiException(HttpStatus.NOT_FOUND, "Customer not found", ErrorCode.RESOURCE_NOT_FOUND);
         }
         customer.updateStatus(UserStatus.valueOf(status.toUpperCase()));
         return toAccountResponse(UserRepository.save(customer));
@@ -333,7 +371,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     @Transactional(readOnly = true)
     public AdminAccountResponse getAccountDetail(UUID accountId) {
         User account = UserRepository.findById(accountId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", ErrorCode.RESOURCE_NOT_FOUND));
         return toAccountResponse(account);
     }
 
@@ -365,7 +403,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         double cancellationRate = percentage(countCancelled(currentBookings), currentBookings.size());
         long discountAssistedRevenue = currentBookings.stream()
                 .filter(this::isDiscountAssisted)
-                .mapToLong(Booking::getFinalAmount)
+                .mapToLong(b -> b.getPricing() != null ? b.getPricing().getFinalAmount() : 0L)
                 .sum();
 
         AdminBusinessHealthReportResponse.Kpis kpis = AdminBusinessHealthReportResponse.Kpis.builder()
@@ -387,7 +425,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         AdminBusinessHealthReportResponse.Breakdowns breakdowns = AdminBusinessHealthReportResponse.Breakdowns.builder()
                 .revenue(buildRevenueBreakdown(currentBookings, currentRevenue))
                 .service(buildServiceBreakdown(currentBookings, currentRevenue, serviceNames))
-                .promotion(buildPromotionBreakdown(currentBookings, currentRevenue))
+                .discount(buildDiscountBreakdown(currentBookings, currentRevenue))
                 .channel(AdminBusinessHealthReportResponse.Breakdown.builder()
                         .available(false)
                         .items(List.of())
@@ -431,7 +469,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                         .build())
                 .capabilities(AdminBusinessHealthReportResponse.Capabilities.builder()
                         .channelAvailable(false)
-                        .promotionAttributionExact(false)
+                        .discountAttributionExact(false)
                         .build())
                 .build();
     }
@@ -469,30 +507,28 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     }
 
     @Transactional(readOnly = true)
-    public com.autowash.dto.BookingDetailResponse getBookingDetail(String bookingId) {
+    public BookingDetailResponse getBookingDetail(String bookingId) {
         Booking booking = bookingRepository.findById(UUID.fromString(bookingId))
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", ErrorCode.RESOURCE_NOT_FOUND));
         
         String packageName = null;
-        if (booking.getPackageId() != null) {
-            packageName = PackageRepository.findById(booking.getPackageId())
+        if ((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null)) != null) {
+            packageName = PackageRepository.findById((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null)))
                     .map(com.autowash.entity.Package::getName)
-                    .orElse(booking.getPackageId().toString());
-        } else if (booking.getComboId() != null) {
-            packageName = ComboRepository.findById(booking.getComboId())
+                    .orElse((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null)).toString());
+        } else if ((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null)) != null) {
+            packageName = ComboRepository.findById((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null)))
                     .map(com.autowash.entity.Combo::getName)
-                    .orElse(booking.getComboId().toString());
+                    .orElse((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null)).toString());
         }
 
         var washSession = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
                 .orElse(null);
 
-        List<com.autowash.dto.BookingOptionResponse> optionSelections = booking.getOptions().stream()
-                .map(option -> new com.autowash.dto.BookingOptionResponse(option.getOptionId().toString(), option.getOptionName(), option.getOptionPrice()))
-                .toList();
+        List<BookingDetailDto> mappedDetails = booking.getDetails().stream().map(d -> new BookingDetailDto(d.getId(), d.getItemType().name(), d.getRefId(), d.getSnapshotName(), d.getSnapshotPrice(), d.getQuantity(), d.getSubtotal(), d.getDurationMinutes())).toList();
 
         PaymentInfo payment = resolvePaymentInfo(booking);
-        return new com.autowash.dto.BookingDetailResponse(
+        return new BookingDetailResponse(
                 booking.getId().toString(),
                 booking.getId().toString(),
                 booking.getCustomer().getId().toString(),
@@ -503,26 +539,22 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 booking.getVehicle().getPlate(),
                 booking.getVehicle().getBrand(),
                 booking.getVehicle().getModel(),
-                booking.getPackageId() == null ? null : booking.getPackageId().toString(),
                 packageName,
-                optionSelections,
-                new com.autowash.dto.BookingDetailResponse.Pricing(
-                        booking.getBaseAmount(),
-                        booking.getOptionsAmount(),
-                        booking.getBaseAmount() + booking.getOptionsAmount(),
-                        booking.getVoucherId() != null ? booking.getVoucherId().toString() : null,
-                        booking.getVoucherDiscount(),
-                        booking.getPromotionDiscount(),
-                        booking.getFinalAmount(),
+                mappedDetails,
+                new BookingDetailResponse.Pricing(
+                        booking.getPricing() != null ? booking.getPricing().getSubtotal() : 0L,
+                        booking.getPricing() != null ? booking.getPricing().getDiscountRefSnapshot() : null,
+                        booking.getPricing() != null ? booking.getPricing().getDiscountAmount() : 0L,
+                        booking.getPricing() != null ? booking.getPricing().getFinalAmount() : 0L,
                         "VND"
                 ),
-                new com.autowash.dto.BookingDetailResponse.Scheduling(
+                new BookingDetailResponse.Scheduling(
                         booking.getBookingDate(),
                         booking.getBookingTime().toString(),
-                        booking.getEstimatedDurationMinutes(),
-                        booking.getBookingTime().plusMinutes(booking.getEstimatedDurationMinutes()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+                        booking.getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum(),
+                        booking.getBookingTime().plusMinutes(booking.getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum()).format(DateTimeFormatter.ofPattern("HH:mm"))
                 ),
-                new com.autowash.dto.BookingDetailResponse.Payment(
+                new BookingDetailResponse.Payment(
                         payment.method().name(),
                         payment.status().name(),
                         payment.transactionRef(),
@@ -573,7 +605,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 totalPointsEarned,
                 totalPointsSpent,
                 lastBooking == null ? null : lastBooking.getCreatedAt(),
-                lastBooking == null ? null : lastBooking.getFinalAmount()
+                lastBooking == null ? null : lastBooking.getPricing() != null ? lastBooking.getPricing().getFinalAmount() : 0L
         );
         return new AdminCustomerDetailResponse(customer.getId(), profile, loyaltySummary, summary);
     }
@@ -592,11 +624,11 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     }
 
     @Transactional
-    public com.autowash.dto.UpdateAdminCustomerRoleResponse updateCustomerTier(UUID customerId, String tier) {
+    public UpdateAdminCustomerRoleResponse updateCustomerTier(UUID customerId, String tier) {
         requireCustomer(customerId);
-        String newTier = com.autowash.entity.TierConfig.normalizeTier(tier);
+        String newTier = TierConfig.normalizeTier(tier);
         loyaltyService.updateCustomerTierByAdmin(customerId, newTier);
-        return new com.autowash.dto.UpdateAdminCustomerRoleResponse(
+        return new UpdateAdminCustomerRoleResponse(
                 customerId,
                 newTier,
                 Instant.now()
@@ -672,9 +704,9 @@ public class AdminReportingServiceImpl implements AdminReportingService {
 
     private User requireCustomer(UUID customerId) {
         User customer = UserRepository.findById(customerId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Customer not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Customer not found", ErrorCode.RESOURCE_NOT_FOUND));
         if (customer.getRole() != UserRole.CUSTOMER) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Customer not found", "RESOURCE_NOT_FOUND");
+            throw new ApiException(HttpStatus.NOT_FOUND, "Customer not found", ErrorCode.RESOURCE_NOT_FOUND);
         }
         return customer;
     }
@@ -698,7 +730,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
                     "Invalid status. Valid values: " + Arrays.toString(BookingStatus.values()),
-                    "VALIDATION_ERROR"
+                    ErrorCode.VALIDATION_ERROR
             );
         }
     }
@@ -713,7 +745,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
                     "Invalid role. Valid values: " + Arrays.toString(UserRole.values()),
-                    "VALIDATION_ERROR"
+                    ErrorCode.VALIDATION_ERROR
             );
         }
     }
@@ -728,20 +760,20 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
                     "Invalid status. Valid values: " + Arrays.toString(UserStatus.values()),
-                    "VALIDATION_ERROR"
+                    ErrorCode.VALIDATION_ERROR
             );
         }
     }
 
     private void validateDateRange(LocalDate dateFrom, LocalDate dateTo) {
         if (dateFrom != null && dateTo != null && dateFrom.isAfter(dateTo)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "dateFrom must be before or equal to dateTo", "VALIDATION_ERROR");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "dateFrom must be before or equal to dateTo", ErrorCode.VALIDATION_ERROR);
         }
     }
 
     private void validateDateRange(Instant dateFrom, Instant dateTo) {
         if (dateFrom != null && dateTo != null && dateFrom.isAfter(dateTo)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "dateFrom must be before or equal to dateTo", "VALIDATION_ERROR");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "dateFrom must be before or equal to dateTo", ErrorCode.VALIDATION_ERROR);
         }
     }
 
@@ -760,12 +792,12 @@ public class AdminReportingServiceImpl implements AdminReportingService {
 
     private Map<UUID, String> serviceNames(Collection<Booking> bookings) {
         List<UUID> packageIds = bookings.stream()
-                .map(Booking::getPackageId)
+                .map(b -> b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null))
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
         List<UUID> comboIds = bookings.stream()
-                .map(Booking::getComboId)
+                .map(b -> b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null))
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
@@ -788,11 +820,10 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 booking.getCustomer().getFullName(),
                 booking.getCustomer().getPhone(),
                 booking.getVehicle().getPlate(),
-                serviceId(booking) == null ? null : serviceId(booking).toString(),
                 serviceNames.get(serviceId(booking)),
                 booking.getBookingDate(),
                 booking.getBookingTime(),
-                booking.getFinalAmount(),
+                (booking.getPricing() != null ? booking.getPricing().getFinalAmount() : 0L),
                 payment.method().name(),
                 payment.status().name(),
                 booking.getStatus().name(),
@@ -885,7 +916,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     }
 
     private UUID serviceId(Booking booking) {
-        return booking.getPackageId() == null ? booking.getComboId() : booking.getPackageId();
+        return (booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null)) == null ? (booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null)) : (booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null));
     }
 
     private long sumPoints(User customer, PointTransactionType type) {
@@ -906,15 +937,15 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     private List<WashSession> filterCompletedSessionsByDate(List<WashSession> sessions, LocalDate dateFrom, LocalDate dateTo) {
         return sessions.stream()
                 .filter(session -> session.getCompletedAt() != null)
-                .filter(session -> session.getCompletedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().compareTo(dateFrom) >= 0)
-                .filter(session -> session.getCompletedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().compareTo(dateTo) <= 0)
+                .filter(session -> session.getCompletedAt().atZone(ZoneOffset.UTC).toLocalDate().compareTo(dateFrom) >= 0)
+                .filter(session -> session.getCompletedAt().atZone(ZoneOffset.UTC).toLocalDate().compareTo(dateTo) <= 0)
                 .toList();
     }
 
     private long sumRevenue(List<Booking> bookings) {
         return bookings.stream()
                 .filter(booking -> REVENUE_STATUSES.contains(booking.getStatus()))
-                .mapToLong(Booking::getFinalAmount)
+                .mapToLong(b -> b.getPricing() != null ? b.getPricing().getFinalAmount() : 0L)
                 .sum();
     }
 
@@ -925,7 +956,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     }
 
     private boolean isDiscountAssisted(Booking booking) {
-        return booking.getVoucherDiscount() > 0 || booking.getVoucherCode() != null;
+        return (booking.getPricing() != null ? booking.getPricing().getDiscountAmount() : 0L) > 0 || (booking.getPricing() != null ? booking.getPricing().getDiscountRefSnapshot() : null) != null;
     }
 
     private double growthRate(long current, long previous) {
@@ -952,8 +983,8 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             ReportWindow window
     ) {
         return new AdminBusinessHealthReportResponse.Series(
-                buildDailyPoints(currentBookings, window.currentFrom(), window.currentTo(), booking -> REVENUE_STATUSES.contains(booking.getStatus()) ? booking.getFinalAmount() : 0),
-                buildDailyPoints(previousBookings, window.previousFrom(), window.previousTo(), booking -> REVENUE_STATUSES.contains(booking.getStatus()) ? booking.getFinalAmount() : 0)
+                buildDailyPoints(currentBookings, window.currentFrom(), window.currentTo(), booking -> REVENUE_STATUSES.contains(booking.getStatus()) ? (booking.getPricing() != null ? booking.getPricing().getFinalAmount() : 0L) : 0),
+                buildDailyPoints(previousBookings, window.previousFrom(), window.previousTo(), booking -> REVENUE_STATUSES.contains(booking.getStatus()) ? (booking.getPricing() != null ? booking.getPricing().getFinalAmount() : 0L) : 0)
         );
     }
 
@@ -972,7 +1003,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             List<Booking> bookings,
             LocalDate dateFrom,
             LocalDate dateTo,
-            java.util.function.ToLongFunction<Booking> mapper
+            ToLongFunction<Booking> mapper
     ) {
         List<AdminBusinessHealthReportResponse.Point> points = new ArrayList<>();
         for (LocalDate cursor = dateFrom; !cursor.isAfter(dateTo); cursor = cursor.plusDays(1)) {
@@ -996,7 +1027,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             LocalDate current = cursor;
             long value = sessions.stream()
                     .filter(session -> session.getCompletedAt() != null)
-                    .filter(session -> session.getCompletedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().isEqual(current))
+                    .filter(session -> session.getCompletedAt().atZone(ZoneOffset.UTC).toLocalDate().isEqual(current))
                     .count();
             points.add(new AdminBusinessHealthReportResponse.Point(shortDateLabel(current), value));
         }
@@ -1011,7 +1042,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         long discountRevenue = bookings.stream()
                 .filter(booking -> REVENUE_STATUSES.contains(booking.getStatus()))
                 .filter(this::isDiscountAssisted)
-                .mapToLong(Booking::getFinalAmount)
+                .mapToLong(b -> b.getPricing() != null ? b.getPricing().getFinalAmount() : 0L)
                 .sum();
         long fullPriceRevenue = Math.max(totalRevenue - discountRevenue, 0);
 
@@ -1048,7 +1079,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
 
         List<AdminBusinessHealthReportResponse.BreakdownItem> items = grouped.entrySet().stream()
                 .map(entry -> {
-                    long revenue = entry.getValue().stream().mapToLong(Booking::getFinalAmount).sum();
+                    long revenue = entry.getValue().stream().mapToLong(b -> b.getPricing() != null ? b.getPricing().getFinalAmount() : 0L).sum();
                     return new AdminBusinessHealthReportResponse.BreakdownItem(
                             entry.getKey(),
                             serviceNames.getOrDefault(entry.getKey().isBlank() ? null : UUID.fromString(entry.getKey()), entry.getKey()),
@@ -1063,15 +1094,15 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         return new AdminBusinessHealthReportResponse.Breakdown(true, items, null);
     }
 
-    private AdminBusinessHealthReportResponse.Breakdown buildPromotionBreakdown(List<Booking> bookings, long totalRevenue) {
+    private AdminBusinessHealthReportResponse.Breakdown buildDiscountBreakdown(List<Booking> bookings, long totalRevenue) {
         Map<String, List<Booking>> grouped = bookings.stream()
                 .filter(booking -> REVENUE_STATUSES.contains(booking.getStatus()))
                 .filter(this::isDiscountAssisted)
-                .collect(Collectors.groupingBy(booking -> booking.getVoucherCode() == null ? "DISCOUNT_APPLIED" : booking.getVoucherCode()));
+                .collect(Collectors.groupingBy(booking -> (booking.getPricing() != null ? booking.getPricing().getDiscountRefSnapshot() : null) == null ? "DISCOUNT_APPLIED" : (booking.getPricing() != null ? booking.getPricing().getDiscountRefSnapshot() : null)));
 
         List<AdminBusinessHealthReportResponse.BreakdownItem> items = grouped.entrySet().stream()
                 .map(entry -> {
-                    long revenue = entry.getValue().stream().mapToLong(Booking::getFinalAmount).sum();
+                    long revenue = entry.getValue().stream().mapToLong(b -> b.getPricing() != null ? b.getPricing().getFinalAmount() : 0L).sum();
                     return new AdminBusinessHealthReportResponse.BreakdownItem(
                             entry.getKey(),
                             entry.getKey(),
@@ -1083,7 +1114,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 .sorted(Comparator.comparingLong(AdminBusinessHealthReportResponse.BreakdownItem::revenue).reversed())
                 .toList();
 
-        String message = "Promotion contribution is approximated from voucher and discount-assisted bookings.";
+        String message = "Discount contribution is approximated from discount-assisted bookings.";
         return new AdminBusinessHealthReportResponse.Breakdown(true, items, message);
     }
 
@@ -1133,7 +1164,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         if (discountAssistedBookings > 0) {
             insights.add(new AdminBusinessHealthReportResponse.Insight(
                     "neutral",
-                    "Promotion visibility",
+                    "Discount visibility",
                     "Discount-assisted bookings are tracked, but exact campaign attribution remains limited by the current data model."
             ));
         }
@@ -1164,7 +1195,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 }
                 case "CUSTOM" -> {
                     if (customDateFrom == null || customDateTo == null) {
-                        throw new ApiException(HttpStatus.BAD_REQUEST, "Custom range requires dateFrom and dateTo", "VALIDATION_ERROR");
+                        throw new ApiException(HttpStatus.BAD_REQUEST, "Custom range requires dateFrom and dateTo", ErrorCode.VALIDATION_ERROR);
                     }
                     yield windowWithEquivalentPrevious("CUSTOM", "Custom range", customDateFrom, customDateTo);
                 }

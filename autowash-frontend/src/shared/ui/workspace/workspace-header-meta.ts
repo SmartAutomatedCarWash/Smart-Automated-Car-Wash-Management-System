@@ -82,10 +82,10 @@ const ROUTE_META: Array<{
     },
   },
   {
-    match: (pathname) => pathname.startsWith("/customer/promotions"),
+    match: (pathname) => pathname.startsWith("/customer/discounts"),
     meta: {
-      title: "Promotions",
-      subtitle: "Browse active campaigns and reward offers",
+      title: "Discounts",
+      subtitle: "Browse available discounts and your discount wallet",
       workspace: "CUSTOMER",
     },
   },
@@ -93,8 +93,7 @@ const ROUTE_META: Array<{
     match: (pathname) =>
       pathname.startsWith("/customer/notifications") ||
       pathname.startsWith("/customer/settings") ||
-      pathname.startsWith("/customer/combos") ||
-      pathname.startsWith("/customer/vouchers"),
+      pathname.startsWith("/customer/combos"),
     meta: {
       title: "Customer Workspace",
       subtitle: "Review customer tools, notifications, and preferences",
@@ -239,11 +238,11 @@ const ROUTE_META: Array<{
   {
     match: (pathname) =>
       pathname.startsWith("/admin/offers") ||
-      pathname.startsWith("/admin/promotions") ||
-      pathname.startsWith("/admin/vouchers"),
+      pathname.startsWith("/admin/discounts") ||
+      pathname.startsWith("/admin/tier-voucher-offers"),
     meta: {
-      title: "Offers Management",
-      subtitle: "Review promotions, vouchers, and redemption oversight",
+      title: "Discount Management",
+      subtitle: "Review discounts, tier voucher offers, and redemption oversight",
       workspace: "ADMIN",
     },
   },
@@ -259,7 +258,7 @@ const ROUTE_META: Array<{
     match: (pathname) => pathname.startsWith("/admin/settings"),
     meta: {
       title: "Admin Workspace",
-      subtitle: "Configure services, promotions, staff, and workspace settings",
+      subtitle: "Configure services, discounts, staff, and workspace settings",
       workspace: "ADMIN",
     },
   },

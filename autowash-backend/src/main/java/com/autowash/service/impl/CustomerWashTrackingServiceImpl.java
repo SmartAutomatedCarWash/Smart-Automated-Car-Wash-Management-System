@@ -1,6 +1,14 @@
 package com.autowash.service.impl;
 
-import com.autowash.service.*;
+import com.autowash.entity.WashSession;
+
+import com.autowash.entity.enums.BookingItemType;
+
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
+
+
+import com.autowash.service.CustomerWashTrackingService;
 import com.autowash.entity.User;
 import com.autowash.entity.Booking;
 import com.autowash.entity.Combo;
@@ -10,10 +18,8 @@ import com.autowash.repository.PackageRepository;
 import com.autowash.dto.CustomerWashTrackingResponse;
 import com.autowash.dto.WashCompletionSummaryResponse;
 import com.autowash.repository.PaymentRepository;
-import com.autowash.entity.WashSession;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.WashSessionRepository;
-import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;
 import java.util.Set;
 import java.util.UUID;
@@ -63,7 +69,7 @@ public class CustomerWashTrackingServiceImpl implements CustomerWashTrackingServ
     public CustomerWashTrackingResponse getSession(UUID washSessionId) {
         User customer = currentUserService.getCurrentUser();
         WashSession session = washSessionRepository.findByIdAndBookingCustomer(washSessionId, customer)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", ErrorCode.RESOURCE_NOT_FOUND));
         return toResponse(session);
     }
 
@@ -71,9 +77,9 @@ public class CustomerWashTrackingServiceImpl implements CustomerWashTrackingServ
 public WashCompletionSummaryResponse getCompletionSummary(UUID washSessionId) {
     User customer = currentUserService.getCurrentUser();
     WashSession session = washSessionRepository.findByIdAndBookingCustomer(washSessionId, customer)
-            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", "RESOURCE_NOT_FOUND"));
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", ErrorCode.RESOURCE_NOT_FOUND));
     if (session.getStatus() != WashSessionStatus.COMPLETED) {
-        throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Session is not completed", "BUSINESS_RULE_VIOLATION");
+        throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Session is not completed", ErrorCode.BUSINESS_RULE_VIOLATION);
     }
     Booking booking = session.getBooking();
     var payment = paymentRepository.findByBooking(booking).orElse(null);
@@ -83,7 +89,7 @@ public WashCompletionSummaryResponse getCompletionSummary(UUID washSessionId) {
             session.getStatus().name(),
             resolveServiceName(booking),
             booking.getVehicle().getPlate(),
-            booking.getFinalAmount(),
+            (booking.getPricing() != null ? booking.getPricing().getFinalAmount() : 0L),
             payment == null ? null : payment.getMethod().name(),
             payment == null ? null : payment.getStatus().name(),
             session.getAwardedLoyaltyPoints(),
@@ -105,7 +111,7 @@ public WashCompletionSummaryResponse getCompletionSummary(UUID washSessionId) {
                 .vehiclePlate(booking.getVehicle().getPlate())
                 .vehicleBrand(booking.getVehicle().getBrand())
                 .vehicleModel(booking.getVehicle().getModel())
-                .packageId(booking.getPackageId() == null ? null : booking.getPackageId().toString())
+                .packageId(booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null) == null ? null : booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null).toString())
                 .serviceName(resolveServiceName(booking))
                 .bookingDate(booking.getBookingDate())
                 .bookingTime(booking.getBookingTime().toString())
@@ -122,15 +128,15 @@ public WashCompletionSummaryResponse getCompletionSummary(UUID washSessionId) {
     }
 
     private String resolveServiceName(Booking booking) {
-        if (booking.getPackageId() != null) {
-            return PackageRepository.findById(booking.getPackageId())
+        if (booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null) != null) {
+            return PackageRepository.findById(booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null))
                     .map(Package::getName)
-                    .orElse(booking.getPackageId() == null ? null : booking.getPackageId().toString());
+                    .orElse(booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null) == null ? null : booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null).toString());
         }
-        if (booking.getComboId() != null) {
-            return ComboRepository.findById(booking.getComboId())
+        if (booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null) != null) {
+            return ComboRepository.findById(booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null))
                     .map(Combo::getName)
-                    .orElse(booking.getComboId() == null ? null : booking.getComboId().toString());
+                    .orElse(booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null) == null ? null : booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null).toString());
         }
         return null;
     }

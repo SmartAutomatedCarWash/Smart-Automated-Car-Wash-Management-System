@@ -1,21 +1,25 @@
 package com.autowash.service.impl;
 
+import com.autowash.entity.WashSession;
+
+import com.autowash.service.LoyaltyService;
+
+import com.autowash.entity.Notification;
+
+import com.autowash.repository.NotificationRepository;
+
 import com.autowash.entity.Booking;
 import com.autowash.entity.BookingStatusHistory;
-import com.autowash.entity.Notification;
 import com.autowash.entity.ViolationRecord;
-import com.autowash.entity.WashSession;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.NotificationType;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.BookingStatusHistoryRepository;
-import com.autowash.repository.NotificationRepository;
 import com.autowash.repository.ViolationRecordRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.BookingNoShowService;
-import com.autowash.service.LoyaltyService;
-import com.autowash.service.VoucherRedemptionService;
+import com.autowash.service.DiscountRedemptionService;
 import com.autowash.service.WashSessionLifecycle;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -42,7 +46,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
     private final BookingRepository bookingRepository;
     private final WashSessionRepository washSessionRepository;
     private final BookingStatusHistoryRepository bookingStatusHistoryRepository;
-    private final VoucherRedemptionService voucherRedemptionService;
+    private final DiscountRedemptionService DiscountRedemptionService;
     private final ViolationRecordRepository violationRecordRepository;
     private final NotificationRepository notificationRepository;
     private final LoyaltyService loyaltyService;
@@ -52,7 +56,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
             BookingRepository bookingRepository,
             WashSessionRepository washSessionRepository,
             BookingStatusHistoryRepository bookingStatusHistoryRepository,
-            VoucherRedemptionService voucherRedemptionService,
+            DiscountRedemptionService DiscountRedemptionService,
             ViolationRecordRepository violationRecordRepository,
             NotificationRepository notificationRepository,
             LoyaltyService loyaltyService,
@@ -61,7 +65,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
         this.bookingRepository = bookingRepository;
         this.washSessionRepository = washSessionRepository;
         this.bookingStatusHistoryRepository = bookingStatusHistoryRepository;
-        this.voucherRedemptionService = voucherRedemptionService;
+        this.DiscountRedemptionService = DiscountRedemptionService;
         this.violationRecordRepository = violationRecordRepository;
         this.notificationRepository = notificationRepository;
         this.loyaltyService = loyaltyService;
@@ -84,8 +88,8 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
             booking.markNoShow();
             cancelNotCheckedInSessions(booking, now);
             int penaltyPoints = applyNoShowPenalty(booking, now);
-            if (booking.getVoucherId() != null) {
-                voucherRedemptionService.forfeitVoucherForBooking(booking.getId());
+            if (booking.getPricing().getDiscountType() != null) {
+                DiscountRedemptionService.revertRedemption(booking);
             }
             notificationRepository.save(Notification.builder()
                     .id(UUID.randomUUID())

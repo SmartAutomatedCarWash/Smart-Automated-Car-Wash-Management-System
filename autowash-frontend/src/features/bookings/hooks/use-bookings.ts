@@ -14,7 +14,7 @@ import {
   listActiveCustomerCombos,
   listCustomerBookings,
   purchaseCustomerCombo,
-  validateBookingVoucher,
+  validateBookingDiscount,
 } from "@/features/bookings/lib/booking-service";
 import {
   bookingDetailQueryKey,
@@ -39,8 +39,8 @@ import type {
   PurchaseCustomerComboRequest,
   PurchaseCustomerComboResponse,
   WashTrackingSession,
-  VoucherValidationRequest,
-  VoucherValidationResult,
+  DiscountValidationRequest,
+  DiscountValidationResult,
   BookingAddon,
   BookingCombo,
   CustomerCombo,
@@ -145,9 +145,9 @@ export function usePurchaseCustomerCombo() {
   });
 }
 
-export function useValidateBookingVoucher() {
-  return useMutation<VoucherValidationResult, ApiErrorResponse, VoucherValidationRequest>({
-    mutationFn: validateBookingVoucher,
+export function useValidateBookingDiscount() {
+  return useMutation<DiscountValidationResult, ApiErrorResponse, DiscountValidationRequest>({
+    mutationFn: validateBookingDiscount,
   });
 }
 
@@ -161,10 +161,10 @@ export function useCreateCustomerBooking() {
       const newListItem: BookingListItem = {
         bookingId: createdBooking.bookingId,
         vehiclePlate: createdBooking.vehiclePlate,
-        packageName: createdBooking.packageName,
+        primaryItemName: createdBooking.primaryItemName,
         bookingDate: createdBooking.bookingDate,
         bookingTime: createdBooking.bookingTime,
-        finalAmount: createdBooking.finalAmount,
+        finalAmount: createdBooking.pricing.finalAmount,
         status: createdBooking.status,
         washStatus: null,
         createdAt: createdBooking.createdAt,

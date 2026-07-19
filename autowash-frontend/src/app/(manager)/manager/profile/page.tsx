@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { validateProfileForm } from "@/features/profile/lib/profile-form-validation";
 import { buildUpdateUserProfileRequest } from "@/features/profile/lib/profile-update-payload";
 import { useManagerProfile, useUpdateManagerProfile } from "@/features/profile/hooks/use-manager-profile";
@@ -49,6 +49,7 @@ const RESPONSIBILITIES = [
 ];
 
 export default function ManagerProfilePage() {
+  const getErrorMessage = useErrorMessage();
   const profileQuery = useManagerProfile();
   const updateProfileMutation = useUpdateManagerProfile();
   const queueQuery = useQuery({ queryKey: ["manager-profile", "queue"], queryFn: getOperationsQueue, refetchInterval: 30_000 });
@@ -110,7 +111,7 @@ export default function ManagerProfilePage() {
       <WorkspacePage>
         <WorkspaceEmptyState
           title="Không thể tải hồ sơ Manager"
-          description={getDisplayErrorMessage(profileQuery.error)}
+          description={getErrorMessage(profileQuery.error)}
           action={
             <Button variant="outline" className="rounded-xl" onClick={() => profileQuery.refetch()}>
               <RefreshCcw className="h-4 w-4" />
@@ -133,7 +134,7 @@ export default function ManagerProfilePage() {
   const profile = profileQuery.data;
   const submitMessage = updateProfileMutation.isError
     ? updateProfileMutation.error.errors?.map((item) => item.message).join(" ") ||
-      getDisplayErrorMessage(updateProfileMutation.error)
+      getErrorMessage(updateProfileMutation.error)
     : null;
 
   return (
@@ -260,7 +261,7 @@ export default function ManagerProfilePage() {
             </div>
             {queueQuery.isError ? (
               <p className="mt-4 rounded-2xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-                Snapshot vận hành chưa tải được: {getDisplayErrorMessage(queueQuery.error as unknown as ApiErrorResponse)}
+                Snapshot vận hành chưa tải được: {getErrorMessage(queueQuery.error as unknown as ApiErrorResponse)}
               </p>
             ) : null}
           </Card>

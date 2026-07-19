@@ -16,7 +16,8 @@ import { Button } from "@/shared/ui/ui/button";
 import { Input } from "@/shared/ui/ui/input";
 import { Label } from "@/shared/ui/ui/label";
 import { cn } from "@/shared/lib/utils";
-import { getDisplayErrorMessage, getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { emailPattern, otpPattern, passwordPattern } from "@/shared/lib/validators";
 import {
   useForgotPasswordRequest,
@@ -32,6 +33,7 @@ export function ForgotPasswordForm() {
   const requestMutation = useForgotPasswordRequest();
   const verifyOtpMutation = useVerifyForgotPasswordOtp();
   const resetMutation = useForgotPasswordReset();
+  const getErrorMessage = useErrorMessage();
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [step, setStep] = useState<Step>("email");
@@ -48,9 +50,9 @@ export function ForgotPasswordForm() {
   const normalizedEmail = email.trim().toLowerCase();
   const otp = otpDigits.join("");
 
-  const requestErrorMessage = requestMutation.error ? getDisplayErrorMessage(requestMutation.error) : null;
-  const verifyErrorMessage = verifyOtpMutation.error ? getDisplayErrorMessage(verifyOtpMutation.error) : null;
-  const resetErrorMessage = resetMutation.error ? getDisplayErrorMessage(resetMutation.error) : null;
+  const requestErrorMessage = requestMutation.error ? getErrorMessage(requestMutation.error) : null;
+  const verifyErrorMessage = verifyOtpMutation.error ? getErrorMessage(verifyOtpMutation.error) : null;
+  const resetErrorMessage = resetMutation.error ? getErrorMessage(resetMutation.error) : null;
   const fieldErrors = resetMutation.error?.fieldErrors;
 
   const emailError =

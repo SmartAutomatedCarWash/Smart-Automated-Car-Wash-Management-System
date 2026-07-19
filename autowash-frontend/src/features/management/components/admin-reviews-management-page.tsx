@@ -35,9 +35,10 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/ui/table";
 import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 
 export function AdminReviewManagementPage() {
+  const getErrorMessage = useErrorMessage();
   const { language } = useLanguageStore();
   const t = (vi: string, en: string) => translate(language, vi, en);
 
@@ -70,7 +71,7 @@ export function AdminReviewManagementPage() {
       toast.success(t("Cập nhật trạng thái nổi bật thành công!", "Featured status updated successfully!"));
       refetchReviews();
     } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
+      toast.error(getErrorMessage(error));
     }
   };
 

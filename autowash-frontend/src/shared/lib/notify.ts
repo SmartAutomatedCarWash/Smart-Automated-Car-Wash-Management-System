@@ -1,5 +1,4 @@
 import { toast } from "sonner";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 
 type NotifyOptions = {
   description?: string;
@@ -16,7 +15,7 @@ export const notify = {
   warning(message: string, options?: NotifyOptions) {
     toast.warning(message, options);
   },
-  error(error: unknown, fallback = "Something went wrong. Please try again.", options?: NotifyOptions) {
-    toast.error(getDisplayErrorMessage(error) || fallback, options);
+  error(message: string, options?: NotifyOptions) {
+    toast.error(message, options);
   },
 };

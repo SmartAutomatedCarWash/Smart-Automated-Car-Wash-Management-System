@@ -1,37 +1,46 @@
 package com.autowash.service.impl;
 
-import com.autowash.service.*;
-import com.autowash.entity.enums.BookingStatus;
-import com.autowash.entity.Booking;
-import com.autowash.repository.BookingRepository;
-import com.autowash.service.BookingService;
-import com.autowash.dto.EarnPointsResponse;
-import com.autowash.service.LoyaltyService;
 import com.autowash.dto.CancelWashSessionResponse;
 import com.autowash.dto.CheckInWashSessionResponse;
 import com.autowash.dto.CompleteWashSessionResponse;
 import com.autowash.dto.CreateWashSessionRequest;
 import com.autowash.dto.CreateWashSessionResponse;
+import com.autowash.dto.EarnPointsResponse;
 import com.autowash.dto.EligibleSessionBookingResponse;
 import com.autowash.dto.OperationsQueueResponse;
 import com.autowash.dto.QueueWashSessionResponse;
 import com.autowash.dto.StartWashSessionResponse;
 import com.autowash.dto.StaffDashboardSummaryResponse;
 import com.autowash.dto.StaffOptionResponse;
-import com.autowash.entity.WashSession;
-import com.autowash.entity.enums.CancelFaultType;
-import com.autowash.entity.enums.WashSessionStatus;
-import com.autowash.repository.WashSessionRepository;
+import com.autowash.dto.TransferWashSessionResponse;
+import com.autowash.entity.Booking;
+import com.autowash.entity.BookingDetail;
 import com.autowash.entity.Notification;
-import com.autowash.entity.enums.NotificationType;
-import com.autowash.repository.NotificationRepository;
 import com.autowash.entity.User;
+import com.autowash.entity.WashSession;
+import com.autowash.entity.enums.BookingItemType;
+import com.autowash.entity.enums.BookingStatus;
+import com.autowash.entity.enums.CancelFaultType;
+import com.autowash.entity.enums.NotificationType;
 import com.autowash.entity.enums.UserRole;
-import com.autowash.shared.exception.ApiException;
+import com.autowash.entity.enums.WashSessionStatus;
+import com.autowash.repository.BookingRepository;
+import com.autowash.repository.NotificationRepository;
+import com.autowash.repository.WashSessionRepository;
+import com.autowash.service.BookingService;
 import com.autowash.service.CurrentUserService;
+import com.autowash.service.LoyaltyService;
+import com.autowash.service.OperationsService;
+import com.autowash.service.StaffAssignmentService;
+import com.autowash.service.TierConfigService;
+import com.autowash.service.WashSessionLifecycle;
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -97,7 +106,7 @@ public class OperationsServiceImpl implements OperationsService {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Booking must be CONFIRMED or PENDING to create a wash session",
-                    "BUSINESS_RULE_VIOLATION"
+                    ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
         if (washSessionRepository.existsByBooking_IdAndStatusIn(booking.getId(), ACTIVE_SESSION_STATUSES)) {
@@ -131,7 +140,7 @@ public class OperationsServiceImpl implements OperationsService {
                 .map(this::toQueueCard)
                 .collect(Collectors.groupingBy(
                         card -> WashSessionStatus.valueOf(card.status()),
-                        () -> new java.util.EnumMap<>(WashSessionStatus.class),
+                        () -> new EnumMap<>(WashSessionStatus.class),
                         Collectors.toCollection(ArrayList::new)
                 ));
 
@@ -184,6 +193,7 @@ public class OperationsServiceImpl implements OperationsService {
         return QueueWashSessionResponse.builder()
                 .sessionId(session.getId())
                 .status(session.getStatus().name())
+                .queuedAt(session.getCreatedAt())
                 .build();
     }
 
@@ -196,7 +206,7 @@ public class OperationsServiceImpl implements OperationsService {
 
         Instant checkedInAt = Instant.now();
         WashSessionLifecycle.validateTransition(session.getStatus(), WashSessionStatus.CHECKED_IN);
-        session.checkIn(checkedInAt, booking.getFinalAmount(), currency, projectedPoints);
+        session.checkIn(checkedInAt, (booking.getPricing() != null ? booking.getPricing().getFinalAmount() : 0L), currency, projectedPoints);
         bookingService.updateStatus(booking, BookingStatus.CHECKED_IN);
         
         notificationRepository.save(Notification.builder()
@@ -212,6 +222,7 @@ public class OperationsServiceImpl implements OperationsService {
                 .sessionId(session.getId())
                 .status(session.getStatus().name())
                 .checkedInAt(session.getCheckedInAt())
+                .fee(new CheckInWashSessionResponse.Fee(session.getFeeAmount() == null ? 0L : session.getFeeAmount(), currency))
                 .projectedLoyaltyPoints(session.getProjectedLoyaltyPoints())
                 .build();
     }
@@ -264,6 +275,44 @@ public class OperationsServiceImpl implements OperationsService {
     }
 
     @Transactional
+    public TransferWashSessionResponse transferSession(UUID sessionId, UUID toStaffId, String reason) {
+        WashSession session = requireSessionForCurrentUser(sessionId);
+        if (session.getStatus() == WashSessionStatus.COMPLETED || session.getStatus() == WashSessionStatus.CANCELLED) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Completed or cancelled sessions cannot be transferred",
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
+
+        User fromStaff = session.getAssignedStaff();
+        User toStaff = staffAssignmentService.requireActiveStaff(toStaffId);
+        if (fromStaff != null && fromStaff.getId().equals(toStaff.getId())) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Session is already assigned to this staff member",
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
+
+        String normalizedReason = reason == null || reason.isBlank() ? null : reason.trim();
+        session.assignStaff(toStaff);
+        session.getBooking().assignStaff(toStaff);
+
+        return TransferWashSessionResponse.builder()
+                .auditId(UUID.randomUUID())
+                .sessionId(session.getId())
+                .bookingId(session.getBooking().getId().toString())
+                .fromStaffId(fromStaff == null ? null : fromStaff.getId())
+                .fromStaffName(fromStaff == null ? null : fromStaff.getFullName())
+                .toStaffId(toStaff.getId())
+                .toStaffName(toStaff.getFullName())
+                .reason(normalizedReason)
+                .transferredAt(Instant.now())
+                .build();
+    }
+
+    @Transactional
     public CancelWashSessionResponse cancelSession(UUID sessionId, String reason, String faultType) {
         WashSession session = requireSessionForCurrentUser(sessionId);
         WashSessionLifecycle.validateTransition(session.getStatus(), WashSessionStatus.CANCELLED);
@@ -310,7 +359,7 @@ public class OperationsServiceImpl implements OperationsService {
     public StaffDashboardSummaryResponse getStaffSummary() {
         User staff = currentUserService.getCurrentUser();
         if (staff.getRole() != UserRole.STAFF) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Staff role required", "FORBIDDEN");
+            throw new ApiException(HttpStatus.FORBIDDEN, "Staff role required", ErrorCode.FORBIDDEN);
         }
         long completedRevenue = BookingRepository.sumFinalAmountByAssignedStaffAndStatus(staff, BookingStatus.COMPLETED);
         long kpiTargetRevenue = 5_000_000L;
@@ -367,7 +416,7 @@ public class OperationsServiceImpl implements OperationsService {
 
     private WashSession requireSession(UUID sessionId) {
         return washSessionRepository.findWithBookingById(sessionId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", ErrorCode.RESOURCE_NOT_FOUND));
     }
 
     private WashSession requireSessionForCurrentUser(UUID sessionId) {
@@ -378,7 +427,7 @@ public class OperationsServiceImpl implements OperationsService {
         }
         User assignedStaff = session.getAssignedStaff();
         if (assignedStaff == null || !assignedStaff.getId().equals(currentUser.getId())) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", "RESOURCE_NOT_FOUND");
+            throw new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", ErrorCode.RESOURCE_NOT_FOUND);
         }
         return session;
     }
@@ -387,7 +436,7 @@ public class OperationsServiceImpl implements OperationsService {
         User assignedStaff = booking.getAssignedStaff();
         if (actor.getRole() == UserRole.STAFF) {
             if (assignedStaff != null && !assignedStaff.getId().equals(actor.getId())) {
-                throw new ApiException(HttpStatus.NOT_FOUND, "Booking not found", "RESOURCE_NOT_FOUND");
+                throw new ApiException(HttpStatus.NOT_FOUND, "Booking not found", ErrorCode.RESOURCE_NOT_FOUND);
             }
         }
 
@@ -414,14 +463,14 @@ public class OperationsServiceImpl implements OperationsService {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Cancel reason is required",
-                    "BUSINESS_RULE_VIOLATION"
+                    ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
         if (normalized.length() > 500) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Cancel reason must be at most 500 characters",
-                    "BUSINESS_RULE_VIOLATION"
+                    ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
         return normalized;
@@ -432,7 +481,7 @@ public class OperationsServiceImpl implements OperationsService {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Fault type is required when cancelling a checked-in or in-progress session",
-                    "BUSINESS_RULE_VIOLATION"
+                    ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
         try {
@@ -441,7 +490,7 @@ public class OperationsServiceImpl implements OperationsService {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Invalid fault type. Must be CUSTOMER_FAULT or CARWASH_FAULT",
-                    "BUSINESS_RULE_VIOLATION"
+                    ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
     }
@@ -460,7 +509,7 @@ public class OperationsServiceImpl implements OperationsService {
             Map<WashSessionStatus, List<OperationsQueueResponse.WashSessionCard>> cardsByStatus,
             WashSessionStatus... includedStatuses
     ) {
-        List<OperationsQueueResponse.WashSessionCard> sessions = java.util.Arrays.stream(includedStatuses)
+        List<OperationsQueueResponse.WashSessionCard> sessions = Arrays.stream(includedStatuses)
                 .flatMap(includedStatus -> cardsByStatus.getOrDefault(includedStatus, List.of()).stream())
                 .sorted(Comparator.comparing(OperationsQueueResponse.WashSessionCard::bookingDate)
                         .thenComparing(OperationsQueueResponse.WashSessionCard::bookingTime))
@@ -475,22 +524,26 @@ public class OperationsServiceImpl implements OperationsService {
     private OperationsQueueResponse.WashSessionCard toQueueCard(WashSession session) {
         Booking booking = session.getBooking();
         User assignedStaff = session.getAssignedStaff();
+        UUID packageId = resolveBookingDetailRefId(booking, BookingItemType.PACKAGE);
         return OperationsQueueResponse.WashSessionCard.builder()
                 .sessionId(session.getId())
                 .bookingId(booking.getId().toString())
                 .customerName(booking.getCustomer().getFullName())
                 .customerPhone(booking.getCustomer().getPhone())
                 .vehiclePlate(booking.getVehicle().getPlate())
-                .packageId(booking.getPackageId() == null ? null : booking.getPackageId().toString())
+                .packageId(packageId == null ? null : packageId.toString())
+                .servicePackage(resolvePrimaryItemName(booking))
                 .assignedStaffId(assignedStaff == null ? null : assignedStaff.getId())
                 .assignedStaffName(assignedStaff == null ? null : assignedStaff.getFullName())
                 .status(session.getStatus().name())
                 .bookingDate(booking.getBookingDate())
                 .bookingTime(booking.getBookingTime())
-                .estimatedDurationMinutes(booking.getEstimatedDurationMinutes())
+                .estimatedDurationMinutes(resolveEstimatedDurationMinutes(booking))
                 .feeAmount(session.getFeeAmount())
+                .feeCurrency(session.getFeeAmount() == null ? null : currency)
                 .projectedLoyaltyPoints(session.getProjectedLoyaltyPoints())
                 .awardedLoyaltyPoints(session.getAwardedLoyaltyPoints())
+                .queuedAt(session.getStatus() == WashSessionStatus.QUEUED ? session.getCreatedAt() : null)
                 .checkedInAt(session.getCheckedInAt())
                 .startedAt(session.getStartedAt())
                 .completedAt(session.getCompletedAt())
@@ -502,22 +555,46 @@ public class OperationsServiceImpl implements OperationsService {
         User assignedStaff = booking.getAssignedStaff();
         String customerTier = loyaltyService.getAccount(booking.getCustomer().getId()).tier();
         int customerPriorityScore = tierConfigService.getConfig(customerTier).priorityScore();
+        UUID packageId = resolveBookingDetailRefId(booking, BookingItemType.PACKAGE);
+        UUID comboId = resolveBookingDetailRefId(booking, BookingItemType.COMBO);
         return new EligibleSessionBookingResponse(
                 booking.getId().toString(),
                 booking.getCustomer().getFullName(),
                 booking.getCustomer().getPhone(),
                 booking.getVehicle().getPlate(),
-                booking.getPackageId() == null ? null : booking.getPackageId().toString(),
-                booking.getComboId() == null ? null : booking.getComboId().toString(),
+                packageId == null ? null : packageId.toString(),
+                comboId == null ? null : comboId.toString(),
                 booking.getBookingDate(),
                 booking.getBookingTime(),
-                booking.getFinalAmount(),
-                booking.getEstimatedDurationMinutes(),
+                (booking.getPricing() != null ? booking.getPricing().getFinalAmount() : 0L),
+                resolveEstimatedDurationMinutes(booking),
                 assignedStaff == null ? null : assignedStaff.getId().toString(),
                 assignedStaff == null ? null : assignedStaff.getFullName(),
                 customerTier,
                 customerPriorityScore
         );
+    }
+
+    private String resolvePrimaryItemName(Booking booking) {
+        return booking.getDetails().stream()
+                .filter(detail -> detail.getItemType() == BookingItemType.PACKAGE || detail.getItemType() == BookingItemType.COMBO)
+                .findFirst()
+                .map(BookingDetail::getSnapshotName)
+                .orElse(null);
+    }
+
+    private UUID resolveBookingDetailRefId(Booking booking, BookingItemType itemType) {
+        return booking.getDetails().stream()
+                .filter(detail -> detail.getItemType() == itemType)
+                .map(BookingDetail::getRefId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private int resolveEstimatedDurationMinutes(Booking booking) {
+        return booking.getDetails().stream()
+                .mapToInt(BookingDetail::getDurationMinutes)
+                .sum();
     }
 
     private int count(List<WashSession> sessions, WashSessionStatus status) {

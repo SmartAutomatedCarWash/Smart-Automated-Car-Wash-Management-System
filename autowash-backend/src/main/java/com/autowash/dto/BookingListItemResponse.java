@@ -6,7 +6,7 @@ import java.time.LocalDate;
 public record BookingListItemResponse(
         String bookingId,
         String vehiclePlate,
-        String packageName,
+        String primaryItemName,
         LocalDate bookingDate,
         String bookingTime,
         long finalAmount,

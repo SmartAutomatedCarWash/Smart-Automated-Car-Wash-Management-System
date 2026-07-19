@@ -38,7 +38,7 @@ import {
   PopoverTrigger,
 } from "@/shared/ui/ui/popover";
 import { DatePickerButton } from "@/shared/ui/date-picker-button";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { CustomerBookingSelect, CustomerBookingMultiSelect } from "@/features/bookings/components/customer-booking-select";
 import {
   generateTimeSlotsFromRange,
@@ -59,14 +59,13 @@ import {
   useBookingCombos,
   useBookingPackages,
   useCreateCustomerBooking,
-  useValidateBookingVoucher,
+  useValidateBookingDiscount,
 } from "@/features/bookings/hooks/use-bookings";
 import { useSlotHold } from "@/features/bookings/hooks/use-slot-hold";
 import { useCustomerVehicles, useCreateCustomerVehicle } from "@/features/vehicles/hooks/use-customer-vehicles";
-import { useCustomerVouchers } from "@/features/vouchers/hooks/use-customer-vouchers";
-import { useCustomerPromotions } from "@/features/loyalty/hooks/use-customer-loyalty";
+import { useCustomerDiscounts } from "@/features/discounts/hooks/use-customer-discounts";
 import { useBookingStore } from "@/features/bookings/store/booking.store";
-import type { BookingDraft, PaymentMethod, VoucherValidationResult } from "@/entities/bookings";
+import type { BookingDraft, PaymentMethod, DiscountValidationResult } from "@/entities/bookings";
 import {
   CUSTOMER_VEHICLE_TYPES,
   type CustomerVehicleFormValues,
@@ -196,6 +195,7 @@ function AddVehicleModal({
   onOpenChange: (v: boolean) => void;
   onCreated: (vehicleId: string) => void;
 }) {
+  const getErrorMessage = useErrorMessage();
   const createMutation = useCreateCustomerVehicle();
   const [form, setForm] = useState<CustomerVehicleFormValues>(EMPTY_VEHICLE_FORM);
   const [errors, setErrors] = useState<CustomerVehicleFormErrors>({});
@@ -227,7 +227,7 @@ function AddVehicleModal({
       setErrors({});
       setSubmitted(false);
     } catch (err) {
-      toast.error(getDisplayErrorMessage(err));
+      toast.error(getErrorMessage(err));
     }
   }
 
@@ -585,25 +585,26 @@ function AmPmTimePicker({
 
 // ─── Voucher section ──────────────────────────────────────────────────────────
 
-function VoucherSection({
+function DiscountSection({
   draft,
   summary,
-  validatedVoucher,
-  voucherMutation,
-  customerVouchers,
+  validatedDiscount,
+  discountMutation,
+  customerDiscounts,
   onApply,
   onClear,
   onCodeChange,
 }: {
   draft: BookingDraft;
   summary: ReturnType<typeof buildBookingSummary>;
-  validatedVoucher: VoucherValidationResult | null;
-  voucherMutation: { isPending: boolean; error?: unknown; reset: () => void };
-  customerVouchers: { code: string; name: string; discountType: string; discountValue: number }[];
+  validatedDiscount: DiscountValidationResult | null;
+  discountMutation: { isPending: boolean; error?: unknown; reset: () => void };
+  customerDiscounts: { code: string; name: string; discountType: string; discountValue: number }[];
   onApply: (code?: string) => void;
   onClear: () => void;
   onCodeChange: (code: string) => void;
 }) {
+  const getErrorMessage = useErrorMessage();
   const [inputError, setInputError] = useState<string | null>(null);
 
   function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
@@ -615,11 +616,11 @@ function VoucherSection({
   return (
     <div className="space-y-3">
       {/* Applied voucher chip */}
-      {validatedVoucher ? (
+      {validatedDiscount ? (
         <div className="flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2">
           <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
           <span className="flex-1 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-            {validatedVoucher.voucherCode} −{formatBookingCurrency(validatedVoucher.discountAmount)}
+            {validatedDiscount.discountCode} −{formatBookingCurrency(validatedDiscount.discountAmount)}
           </span>
           <button type="button" onClick={onClear} className="text-muted-foreground hover:text-rose-500">
             <X className="h-4 w-4" />
@@ -628,7 +629,7 @@ function VoucherSection({
       ) : (
         <div className="flex gap-2">
           <Input
-            value={draft.voucherCode}
+            value={draft.discountCode}
             onChange={handleInput}
             placeholder="Enter voucher code"
             maxLength={50}
@@ -641,33 +642,33 @@ function VoucherSection({
             type="button"
             variant="outline"
             onClick={() => onApply()}
-            disabled={!draft.voucherCode.trim() || Boolean(inputError) || voucherMutation.isPending || !summary}
+            disabled={!draft.discountCode.trim() || Boolean(inputError) || discountMutation.isPending || !summary}
             className="shrink-0 rounded-xl border-primary/30 bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground"
           >
-            {voucherMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+            {discountMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
           </Button>
         </div>
       )}
 
       {/* Inline errors */}
-      {inputError && !validatedVoucher && (
+      {inputError && !validatedDiscount && (
         <p className="text-xs text-rose-600">{inputError}</p>
       )}
-      {!inputError && Boolean(voucherMutation.error) && !validatedVoucher && (
-        <p className="text-xs text-rose-600">{getDisplayErrorMessage(voucherMutation.error)}</p>
+      {!inputError && Boolean(discountMutation.error) && !validatedDiscount && (
+        <p className="text-xs text-rose-600">{getErrorMessage(discountMutation.error)}</p>
       )}
 
       {/* Wallet vouchers */}
-      {customerVouchers.length > 0 && !validatedVoucher && (
+      {customerDiscounts.length > 0 && !validatedDiscount && (
         <div className="pt-1">
           <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
             <Ticket className="h-3.5 w-3.5" />
             From your wallet
           </div>
           <div className="flex flex-wrap gap-2">
-            {customerVouchers.map((voucher) => {
+            {customerDiscounts.map((voucher) => {
               const discountText =
-                voucher.discountType === "PERCENT"
+                voucher.discountType === "PERCENTAGE"
                   ? `${voucher.discountValue}% OFF`
                   : `${voucher.discountValue.toLocaleString("vi-VN")}đ`;
               return (
@@ -768,6 +769,7 @@ function TimeSlotGrid({
 
 export function CustomerBookingForm() {
   const router = useRouter();
+  const getErrorMessage = useErrorMessage();
   const searchParams = useSearchParams();
   const queryMode = searchParams.get("mode");
   const queryPackageId = searchParams.get("packageId");
@@ -819,18 +821,17 @@ export function CustomerBookingForm() {
   const addonsQuery = useBookingAddons();
   const combosQuery = useBookingCombos();
   const activeCustomerCombosQuery = useActiveCustomerCombos();
-  const customerPromotionsQuery = useCustomerPromotions();
-  const customerVouchersQuery = useCustomerVouchers();
-  const voucherMutation = useValidateBookingVoucher();
+  const customerDiscountsQuery = useCustomerDiscounts();
+  const discountMutation = useValidateBookingDiscount();
   const createBookingMutation = useCreateCustomerBooking();
   const publicSettingsQuery = usePublicSettings();
   const { holdSlot, isHolding, holdError } = useSlotHold();
   const setExpiresAt = useBookingStore((state) => state.setExpiresAt);
-  const setStoredValidatedVoucher = useBookingStore((state) => state.setValidatedVoucher);
+  const setStoredValidatedDiscount = useBookingStore((state) => state.setValidatedDiscount);
   const resetDraft = useBookingStore((state) => state.resetDraft);
   const setLastCreatedBooking = useBookingStore((state) => state.setLastCreatedBooking);
 
-  const [validatedVoucher, setValidatedVoucher] = useState<VoucherValidationResult | null>(null);
+  const [validatedDiscount, setValidatedDiscount] = useState<DiscountValidationResult | null>(null);
   const [showValidation, setShowValidation] = useState(false);
   const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -841,10 +842,10 @@ export function CustomerBookingForm() {
     setSelectedPaymentMethod(draft.paymentMethod);
   }, [draft.paymentMethod]);
 
-  const resetValidatedVoucher = () => {
-    setValidatedVoucher(null);
-    setStoredValidatedVoucher(null);
-    voucherMutation.reset();
+  const resetValidatedDiscount = () => {
+    setValidatedDiscount(null);
+    setStoredValidatedDiscount(null);
+    discountMutation.reset();
   };
 
   const isLoadingCatalog =
@@ -852,8 +853,7 @@ export function CustomerBookingForm() {
     packagesQuery.isPending ||
     addonsQuery.isPending ||
     combosQuery.isPending ||
-    activeCustomerCombosQuery.isPending ||
-    customerPromotionsQuery.isPending;
+    activeCustomerCombosQuery.isPending;
 
   const catalogError =
     vehiclesQuery.error ??
@@ -861,7 +861,6 @@ export function CustomerBookingForm() {
     addonsQuery.error ??
     combosQuery.error ??
     activeCustomerCombosQuery.error ??
-    customerPromotionsQuery.error ??
     null;
 
   const vehicles = vehiclesQuery.data?.items ?? [];
@@ -992,18 +991,17 @@ export function CustomerBookingForm() {
         packages,
         addons,
         combos,
-        voucher: validatedVoucher,
-        promotions: customerPromotionsQuery.data,
+        voucher: validatedDiscount,
         ownedComboApplied: Boolean(selectedCustomerCombo),
       }),
-    [addons, combos, draft, packages, selectedCustomerCombo, validatedVoucher, customerPromotionsQuery.data],
+    [addons, combos, draft, packages, selectedCustomerCombo, validatedDiscount],
   );
 
   const errors = useMemo(() => {
     const validationSummary =
-      draft.voucherCode.trim().length > 0 && !validatedVoucher ? null : summary;
+      draft.discountCode.trim().length > 0 && !validatedDiscount ? null : summary;
     return validateBookingDraft(draft, validationSummary, { requirePaymentMethod: false });
-  }, [draft, summary, validatedVoucher]);
+  }, [draft, summary, validatedDiscount]);
 
   const selectedPackageAddons =
     draft.mode === "PACKAGE" && draft.packageId
@@ -1023,37 +1021,37 @@ export function CustomerBookingForm() {
     },
   ];
 
-  const validateVoucher = async (codeToValidate?: string) => {
-    const code = codeToValidate ?? draft.voucherCode;
+  const validateDiscount = async (codeToValidate?: string) => {
+    const code = codeToValidate ?? draft.discountCode;
     const normalizedCode = sanitizeVoucherCodeInput(code);
     const formatError = getVoucherCodeFormatError(normalizedCode);
-    if (!normalizedCode || !summary) { resetValidatedVoucher(); return; }
-    if (formatError) { resetValidatedVoucher(); return; }
+    if (!normalizedCode || !summary) { resetValidatedDiscount(); return; }
+    if (formatError) { resetValidatedDiscount(); return; }
     try {
-      const result = await voucherMutation.mutateAsync({
-        voucherCode: normalizedCode,
+      const result = await discountMutation.mutateAsync({
+        discountCode: normalizedCode,
         packageId: draft.mode === "PACKAGE" ? draft.packageId : undefined,
         amount: summary.subtotal,
       });
-      setValidatedVoucher(result);
-      setStoredValidatedVoucher(result);
-      updateDraft({ voucherCode: result.voucherCode });
-      toast.success(`Voucher ${result.voucherCode} applied.`);
+      setValidatedDiscount(result);
+      setStoredValidatedDiscount(result);
+      updateDraft({ discountCode: result.discountCode });
+      toast.success(`Voucher ${result.discountCode} applied.`);
     } catch (error) {
-      setValidatedVoucher(null);
-      setStoredValidatedVoucher(null);
-      toast.error(getDisplayErrorMessage(error));
+      setValidatedDiscount(null);
+      setStoredValidatedDiscount(null);
+      toast.error(getErrorMessage(error));
     }
   };
 
-  const clearVoucher = () => {
-    resetValidatedVoucher();
-    updateDraft({ voucherCode: "" });
+  const clearDiscount = () => {
+    resetValidatedDiscount();
+    updateDraft({ discountCode: "" });
   };
 
-  const handleVoucherCodeChange = (code: string) => {
-    resetValidatedVoucher();
-    updateDraft({ voucherCode: code });
+  const handleDiscountCodeChange = (code: string) => {
+    resetValidatedDiscount();
+    updateDraft({ discountCode: code });
   };
 
   const handleSubmit = async () => {
@@ -1094,7 +1092,7 @@ export function CustomerBookingForm() {
       toast.success("Booking confirmed.");
       router.push(`/customer/bookings/${booking.bookingId}`);
     } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -1116,13 +1114,13 @@ export function CustomerBookingForm() {
   const progressPercent = Math.round((completedStepsCount / 7) * 100);
 
   const updateMode = (mode: BookingDraft["mode"]) => {
-    resetValidatedVoucher();
+    resetValidatedDiscount();
     updateDraft({
       mode,
       packageId: mode === "PACKAGE" ? (packages[0]?.packageId ?? "") : "",
       comboId: mode === "COMBO" ? preferredOwnedComboId || combos[0]?.comboId || "" : "",
       addonIds: [],
-      voucherCode: "",
+      discountCode: "",
     });
   };
 
@@ -1132,7 +1130,7 @@ export function CustomerBookingForm() {
     return (
       <BookingPageErrorState
         title="Unable to load booking checkout"
-        description={getDisplayErrorMessage(catalogError)}
+        description={getErrorMessage(catalogError)}
         onRetry={() => {
           void Promise.all([
             vehiclesQuery.refetch(),
@@ -1140,7 +1138,6 @@ export function CustomerBookingForm() {
             addonsQuery.refetch(),
             combosQuery.refetch(),
             activeCustomerCombosQuery.refetch(),
-            customerPromotionsQuery.refetch(),
           ]);
         }}
       />
@@ -1313,8 +1310,8 @@ export function CustomerBookingForm() {
                     disabled={disabled}
                     onClick={() => {
                       if (active) {
-                        resetValidatedVoucher();
-                        updateDraft({ mode, packageId: "", comboId: "", addonIds: [], voucherCode: "" });
+                        resetValidatedDiscount();
+                        updateDraft({ mode, packageId: "", comboId: "", addonIds: [], discountCode: "" });
                         return;
                       }
                       updateMode(mode);
@@ -1337,11 +1334,11 @@ export function CustomerBookingForm() {
                 options={packageOptions}
                 value={draft.packageId}
                 onValueChange={(packageId) => {
-                  resetValidatedVoucher();
+                  resetValidatedDiscount();
                   updateDraft({
                     packageId: draft.packageId === packageId ? "" : packageId,
                     addonIds: [],
-                    voucherCode: "",
+                    discountCode: "",
                   });
                 }}
                 placeholder="Select a package"
@@ -1367,10 +1364,10 @@ export function CustomerBookingForm() {
                       type="button"
                       className={optionCardClass(active)}
                       onClick={() => {
-                        resetValidatedVoucher();
+                        resetValidatedDiscount();
                         updateDraft({
                           comboId: active ? "" : item.comboId,
-                          voucherCode: "",
+                          discountCode: "",
                         });
                       }}
                     >
@@ -1419,8 +1416,8 @@ export function CustomerBookingForm() {
                 }))}
                 value={draft.addonIds}
                 onValueChange={(ids) => {
-                  resetValidatedVoucher();
-                  updateDraft({ addonIds: ids, voucherCode: "" });
+                  resetValidatedDiscount();
+                  updateDraft({ addonIds: ids, discountCode: "" });
                 }}
                 placeholder="Select add-ons (optional)"
                 searchPlaceholder="Search add-ons..."
@@ -1494,15 +1491,15 @@ export function CustomerBookingForm() {
 
           {/* Step 7 — Voucher */}
           <StepCard step={7} title="Voucher">
-            <VoucherSection
+            <DiscountSection
               draft={draft}
               summary={summary}
-              validatedVoucher={validatedVoucher}
-              voucherMutation={voucherMutation}
-              customerVouchers={customerVouchersQuery.data?.items ?? []}
-              onApply={(code) => void validateVoucher(code)}
-              onClear={clearVoucher}
-              onCodeChange={handleVoucherCodeChange}
+              validatedDiscount={validatedDiscount}
+              discountMutation={discountMutation}
+              customerDiscounts={customerDiscountsQuery.data?.items.filter((item) => Boolean(item.discount.code)).map((item) => ({ code: item.discount.code ?? "", name: item.discount.name, discountType: item.discount.discountType, discountValue: item.discount.discountValue })) ?? []}
+              onApply={(code) => void validateDiscount(code)}
+              onClear={clearDiscount}
+              onCodeChange={handleDiscountCodeChange}
             />
           </StepCard>
 
@@ -1536,9 +1533,6 @@ export function CustomerBookingForm() {
                   <SummaryItem label="Subtotal" value={formatBookingCurrency(summary.subtotal)} />
                   {summary.discountAmount > 0 && (
                     <SummaryItem label="Discount" value={`-${formatBookingCurrency(summary.discountAmount)}`} />
-                  )}
-                  {summary.promotionDiscountAmount > 0 && (
-                    <SummaryItem label="Promotion" value={`-${formatBookingCurrency(summary.promotionDiscountAmount)}`} />
                   )}
                   {draft.mode === "COMBO" && (
                     <SummaryItem label="Owned combo" value={selectedCustomerCombo ? `${selectedCustomerCombo.remainingUsages} usages left` : "Will be purchased"} />

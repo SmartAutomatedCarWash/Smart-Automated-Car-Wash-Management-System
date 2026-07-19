@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
-import { ArrowRightFromLine, Home, PackageSearch, CarFront, Gift, Bell, History, Sparkles } from "lucide-react";
+import { ArrowRightFromLine, Home, PackageSearch, CarFront, Gift, BadgePercent, History } from "lucide-react";
 import { getAuthRedirectPath } from "@/features/auth/lib/auth-session";
 import { useCustomerLogout } from "@/features/auth/hooks/use-auth";
 import { useAuthStore } from "@/features/auth/store/auth.store";
@@ -80,7 +80,7 @@ export function CustomerWorkspaceShell({
             <NavLink href="/customer/history" icon={History} label={t("Lịch sử", "History")} />
             <NavLink href="/customer/vehicles" icon={CarFront} label={t("Phương tiện", "Vehicles")} />
             <NavLink href="/customer/loyalty" icon={Gift} label={t("Tích điểm", "Loyalty")} />
-            <NavLink href="/customer/promotions" icon={Sparkles} label={t("Khuyến mãi", "Promotions")} />
+            <NavLink href="/customer/discounts" icon={BadgePercent} label={t("Ưu đãi", "Discounts")} />
             <button
               disabled={logoutMutation.isPending}
               onClick={() => logoutMutation.mutate()}

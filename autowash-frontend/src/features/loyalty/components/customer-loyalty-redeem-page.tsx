@@ -7,7 +7,7 @@ import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Input } from "@/shared/ui/ui/input";
 import { Label } from "@/shared/ui/ui/label";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { useCustomerLoyaltyAccount, useCustomerRedeemPoints } from "@/features/loyalty/hooks/use-customer-loyalty";
 import type { RedeemPointsResponse } from "@/entities/loyalty";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
@@ -17,6 +17,7 @@ const MAX_REDEEM_POINTS = 200;
 const VND_PER_POINT = 1_000;
 
 export function CustomerLoyaltyRedeemPageContent() {
+  const getErrorMessage = useErrorMessage();
   const { language } = useLanguageStore();
   const accountQuery = useCustomerLoyaltyAccount();
   const redeemMutation = useCustomerRedeemPoints();
@@ -75,7 +76,7 @@ export function CustomerLoyaltyRedeemPageContent() {
           <Card className="border-rose-200 bg-white">
             <CardHeader>
               <CardTitle>{translate(language, "Không thể tải số dư tích điểm", "Unable to load loyalty balance")}</CardTitle>
-              <CardDescription>{getDisplayErrorMessage(accountQuery.error)}</CardDescription>
+              <CardDescription>{getErrorMessage(accountQuery.error)}</CardDescription>
             </CardHeader>
           </Card>
         ) : null}
@@ -127,7 +128,7 @@ export function CustomerLoyaltyRedeemPageContent() {
                 ) : null}
                 {redeemMutation.isError ? (
                   <p className="rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                    {getDisplayErrorMessage(redeemMutation.error)}
+                    {getErrorMessage(redeemMutation.error)}
                   </p>
                 ) : null}
                 {successVoucher ? (
@@ -137,9 +138,9 @@ export function CustomerLoyaltyRedeemPageContent() {
                       {translate(language, "Đổi điểm thành công", "Redemption successful")}
                     </div>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      <SummaryRow label={translate(language, "Mã voucher", "Voucher code")} value={successVoucher.voucherCode} />
+                      <SummaryRow label={translate(language, "Mã voucher", "Voucher code")} value={successVoucher.discountCode} />
                       <SummaryRow label={translate(language, "Điểm đã đổi", "Points redeemed")} value={`${successVoucher.pointsRedeemed.toLocaleString(locale)} ${translate(language, "điểm", "points")}`} />
-                      <SummaryRow label={translate(language, "Giá trị voucher", "Voucher value")} value={`${successVoucher.voucherValue.toLocaleString(locale)} VND`} />
+                      <SummaryRow label={translate(language, "Giá trị voucher", "Voucher value")} value={`${successVoucher.discountValue.toLocaleString(locale)} VND`} />
                       <SummaryRow label={translate(language, "Hết hạn", "Expires")} value={new Date(successVoucher.expiresAt).toLocaleDateString(locale)} />
                       <SummaryRow label={translate(language, "Trạng thái", "Status")} value={successVoucher.status} />
                       <SummaryRow label={translate(language, "Số dư mới", "New available balance")} value={`${successVoucher.newBalance.toLocaleString(locale)} ${translate(language, "điểm", "points")}`} />

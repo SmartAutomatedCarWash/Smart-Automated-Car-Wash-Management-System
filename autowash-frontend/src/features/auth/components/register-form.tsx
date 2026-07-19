@@ -4,13 +4,15 @@ import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, LockKeyhole, Mail, UserRound } from "lucide-react";
 import { Button } from "@/shared/ui/ui/button";
-import { getDisplayErrorMessage, getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { useCustomerRegister } from "@/features/auth/hooks/use-auth";
 import { emailPattern, passwordPattern } from "@/shared/lib/validators";
 
 export function RegisterForm() {
   const router = useRouter();
   const registerMutation = useCustomerRegister();
+  const getErrorMessage = useErrorMessage();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,7 +62,7 @@ export function RegisterForm() {
   };
 
   const errorMessage = registerMutation.error
-    ? getDisplayErrorMessage(registerMutation.error)
+    ? getErrorMessage(registerMutation.error)
     : null;
 
   return (

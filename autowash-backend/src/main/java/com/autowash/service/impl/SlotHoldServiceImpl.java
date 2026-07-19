@@ -10,6 +10,7 @@ import com.autowash.repository.SystemSettingsRepository;
 import com.autowash.repository.UserRepository;
 import com.autowash.service.SlotHoldService;
 import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -39,7 +40,7 @@ public class SlotHoldServiceImpl implements SlotHoldService {
     @Transactional
     public Instant holdSlot(UUID customerId, Instant slotTime) {
         User customer = userRepository.findById(customerId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Customer not found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Customer not found", ErrorCode.RESOURCE_NOT_FOUND));
 
         Instant now = Instant.now();
         var existingHold = slotHoldRepository.findByCustomerAndSlotTime(customer, slotTime);
@@ -52,7 +53,7 @@ public class SlotHoldServiceImpl implements SlotHoldService {
         }
 
         SystemSettings settings = systemSettingsRepository.findById(1)
-                .orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "System settings not found", "SYSTEM_ERROR"));
+                .orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "System settings not found", ErrorCode.SYSTEM_ERROR));
 
         validateSlotCapacity(slotTime, settings.getMaxBookingsPerTimeSlot());
 
@@ -88,7 +89,7 @@ public class SlotHoldServiceImpl implements SlotHoldService {
         long activeHolds = slotHoldRepository.countActiveHoldsForSlot(slotStart, slotEnd, Instant.now());
 
         if (existingBookings + activeHolds >= maxBookingsPerTimeSlot) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking slot is full", "BOOKING_SLOT_FULL");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking slot is full", ErrorCode.BOOKING_SLOT_FULL);
         }
     }
 }

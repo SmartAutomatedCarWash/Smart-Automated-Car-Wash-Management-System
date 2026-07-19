@@ -20,7 +20,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { CountdownTimer } from "@/features/bookings/components/countdown-timer";
 import {
   buildBookingSummary,
@@ -73,10 +73,11 @@ const PAYMENT_OPTIONS: {
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export function BookingConfirmPage() {
+  const getErrorMessage = useErrorMessage();
   const router = useRouter();
   const draft = useBookingStore((state) => state.draft);
   const expiresAt = useBookingStore((state) => state.expiresAt);
-  const validatedVoucher = useBookingStore((state) => state.validatedVoucher);
+  const validatedDiscount = useBookingStore((state) => state.validatedDiscount);
   const updateDraft = useBookingStore((state) => state.updateDraft);
   const resetDraft = useBookingStore((state) => state.resetDraft);
   const setExpiresAt = useBookingStore((state) => state.setExpiresAt);
@@ -111,10 +112,10 @@ export function BookingConfirmPage() {
         packages,
         addons,
         combos,
-        voucher: validatedVoucher,
+        voucher: validatedDiscount,
         ownedComboApplied: Boolean(selectedCustomerCombo),
       }),
-    [addons, combos, draft, packages, selectedCustomerCombo, validatedVoucher],
+    [addons, combos, draft, packages, selectedCustomerCombo, validatedDiscount],
   );
 
   useEffect(() => {
@@ -136,7 +137,7 @@ export function BookingConfirmPage() {
     try {
       await releaseHeldSlot();
     } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
+      toast.error(getErrorMessage(error));
     } finally {
       router.push("/customer/booking");
     }
@@ -182,7 +183,7 @@ export function BookingConfirmPage() {
       toast.success("Booking confirmed.");
       router.push(`/customer/bookings/${booking.bookingId}`);
     } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -417,11 +418,11 @@ export function BookingConfirmPage() {
                   <span className="font-medium text-foreground">{formatBookingCurrency(summary.subtotal)}</span>
                 </div>
 
-                {validatedVoucher && (
+                {validatedDiscount && (
                   <div className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-1.5 text-emerald-600">
                       <Tag className="h-3 w-3" />
-                      Voucher ({validatedVoucher.voucherCode})
+                      Voucher ({validatedDiscount.discountCode})
                     </span>
                     <span className="font-semibold text-emerald-600">
                       −{formatBookingCurrency(summary.discountAmount)}

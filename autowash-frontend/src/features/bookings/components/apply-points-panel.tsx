@@ -7,7 +7,7 @@ import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Input } from "@/shared/ui/ui/input";
 import { Label } from "@/shared/ui/ui/label";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
 import { useApplyBookingPoints } from "@/features/bookings/hooks/use-bookings";
 
@@ -62,6 +62,7 @@ export function ApplyPointsPanel({
   disabled?: boolean;
   language?: ApplyPointsLanguage;
 }) {
+  const getErrorMessage = useErrorMessage();
   const copy = COPY[language];
   const [points, setPoints] = useState(MIN_POINTS);
   const mutation = useApplyBookingPoints(bookingId);
@@ -80,7 +81,7 @@ export function ApplyPointsPanel({
         description: copy.successDescription(formatBookingCurrency(result.discountAmount), result.loyaltyBalance),
       });
     } catch (error) {
-      toast.error(getDisplayErrorMessage(error));
+      toast.error(getErrorMessage(error));
     }
   }
 

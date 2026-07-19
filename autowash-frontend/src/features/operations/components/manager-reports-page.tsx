@@ -22,7 +22,7 @@ import { Card } from "@/shared/ui/ui/card";
 import { Progress } from "@/shared/ui/ui/progress";
 import { DatePickerButton, getTodayInputValue } from "@/shared/ui/date-picker-button";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { getOperationsQueue } from "@/features/operations/lib/operations-service";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { OperationsQueueSession } from "@/entities/operations";
@@ -40,6 +40,7 @@ const REPORT_OPTIONS: Array<{ value: ReportOption; label: string }> = [
 const KPI_TARGETS = [2, 4, 6, 8, 10, 12];
 
 export function ManagerReportsPage() {
+  const getErrorMessage = useErrorMessage();
   const [periodMode, setPeriodMode] = useState<PeriodMode>("month");
   const [selectedDate, setSelectedDate] = useState(getTodayInputValue());
   const [selectedMonth, setSelectedMonth] = useState("2026-07");
@@ -135,7 +136,7 @@ export function ManagerReportsPage() {
       </Card>
 
       {query.isError ? (
-        <WorkspaceEmptyState title="Không thể tải báo cáo" description={getDisplayErrorMessage(query.error as unknown as ApiErrorResponse)} />
+        <WorkspaceEmptyState title="Không thể tải báo cáo" description={getErrorMessage(query.error as unknown as ApiErrorResponse)} />
       ) : (
         <>
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

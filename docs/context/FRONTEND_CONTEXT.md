@@ -499,3 +499,62 @@ Trước khi code bất kỳ page/component nào, AI phải xác định:
 
 *Tài liệu này được tạo từ `autowash_api_contracts.md` và `autowash_backend_tasks.md`.*  
 *Cập nhật lần cuối: May 2026*
+
+---
+
+## 21. i18n Error Handling Context
+
+Frontend error messages are now handled through `next-intl` without locale prefixes in the URL. Locale is read from the `locale` cookie by `src/i18n/request.ts`; do not add `/vi` or `/en` route segments for the current dashboard app.
+
+Architecture:
+
+- `messages/vi.json` and `messages/en.json` own the `errors` namespace.
+- `src/shared/lib/api-errors.ts` parses and normalizes errors only; it must not contain localized UI strings.
+- `src/shared/hooks/use-error-message.ts` maps parsed backend errors to translated messages at the UI boundary.
+- `src/shared/hooks/use-notify-error.ts` is the toast-only wrapper for translated errors.
+- `notify.ts` receives a ready display string from callers and does not translate backend errors internally.
+- `useLanguageStore.setLanguage()` currently also updates the `locale` cookie as a transition bridge. Remove this only after all UI text moves to `next-intl`.
+
+Do not reintroduce `ERROR_MESSAGES`, `getDisplayErrorMessage()`, or `getApiErrorDisplayMessage()`.
+
+Standard component pattern:
+
+```tsx
+const getErrorMessage = useErrorMessage();
+
+const mutation = useMutation({
+  mutationFn: submit,
+  onError: (error) => toast.error(getErrorMessage(error)),
+});
+```
+
+Toast-only pattern:
+
+```tsx
+const notifyError = useNotifyError();
+const mutation = useMutation({ mutationFn: submit, onError: notifyError });
+```
+
+Important translated expectations:
+
+| errorCode | Expected VI | Expected EN |
+|-----------|-------------|-------------|
+| `INCORRECT_PASSWORD` | `Mật khẩu không đúng.` | `The password is incorrect.` |
+| `BOOKING_SLOT_FULL` | `Khung giờ này đã hết chỗ.` | `This booking slot is full.` |
+
+Manual QA snapshot, rerun with backend `http://localhost:8080` and frontend `http://localhost:3000`:
+
+| Item | Result | Notes |
+|------|--------|-------|
+| Language switch | Pass | VI/EN changes persist after refresh. URL stays unprefixed. |
+| Login error | Pass | Backend returns `errorCode: INCORRECT_PASSWORD`; VI shows `Mật khẩu không đúng.` and EN shows `The password is incorrect.` |
+| Booking flow | Pass partial | Form renders real backend data, local validation works, and a real booking was created. `BOOKING_SLOT_FULL` was not reproduced because test slots still had capacity. |
+| Combo checkout | Pass | `/customer/combos/{comboId}/checkout` renders and combo purchase succeeds without UI crash. |
+| Google OAuth callback | Pass partial | Invalid callback state/code shows an error page/message, no blank screen, no raw backend object. Successful real OAuth still needs staging credentials. |
+
+Pending outside this i18n scope:
+
+- Test `BOOKING_SLOT_FULL` with seeded full-slot data.
+- Test successful Google OAuth on staging with real credentials.
+- Run `npm audit fix` separately for `next`, `form-data`, and `postcss`; do not use `--force`, because it can jump to Next 16.
+- Remove `useLanguageStore` after all UI text, not only error messages, moves to `next-intl`.

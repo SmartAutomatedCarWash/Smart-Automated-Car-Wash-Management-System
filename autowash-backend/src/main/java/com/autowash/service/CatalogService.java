@@ -23,4 +23,3 @@ public interface CatalogService {
     record PackagePage(List<PackageResponse> items, PaginationMeta pagination) {}
     record CatalogOption(UUID optionId, String name, long price, int durationMinutes) {}
 }
-
