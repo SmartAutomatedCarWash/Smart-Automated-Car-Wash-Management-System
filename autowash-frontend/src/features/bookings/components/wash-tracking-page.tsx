@@ -184,7 +184,7 @@ export function CustomerWashTrackingPage() {
             <div className="space-y-6">
               <BookingLiveSessionCard
                 language={language}
-                bookingCode={activeSession.bookingId}
+                bookingCode={activeSession.vehiclePlate}
                 serviceName={activeSession.serviceName ?? activeSession.packageId ?? copy.defaultService}
                 status={toLiveTrackingStatus(activeSession.status)}
                 scheduledAt={toTrackingDateTime(activeSession.bookingDate, activeSession.bookingTime)}
@@ -243,6 +243,7 @@ export function CustomerWashTrackingPage() {
       {activeSession && (
         <BookingCompletionPopup
           bookingId={activeSession.bookingId}
+          vehiclePlate={activeSession.vehiclePlate}
           pointsEarned={activeSession.awardedLoyaltyPoints ?? 10}
           isOpen={showCompletion}
           onClose={() => setShowCompletion(false)}
@@ -309,9 +310,9 @@ function TrackingHero({
       <CardContent className="grid gap-6 p-6 md:grid-cols-[1fr_auto] md:p-8">
         <div>
           <div className="text-xs font-bold uppercase tracking-[0.25em] text-sky-200">{copy.heroEyebrow}</div>
-          <h2 className="mt-3 text-3xl font-black tracking-tight">{session.bookingId}</h2>
+          <h2 className="mt-3 text-3xl font-black tracking-tight">{session.vehiclePlate}</h2>
           <p className="mt-2 text-sky-100">
-            {session.customerName} · {session.vehiclePlate} · {session.serviceName ?? session.packageId ?? copy.defaultService}
+            {session.customerName} · {session.serviceName ?? session.packageId ?? copy.defaultService}
           </p>
         </div>
         <div className="rounded-3xl border border-white/15 bg-white/10 px-5 py-4 backdrop-blur">

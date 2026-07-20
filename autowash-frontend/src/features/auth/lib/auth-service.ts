@@ -31,6 +31,7 @@ export async function registerCustomer(payload: RegisterRequest) {
 
 export async function loginCustomer(payload: LoginRequest) {
   // --- MOCK DEMO ACCOUNTS ---
+  const normalizedEmail = payload.email.trim().toLowerCase();
   const demoAccounts: Record<string, any> = {
     "admin@demo.com": {
       userId: "admin-id-demo",
@@ -74,9 +75,12 @@ export async function loginCustomer(payload: LoginRequest) {
     }
   };
 
-  if (demoAccounts[payload.email]) {
+  if (demoAccounts[normalizedEmail]) {
     await new Promise(resolve => setTimeout(resolve, 500));
-    return demoAccounts[payload.email] as LoginResponseData;
+    return {
+      ...demoAccounts[normalizedEmail],
+      refreshToken: `mock-refresh-${demoAccounts[normalizedEmail].role.toLowerCase()}`,
+    } as LoginResponseData;
   }
   // --- END MOCK ---
 

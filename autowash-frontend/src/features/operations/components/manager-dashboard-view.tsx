@@ -39,34 +39,34 @@ export function ManagerDashboardView() {
       <section className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-700">Today at the wash bay</p>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950">Điều phối trong một màn hình</h1>
-          <p className="mt-1 text-sm text-slate-500">Ưu tiên xe cần check-in và những phiên đang có nguy cơ trễ.</p>
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950">Operations in one view</h1>
+          <p className="mt-1 text-sm text-slate-500">Prioritize vehicles that need check-in and sessions at risk of delays.</p>
         </div>
         <Button asChild className="rounded-xl bg-slate-950 text-white hover:bg-slate-800">
-          <Link href="/manager/operations">Mở hàng đợi vận hành <ArrowRight className="h-4 w-4" /></Link>
+          <Link href="/manager/operations">Open operations queue <ArrowRight className="h-4 w-4" /></Link>
         </Button>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard icon={ClipboardList} label="Chờ check-in" value={eligibleQuery.data?.length ?? 0} tone="amber" />
-        <MetricCard icon={Droplets} label="Đang xử lý" value={activeSessions.length} tone="cyan" />
-        <MetricCard icon={CheckCircle2} label="Hoàn thành" value={queueQuery.data?.summary.completed ?? 0} tone="emerald" />
+        <MetricCard icon={ClipboardList} label="Pending check-in" value={eligibleQuery.data?.length ?? 0} tone="amber" />
+        <MetricCard icon={Droplets} label="In service" value={activeSessions.length} tone="cyan" />
+        <MetricCard icon={CheckCircle2} label="Completed" value={queueQuery.data?.summary.completed ?? 0} tone="emerald" />
         <MetricCard icon={Users} label="Staff active" value={staffQuery.data?.length ?? 0} tone="slate" />
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
         <Card className="overflow-hidden rounded-3xl border-slate-200 shadow-sm">
           <div className="border-b border-slate-100 px-5 py-4">
-            <h2 className="font-black text-slate-900">Cần Manager xử lý</h2>
-            <p className="mt-1 text-sm text-slate-500">Booking chưa được check-in hoặc session đang bị trễ.</p>
+            <h2 className="font-black text-slate-900">Needs manager action</h2>
+            <p className="mt-1 text-sm text-slate-500">Bookings that have not been checked in or sessions running late.</p>
           </div>
           <div className="divide-y divide-slate-100">
             {eligibleQuery.isError || queueQuery.isError ? (
-              <div className="p-5"><WorkspaceEmptyState title="Không thể tải queue" description={getErrorMessage((eligibleQuery.error ?? queueQuery.error) as unknown as ApiErrorResponse)} /></div>
+              <div className="p-5"><WorkspaceEmptyState title="Unable to load queue" description={getErrorMessage((eligibleQuery.error ?? queueQuery.error) as unknown as ApiErrorResponse)} /></div>
             ) : eligibleQuery.isPending || queueQuery.isPending ? (
               <div className="m-5 h-36 animate-pulse rounded-2xl bg-slate-100" />
             ) : delayedSessions.length === 0 && (eligibleQuery.data?.length ?? 0) === 0 ? (
-              <div className="p-8"><WorkspaceEmptyState title="Vận hành đang ổn định" description="Không có booking hoặc session cần can thiệp ngay." /></div>
+              <div className="p-8"><WorkspaceEmptyState title="Operations are stable" description="No bookings or sessions need immediate intervention." /></div>
             ) : (
               <>
                 {(eligibleQuery.data ?? []).slice(0, 3).map((booking) => (
@@ -75,7 +75,7 @@ export function ManagerDashboardView() {
                       <p className="font-bold text-slate-900">{booking.vehiclePlate}</p>
                       <p className="truncate text-xs text-slate-500">{booking.customerName} · {booking.bookingTime}</p>
                     </div>
-                    <span className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">Chờ check-in</span>
+                    <span className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">Pending check-in</span>
                   </div>
                 ))}
                 {delayedSessions.slice(0, 3).map((session) => <DelayedRow key={session.sessionId} session={session} />)}
@@ -88,12 +88,12 @@ export function ManagerDashboardView() {
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-300" />
             <div>
-              <h2 className="font-black">Vai trò của Manager</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-300">Check-in xe, đảm bảo session được phân công và giữ cho khu vực rửa không bị nghẽn.</p>
+              <h2 className="font-black">Manager role</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-300">Check vehicles in, keep sessions assigned, and prevent wash bay bottlenecks.</p>
             </div>
           </div>
           <Button asChild variant="outline" className="mt-6 w-full rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white">
-            <Link href="/manager/staff">Xem tải của Staff <ArrowRight className="h-4 w-4" /></Link>
+            <Link href="/manager/staff">View staff workload <ArrowRight className="h-4 w-4" /></Link>
           </Button>
         </Card>
       </section>
@@ -106,9 +106,9 @@ function DelayedRow({ session }: { session: OperationsQueueSession }) {
     <div className="flex items-center justify-between gap-4 bg-rose-50/60 px-5 py-4">
       <div className="min-w-0">
         <p className="font-bold text-slate-900">{session.vehiclePlate}</p>
-        <p className="truncate text-xs text-slate-500">{session.servicePackage ?? "Gói rửa"} · {session.assignedStaffName ?? "Chưa phân công"}</p>
+        <p className="truncate text-xs text-slate-500">{session.servicePackage ?? "Wash package"} · {session.assignedStaffName ?? "Unassigned"}</p>
       </div>
-      <span className="shrink-0 rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-bold text-rose-700">Có nguy cơ trễ</span>
+      <span className="shrink-0 rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-bold text-rose-700">At risk</span>
     </div>
   );
 }

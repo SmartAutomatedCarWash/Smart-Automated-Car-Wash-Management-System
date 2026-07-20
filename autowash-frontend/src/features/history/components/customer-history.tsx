@@ -46,6 +46,7 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
     ["Completed", "Cancelled", "No-show"].includes(booking.status),
   );
   const detailBooking = bookings.find((booking) => booking.id === detailId) ?? null;
+  const cancellingBooking = bookings.find((booking) => booking.id === cancelId) ?? null;
   const detailTransaction =
     transactions.find((transaction) => transaction.id === detailBooking?.checkoutTransactionId) ??
     transactions.find((transaction) => transaction.bookingId === detailBooking?.id) ??
@@ -66,8 +67,8 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
       }
       toast.success(
         minutes
-          ? translate(language, `Đã đặt nhắc nhở trước ${minutes} phút cho mã ${booking.id}.`, `Reminder set ${minutes} minutes before check-in for ${booking.id}.`)
-          : translate(language, `Đã hủy nhắc nhở cho mã ${booking.id}.`, `Reminder removed for ${booking.id}.`),
+          ? translate(language, `Đã đặt nhắc nhở trước ${minutes} phút cho xe ${booking.vehiclePlate}.`, `Reminder set ${minutes} minutes before check-in for ${booking.vehiclePlate}.`)
+          : translate(language, `Đã hủy nhắc nhở cho xe ${booking.vehiclePlate}.`, `Reminder removed for ${booking.vehiclePlate}.`),
       );
     };
 
@@ -84,7 +85,7 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
             </div>
             <div>
               <div className="flex items-center gap-3">
-                <span className="font-bold text-lg text-foreground">#{booking.id}</span>
+                <span className="font-bold text-lg text-foreground">#{booking.vehiclePlate}</span>
                 <span
                   className={cn(
                     "rounded-md border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm",
@@ -214,7 +215,7 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl">{translate(language, "Hủy đặt lịch này?", "Cancel this booking?")}</AlertDialogTitle>
             <AlertDialogDescription className="text-base">
-              {translate(language, `Hành động này sẽ hủy vĩnh viễn lịch hẹn #${cancelId}. Không thể hoàn tác hành động này.`, `This will permanently cancel booking #${cancelId}. This action cannot be undone.`)}
+              {translate(language, `Hành động này sẽ hủy vĩnh viễn lịch hẹn xe #${cancellingBooking?.vehiclePlate ?? ""}. Không thể hoàn tác hành động này.`, `This will permanently cancel booking for vehicle #${cancellingBooking?.vehiclePlate ?? ""}. This action cannot be undone.`)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6 gap-2">
@@ -226,7 +227,7 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
 
                 try {
                   updateStatus(cancelId, "Cancelled");
-                  toast.success(translate(language, `Lịch hẹn ${cancelId} đã bị hủy`, `Booking ${cancelId} cancelled`));
+                  toast.success(translate(language, `Lịch hẹn xe ${cancellingBooking?.vehiclePlate ?? ""} đã bị hủy`, `Booking for vehicle ${cancellingBooking?.vehiclePlate ?? ""} cancelled`));
                 } catch (error) {
                   toast.error(error instanceof Error ? error.message : translate(language, "Không thể hủy lịch hẹn.", "Unable to cancel booking."));
                 } finally {
@@ -246,7 +247,7 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
             <div className="p-8">
               <DialogHeader className="mb-6 border-b border-border/50 pb-6">
                 <DialogTitle className="text-2xl font-bold flex items-center gap-3">
-                  {translate(language, "Đặt lịch", "Booking")} <span className="text-primary">#{detailBooking.id}</span>
+                  {translate(language, "Đặt lịch", "Booking")} <span className="text-primary">#{detailBooking.vehiclePlate}</span>
                 </DialogTitle>
                 <DialogDescription className="text-base font-medium mt-2 flex items-center gap-2">
                   <Car className="h-4 w-4" />

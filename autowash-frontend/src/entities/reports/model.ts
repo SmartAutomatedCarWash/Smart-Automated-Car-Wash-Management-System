@@ -151,6 +151,26 @@ export type CreateAdminStaffPayload = {
   role: AdminEditableAccountRole;
 };
 
+export type UpdateAdminStaffPayload = {
+  fullName?: string;
+  phone?: string;
+  email?: string;
+  password?: string;
+};
+
+export type StaffKpiItem = {
+  staffId: string;
+  staffName: string;
+  status: string;
+  completedBookings: number;
+  completedRevenue: number;
+  activeSessions: number;
+  totalAssignedBookings: number;
+  kpiProgressPercent: number;
+  kpiTargetRevenue: number;
+  isOnline: boolean;
+};
+
 export type AdminCustomerDetail = {
   customerId: string;
   profile: {

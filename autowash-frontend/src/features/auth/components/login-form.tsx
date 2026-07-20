@@ -38,18 +38,21 @@ export function LoginForm() {
   }, [accessToken, router, user]);
 
   const normalizedEmail = normalizeLoginIdentifier(email);
+  const isDemoEmail = ["admin@demo.com", "manager@demo.com", "staff@demo.com", "customer@demo.com"].includes(
+    normalizedEmail,
+  );
   const emailValidationMessage = getLoginIdentifierValidationMessage(normalizedEmail);
   const visibleEmailValidationMessage = submitted || email.length > 0 ? emailValidationMessage : null;
   const passwordValidationMessage =
-    (submitted || password.length > 0) && password.length > 0 && password.length < 8 ? "Mat khau phai co it nhat 8 ky tu." : null;
+    !isDemoEmail && (submitted || password.length > 0) && password.length > 0 && password.length < 8 ? "Mat khau phai co it nhat 8 ky tu." : null;
 
-  const canSubmit = emailValidationMessage === null && password.length >= 8 && !loginMutation.isPending;
+  const canSubmit = emailValidationMessage === null && (isDemoEmail ? password.length > 0 : password.length >= 8) && !loginMutation.isPending;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitted(true);
 
-    if (emailValidationMessage !== null || password.length < 8) {
+    if (emailValidationMessage !== null || (isDemoEmail ? password.length === 0 : password.length < 8)) {
       return;
     }
 
@@ -131,7 +134,10 @@ export function LoginForm() {
           <Sparkles className="h-4 w-4 text-sky-600" />
           Dang nhap bang email
         </div>
-        <div>Sau khi dang nhap, he thong tu chuyen den khu vuc khach hang.</div>
+        <div>Sau khi dang nhap, he thong tu chuyen den dung khu vuc theo vai tro.</div>
+        <div className="mt-2 text-xs font-semibold text-sky-800">
+          Demo local: manager@demo.com, staff@demo.com, admin@demo.com, customer@demo.com. Mat khau bat ky.
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

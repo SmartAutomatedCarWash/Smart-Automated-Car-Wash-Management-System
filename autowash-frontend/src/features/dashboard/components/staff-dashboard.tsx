@@ -363,7 +363,7 @@ export function StaffDashboard() {
           {detailBooking && (
             <>
               <DialogHeader>
-                <DialogTitle>Booking #{detailBooking.id}</DialogTitle>
+                <DialogTitle>Xe #{detailBooking.vehiclePlate}</DialogTitle>
                 <DialogDescription>
                   Full booking and vehicle information for staff check-in.
                 </DialogDescription>

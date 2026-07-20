@@ -11,6 +11,7 @@ import { uploadReviewImage } from "@/features/bookings/lib/review-service";
 
 interface BookingCompletionPopupProps {
   bookingId: string;
+  vehiclePlate?: string;
   pointsEarned: number;
   newTier?: string | null;
   oldTier?: string | null;
@@ -21,6 +22,7 @@ interface BookingCompletionPopupProps {
 
 export function BookingCompletionPopup({
   bookingId,
+  vehiclePlate,
   pointsEarned,
   newTier,
   oldTier,
@@ -37,6 +39,7 @@ export function BookingCompletionPopup({
   const [afterImageUrl, setAfterImageUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const displayCode = vehiclePlate ?? bookingId;
 
   // Confetti Particle Class
   useEffect(() => {
@@ -181,8 +184,8 @@ export function BookingCompletionPopup({
               </DialogTitle>
               <DialogDescription className="text-sm font-medium text-muted-foreground mt-2">
                 {language === "vi"
-                  ? `Mã đặt lịch #${bookingId} đã hoàn thành xuất sắc.`
-                  : `Booking #${bookingId} has been successfully completed.`}
+                  ? `Xe #${displayCode} đã hoàn thành xuất sắc.`
+                  : `Vehicle #${displayCode} has been successfully completed.`}
               </DialogDescription>
             </DialogHeader>
 

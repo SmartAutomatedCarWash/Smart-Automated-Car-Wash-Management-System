@@ -94,9 +94,10 @@ const STAFF_NAV: WorkspaceNavItem[] = [
 ];
 
 const MANAGER_NAV: WorkspaceNavItem[] = [
-  { href: "/manager/operations", label: "Operations Queue", labelVi: "Hàng đợi vận hành", icon: ClipboardList },
-  { href: "/manager/staff", label: "Staff Management", labelVi: "Quản lý nhân viên", icon: Users },
-  { href: "/manager/reports", label: "Dashboard", labelVi: "Dashboard", icon: BarChart3 },
+  { href: "/manager/operations", label: "Operations", labelVi: "Điều phối vận hành", icon: ClipboardList },
+  { href: "/manager/staff", label: "Staff", labelVi: "Quản lý nhân viên", icon: Users },
+  { href: "/manager/history", label: "History", labelVi: "Lịch sử", icon: History },
+  { href: "/manager/reports", label: "Reports", labelVi: "Báo cáo vận hành", icon: BarChart3 },
   { href: "/manager/settings", label: "Settings", labelVi: "Cài đặt", icon: Settings2 },
 ];
 

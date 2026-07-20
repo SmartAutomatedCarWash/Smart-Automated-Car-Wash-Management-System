@@ -2,7 +2,7 @@
 $ErrorActionPreference = "Stop"
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $envFile = Join-Path $here ".env"
-$jdk21 = "C:\Program Files\Java\jdk-21.0.11"
+$jdk21 = "C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot"
 
 if (Test-Path $jdk21) {
   $env:JAVA_HOME = $jdk21

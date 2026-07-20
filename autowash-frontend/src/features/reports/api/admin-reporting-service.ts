@@ -20,6 +20,8 @@ import type {
   CreateAdminStaffPayload,
   ReportAnalysisGroup,
   ReportRangeKey,
+  StaffKpiItem,
+  UpdateAdminStaffPayload,
   UpdateAdminCustomerRolePayload,
   UpdateAdminCustomerRoleResult,
   UpdateAdminCustomerStatusPayload,
@@ -44,6 +46,18 @@ export async function listAdminAccounts(
     items: response.data.data,
     pagination: response.data.pagination,
   };
+}
+
+export async function listAdminStaff(): Promise<AdminAccount[]> {
+  const response = await apiClient.get<ApiSuccessResponse<AdminAccount[]>>("/admin/staff");
+  return response.data.data;
+}
+
+export async function listAdminStaffKpi(range = "WEEK"): Promise<StaffKpiItem[]> {
+  const response = await apiClient.get<ApiSuccessResponse<StaffKpiItem[]>>("/admin/staff/kpi", {
+    params: { range },
+  });
+  return response.data.data;
 }
 
 export async function listAdminBookings(
@@ -255,6 +269,21 @@ export function createAdminStaff(payload: CreateAdminStaffPayload) {
     method: "POST",
     url: "/admin/staff",
     data: payload,
+  });
+}
+
+export function updateAdminStaff(staffId: string, payload: UpdateAdminStaffPayload) {
+  return apiRequest<AdminAccount, UpdateAdminStaffPayload>({
+    method: "PUT",
+    url: `/admin/staff/${staffId}`,
+    data: payload,
+  });
+}
+
+export function deleteAdminStaff(staffId: string) {
+  return apiRequest<AdminAccount, undefined>({
+    method: "DELETE",
+    url: `/admin/staff/${staffId}`,
   });
 }
 

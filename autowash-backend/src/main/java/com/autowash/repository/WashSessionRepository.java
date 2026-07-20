@@ -58,6 +58,9 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "booking.details", "assignedStaff"})
     List<WashSession> findByAssignedStaffAndStatusOrderByCompletedAtDesc(User assignedStaff, WashSessionStatus status);
 
+    @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "booking.details", "assignedStaff"})
+    List<WashSession> findByStatusOrderByCompletedAtDesc(WashSessionStatus status);
+
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
     @Query("""
             select session from WashSession session
