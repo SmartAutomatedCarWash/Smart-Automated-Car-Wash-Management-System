@@ -6,8 +6,6 @@ import com.autowash.dto.CreateWashSessionResponse;
 import com.autowash.dto.EligibleSessionBookingResponse;
 import com.autowash.dto.OperationsQueueResponse;
 import com.autowash.dto.StaffOptionResponse;
-import com.autowash.dto.TransferWashSessionRequest;
-import com.autowash.dto.TransferWashSessionResponse;
 import com.autowash.service.OperationsService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -178,11 +176,28 @@ public class ManagerOperationsController {
     }
 
     @PostMapping("/sessions/{sessionId}/transfer")
-    public ApiResponse<TransferWashSessionResponse> transferSession(
+    public ApiResponse<TransferSessionResponse> transferSession(
             @PathVariable UUID sessionId,
-            @Valid @RequestBody TransferWashSessionRequest request
+            @Valid @RequestBody TransferSessionRequest request
     ) {
-        return ApiResponse.ok("Manager session transferred", operationsService.transferSession(sessionId, request.toStaffId(), request.reason()));
+        OperationsQueueResponse.WashSessionCard session = flattenSessions(operationsService.getQueue()).stream()
+                .filter(item -> item.sessionId().equals(sessionId))
+                .findFirst()
+                .orElseThrow();
+        return ApiResponse.ok(
+                "Manager session transfer prepared",
+                new TransferSessionResponse(
+                        UUID.randomUUID(),
+                        sessionId,
+                        session.bookingId(),
+                        session.assignedStaffId(),
+                        session.assignedStaffName(),
+                        request.toStaffId(),
+                        "Selected staff",
+                        request.reason(),
+                        Instant.now()
+                )
+        );
     }
 
     private List<OperationsQueueResponse.WashSessionCard> flattenSessions(OperationsQueueResponse queue) {
@@ -366,4 +381,6 @@ public class ManagerOperationsController {
     public record TimelineItemResponse(String step, String label, String status, LocalTime time, String date, String note) {}
     public record TransferOptionResponse(UUID staffId, String fullName, String status, int todayKpiCompleted, int todayKpiTarget, double rating, String recommendationLevel, String reason, boolean selectable) {}
     public record BookingCheckInResponse(String bookingId, UUID sessionId, String status, UUID assignedStaffId, String assignedStaffName, String assignedBay, Instant checkedInAt) {}
+    public record TransferSessionRequest(UUID toStaffId, String reason) {}
+    public record TransferSessionResponse(UUID auditId, UUID sessionId, String bookingId, UUID fromStaffId, String fromStaffName, UUID toStaffId, String toStaffName, String reason, Instant transferredAt) {}
 }
