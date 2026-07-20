@@ -1,3 +1,11 @@
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS trigger AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TABLE IF NOT EXISTS discounts (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
     type varchar(20) NOT NULL CHECK (type IN ('PROMOTION','VOUCHER')),
@@ -22,11 +30,6 @@ CREATE TABLE IF NOT EXISTS discounts (
     PRIMARY KEY (id)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS uq_discounts_code ON discounts (code) WHERE code IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_discounts_type ON discounts (type);
-CREATE INDEX IF NOT EXISTS idx_discounts_status ON discounts (status);
-CREATE INDEX IF NOT EXISTS idx_discounts_start_end ON discounts (start_at, end_at);
-
 ALTER TABLE discounts ADD COLUMN IF NOT EXISTS type varchar(20) NOT NULL DEFAULT 'PROMOTION';
 ALTER TABLE discounts ADD COLUMN IF NOT EXISTS code varchar(50);
 ALTER TABLE discounts ADD COLUMN IF NOT EXISTS name varchar(120) NOT NULL DEFAULT 'Unnamed discount';
@@ -46,6 +49,11 @@ ALTER TABLE discounts ADD COLUMN IF NOT EXISTS end_at timestamp(6) with time zon
 ALTER TABLE discounts ADD COLUMN IF NOT EXISTS status varchar(20) NOT NULL DEFAULT 'ACTIVE';
 ALTER TABLE discounts ADD COLUMN IF NOT EXISTS created_at timestamp(6) with time zone NOT NULL DEFAULT now();
 ALTER TABLE discounts ADD COLUMN IF NOT EXISTS updated_at timestamp(6) with time zone NOT NULL DEFAULT now();
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_discounts_code ON discounts (code) WHERE code IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_discounts_type ON discounts (type);
+CREATE INDEX IF NOT EXISTS idx_discounts_status ON discounts (status);
+CREATE INDEX IF NOT EXISTS idx_discounts_start_end ON discounts (start_at, end_at);
 
 CREATE TABLE IF NOT EXISTS discount_tiers (
     discount_id uuid NOT NULL REFERENCES discounts(id) ON DELETE CASCADE,
@@ -73,11 +81,6 @@ CREATE TABLE IF NOT EXISTS user_discounts (
     PRIMARY KEY (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_discounts_user_id ON user_discounts (user_id);
-CREATE INDEX IF NOT EXISTS idx_user_discounts_discount_id ON user_discounts (discount_id);
-CREATE INDEX IF NOT EXISTS idx_user_discounts_status ON user_discounts (status);
-CREATE INDEX IF NOT EXISTS idx_user_discounts_used_booking ON user_discounts (used_in_booking_id);
-
 ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES users(id);
 ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS discount_id uuid REFERENCES discounts(id);
 ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS acquisition_method varchar(20) NOT NULL DEFAULT 'AUTO_ELIGIBLE';
@@ -87,6 +90,11 @@ ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS expires_at timestamp(6) with
 ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS status varchar(20) NOT NULL DEFAULT 'AVAILABLE';
 ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS used_at timestamp(6) with time zone;
 ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS used_in_booking_id uuid;
+
+CREATE INDEX IF NOT EXISTS idx_user_discounts_user_id ON user_discounts (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_discounts_discount_id ON user_discounts (discount_id);
+CREATE INDEX IF NOT EXISTS idx_user_discounts_status ON user_discounts (status);
+CREATE INDEX IF NOT EXISTS idx_user_discounts_used_booking ON user_discounts (used_in_booking_id);
 
 CREATE TABLE IF NOT EXISTS tier_voucher_offers (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -102,9 +110,6 @@ CREATE TABLE IF NOT EXISTS tier_voucher_offers (
     PRIMARY KEY (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tier_voucher_offers_discount_id ON tier_voucher_offers (discount_id);
-CREATE INDEX IF NOT EXISTS idx_tier_voucher_offers_min_tier ON tier_voucher_offers (min_tier);
-
 ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS discount_id uuid REFERENCES discounts(id);
 ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS points_cost integer NOT NULL DEFAULT 0;
 ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS voucher_value integer NOT NULL DEFAULT 0;
@@ -115,10 +120,16 @@ ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS badge varchar(20) NOT N
 ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS min_tier varchar(50) REFERENCES tier_configs(tier);
 ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS title varchar(100) NOT NULL DEFAULT 'Voucher offer';
 
+CREATE INDEX IF NOT EXISTS idx_tier_voucher_offers_discount_id ON tier_voucher_offers (discount_id);
+CREATE INDEX IF NOT EXISTS idx_tier_voucher_offers_min_tier ON tier_voucher_offers (min_tier);
+
 DO $$
 BEGIN
     IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'fk_user_discounts_booking'
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'fk_user_discounts_booking'
+          AND conrelid = 'user_discounts'::regclass
     ) THEN
         ALTER TABLE user_discounts
             ADD CONSTRAINT fk_user_discounts_booking
