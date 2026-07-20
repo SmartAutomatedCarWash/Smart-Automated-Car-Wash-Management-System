@@ -292,12 +292,15 @@ export function ModernAuthPopupModal({
   const loginMutation = useCustomerLogin();
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPass, setLoginPass] = useState("");
+  const [loginSubmitted, setLoginSubmitted] = useState(false);
+  const [loginFieldsUnlocked, setLoginFieldsUnlocked] = useState(false);
   const [isLoginPassVisible, setIsLoginPassVisible] = useState(false);
   const loginPassVisibility = getPasswordVisibilityState(isLoginPassVisible);
   const loginEmailNormalized = normalizeLoginIdentifier(loginEmail);
-  const loginIdError = getLoginIdentifierValidationMessage(loginEmailNormalized);
-  const loginPassError = loginPass.length > 0 && loginPass.length < 8 ? copy.loginPasswordError : null;
-  const canLoginSubmit = loginIdError === null && loginPass.length >= 8 && !loginMutation.isPending;
+  const loginIdValidationError = getLoginIdentifierValidationMessage(loginEmailNormalized);
+  const loginIdError = loginSubmitted || loginEmail.length > 0 ? loginIdValidationError : null;
+  const loginPassError = (loginSubmitted || loginPass.length > 0) && loginPass.length > 0 && loginPass.length < 8 ? copy.loginPasswordError : null;
+  const canLoginSubmit = loginIdValidationError === null && loginPass.length >= 8 && !loginMutation.isPending;
   const loginErrorMessage = loginMutation.error ? getErrorMessage(loginMutation.error) : null;
 
   const registerMutation = useCustomerRegister();
@@ -431,6 +434,7 @@ export function ModernAuthPopupModal({
 
   const handleLoginSubmit = (event: FormEvent) => {
     event.preventDefault();
+    setLoginSubmitted(true);
     if (!canLoginSubmit) return;
     loginMutation.mutate({
       email: loginEmailNormalized,
@@ -650,9 +654,13 @@ export function ModernAuthPopupModal({
           {mode === "login" ? (
             <div key={`${language}-login`} className="mx-auto w-full max-w-[520px] space-y-7 pt-8 animate-in fade-in slide-in-from-right-4 duration-500 ease-out">
               <AuthHeader eyebrow={copy.eyebrowLogin} icon={ShieldCheck} title={copy.loginTitle} description={copy.loginDescription} />
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <form onSubmit={handleLoginSubmit} className="space-y-4" autoComplete="off">
                 <Field label="Email" error={loginIdError}>
                   <input
+                    name="loginEmailInput"
+                    autoComplete="off"
+                    readOnly={!loginFieldsUnlocked}
+                    onFocus={() => setLoginFieldsUnlocked(true)}
                     value={loginEmail}
                     onChange={(event) => setLoginEmail(event.target.value.replace(/\s/g, ""))}
                     placeholder="Enter email"
@@ -676,6 +684,10 @@ export function ModernAuthPopupModal({
                   }
                 >
                   <input
+                    name="loginPasswordInput"
+                    autoComplete="new-password"
+                    readOnly={!loginFieldsUnlocked}
+                    onFocus={() => setLoginFieldsUnlocked(true)}
                     type={loginPassVisibility.inputType}
                     value={loginPass}
                     onChange={(event) => setLoginPass(event.target.value)}
@@ -726,14 +738,23 @@ export function ModernAuthPopupModal({
           {mode === "register" ? (
             <div key={`${language}-register`} className="mx-auto flex w-full max-w-[560px] flex-col gap-4 pt-8 animate-in fade-in slide-in-from-right-4 duration-500 ease-out">
               <AuthHeader eyebrow={copy.eyebrowRegister} icon={Star} title={copy.registerTitle} description={copy.registerDescription} />
-                <form onSubmit={handleRegisterSubmit} className="space-y-3">
+                <form onSubmit={handleRegisterSubmit} className="space-y-3" autoComplete="off">
                 <Field label={copy.nameLabel} error={regNameError}>
-                  <input value={regName} onChange={(event) => setRegName(event.target.value)} placeholder={copy.namePlaceholder} className={inputCls} />
+                  <input
+                    name="registerFullName"
+                    autoComplete="off"
+                    value={regName}
+                    onChange={(event) => setRegName(event.target.value)}
+                    placeholder={copy.namePlaceholder}
+                    className={inputCls}
+                  />
                   <UserRound className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 </Field>
 
                 <Field label={copy.emailLabel} error={regEmailError}>
                   <input
+                    name="registerEmail"
+                    autoComplete="off"
                     value={regEmail}
                     onChange={(event) => setRegEmail(event.target.value)}
                     placeholder={copy.emailPlaceholder}
@@ -745,7 +766,15 @@ export function ModernAuthPopupModal({
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label={copy.passwordLabel} error={regPassError}>
-                    <input type={regPassVisibility.inputType} value={regPass} onChange={(event) => setRegPass(event.target.value)} placeholder={copy.passwordPlaceholder} className={inputCls} />
+                    <input
+                      name="registerNewPassword"
+                      autoComplete="new-password"
+                      type={regPassVisibility.inputType}
+                      value={regPass}
+                      onChange={(event) => setRegPass(event.target.value)}
+                      placeholder={copy.passwordPlaceholder}
+                      className={inputCls}
+                    />
                     <button
                       type="button"
                       onClick={() => setIsRegPassVisible((value) => !value)}
@@ -756,7 +785,15 @@ export function ModernAuthPopupModal({
                     </button>
                   </Field>
                   <Field label={copy.confirmPasswordLabel} error={regConfirmError}>
-                    <input type={regConfirmVisibility.inputType} value={regConfirmPass} onChange={(event) => setRegConfirmPass(event.target.value)} placeholder={copy.passwordPlaceholder} className={inputCls} />
+                    <input
+                      name="registerConfirmPassword"
+                      autoComplete="new-password"
+                      type={regConfirmVisibility.inputType}
+                      value={regConfirmPass}
+                      onChange={(event) => setRegConfirmPass(event.target.value)}
+                      placeholder={copy.passwordPlaceholder}
+                      className={inputCls}
+                    />
                     <button
                       type="button"
                       onClick={() => setIsRegConfirmVisible((value) => !value)}
@@ -884,9 +921,10 @@ export function ModernAuthPopupModal({
                           value={digit}
                           onChange={(event) => handleForgotDigitChange(index, event.target.value)}
                           onKeyDown={(event) => handleForgotOtpKeyDown(index, event)}
+                          onFocus={(event) => event.currentTarget.select()}
                           onPaste={handleForgotOtpPaste}
                           inputMode="numeric"
-                          maxLength={1}
+                          pattern="[0-9]*"
                           className={cn(
                             "h-14 w-12 rounded-2xl border text-center text-lg font-black shadow-sm transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-400/20",
                             digit
@@ -1043,8 +1081,9 @@ export function ModernAuthPopupModal({
                       value={digit}
                       onChange={(event) => handleDigitChange(index, event.target.value)}
                       onKeyDown={(event) => handleOtpKeyDown(index, event)}
+                      onFocus={(event) => event.currentTarget.select()}
                       inputMode="numeric"
-                      maxLength={1}
+                      pattern="[0-9]*"
                       className={cn(
                         "h-14 w-12 rounded-2xl border text-center text-lg font-black shadow-sm transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-400/20",
                         digit

@@ -5,9 +5,11 @@ import { CarFront, Loader2, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import type { CustomerVehicleListItem } from "@/entities/vehicles";
 import { useDeleteCustomerVehicle, useSetPrimaryCustomerVehicle } from "@/features/vehicles/hooks/use-customer-vehicles";
 import { getVehicleDisplayColor, getVehicleDisplayName } from "@/features/vehicles/lib/vehicle-display";
+import { getVehicleToastErrorMessage, VEHICLE_TOAST_OPTIONS } from "@/features/vehicles/lib/vehicle-toast";
 import { translate } from "@/shared/store/language.store";
 
 export function CustomerVehicleListCard({
@@ -22,6 +24,7 @@ export function CustomerVehicleListCard({
   language: "vi" | "en";
 }) {
   const router = useRouter();
+  const getErrorMessage = useErrorMessage();
   const setPrimaryMutation = useSetPrimaryCustomerVehicle(vehicle.vehicleId);
   const deleteMutation = useDeleteCustomerVehicle(vehicle.vehicleId);
   const vehicleDisplayName = getVehicleDisplayName(vehicle, language);
@@ -29,19 +32,33 @@ export function CustomerVehicleListCard({
   const handleSetPrimary = async () => {
     try {
       await setPrimaryMutation.mutateAsync();
-      toast.success(translate(language, "Xe chinh da duoc cap nhat.", "Primary vehicle updated."));
-    } catch {
-      toast.error(translate(language, "Khong the cap nhat xe chinh.", "Unable to update primary vehicle."));
+      toast.success(translate(language, "Xe chinh da duoc cap nhat.", "Primary vehicle updated."), VEHICLE_TOAST_OPTIONS);
+    } catch (error) {
+      toast.error(
+        getVehicleToastErrorMessage(
+          error,
+          translate(language, "Khong the cap nhat xe chinh.", "Unable to update primary vehicle."),
+          getErrorMessage,
+        ),
+        VEHICLE_TOAST_OPTIONS,
+      );
     }
   };
 
   const handleDelete = async () => {
     try {
       await deleteMutation.mutateAsync();
-      toast.success(translate(language, "Xe da duoc xoa.", "Vehicle removed."));
+      toast.success(translate(language, "Xe da duoc xoa.", "Vehicle removed."), VEHICLE_TOAST_OPTIONS);
       onDeleteChange(null);
-    } catch {
-      toast.error(translate(language, "Khong the xoa xe.", "Unable to delete vehicle."));
+    } catch (error) {
+      toast.error(
+        getVehicleToastErrorMessage(
+          error,
+          translate(language, "Khong the xoa xe.", "Unable to delete vehicle."),
+          getErrorMessage,
+        ),
+        VEHICLE_TOAST_OPTIONS,
+      );
     }
   };
 

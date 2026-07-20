@@ -66,7 +66,7 @@ export function RegisterForm() {
     : null;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
       <div className="space-y-4">
         <div className="space-y-2">
           <label htmlFor="fullName" className="text-sm font-bold tracking-wide text-slate-700">
@@ -75,8 +75,8 @@ export function RegisterForm() {
           <div className="relative flex items-center">
             <input
               id="fullName"
-              autoComplete="name"
-              name="fullName"
+              autoComplete="off"
+              name="registerFullName"
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
               placeholder="Nguyen Van A"
@@ -98,8 +98,8 @@ export function RegisterForm() {
           <div className="relative flex items-center">
             <input
               id="email"
-              autoComplete="email"
-              name="email"
+              autoComplete="off"
+              name="registerEmail"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="name@example.com"
@@ -122,7 +122,7 @@ export function RegisterForm() {
             <input
               id="password"
               autoComplete="new-password"
-              name="password"
+              name="registerNewPassword"
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -146,7 +146,7 @@ export function RegisterForm() {
             <input
               id="passwordConfirm"
               autoComplete="new-password"
-              name="passwordConfirm"
+              name="registerConfirmPassword"
               type="password"
               value={passwordConfirm}
               onChange={(event) => setPasswordConfirm(event.target.value)}
