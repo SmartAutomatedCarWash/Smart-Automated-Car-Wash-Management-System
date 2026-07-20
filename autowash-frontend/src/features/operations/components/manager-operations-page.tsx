@@ -30,7 +30,6 @@ import {
   getEligibleSessionBookings,
   getOperationsQueue,
   startWashSession,
-  transferWashSession,
 } from "@/features/operations/lib/operations-service";
 import { useManagerNotificationStore } from "@/features/operations/store/manager-notification.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
@@ -167,12 +166,6 @@ export function ManagerOperationsPage() {
     mutationFn: ({ sessionId, reason }: { sessionId: string; reason: string }) => cancelWashSession(sessionId, reason, "CUSTOMER_FAULT"),
     onSuccess: () => handleActionSuccess("Đã hủy phiên rửa."),
     onError: (actionError: ApiErrorResponse) => handleActionError("Hủy phiên rửa không thành công", actionError),
-  });
-
-  const transferMutation = useMutation({
-    mutationFn: ({ sessionId, toStaffId }: { sessionId: string; toStaffId: string }) => transferWashSession(sessionId, toStaffId, "Manager điều phối lại workload"),
-    onSuccess: () => handleActionSuccess("Đã chuyển staff phụ trách."),
-    onError: (actionError: ApiErrorResponse) => handleActionError("Chuyển staff không thành công", actionError),
   });
 
   const refreshDisabled = queueQuery.isFetching || eligibleQuery.isFetching || staffQuery.isFetching;
@@ -326,19 +319,16 @@ export function ManagerOperationsPage() {
                   <OperationTableRow
                     key={row.id}
                     row={row}
-                    staffOptions={staffOptions}
                     onCreate={() => createMutation.mutate(row.bookingId)}
                     onCheckIn={() => row.sessionId && checkInMutation.mutate(row.sessionId)}
                     onStart={() => row.sessionId && startMutation.mutate(row.sessionId)}
                     onComplete={() => row.sessionId && completeMutation.mutate(row.sessionId)}
                     onCancel={() => row.sessionId && requestCancel(row, cancelMutation.mutate)}
-                    onTransfer={(toStaffId) => row.sessionId && transferMutation.mutate({ sessionId: row.sessionId, toStaffId })}
                     creating={createMutation.isPending && createMutation.variables === row.bookingId}
                     checkingIn={Boolean(row.sessionId && checkInMutation.isPending && checkInMutation.variables === row.sessionId)}
                     starting={Boolean(row.sessionId && startMutation.isPending && startMutation.variables === row.sessionId)}
                     completing={Boolean(row.sessionId && completeMutation.isPending && completeMutation.variables === row.sessionId)}
                     cancelling={Boolean(row.sessionId && cancelMutation.isPending && cancelMutation.variables?.sessionId === row.sessionId)}
-                    transferring={Boolean(row.sessionId && transferMutation.isPending && transferMutation.variables?.sessionId === row.sessionId)}
                   />
                 ))
               )}
@@ -352,37 +342,29 @@ export function ManagerOperationsPage() {
 
 function OperationTableRow({
   row,
-  staffOptions,
   onCreate,
   onCheckIn,
   onStart,
   onComplete,
   onCancel,
-  onTransfer,
   creating,
   checkingIn,
   starting,
   completing,
   cancelling,
-  transferring,
 }: {
   row: OperationRow;
-  staffOptions: StaffOption[];
   onCreate: () => void;
   onCheckIn: () => void;
   onStart: () => void;
   onComplete: () => void;
   onCancel: () => void;
-  onTransfer: (staffId: string) => void;
   creating: boolean;
   checkingIn: boolean;
   starting: boolean;
   completing: boolean;
   cancelling: boolean;
-  transferring: boolean;
 }) {
-  const transferableStaff = staffOptions.filter((staff) => staff.staffId !== row.assignedStaffId);
-
   return (
     <tr className="text-xs transition hover:bg-cyan-50/40">
       <td className="px-3 py-2.5">
@@ -430,12 +412,10 @@ function OperationTableRow({
           ) : row.status === "CHECKED_IN" ? (
             <>
               <ActionButton label="Bắt đầu" icon={Play} loading={starting} onClick={onStart} />
-              <TransferSelect staffOptions={transferableStaff} disabled={transferring} onTransfer={onTransfer} />
             </>
           ) : row.status === "IN_PROGRESS" ? (
             <>
               <ActionButton label="Hoàn thành" icon={CheckCircle2} loading={completing} onClick={onComplete} />
-              <TransferSelect staffOptions={transferableStaff} disabled={transferring} onTransfer={onTransfer} />
             </>
           ) : row.status === "COMPLETED" ? (
             <span className="inline-flex items-center justify-end gap-1 font-black text-emerald-600">
@@ -486,36 +466,6 @@ function SecondaryActionButton({
       {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3.5 w-3.5" />}
       {label}
     </Button>
-  );
-}
-
-function TransferSelect({
-  staffOptions,
-  disabled,
-  onTransfer,
-}: {
-  staffOptions: StaffOption[];
-  disabled: boolean;
-  onTransfer: (staffId: string) => void;
-}) {
-  return (
-    <select
-      className="h-8 max-w-[8.75rem] rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-black text-slate-700 outline-none disabled:opacity-60"
-      defaultValue=""
-      disabled={disabled || staffOptions.length === 0}
-      onChange={(event) => {
-        if (!event.target.value) return;
-        onTransfer(event.target.value);
-        event.target.value = "";
-      }}
-    >
-      <option value="">Chuyển staff</option>
-      {staffOptions.map((staff) => (
-        <option key={staff.staffId} value={staff.staffId}>
-          {staff.staffName}
-        </option>
-      ))}
-    </select>
   );
 }
 

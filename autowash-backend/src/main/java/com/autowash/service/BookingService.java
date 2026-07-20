@@ -11,6 +11,7 @@ import com.autowash.dto.CreateBookingResponse;
 import com.autowash.dto.PayBookingResponse;
 import com.autowash.entity.Booking;
 import com.autowash.entity.enums.BookingStatus;
+import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.shared.dto.PaginationMeta;
 
 
@@ -25,6 +26,9 @@ public interface BookingService {
 
     PayBookingResponse payBooking(String bookingId, String transactionRef);
     PayBookingResponse markBookingPaidForOperations(String bookingId, String transactionRef);
+    PayBookingResponse changeBookingPaymentMethod(String bookingId, PaymentMethod paymentMethod);
+    BookingDetailResponse confirmPendingBooking(String bookingId);
+    BookingDetailResponse updateBookingStatus(String bookingId, BookingStatus status);
     Booking requireBookingForOperations(String bookingId);
     void updateStatus(Booking booking, BookingStatus status);
     BookingDetailResponse toDetailResponse(Booking booking);

@@ -94,20 +94,7 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
 
     @Override
     public Optional<User> tryPickLeastLoadedActiveStaffForBooking(Booking booking) {
-        Instant dayStart = startOfToday();
-        Instant dayEnd = startOfTomorrow();
-        return UserRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE)
-                .stream()
-                .filter(staff -> isStaffAvailableForBooking(staff, booking))
-                .min(Comparator
-                        .comparingLong((User staff) -> washSessionRepository.countByAssignedStaffAndStatusAndCompletedAtBetween(
-                                staff,
-                                WashSessionStatus.COMPLETED,
-                                dayStart,
-                                dayEnd
-                        ))
-                        .thenComparing(User::getFullName)
-                        .thenComparing(User::getId));
+        return rankAvailableStaffForBooking(booking, 1).stream().findFirst();
     }
 
     @Override
@@ -118,6 +105,20 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
                         "No active staff available for this booking time",
                         "NO_AVAILABLE_STAFF"
                 ));
+    }
+
+    @Override
+    public List<User> rankAvailableStaffForBooking(Booking booking, int limit) {
+        return UserRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE)
+                .stream()
+                .filter(staff -> isStaffAvailableForBooking(staff, booking))
+                .sorted(Comparator
+                        .comparingLong((User staff) -> bookingRepository.countByAssignedStaffAndStatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES))
+                        .thenComparingLong((User staff) -> washSessionRepository.countByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES))
+                        .thenComparing(User::getFullName)
+                        .thenComparing(User::getId))
+                .limit(Math.max(limit, 0))
+                .toList();
     }
 
     @Override

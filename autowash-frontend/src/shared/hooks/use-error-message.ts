@@ -15,9 +15,11 @@ export function useErrorMessage() {
     if (fieldErrorMessage) return fieldErrorMessage;
 
     const errorCode = getApiErrorCode(error);
+    const fallbackMessage = getApiErrorFallbackMessage(error);
+    if (errorCode === "BUSINESS_RULE_VIOLATION" && fallbackMessage) return fallbackMessage;
     if (errorCode && t.has(errorCode)) return t(errorCode);
 
-    return getApiErrorFallbackMessage(error) ?? t("UNEXPECTED");
+    return fallbackMessage ?? t("UNEXPECTED");
   };
 }
 

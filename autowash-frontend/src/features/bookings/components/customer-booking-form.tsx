@@ -44,6 +44,7 @@ import {
   generateTimeSlotsFromRange,
   buildBookingSummary,
   formatBookingCurrency,
+  formatLocalDateInput,
   getModeLabel,
   validateBookingDraft,
 } from "@/features/bookings/lib/booking-format";
@@ -59,13 +60,15 @@ import {
   useBookingCombos,
   useBookingPackages,
   useCreateCustomerBooking,
+  useExtraServiceRecommendations,
+  useSlotAvailability,
   useValidateBookingDiscount,
 } from "@/features/bookings/hooks/use-bookings";
 import { useSlotHold } from "@/features/bookings/hooks/use-slot-hold";
 import { useCustomerVehicles, useCreateCustomerVehicle } from "@/features/vehicles/hooks/use-customer-vehicles";
 import { useCustomerDiscounts } from "@/features/discounts/hooks/use-customer-discounts";
 import { useBookingStore } from "@/features/bookings/store/booking.store";
-import type { BookingDraft, PaymentMethod, DiscountValidationResult } from "@/entities/bookings";
+import type { BookingDraft, PaymentMethod, DiscountValidationResult, SlotAvailability } from "@/entities/bookings";
 import {
   CUSTOMER_VEHICLE_TYPES,
   type CustomerVehicleFormValues,
@@ -78,8 +81,8 @@ import {
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-function getTomorrowDate() {
-  return new Date().toISOString().slice(0, 10);
+function getTodayDate() {
+  return formatLocalDateInput(0);
 }
 
 function optionCardClass(active: boolean, disabled = false) {
@@ -179,10 +182,10 @@ const PAYMENT_OPTIONS: {
   },
   {
     method: "E_WALLET",
-    label: "E-wallet",
-    description: "Pay via MoMo, ZaloPay or VNPay.",
+    label: "VNPay",
+    description: "Pay online through VNPay.",
     icon: Wallet,
-    badge: "Popular",
+    badge: "Online",
   },
 ];
 
@@ -459,7 +462,7 @@ function AmPmTimePicker({
 
   // When booking date is today, hide time slots that have already passed
   const visibleSlots = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getTodayDate();
     if (bookingDate !== today) return timeSlots;
     const now = new Date();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
@@ -696,15 +699,19 @@ function TimeSlotGrid({
   onChange,
   bookingDate,
   durationMinutes = 45,
+  availabilityByTime,
+  isRefreshing = false,
 }: {
   timeSlots: string[];
   value: string;
   onChange: (time: string) => void;
   bookingDate?: string;
   durationMinutes?: number;
+  availabilityByTime?: Map<string, SlotAvailability>;
+  isRefreshing?: boolean;
 }) {
   const visibleSlotsMap = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getTodayDate();
     const now = new Date();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -712,55 +719,70 @@ function TimeSlotGrid({
       const [h, m] = t.split(":").map(Number);
       const isPast = bookingDate === today && (h * 60 + m <= nowMinutes);
       const endTimeStr = addMinutesToTime(t, durationMinutes);
+      const availability = availabilityByTime?.get(t);
+      const remaining = availability?.remaining;
+      const isAvailable = !isPast && (availability ? availability.available : true);
       
       return {
         id: idx + 1,
         timeStart: t,
         timeEnd: endTimeStr,
-        isAvailable: !isPast,
+        isAvailable,
+        remaining,
+        isFull: !isPast && availability ? !availability.available : false,
       };
     });
-  }, [timeSlots, bookingDate, durationMinutes]);
+  }, [timeSlots, bookingDate, durationMinutes, availabilityByTime]);
 
   return (
-    <div className="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-      {visibleSlotsMap.map((slot) => {
-        const active = value === slot.timeStart;
-        return (
-          <button
-            key={slot.timeStart}
-            type="button"
-            disabled={!slot.isAvailable}
-            onClick={() => onChange(slot.timeStart)}
-            className={cn(
-              "flex flex-col items-center justify-center rounded-2xl border p-3 text-center transition-all duration-200",
-              !slot.isAvailable
-                ? "border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900 cursor-not-allowed opacity-50"
-                : active
-                  ? "border-[#00B8D9] bg-[#EAF6FD] dark:bg-slate-900/60 shadow-[0_0_12px_rgba(0,184,217,0.18)]"
-                  : "border-border bg-card hover:border-primary/50"
-            )}
-          >
-            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Lượt {slot.id}
-            </div>
-            <div className="mt-1 text-xs font-bold text-foreground tabular-nums">
-              {slot.timeStart} - {slot.timeEnd}
-            </div>
-            <div className="mt-2">
-              {slot.isAvailable ? (
-                <span className="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
-                  Còn trống
-                </span>
-              ) : (
-                <span className="inline-flex items-center rounded-full border border-rose-500/20 bg-rose-500/10 px-2 py-0.5 text-[9px] font-bold text-rose-600 dark:text-rose-400">
-                  Không khả dụng
-                </span>
+    <div className="space-y-2">
+      <div className="flex h-5 items-center justify-end">
+        {isRefreshing ? (
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <RefreshCcw className="h-3 w-3 animate-spin" />
+            Updating slots
+          </span>
+        ) : null}
+      </div>
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+        {visibleSlotsMap.map((slot) => {
+          const active = value === slot.timeStart;
+          return (
+            <button
+              key={slot.timeStart}
+              type="button"
+              disabled={!slot.isAvailable}
+              onClick={() => onChange(slot.timeStart)}
+              className={cn(
+                "flex min-h-[92px] flex-col items-center justify-center rounded-2xl border p-3 text-center transition-all duration-200",
+                !slot.isAvailable
+                  ? "cursor-not-allowed border-slate-200 bg-slate-100 text-muted-foreground opacity-45 dark:border-slate-800 dark:bg-slate-900"
+                  : active
+                    ? "border-[#00B8D9] bg-[#EAF6FD] dark:bg-slate-900/60 shadow-[0_0_12px_rgba(0,184,217,0.18)]"
+                    : "border-border bg-card hover:border-primary/50"
               )}
-            </div>
-          </button>
-        );
-      })}
+            >
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Lượt {slot.id}
+              </div>
+              <div className={cn("mt-1 text-xs font-bold tabular-nums", slot.isAvailable ? "text-foreground" : "text-muted-foreground")}>
+                {slot.timeStart} - {slot.timeEnd}
+              </div>
+              <div className="mt-2">
+                {slot.isAvailable ? (
+                  <span className="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
+                    {typeof slot.remaining === "number" ? `${slot.remaining} chỗ` : "Còn trống"}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full border border-rose-500/20 bg-rose-500/10 px-2 py-0.5 text-[9px] font-bold text-rose-600 dark:text-rose-400">
+                    {slot.isFull ? "Đã full" : "Không khả dụng"}
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -877,6 +899,20 @@ export function CustomerBookingForm() {
     }
     return ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
   }, [publicSettingsQuery.data]);
+  const slotAvailabilityQuery = useSlotAvailability(draft.bookingDate, timeSlots);
+  const availabilityByTime = useMemo(
+    () => new Map((slotAvailabilityQuery.data ?? []).map((slot) => [slot.bookingTime, slot] as const)),
+    [slotAvailabilityQuery.data],
+  );
+
+  useEffect(() => {
+    if (!draft.bookingTime) return;
+    const slot = availabilityByTime.get(draft.bookingTime);
+    if (slot && !slot.available) {
+      updateDraft({ bookingTime: "", staffId: "" });
+      toast.error("Booking slot is full");
+    }
+  }, [availabilityByTime, draft.bookingTime, updateDraft]);
 
   const activeOwnedCombos = useMemo(
     () =>
@@ -892,7 +928,10 @@ export function CustomerBookingForm() {
   );
 
   useEffect(() => {
-    if (!draft.bookingDate) updateDraft({ bookingDate: getTomorrowDate() });
+    const today = getTodayDate();
+    if (!draft.bookingDate || draft.bookingDate < today) {
+      updateDraft({ bookingDate: today, bookingTime: "", staffId: "" });
+    }
   }, [draft.bookingDate, updateDraft]);
 
   useEffect(() => {
@@ -982,6 +1021,10 @@ export function CustomerBookingForm() {
     draft.mode === "COMBO"
       ? (activeCustomerCombos.find((item) => item.comboId === draft.comboId) ?? null)
       : null;
+  const selectedCombo =
+    draft.mode === "COMBO" && draft.comboId
+      ? (combos.find((item) => item.comboId === draft.comboId) ?? null)
+      : null;
 
   const packageOptions = useMemo(
     () =>
@@ -1015,10 +1058,58 @@ export function CustomerBookingForm() {
     return validateBookingDraft(draft, validationSummary, { requirePaymentMethod: false });
   }, [draft, summary, validatedDiscount]);
 
-  const selectedPackageAddons =
+  const selectedPackage =
     draft.mode === "PACKAGE" && draft.packageId
-      ? addons.filter((addon) => addon.status === "ACTIVE")
+      ? (packages.find((item) => item.packageId === draft.packageId) ?? null)
+      : null;
+  const selectedPackageServiceIds = useMemo(
+    () => new Set(selectedPackage?.serviceIds ?? []),
+    [selectedPackage],
+  );
+  const selectedPackageAddons =
+    selectedPackage
+      ? addons.filter((addon) => addon.status === "ACTIVE" && selectedPackageServiceIds.has(addon.addonId))
       : [];
+  const selectedComboServiceIds = useMemo(
+    () => new Set((selectedCombo?.services ?? []).map((service) => service.serviceId)),
+    [selectedCombo],
+  );
+  const selectedComboAddons = selectedCombo
+    ? addons.filter((addon) => addon.status === "ACTIVE" && !selectedComboServiceIds.has(addon.addonId))
+    : [];
+  const extraServiceRecommendationsQuery = useExtraServiceRecommendations(
+    draft.mode === "COMBO" ? draft.comboId : "",
+  );
+  const visibleSmartExtraServiceRecommendations = useMemo(() => {
+    const availableExtraServiceIds = new Set(selectedComboAddons.map((addon) => addon.addonId));
+    return (extraServiceRecommendationsQuery.data ?? []).filter(
+      (service) => availableExtraServiceIds.has(service.serviceId) && !draft.addonIds.includes(service.serviceId),
+    );
+  }, [draft.addonIds, extraServiceRecommendationsQuery.data, selectedComboAddons]);
+
+  useEffect(() => {
+    if (draft.addonIds.length === 0) {
+      return;
+    }
+
+    const activeAddonIds = new Set(addons.filter((addon) => addon.status === "ACTIVE").map((addon) => addon.addonId));
+    const allowedAddonIds =
+      draft.mode === "PACKAGE"
+        ? selectedPackageServiceIds
+        : selectedCombo
+          ? new Set(addons.map((addon) => addon.addonId).filter((addonId) => !selectedComboServiceIds.has(addonId)))
+          : activeAddonIds;
+    const validAddonIds = draft.addonIds.filter(
+      (addonId) => allowedAddonIds.has(addonId) && activeAddonIds.has(addonId),
+    );
+
+    if (validAddonIds.length === draft.addonIds.length) {
+      return;
+    }
+
+    resetValidatedDiscount();
+      updateDraft({ addonIds: validAddonIds, discountCode: "", staffId: "" });
+  }, [addons, draft.addonIds, draft.mode, selectedCombo, selectedComboServiceIds, selectedPackageServiceIds, updateDraft]);
 
   const vehicleOptions = [
     ...vehicles.map((vehicle) => ({
@@ -1072,9 +1163,16 @@ export function CustomerBookingForm() {
       toast.error(Object.values(errors)[0] ?? "Please complete booking information.");
       return;
     }
-    setSelectedPaymentMethod(draft.paymentMethod);
-    setShowPaymentError(false);
-    setShowPaymentDialog(true);
+    try {
+      const hold = await holdSlot({
+        bookingDate: draft.bookingDate,
+        bookingTime: draft.bookingTime,
+      });
+      setExpiresAt(new Date(hold.expiresAt).getTime());
+      router.push("/customer/booking/confirm");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
   };
 
   const handleConfirmPayment = async () => {
@@ -1133,6 +1231,7 @@ export function CustomerBookingForm() {
       comboId: mode === "COMBO" ? preferredOwnedComboId || combos[0]?.comboId || "" : "",
       addonIds: [],
       discountCode: "",
+      staffId: "",
     });
   };
 
@@ -1325,7 +1424,7 @@ export function CustomerBookingForm() {
                     onClick={() => {
                       if (active) {
                         resetValidatedDiscount();
-                        updateDraft({ mode, packageId: "", comboId: "", addonIds: [], discountCode: "" });
+                        updateDraft({ mode, packageId: "", comboId: "", addonIds: [], discountCode: "", staffId: "" });
                         return;
                       }
                       updateMode(mode);
@@ -1353,6 +1452,7 @@ export function CustomerBookingForm() {
                     packageId: draft.packageId === packageId ? "" : packageId,
                     addonIds: [],
                     discountCode: "",
+                    staffId: "",
                   });
                 }}
                 placeholder="Select a package"
@@ -1382,6 +1482,7 @@ export function CustomerBookingForm() {
                         updateDraft({
                           comboId: active ? "" : item.comboId,
                           discountCode: "",
+                          staffId: "",
                         });
                       }}
                     >
@@ -1398,6 +1499,28 @@ export function CustomerBookingForm() {
                               Owned · {ownedCombo.remainingUsages} left · expires {new Date(ownedCombo.expiresAt).toLocaleDateString("vi-VN")}
                             </span>
                           )}
+                          {active && item.services && item.services.length > 0 && (
+                            <div className="mt-3 rounded-xl border border-border bg-muted/30 p-2.5">
+                              <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                Dịch vụ trong combo
+                              </div>
+                              <div className="space-y-1.5">
+                                {item.services.map((service) => (
+                                  <div
+                                    key={service.serviceId}
+                                    className="flex items-center justify-between gap-3 rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-1.5 text-[11px] font-medium text-cyan-700 dark:text-cyan-300"
+                                  >
+                                    <span className="min-w-0 truncate">{service.name}</span>
+                                    {service.quantity > 1 && (
+                                      <span className="shrink-0 rounded-full bg-background/70 px-1.5 py-0.5 text-[10px] font-bold">
+                                        x{service.quantity}
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <SelectionMark active={active} />
                       </div>
@@ -1409,18 +1532,57 @@ export function CustomerBookingForm() {
             <FieldError message={showValidation ? (draft.mode === "PACKAGE" ? errors.packageId : errors.comboId) : null} />
           </StepCard>
 
-          {/* Step 4 — Add-ons */}
-          <StepCard step={4} title="Add-ons">
+          {/* Step 4 — Add-ons / Extra services */}
+          <StepCard step={4} title={draft.mode === "COMBO" ? "Extra services" : "Add-ons"}>
             {draft.mode === "COMBO" ? (
-              selectedCustomerCombo ? (
-                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400">
-                  <span className="font-semibold">Owned combo active</span> — {selectedCustomerCombo.remainingUsages} uses left, expires {new Date(selectedCustomerCombo.expiresAt).toLocaleDateString("en-GB")}.
-                </div>
-              ) : (
-                <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-600 dark:text-amber-400">
-                  <span className="font-semibold">No owned combo</span> — booking will purchase the selected combo.
-                </div>
-              )
+              <div className="space-y-3">
+                {visibleSmartExtraServiceRecommendations.length > 0 && (
+                  <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3 dark:border-sky-900/60 dark:bg-sky-950/30">
+                    <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-sky-700 dark:text-sky-300">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Đề xuất phù hợp
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      {visibleSmartExtraServiceRecommendations.map((service) => (
+                        <button
+                          key={service.serviceId}
+                          type="button"
+                          onClick={() => {
+                            resetValidatedDiscount();
+                            updateDraft({
+                              addonIds: [...draft.addonIds, service.serviceId],
+                              discountCode: "",
+                              staffId: "",
+                            });
+                          }}
+                          className="rounded-xl border border-sky-200 bg-white px-3 py-2 text-left transition hover:border-sky-400 hover:bg-sky-50 dark:border-sky-900 dark:bg-slate-900 dark:hover:border-sky-600"
+                        >
+                          <div className="truncate text-xs font-bold text-foreground">{service.name}</div>
+                          <div className="mt-1 text-[11px] leading-4 text-muted-foreground">{service.reason}</div>
+                          <div className="mt-1 text-[11px] font-semibold text-sky-700 dark:text-sky-300">
+                            +{formatBookingCurrency(service.price)} · {service.duration} min
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <CustomerBookingMultiSelect
+                  options={selectedComboAddons.map((a) => ({
+                    value: a.addonId,
+                    label: a.name,
+                    helper: `${a.duration} min · ${formatBookingCurrency(a.price)}`,
+                  }))}
+                  value={draft.addonIds}
+                  onValueChange={(ids) => {
+                    resetValidatedDiscount();
+                    updateDraft({ addonIds: ids, discountCode: "", staffId: "" });
+                  }}
+                  placeholder="Select extra services (optional)"
+                  searchPlaceholder="Search extra services..."
+                  emptyText="No extra services available."
+                />
+              </div>
             ) : (
               <CustomerBookingMultiSelect
                 options={selectedPackageAddons.map((a) => ({
@@ -1431,7 +1593,7 @@ export function CustomerBookingForm() {
                 value={draft.addonIds}
                 onValueChange={(ids) => {
                   resetValidatedDiscount();
-                  updateDraft({ addonIds: ids, discountCode: "" });
+                  updateDraft({ addonIds: ids, discountCode: "", staffId: "" });
                 }}
                 placeholder="Select add-ons (optional)"
                 searchPlaceholder="Search add-ons..."
@@ -1449,8 +1611,8 @@ export function CustomerBookingForm() {
                 </label>
                 <DatePickerButton
                   value={draft.bookingDate}
-                  min={getTomorrowDate()}
-                  onChange={(bookingDate) => updateDraft({ bookingDate })}
+                  min={getTodayDate()}
+                  onChange={(bookingDate) => updateDraft({ bookingDate, staffId: "" })}
                   label="Select a day"
                   buttonClassName="h-11 w-full justify-start rounded-xl border-input bg-background text-sm"
                 />
@@ -1464,8 +1626,10 @@ export function CustomerBookingForm() {
                 <TimeSlotGrid
                   timeSlots={timeSlots}
                   value={draft.bookingTime}
-                  onChange={(time) => updateDraft({ bookingTime: time })}
+                  onChange={(time) => updateDraft({ bookingTime: time, staffId: "" })}
                   bookingDate={draft.bookingDate}
+                  availabilityByTime={availabilityByTime}
+                  isRefreshing={slotAvailabilityQuery.isFetching && !slotAvailabilityQuery.isPending}
                   durationMinutes={(() => {
                     if (!summary) return 45;
                     const match = summary.estimatedDurationLabel.match(/^(\d+)\s*min/);
@@ -1510,7 +1674,7 @@ export function CustomerBookingForm() {
               summary={summary}
               validatedDiscount={validatedDiscount}
               discountMutation={discountMutation}
-              customerDiscounts={customerDiscountsQuery.data?.items.filter((item) => Boolean(item.discount.code)).map((item) => ({ code: item.discount.code ?? "", name: item.discount.name, discountType: item.discount.discountType, discountValue: item.discount.discountValue })) ?? []}
+              customerDiscounts={(customerDiscountsQuery.data?.items ?? []).filter((item) => Boolean(item.discount?.code)).map((item) => ({ code: item.discount.code ?? "", name: item.discount.name, discountType: item.discount.discountType, discountValue: item.discount.discountValue }))}
               onApply={(code) => void validateDiscount(code)}
               onClear={clearDiscount}
               onCodeChange={handleDiscountCodeChange}

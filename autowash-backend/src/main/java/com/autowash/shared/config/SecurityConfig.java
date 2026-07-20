@@ -51,6 +51,8 @@ public class SecurityConfig {
                                 "/api/v1/notifications/ticker",
                                 "/api/v1/blog/**",
                                 "/api/v1/reviews/featured",
+                                "/api/v1/payments/vnpay/return",
+                                "/api/v1/payments/vnpay/ipn",
                                 "/api/v1/packages/*",
                                 "/api/v1/combos/*",
                                 "/api/v1/settings/public",

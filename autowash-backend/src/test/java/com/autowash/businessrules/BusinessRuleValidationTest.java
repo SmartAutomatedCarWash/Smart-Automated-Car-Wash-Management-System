@@ -102,6 +102,7 @@ class BusinessRuleValidationTest {
                 null,
                 "customer@example.com",
                 PaymentMethod.CASH_AT_COUNTER,
+                null,
                 null
         ))).isEmpty();
 
@@ -114,6 +115,7 @@ class BusinessRuleValidationTest {
                         null,
                         "not-an-email",
                         PaymentMethod.CASH_AT_COUNTER,
+                        null,
                         null
                 )).stream()
                 .map(violation -> violation.getPropertyPath().toString())

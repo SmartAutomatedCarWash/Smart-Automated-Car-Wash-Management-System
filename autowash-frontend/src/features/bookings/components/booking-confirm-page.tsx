@@ -15,6 +15,8 @@ import {
   Sparkles,
   Tag,
   Timer,
+  UserCheck,
+  Users,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -33,7 +35,9 @@ import {
   useBookingAddons,
   useBookingCombos,
   useBookingPackages,
+  useBookingStaffOptions,
   useCreateCustomerBooking,
+  useCreateVnpayCheckout,
 } from "@/features/bookings/hooks/use-bookings";
 import { useSlotHold } from "@/features/bookings/hooks/use-slot-hold";
 import { useCustomerVehicles } from "@/features/vehicles/hooks/use-customer-vehicles";
@@ -63,13 +67,12 @@ const PAYMENT_OPTIONS: {
   },
   {
     method: "E_WALLET",
-    label: "E-wallet",
-    description: "Pay via MoMo, ZaloPay, VNPay or other e-wallets.",
+    label: "VNPay",
+    description: "Pay online through the VNPay payment gateway.",
     icon: Wallet,
-    badge: "Popular",
+    badge: "Online",
   },
 ];
-
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export function BookingConfirmPage() {
@@ -81,12 +84,15 @@ export function BookingConfirmPage() {
   const updateDraft = useBookingStore((state) => state.updateDraft);
   const resetDraft = useBookingStore((state) => state.resetDraft);
   const setExpiresAt = useBookingStore((state) => state.setExpiresAt);
-  const lastCreatedBooking = useBookingStore((state) => state.lastCreatedBooking);
-  const setLastCreatedBooking = useBookingStore((state) => state.setLastCreatedBooking);
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(draft.paymentMethod);
   const [showPaymentError, setShowPaymentError] = useState(false);
   const [expired, setExpired] = useState(false);
+  const [isRedirectingAfterCreate, setIsRedirectingAfterCreate] = useState(false);
+
+  useEffect(() => {
+    setPaymentMethod(draft.paymentMethod);
+  }, [draft.paymentMethod]);
 
   const vehiclesQuery = useCustomerVehicles();
   const packagesQuery = useBookingPackages();
@@ -94,6 +100,7 @@ export function BookingConfirmPage() {
   const combosQuery = useBookingCombos();
   const activeCustomerCombosQuery = useActiveCustomerCombos();
   const createBookingMutation = useCreateCustomerBooking();
+  const createVnpayCheckoutMutation = useCreateVnpayCheckout();
   const { releaseSlot, isReleasing } = useSlotHold();
 
   const vehicles = vehiclesQuery.data?.items ?? [];
@@ -105,25 +112,93 @@ export function BookingConfirmPage() {
     draft.mode === "COMBO"
       ? (activeCustomerCombos.find((item) => item.comboId === draft.comboId) ?? null)
       : null;
+  const selectedPackage =
+    draft.mode === "PACKAGE" && draft.packageId
+      ? (packages.find((item) => item.packageId === draft.packageId) ?? null)
+      : null;
+  const selectedCombo =
+    draft.mode === "COMBO" && draft.comboId
+      ? (combos.find((item) => item.comboId === draft.comboId) ?? null)
+      : null;
+  const activeAddonIds = useMemo(
+    () => new Set(addons.filter((addon) => addon.status === "ACTIVE").map((addon) => addon.addonId)),
+    [addons],
+  );
+  const selectedPackageServiceIds = useMemo(
+    () => new Set(selectedPackage?.serviceIds ?? []),
+    [selectedPackage],
+  );
+  const selectedComboServiceIds = useMemo(
+    () => new Set((selectedCombo?.services ?? []).map((service) => service.serviceId)),
+    [selectedCombo],
+  );
+  const allowedAddonIds = useMemo(() => {
+    if (draft.mode === "PACKAGE") {
+      return selectedPackageServiceIds;
+    }
+    if (selectedCombo) {
+      return new Set([...activeAddonIds].filter((addonId) => !selectedComboServiceIds.has(addonId)));
+    }
+    return activeAddonIds;
+  }, [activeAddonIds, draft.mode, selectedCombo, selectedComboServiceIds, selectedPackageServiceIds]);
+  const sanitizedAddonIds = useMemo(
+    () => draft.addonIds.filter((addonId) => activeAddonIds.has(addonId) && allowedAddonIds.has(addonId)),
+    [activeAddonIds, allowedAddonIds, draft.addonIds],
+  );
+  const hasStaleAddonIds = sanitizedAddonIds.length !== draft.addonIds.length;
+  const sanitizedDraft = useMemo(
+    () => ({ ...draft, addonIds: sanitizedAddonIds }),
+    [draft, sanitizedAddonIds],
+  );
 
   const summary = useMemo(
     () =>
-      buildBookingSummary(draft, {
+      buildBookingSummary(sanitizedDraft, {
         packages,
         addons,
         combos,
         voucher: validatedDiscount,
         ownedComboApplied: Boolean(selectedCustomerCombo),
       }),
-    [addons, combos, draft, packages, selectedCustomerCombo, validatedDiscount],
+    [addons, combos, packages, sanitizedDraft, selectedCustomerCombo, validatedDiscount],
   );
+  const staffOptionsPayload = useMemo(() => {
+    if (hasStaleAddonIds) return null;
+    if (!sanitizedDraft.bookingDate || !sanitizedDraft.bookingTime) return null;
+    if (sanitizedDraft.mode === "PACKAGE" && !sanitizedDraft.packageId) return null;
+    if (sanitizedDraft.mode === "COMBO" && !sanitizedDraft.comboId) return null;
+
+    return {
+      packageId: sanitizedDraft.mode === "PACKAGE" ? sanitizedDraft.packageId : undefined,
+      comboId: sanitizedDraft.mode === "COMBO" ? sanitizedDraft.comboId : undefined,
+      options: sanitizedAddonIds,
+      bookingDate: sanitizedDraft.bookingDate,
+      bookingTime: sanitizedDraft.bookingTime,
+    };
+  }, [hasStaleAddonIds, sanitizedAddonIds, sanitizedDraft]);
+  const staffOptionsQuery = useBookingStaffOptions(staffOptionsPayload);
+  const staffOptions = staffOptionsQuery.data ?? [];
+  const selectedStaff = staffOptions.find((staff) => staff.staffId === draft.staffId) ?? null;
+  const staffUnavailable = staffOptionsQuery.isSuccess && staffOptions.length === 0;
 
   useEffect(() => {
-    if (expired || lastCreatedBooking) return;
-    if (!draft.vehicleId || !draft.bookingDate || !draft.bookingTime || !expiresAt || expiresAt <= Date.now()) {
-      router.replace("/customer/booking");
+    if (!hasStaleAddonIds) return;
+    updateDraft({ addonIds: sanitizedAddonIds, discountCode: "", staffId: "" });
+  }, [hasStaleAddonIds, sanitizedAddonIds, updateDraft]);
+
+  useEffect(() => {
+    if (staffOptions.length === 0) return;
+    if (!draft.staffId || !staffOptions.some((staff) => staff.staffId === draft.staffId)) {
+      updateDraft({ staffId: staffOptions[0].staffId });
     }
-  }, [draft.bookingDate, draft.bookingTime, draft.vehicleId, expired, expiresAt, lastCreatedBooking, router]);
+  }, [draft.staffId, staffOptions, updateDraft]);
+
+  useEffect(() => {
+    if (expired || isRedirectingAfterCreate) return;
+    if (!draft.vehicleId || !draft.bookingDate || !draft.bookingTime || !expiresAt || expiresAt <= Date.now()) {
+      router.replace("/customer/bookings/new");
+    }
+  }, [draft.bookingDate, draft.bookingTime, draft.vehicleId, expired, expiresAt, isRedirectingAfterCreate, router]);
 
   const releaseHeldSlot = useCallback(async () => {
     if (!draft.bookingDate || !draft.bookingTime) return;
@@ -139,7 +214,7 @@ export function BookingConfirmPage() {
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
-      router.push("/customer/booking");
+      router.push("/customer/bookings/new");
     }
   }, [releaseHeldSlot, router]);
 
@@ -151,7 +226,7 @@ export function BookingConfirmPage() {
         window.history.pushState({ bookingConfirm: true }, "", window.location.href);
         return;
       }
-      void releaseHeldSlot().finally(() => router.push("/customer/booking"));
+      void releaseHeldSlot().finally(() => router.push("/customer/bookings/new"));
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -166,10 +241,15 @@ export function BookingConfirmPage() {
 
   const handleConfirm = async () => {
     setShowPaymentError(true);
-    if (!isComboBooking && !paymentMethod) return;
+    if (staffUnavailable) {
+      toast.error("No staff is available for this service window.");
+      return;
+    }
+    const selectedPaymentMethod = paymentMethod ?? draft.paymentMethod;
+    if (!isComboBooking && !selectedPaymentMethod) return;
     if (!expiresAt || expiresAt <= Date.now()) { handleExpired(); return; }
-    const effectivePaymentMethod = isComboBooking ? ("CASH_AT_COUNTER" as PaymentMethod) : paymentMethod!;
-    const nextDraft = { ...draft, paymentMethod: effectivePaymentMethod };
+    const effectivePaymentMethod = isComboBooking ? ("CASH_AT_COUNTER" as PaymentMethod) : selectedPaymentMethod!;
+    const nextDraft = { ...sanitizedDraft, paymentMethod: effectivePaymentMethod, staffId: draft.staffId || selectedStaff?.staffId || "" };
     const errors = validateBookingDraft(nextDraft, summary, { requirePaymentMethod: !isComboBooking });
     if (Object.keys(errors).length > 0) {
       toast.error(Object.values(errors)[0] ?? "Please complete booking information.");
@@ -178,11 +258,33 @@ export function BookingConfirmPage() {
     try {
       updateDraft({ paymentMethod: effectivePaymentMethod });
       const booking = await createBookingMutation.mutateAsync(nextDraft);
-      setLastCreatedBooking(booking);
+      setIsRedirectingAfterCreate(true);
+
+      if (!isComboBooking && effectivePaymentMethod === "E_WALLET" && booking.pricing.finalAmount > 0) {
+        try {
+          const checkout = await createVnpayCheckoutMutation.mutateAsync(booking.bookingId);
+          resetDraft();
+          toast.success("Booking created. Redirecting to VNPay.");
+          window.location.href = checkout.paymentUrl;
+          return;
+        } catch (checkoutError) {
+          resetDraft();
+          setIsRedirectingAfterCreate(false);
+          toast.error(getErrorMessage(checkoutError));
+          router.push(`/customer/bookings/${booking.bookingId}`);
+          return;
+        }
+      }
+
       resetDraft();
-      toast.success("Booking confirmed.");
-      router.push(`/customer/bookings/${booking.bookingId}`);
+      toast.success(
+        booking.paymentMethod === "CASH_AT_COUNTER"
+          ? "Booking created. Waiting for manager confirmation."
+          : "Booking confirmed.",
+      );
+      window.location.href = `/customer/bookings/success?bookingId=${booking.bookingId}`;
     } catch (error) {
+      setIsRedirectingAfterCreate(false);
       toast.error(getErrorMessage(error));
     }
   };
@@ -252,6 +354,69 @@ export function BookingConfirmPage() {
             </div>
           </div>
 
+          {/* Staff selection */}
+          <Card className="border-slate-200/80 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <CardHeader className="pb-3 pt-5">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-bold">Assigned staff</CardTitle>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Choose one of the available staff for {summary.itemName}.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-3 pb-5">
+              {staffOptionsQuery.isPending ? (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[1, 2, 3].map((item) => (
+                    <div key={item} className="h-28 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
+                  ))}
+                </div>
+              ) : staffUnavailable ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  No staff is available for this service window. Please choose another time.
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {staffOptions.map((staff) => {
+                    const active = draft.staffId === staff.staffId;
+                    return (
+                      <button
+                        key={staff.staffId}
+                        type="button"
+                        onClick={() => updateDraft({ staffId: staff.staffId })}
+                        className={`relative rounded-2xl border p-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                          active
+                            ? "border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary)/0.3)]"
+                            : "border-border bg-card hover:border-primary/40 hover:bg-muted/30"
+                        }`}
+                      >
+                        {staff.recommended && (
+                          <span className="absolute right-3 top-3 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                            Auto
+                          </span>
+                        )}
+                        <span className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+                          active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                        }`}>
+                          <UserCheck className="h-5 w-5" />
+                        </span>
+                        <div className="mt-3 space-y-1">
+                          <p className="truncate text-sm font-bold text-foreground">{staff.staffName}</p>
+                          <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{staff.reason}</p>
+                        </div>
+                        {active && <CheckCircle2 className="absolute bottom-3 right-3 h-4 w-4 text-primary" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {staffOptionsQuery.isError && (
+                <p className="text-xs text-rose-600">{getErrorMessage(staffOptionsQuery.error)}</p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Payment method — hidden when using an owned (pre-paid) combo */}
           {isComboBooking ? (
             <Card className="border-emerald-200/80 bg-emerald-50/60 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20">
@@ -285,7 +450,11 @@ export function BookingConfirmPage() {
                     <button
                       key={method}
                       type="button"
-                      onClick={() => { setPaymentMethod(method); setShowPaymentError(false); }}
+                      onClick={() => {
+                        setPaymentMethod(method);
+                        updateDraft({ paymentMethod: method });
+                        setShowPaymentError(false);
+                      }}
                       className={`relative flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                         active
                           ? "border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary)/0.3)]"
@@ -337,7 +506,7 @@ export function BookingConfirmPage() {
               type="button"
               variant="outline"
               onClick={() => void handleBack()}
-              disabled={isReleasing || createBookingMutation.isPending}
+              disabled={isReleasing || createBookingMutation.isPending || createVnpayCheckoutMutation.isPending}
               className="rounded-xl gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -346,15 +515,15 @@ export function BookingConfirmPage() {
             <Button
               type="button"
               onClick={() => void handleConfirm()}
-              disabled={createBookingMutation.isPending || isReleasing}
+              disabled={createBookingMutation.isPending || createVnpayCheckoutMutation.isPending || isReleasing || staffOptionsQuery.isPending || staffUnavailable}
               className="rounded-xl gap-2 px-8 font-bold"
             >
-              {createBookingMutation.isPending ? (
+              {createBookingMutation.isPending || createVnpayCheckoutMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Sparkles className="h-4 w-4" />
               )}
-              {createBookingMutation.isPending ? "Confirming..." : "Confirm booking"}
+              {createVnpayCheckoutMutation.isPending ? "Redirecting..." : createBookingMutation.isPending ? "Confirming..." : "Confirm booking"}
             </Button>
           </div>
         </div>
@@ -388,6 +557,13 @@ export function BookingConfirmPage() {
                 icon={Clock}
                 label="Duration"
                 value={summary.estimatedDurationLabel}
+              />
+
+              {/* Staff */}
+              <SummaryRow
+                icon={UserCheck}
+                label="Staff"
+                value={selectedStaff?.staffName ?? "Auto assign"}
               />
 
               {/* Service */}

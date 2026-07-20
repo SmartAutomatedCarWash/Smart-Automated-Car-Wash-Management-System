@@ -4,14 +4,17 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   AlertCircle,
+  Banknote,
   Calendar,
   Car,
   CheckCircle2,
   Clock3,
+  CreditCard,
   FileText,
   Loader2,
   Mail,
   Phone,
+  ReceiptText,
   Star,
   User,
   XCircle,
@@ -30,8 +33,11 @@ import {
   humanizeCode,
 } from "@/features/bookings/lib/booking-format";
 import {
+  useChangeBookingPaymentMethod,
   useCancelCustomerBooking,
+  useCreateVnpayCheckout,
   useCustomerBookingDetail,
+  useQueryVnpayTransaction,
 } from "@/features/bookings/hooks/use-bookings";
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
 import { BookingCompletionPopup } from "@/features/bookings/components/booking-completion-popup";
@@ -58,6 +64,36 @@ function getBookingOptions(booking: BookingDetail): BookingAddonSelection[] {
       addonName: detail.snapshotName,
       addonPrice: detail.snapshotPrice,
     }));
+}
+
+function getRefundStatusLabel(booking: BookingDetail, language: "vi" | "en") {
+  if (booking.status !== "CANCELLED") {
+    return null;
+  }
+
+  const paymentMethod = booking.payment.method?.toUpperCase() ?? "";
+  const paymentStatus = booking.payment.status?.toUpperCase() ?? "";
+
+  if (paymentStatus === "REFUND_PENDING") {
+    return translate(language, "Đang chờ hoàn tiền", "Refund pending");
+  }
+  if (paymentStatus === "REFUNDED") {
+    return translate(language, "Đã hoàn tiền toàn bộ", "Fully refunded");
+  }
+  if (paymentStatus === "PARTIALLY_REFUNDED") {
+    return translate(language, "Đã hoàn tiền một phần", "Partially refunded");
+  }
+  if (paymentStatus === "REFUND_FAILED") {
+    return translate(language, "Hoàn tiền thất bại", "Refund failed");
+  }
+  if (paymentStatus === "PAID" && paymentMethod === "E_WALLET") {
+    return translate(language, "Không hoàn tiền theo chính sách hủy", "No refund by cancellation policy");
+  }
+  if (["UNPAID", "FAILED", "CANCELLED"].includes(paymentStatus)) {
+    return translate(language, "Không phát sinh hoàn tiền", "No refund needed");
+  }
+
+  return humanizeCode(paymentStatus);
 }
 
 // ── Status timeline config ───────────────────────────────────────────────────
@@ -134,6 +170,9 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const bookingQuery = useCustomerBookingDetail(bookingId);
   const profileQuery = useCustomerProfile();
   const cancelBookingMutation = useCancelCustomerBooking(bookingId);
+  const changePaymentMethodMutation = useChangeBookingPaymentMethod(bookingId);
+  const createVnpayCheckoutMutation = useCreateVnpayCheckout();
+  const queryVnpayTransactionMutation = useQueryVnpayTransaction(bookingId);
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showReviewPopup, setShowReviewPopup] = useState(false);
@@ -194,6 +233,16 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const booking = bookingQuery.data;
   const bookingOptions = getBookingOptions(booking);
   const canCancelBooking = booking.status === "PENDING" || booking.status === "CONFIRMED";
+  const paymentStatus = booking.payment.status?.toUpperCase() ?? "";
+  const paymentMethod = booking.payment.method?.toUpperCase() ?? "";
+  const isPaymentPaid = paymentStatus === "PAID";
+  const canChoosePendingPaymentAction = booking.status === "PENDING" && !isPaymentPaid;
+  const canPayAgainWithVnpay = canChoosePendingPaymentAction && booking.pricing.finalAmount > 0;
+  const canQueryVnpayPayment = canChoosePendingPaymentAction && paymentMethod === "E_WALLET";
+  const canChangeToCash = canChoosePendingPaymentAction && paymentMethod !== "CASH_AT_COUNTER";
+  const showCashConfirmationNote = booking.status === "PENDING" && paymentMethod === "CASH_AT_COUNTER";
+  const isPaymentActionPending = changePaymentMethodMutation.isPending || createVnpayCheckoutMutation.isPending || queryVnpayTransactionMutation.isPending;
+  const refundStatusLabel = getRefundStatusLabel(booking, language);
   const customerName = booking.customerName || profileQuery.data?.fullName || translate(language, "Khách hàng", "Customer");
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || translate(language, "Chưa có số điện thoại", "No phone number");
   const customerEmail = booking.confirmationEmail || profileQuery.data?.email || translate(language, "email của bạn", "your email");
@@ -239,6 +288,41 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
       toast.success(translate(language, "Đã huỷ lịch đặt thành công.", "Booking cancelled successfully."));
       setShowCancelForm(false);
       setCancelReason("");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handlePayAgainWithVnpay = async () => {
+    try {
+      if (paymentMethod !== "E_WALLET") {
+        await changePaymentMethodMutation.mutateAsync("E_WALLET");
+      }
+      const checkout = await createVnpayCheckoutMutation.mutateAsync(booking.bookingId);
+      toast.success(translate(language, "Đang chuyển sang VNPay.", "Redirecting to VNPay."));
+      window.location.href = checkout.paymentUrl;
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleChangeToCash = async () => {
+    try {
+      await changePaymentMethodMutation.mutateAsync("CASH_AT_COUNTER");
+      toast.success(translate(language, "Đã chuyển sang thanh toán tại quầy.", "Changed to cash at counter."));
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleQueryVnpayPayment = async () => {
+    try {
+      const result = await queryVnpayTransactionMutation.mutateAsync();
+      if (result.success) {
+        toast.success(translate(language, "Đã đồng bộ thanh toán VNPay.", "VNPay payment synced."));
+      } else {
+        toast.error(result.message || translate(language, "VNPay chưa xác nhận thanh toán.", "VNPay has not confirmed the payment."));
+      }
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -383,6 +467,9 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 [translate(language, "Dự kiến kết thúc", "Estimated end"), booking.scheduling.estimatedEndTime],
                 [translate(language, "Phương thức TT", "Payment method"), getPaymentMethodLabel(booking.payment.method)],
                 [translate(language, "Trạng thái TT", "Payment status"), getPaymentStatusLabel(booking.payment.status)],
+                ...(refundStatusLabel
+                  ? [[translate(language, "Trạng thái hoàn tiền", "Refund status"), refundStatusLabel] as [string, string]]
+                  : []),
                 [translate(language, "Mã giao dịch", "Transaction"), booking.payment.transactionId || "--"],
               ]}
             />
@@ -451,6 +538,63 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
               <Button asChild variant="outline" className="w-full">
                 <Link href="/customer/bookings/new">{translate(language, "Đặt dịch vụ khác", "Book another service")}</Link>
               </Button>
+
+              {canChoosePendingPaymentAction ? (
+                <div className="space-y-2 rounded-2xl border border-sky-100 bg-sky-50 p-3">
+                  <p className="text-xs font-semibold text-sky-900">
+                    {translate(
+                      language,
+                      "Lịch đặt đang chờ xác nhận. Bạn có thể thanh toán lại, đổi sang tiền mặt hoặc huỷ lịch.",
+                      "This booking is pending. You can pay again, switch to cash, or cancel it.",
+                    )}
+                  </p>
+                  {canPayAgainWithVnpay ? (
+                    <Button
+                      type="button"
+                      className="w-full"
+                      onClick={handlePayAgainWithVnpay}
+                      disabled={isPaymentActionPending}
+                    >
+                      {createVnpayCheckoutMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+                      {translate(language, "Thanh toán VNPay", "Pay with VNPay")}
+                    </Button>
+                  ) : null}
+                  {canQueryVnpayPayment ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full bg-white"
+                      onClick={handleQueryVnpayPayment}
+                      disabled={isPaymentActionPending}
+                    >
+                      {queryVnpayTransactionMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ReceiptText className="mr-2 h-4 w-4" />}
+                      {translate(language, "Kiểm tra VNPay", "Check VNPay status")}
+                    </Button>
+                  ) : null}
+                  {canChangeToCash ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full bg-white"
+                      onClick={handleChangeToCash}
+                      disabled={isPaymentActionPending}
+                    >
+                      {changePaymentMethodMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Banknote className="mr-2 h-4 w-4" />}
+                      {translate(language, "Đổi sang trả tại quầy", "Change to cash at counter")}
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {showCashConfirmationNote ? (
+                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+                  {translate(
+                    language,
+                    "Đơn trả tại quầy đang chờ Manager/Admin xác nhận.",
+                    "Cash booking is waiting for Manager/Admin confirmation.",
+                  )}
+                </div>
+              ) : null}
 
               {/* Review section — chỉ hiện khi COMPLETED */}
               {(booking.status === "COMPLETED" || booking.washStatus === "COMPLETED") && (

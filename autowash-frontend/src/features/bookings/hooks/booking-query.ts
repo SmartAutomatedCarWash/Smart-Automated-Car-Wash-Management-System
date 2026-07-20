@@ -20,6 +20,33 @@ export function bookingDetailQueryKey(userId?: string | null, bookingId?: string
   return [...bookingQueryScope(userId), "detail", bookingId ?? "unknown"] as const;
 }
 
+export function slotAvailabilityQueryKey(userId?: string | null, bookingDate?: string | null, times: string[] = []) {
+  return [
+    ...bookingQueryScope(userId),
+    "slots",
+    "availability",
+    bookingDate ?? "",
+    times.join(","),
+  ] as const;
+}
+
+export function extraServiceRecommendationsQueryKey(userId?: string | null, comboId?: string | null) {
+  return [
+    ...bookingQueryScope(userId),
+    "ai",
+    "extra-service-recommendations",
+    comboId ?? "",
+  ] as const;
+}
+
+export function bookingStaffOptionsQueryKey(userId?: string | null, payloadKey = "") {
+  return [
+    ...bookingQueryScope(userId),
+    "staff-options",
+    payloadKey,
+  ] as const;
+}
+
 export function washTrackingActiveQueryKey(userId?: string | null) {
   return [...bookingQueryScope(userId), "wash-tracking", "active"] as const;
 }

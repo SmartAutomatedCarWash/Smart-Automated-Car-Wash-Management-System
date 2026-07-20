@@ -1,25 +1,34 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   applyBookingPoints,
   cancelCustomerBooking,
+  changeBookingPaymentMethod,
   createCustomerBooking,
+  createVnpayCheckout,
   getActiveWashTracking,
   getCustomerBookingDetail,
   getWashTrackingDetail,
+  listExtraServiceRecommendations,
+  listBookingStaffOptions,
   listBookingAddons,
   listBookingCombos,
   listBookingPackages,
   listActiveCustomerCombos,
   listCustomerBookings,
+  listSlotAvailability,
   purchaseCustomerCombo,
+  queryVnpayTransaction,
   validateBookingDiscount,
 } from "@/features/bookings/lib/booking-service";
 import {
   bookingDetailQueryKey,
+  bookingStaffOptionsQueryKey,
   bookingQueryScope,
   bookingsListQueryKey,
+  extraServiceRecommendationsQueryKey,
+  slotAvailabilityQueryKey,
   washTrackingActiveQueryKey,
   washTrackingDetailQueryKey,
 } from "@/features/bookings/hooks/booking-query";
@@ -36,6 +45,10 @@ import type {
   ApplyBookingPointsRequest,
   ApplyBookingPointsResponse,
   CreateBookingResponse,
+  VnpayCheckoutResponse,
+  VnpayPaymentResultResponse,
+  PayBookingResponse,
+  PaymentMethod,
   CancelBookingResponse,
   PurchaseCustomerComboRequest,
   PurchaseCustomerComboResponse,
@@ -44,7 +57,11 @@ import type {
   DiscountValidationResult,
   BookingAddon,
   BookingCombo,
+  BookingStaffOption,
+  BookingStaffOptionsRequest,
   CustomerCombo,
+  ExtraServiceRecommendation,
+  SlotAvailability,
 } from "@/entities/bookings";
 
 const LIVE_BOOKING_REFETCH_MS = 3_000;
@@ -156,6 +173,53 @@ export function useValidateBookingDiscount() {
   });
 }
 
+export function useSlotAvailability(bookingDate: string | undefined, times: string[]) {
+  const { enabled, userId } = useBookingQueryContext();
+
+  return useQuery<SlotAvailability[], ApiErrorResponse>({
+    queryKey: slotAvailabilityQueryKey(userId, bookingDate, times),
+    queryFn: () => listSlotAvailability(bookingDate ?? "", times),
+    enabled: enabled && Boolean(bookingDate) && times.length > 0,
+    placeholderData: keepPreviousData,
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useExtraServiceRecommendations(comboId: string) {
+  const { enabled, userId } = useBookingQueryContext();
+
+  return useQuery<ExtraServiceRecommendation[], ApiErrorResponse>({
+    queryKey: extraServiceRecommendationsQueryKey(userId, comboId),
+    queryFn: () => listExtraServiceRecommendations(comboId),
+    enabled: enabled && comboId.length > 0,
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useBookingStaffOptions(payload: BookingStaffOptionsRequest | null) {
+  const { enabled, userId } = useBookingQueryContext();
+  const payloadKey = payload
+    ? [
+        payload.packageId ?? "",
+        payload.comboId ?? "",
+        payload.bookingDate,
+        payload.bookingTime,
+        payload.options.join(","),
+      ].join("|")
+    : "";
+
+  return useQuery<BookingStaffOption[], ApiErrorResponse>({
+    queryKey: bookingStaffOptionsQueryKey(userId, payloadKey),
+    queryFn: () => listBookingStaffOptions(payload!),
+    enabled: enabled && Boolean(payload),
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
+}
+
 export function useCreateCustomerBooking() {
   const queryClient = useQueryClient();
   const { userId } = useBookingQueryContext();
@@ -206,6 +270,36 @@ export function useCreateCustomerBooking() {
         queryClient.refetchQueries({ queryKey: bookingQueryScope(userId), type: "active" }),
         queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId), type: "inactive" }),
       ]);
+    },
+  });
+}
+
+export function useCreateVnpayCheckout() {
+  return useMutation<VnpayCheckoutResponse, ApiErrorResponse, string>({
+    mutationFn: createVnpayCheckout,
+  });
+}
+
+export function useQueryVnpayTransaction(bookingId: string) {
+  const queryClient = useQueryClient();
+  const { userId } = useBookingQueryContext();
+
+  return useMutation<VnpayPaymentResultResponse, ApiErrorResponse>({
+    mutationFn: () => queryVnpayTransaction(bookingId),
+    onSuccess: async () => {
+      await invalidateBookingViews(queryClient, userId, bookingId);
+    },
+  });
+}
+
+export function useChangeBookingPaymentMethod(bookingId: string) {
+  const queryClient = useQueryClient();
+  const { userId } = useBookingQueryContext();
+
+  return useMutation<PayBookingResponse, ApiErrorResponse, PaymentMethod>({
+    mutationFn: (paymentMethod) => changeBookingPaymentMethod(bookingId, paymentMethod),
+    onSuccess: async () => {
+      await invalidateBookingViews(queryClient, userId, bookingId);
     },
   });
 }

@@ -8,8 +8,6 @@ import com.autowash.dto.CreateWashSessionRequest;
 import com.autowash.dto.CreateWashSessionResponse;
 import com.autowash.dto.QueueWashSessionResponse;
 import com.autowash.dto.StartWashSessionResponse;
-import com.autowash.dto.TransferWashSessionRequest;
-import com.autowash.dto.TransferWashSessionResponse;
 import com.autowash.service.OperationsService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -83,12 +81,4 @@ public class OperationsController {
         return ApiResponse.ok("Wash session cancelled", operationsService.cancelSession(sessionId, request.reason(), request.faultType()));
     }
 
-    @PostMapping("/{sessionId}/transfer")
-    @Operation(summary = "Transfer wash session to another staff member")
-    public ApiResponse<TransferWashSessionResponse> transferSession(
-            @PathVariable UUID sessionId,
-            @Valid @RequestBody TransferWashSessionRequest request
-    ) {
-        return ApiResponse.ok("Wash session transferred", operationsService.transferSession(sessionId, request.toStaffId(), request.reason()));
-    }
 }

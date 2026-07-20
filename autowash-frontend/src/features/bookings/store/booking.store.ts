@@ -33,6 +33,7 @@ export const EMPTY_BOOKING_DRAFT: BookingDraft = {
   discountCode: "",
   confirmationEmail: "",
   paymentMethod: null,
+  staffId: "",
 };
 
 const bookingStore = createStore<BookingStore>()(
@@ -62,6 +63,7 @@ const bookingStore = createStore<BookingStore>()(
           draft: EMPTY_BOOKING_DRAFT,
           expiresAt: null,
           validatedDiscount: null,
+          lastCreatedBooking: null,
         })),
       setLastCreatedBooking: (booking) =>
         set(() => ({

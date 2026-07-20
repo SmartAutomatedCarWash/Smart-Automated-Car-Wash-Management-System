@@ -57,6 +57,8 @@ import com.autowash.service.BookingService;
 import com.autowash.service.CatalogService;
 import com.autowash.service.CustomerComboService;
 import com.autowash.service.DiscountRedemptionService;
+import com.autowash.service.StaffAssignmentService;
+import com.autowash.service.VnpayPaymentService;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.service.BookingEmailDeliveryService;
 import com.autowash.service.CurrentUserService;
@@ -73,6 +75,7 @@ import org.springframework.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -117,6 +120,8 @@ public class BookingServiceImpl implements BookingService {
     private final ViolationRecordRepository violationRecordRepository;
     private final NotificationRepository notificationRepository;
     private final BookingResponseAssembler bookingResponseAssembler;
+    private final StaffAssignmentService staffAssignmentService;
+    private final ObjectProvider<VnpayPaymentService> vnpayPaymentServiceProvider;
 
     public BookingServiceImpl(
             CurrentUserService currentUserService,
@@ -137,7 +142,9 @@ public class BookingServiceImpl implements BookingService {
             SlotHoldRepository slotHoldRepository,
             ViolationRecordRepository violationRecordRepository,
             NotificationRepository notificationRepository,
-            BookingResponseAssembler bookingResponseAssembler
+            BookingResponseAssembler bookingResponseAssembler,
+            StaffAssignmentService staffAssignmentService,
+            ObjectProvider<VnpayPaymentService> vnpayPaymentServiceProvider
     ) {
         this.currentUserService = currentUserService;
         this.VehicleRepository = VehicleRepository;
@@ -158,6 +165,8 @@ public class BookingServiceImpl implements BookingService {
         this.violationRecordRepository = violationRecordRepository;
         this.notificationRepository = notificationRepository;
         this.bookingResponseAssembler = bookingResponseAssembler;
+        this.staffAssignmentService = staffAssignmentService;
+        this.vnpayPaymentServiceProvider = vnpayPaymentServiceProvider;
     }
 
     @Transactional
@@ -202,21 +211,11 @@ public class BookingServiceImpl implements BookingService {
             baseDuration = Combo.getDurationMinutes();
             responsePackageName = Combo.getName();
             if (ownedCombo != null) {
-                if (ownedCombo.isExpired()) {
-                    customerComboService.markExpired(ownedCombo);
-                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo is expired", ErrorCode.BUSINESS_RULE_VIOLATION);
-                }
-                if (!ownedCombo.hasRemainingUsages()) {
-                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo has no remaining usages", ErrorCode.BUSINESS_RULE_VIOLATION);
-                }
                 basePrice = 0;
                 customerComboId = ownedCombo.getId().toString();
             } else {
-                throw new ApiException(
-                        HttpStatus.FORBIDDEN,
-                        "Combo booking requires an active owned combo. Purchase must be verified before booking.",
-                        "PAYMENT_VERIFICATION_REQUIRED"
-                );
+                basePrice = Combo.getPrice();
+                comboPurchased = true;
             }
         }
 
@@ -258,8 +257,8 @@ public class BookingServiceImpl implements BookingService {
                 .itemType(BookingItemType.COMBO)
                 .refId(Combo.getId())
                 .snapshotName(Combo.getName())
-                .snapshotPrice(0)
-                .subtotal(0)
+                .snapshotPrice(basePrice)
+                .subtotal(basePrice)
                 .durationMinutes(Combo.getDurationMinutes())
                 .build());
         }
@@ -274,6 +273,8 @@ public class BookingServiceImpl implements BookingService {
                 .durationMinutes(opt.durationMinutes())
                 .build());
         }
+
+        booking.assignStaff(resolveAssignedStaff(request.staffId(), booking));
 
         BookingRepository.save(booking);
 
@@ -363,7 +364,9 @@ public class BookingServiceImpl implements BookingService {
                 Combo == null ? null : Combo.getId().toString(),
                 customerComboId,
                 comboPurchased,
-                null
+                null,
+                booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getId().toString(),
+                booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getFullName()
         );
     }
 
@@ -435,12 +438,19 @@ public class BookingServiceImpl implements BookingService {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking cannot be cancelled", ErrorCode.RESOURCE_LOCKED);
         }
         Duration timeUntilScheduled = Duration.between(Instant.now(), booking.getScheduledAt());
-        if (timeUntilScheduled.compareTo(Duration.ofHours(2)) < 0) {
+        if (booking.getStatus() == BookingStatus.CONFIRMED && timeUntilScheduled.compareTo(Duration.ofHours(2)) < 0) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Booking cannot be cancelled less than 2 hours before start time",
                     "CANCELLATION_WINDOW_CLOSED"
             );
+        }
+        Payment payment = paymentRepository.findByBooking(booking).orElse(null);
+        long refundAmount = 0L;
+        String refundStatus = "NONE";
+        String refundMessage = "Cancellation processed according to voucher policy.";
+        if (booking.getStatus() == BookingStatus.PENDING && payment != null && payment.getStatus() != PaymentStatus.PAID) {
+            payment.markCancelled();
         }
         BookingStatus oldStatus = booking.getStatus();
         booking.cancel(reason);
@@ -448,24 +458,47 @@ public class BookingServiceImpl implements BookingService {
         long hoursUntilScheduled = timeUntilScheduled.toHours();
         
         String voucherRefundStatus = "NONE";
+        boolean shouldApplyVoucherPolicy = oldStatus == BookingStatus.CONFIRMED;
         
-        if (hoursUntilScheduled > 24) {
+        if (payment != null
+                && payment.getMethod() == PaymentMethod.E_WALLET
+                && payment.getStatus() == PaymentStatus.PAID
+                && oldStatus == BookingStatus.CONFIRMED) {
+            refundAmount = resolveRefundAmount(payment.getAmount(), hoursUntilScheduled);
+            if (refundAmount > 0) {
+                try {
+                    vnpayPaymentServiceProvider.getObject().refund(booking.getId(), refundAmount, "customer-cancel", null);
+                    refundStatus = payment.getStatus().name();
+                    refundMessage = "Booking cancelled. VNPay refund request was submitted.";
+                } catch (RuntimeException exception) {
+                    payment.markRefundPending();
+                    refundStatus = "REFUND_PENDING";
+                    refundMessage = "Booking cancelled. VNPay refund is pending manual verification.";
+                    LOGGER.warn("VNPay refund request failed during customer cancellation: bookingId={}", booking.getId(), exception);
+                }
+            } else {
+                refundStatus = "NO_REFUND";
+                refundMessage = "Booking cancelled inside the non-refundable window.";
+            }
+        }
+
+        if (shouldApplyVoucherPolicy && hoursUntilScheduled > 24) {
             customerComboService.releaseUsageForBooking(booking.getId().toString());
             if (booking.getPricing().getDiscountType() != null) {
                 discountRedemptionService.revertRedemption(booking);
                 voucherRefundStatus = "REFUNDED";
             }
-        } else if (hoursUntilScheduled >= 6) {
+        } else if (shouldApplyVoucherPolicy && hoursUntilScheduled >= 6) {
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled between 6 and 24 hours"));
             if (booking.getPricing().getDiscountType() != null) {
                 voucherRefundStatus = "FORFEITED";
             }
-        } else if (hoursUntilScheduled >= 1) {
+        } else if (shouldApplyVoucherPolicy && hoursUntilScheduled >= 1) {
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled between 1 and 6 hours"));
             if (booking.getPricing().getDiscountType() != null) {
                 voucherRefundStatus = "FORFEITED";
             }
-        } else {
+        } else if (shouldApplyVoucherPolicy) {
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled under 1 hour"));
             if (booking.getPricing().getDiscountType() != null) {
                 voucherRefundStatus = "FORFEITED";
@@ -477,10 +510,10 @@ public class BookingServiceImpl implements BookingService {
                 booking.getId().toString(),
                 booking.getStatus().name(),
                 booking.getUpdatedAt(),
-                0L,
-                "NONE",
+                refundAmount,
+                refundStatus,
                 voucherRefundStatus,
-                "Cancellation processed according to voucher policy."
+                refundMessage
         );
     }
 
@@ -530,6 +563,68 @@ public class BookingServiceImpl implements BookingService {
         }
 
         return toPayBookingResponse(booking, payment);
+    }
+
+    @Override
+    @Transactional
+    public PayBookingResponse changeBookingPaymentMethod(String bookingId, PaymentMethod paymentMethod) {
+        Booking booking = findOwnedBooking(bookingId);
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Payment method can only be changed while booking is pending", ErrorCode.BUSINESS_RULE_VIOLATION);
+        }
+        Payment payment = paymentRepository.findByBooking(booking)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking payment not found", ErrorCode.RESOURCE_NOT_FOUND));
+        if (payment.getStatus() == PaymentStatus.PAID) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Paid booking cannot change payment method", ErrorCode.BUSINESS_RULE_VIOLATION);
+        }
+
+        if (paymentMethod == PaymentMethod.CASH_AT_COUNTER) {
+            payment.changeToCashAtCounter();
+        } else if (paymentMethod == PaymentMethod.E_WALLET) {
+            payment.prepareOnlinePayment(booking.getPricing().getFinalAmount(), booking.getId().toString());
+        } else {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Unsupported payment method for customer booking", ErrorCode.INVALID_INPUT);
+        }
+
+        return toPayBookingResponse(booking, payment);
+    }
+
+    @Override
+    @Transactional
+    public BookingDetailResponse confirmPendingBooking(String bookingId) {
+        Booking booking = requireBookingForOperations(bookingId);
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Only pending bookings can be confirmed", ErrorCode.BUSINESS_RULE_VIOLATION);
+        }
+        BookingStatus oldStatus = booking.getStatus();
+        booking.updateStatus(BookingStatus.CONFIRMED);
+        recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), "Booking confirmed manually");
+        notificationRepository.save(Notification.builder()
+                .id(UUID.randomUUID())
+                .user(booking.getCustomer())
+                .title("Booking đã được xác nhận!")
+                .message("Booking " + booking.getId() + " đã được xác nhận.")
+                .type(NotificationType.BOOKING_CONFIRMED)
+                .read(false)
+                .createdAt(Instant.now())
+                .build());
+        return toDetailResponse(booking);
+    }
+
+    @Override
+    @Transactional
+    public BookingDetailResponse updateBookingStatus(String bookingId, BookingStatus status) {
+        if (status == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Booking status is required", ErrorCode.INVALID_INPUT);
+        }
+        Booking booking = requireBookingForOperations(bookingId);
+        BookingStatus oldStatus = booking.getStatus();
+        if (oldStatus == status) {
+            return toDetailResponse(booking);
+        }
+        booking.updateStatus(status);
+        recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), "Booking status updated by admin");
+        return toDetailResponse(booking);
     }
 
     @Transactional(readOnly = true)
@@ -592,6 +687,24 @@ public class BookingServiceImpl implements BookingService {
         if (existingBookings + activeHolds >= maxBookingsPerTimeSlot) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking slot is full", ErrorCode.BOOKING_SLOT_FULL);
         }
+    }
+
+    private User resolveAssignedStaff(String staffId, Booking booking) {
+        if (staffId == null || staffId.isBlank()) {
+            return staffAssignmentService.pickLeastLoadedActiveStaffForBooking(booking);
+        }
+
+        User staff;
+        try {
+            staff = staffAssignmentService.requireActiveStaff(UUID.fromString(staffId));
+        } catch (IllegalArgumentException exception) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid staff id", ErrorCode.INVALID_INPUT);
+        }
+
+        if (!staffAssignmentService.isStaffAvailableForBooking(staff, booking)) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Selected staff is not available for this booking time", ErrorCode.BUSINESS_RULE_VIOLATION);
+        }
+        return staff;
     }
 
     private void validateCustomerCanCreateBooking(User user) {
@@ -660,7 +773,17 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private PaymentStatus initialPaymentStatus(PaymentMethod method) {
-        return method == PaymentMethod.CASH_AT_COUNTER ? PaymentStatus.UNPAID : PaymentStatus.PENDING_PAYMENT;
+        return method == PaymentMethod.CASH_AT_COUNTER ? PaymentStatus.UNPAID : PaymentStatus.PENDING;
+    }
+
+    private long resolveRefundAmount(long paymentAmount, long hoursUntilScheduled) {
+        if (hoursUntilScheduled > 24) {
+            return paymentAmount;
+        }
+        if (hoursUntilScheduled >= 6) {
+            return paymentAmount / 2;
+        }
+        return 0L;
     }
 
     private BookingResponseAssembler.PaymentInfo resolvePaymentInfo(Booking booking) {

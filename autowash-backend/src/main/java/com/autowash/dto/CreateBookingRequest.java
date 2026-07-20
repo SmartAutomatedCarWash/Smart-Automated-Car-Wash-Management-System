@@ -26,7 +26,8 @@ public record CreateBookingRequest(
         String confirmationEmail,
         @NotNull(message = "Payment method is required")
         PaymentMethod paymentMethod,
-        String comboId
+        String comboId,
+        String staffId
 ) {
     @AssertTrue(message = "Either packageId or comboId is required")
     public boolean hasPackageOrCombo() {
