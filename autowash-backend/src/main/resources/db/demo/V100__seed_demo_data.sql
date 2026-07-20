@@ -49,13 +49,16 @@ VALUES
 ON CONFLICT (tier) DO NOTHING;
 
 INSERT INTO loyalty_accounts (id, customer_id, tier, current_points, total_earned_points)
-VALUES
-('1a000001-0000-0000-0000-000000000000', 'ee000001-0000-0000-0000-000000000000', 'DIAMOND', 7200, 9800),
-('1a000002-0000-0000-0000-000000000000', 'ee000002-0000-0000-0000-000000000000', 'GOLD', 1850, 2400),
-('1a000003-0000-0000-0000-000000000000', 'ee000003-0000-0000-0000-000000000000', 'SILVER', 820, 960),
-('1a000004-0000-0000-0000-000000000000', 'ee000004-0000-0000-0000-000000000000', 'BRONZE', 120, 120)
-,
-('1a000005-0000-0000-0000-000000000000', 'ff000002-0000-0000-0000-000000000001', 'BRONZE', 0, 0)
+SELECT seed.id, users.id, seed.tier, seed.current_points, seed.total_earned_points
+FROM (
+    VALUES
+    ('1a000001-0000-0000-0000-000000000000'::uuid, 'bui.thi.mai.88@gmail.com', 'DIAMOND', 7200, 9800),
+    ('1a000002-0000-0000-0000-000000000000'::uuid, 'hoang.van.dung@gmail.com', 'GOLD', 1850, 2400),
+    ('1a000003-0000-0000-0000-000000000000'::uuid, 'nguyen.thi.ha.95@gmail.com', 'SILVER', 820, 960),
+    ('1a000004-0000-0000-0000-000000000000'::uuid, 'vu.minh.khoa@yahoo.com', 'BRONZE', 120, 120),
+    ('1a000005-0000-0000-0000-000000000000'::uuid, 'customer@autowash.com', 'BRONZE', 0, 0)
+) AS seed(id, email, tier, current_points, total_earned_points)
+JOIN users ON users.email = seed.email
 ON CONFLICT (customer_id) DO NOTHING;
 
 INSERT INTO services (id, name, description, price, duration_minutes, status, image_url)
@@ -128,13 +131,16 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO vehicles (id, customer_id, plate, type, brand, model, vehicle_year, color, is_primary, status)
-VALUES
-('aa000001-0000-0000-0000-000000000000', 'ee000001-0000-0000-0000-000000000000', '51A-732.76', 'CAR', 'Toyota', 'Vios', 2021, 'White', true, 'ACTIVE'),
-('aa000002-0000-0000-0000-000000000000', 'ee000002-0000-0000-0000-000000000000', '51G-982.10', 'SUV', 'Mazda', 'CX-5', 2022, 'Black', true, 'ACTIVE'),
-('aa000003-0000-0000-0000-000000000000', 'ee000003-0000-0000-0000-000000000000', '59V1-123.45', 'MOTORBIKE', 'Honda', 'SH', 2020, 'Red', true, 'ACTIVE'),
-('aa000004-0000-0000-0000-000000000000', 'ee000004-0000-0000-0000-000000000000', '51F-456.89', 'VAN', 'Ford', 'Transit', 2019, 'Silver', true, 'ACTIVE')
-,
-('aa000005-0000-0000-0000-000000000000', 'ff000002-0000-0000-0000-000000000001', '51D-000.01', 'CAR', 'Honda', 'City', 2023, 'Blue', true, 'ACTIVE')
+SELECT seed.id, users.id, seed.plate, seed.type, seed.brand, seed.model, seed.vehicle_year, seed.color, seed.is_primary, seed.status
+FROM (
+    VALUES
+    ('aa000001-0000-0000-0000-000000000000'::uuid, 'bui.thi.mai.88@gmail.com', '51A-732.76', 'CAR', 'Toyota', 'Vios', 2021, 'White', true, 'ACTIVE'),
+    ('aa000002-0000-0000-0000-000000000000'::uuid, 'hoang.van.dung@gmail.com', '51G-982.10', 'SUV', 'Mazda', 'CX-5', 2022, 'Black', true, 'ACTIVE'),
+    ('aa000003-0000-0000-0000-000000000000'::uuid, 'nguyen.thi.ha.95@gmail.com', '59V1-123.45', 'MOTORBIKE', 'Honda', 'SH', 2020, 'Red', true, 'ACTIVE'),
+    ('aa000004-0000-0000-0000-000000000000'::uuid, 'vu.minh.khoa@yahoo.com', '51F-456.89', 'VAN', 'Ford', 'Transit', 2019, 'Silver', true, 'ACTIVE'),
+    ('aa000005-0000-0000-0000-000000000000'::uuid, 'customer@autowash.com', '51D-000.01', 'CAR', 'Honda', 'City', 2023, 'Blue', true, 'ACTIVE')
+) AS seed(id, email, plate, type, brand, model, vehicle_year, color, is_primary, status)
+JOIN users ON users.email = seed.email
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO customer_combos (id, customer_id, combo_id, total_usages, remaining_usages, activated_at, expires_at, status)
