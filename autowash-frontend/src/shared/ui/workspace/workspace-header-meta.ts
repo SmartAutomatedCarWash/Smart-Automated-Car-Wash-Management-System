@@ -183,6 +183,16 @@ const ROUTE_META: Array<{
     },
   },
   {
+    match: (pathname) => pathname.startsWith("/manager/promotions"),
+    meta: {
+      title: "Promotion Management",
+      subtitle: "Review promotions, vouchers, and active customer offers",
+      titleVi: "Quản lý khuyến mãi",
+      subtitleVi: "Theo dõi promotions, voucher và ưu đãi đang áp dụng cho khách hàng.",
+      workspace: "MANAGER",
+    },
+  },
+  {
     match: (pathname) => pathname.startsWith("/manager/reports"),
     meta: {
       title: "Reports",
@@ -260,11 +270,12 @@ const ROUTE_META: Array<{
   {
     match: (pathname) =>
       pathname.startsWith("/admin/offers") ||
+      pathname.startsWith("/admin/promotions") ||
       pathname.startsWith("/admin/discounts") ||
       pathname.startsWith("/admin/tier-voucher-offers"),
     meta: {
-      title: "Discount Management",
-      subtitle: "Review discounts, tier voucher offers, and redemption oversight",
+      title: "Promotion Management",
+      subtitle: "Review promotions, discounts, tier voucher offers, and redemption oversight",
       workspace: "ADMIN",
     },
   },

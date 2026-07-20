@@ -96,6 +96,7 @@ const STAFF_NAV: WorkspaceNavItem[] = [
 const MANAGER_NAV: WorkspaceNavItem[] = [
   { href: "/manager/operations", label: "Operations", labelVi: "Điều phối vận hành", icon: ClipboardList },
   { href: "/manager/staff", label: "Staff", labelVi: "Quản lý nhân viên", icon: Users },
+  { href: "/manager/promotions", label: "Promotions", labelVi: "Khuyến mãi", icon: Gift },
   { href: "/manager/history", label: "History", labelVi: "Lịch sử", icon: History },
   { href: "/manager/reports", label: "Reports", labelVi: "Báo cáo vận hành", icon: BarChart3 },
   { href: "/manager/settings", label: "Settings", labelVi: "Cài đặt", icon: Settings2 },
@@ -106,7 +107,7 @@ const ADMIN_NAV: WorkspaceNavItem[] = [
   { href: "/admin/bookings", label: "Bookings", labelVi: "Quan ly dat lich", icon: ClipboardList },
   { href: "/admin/accounts", label: "Accounts", labelVi: "Tai khoan", icon: Users },
   { href: "/admin/services", label: "Service Management", labelVi: "Quan ly dich vu", icon: Layers3 },
-  { href: "/admin/discounts", label: "Discounts & Offers", labelVi: "Khuyến mãi & Ưu đãi", icon: Gift },
+  { href: "/admin/promotions", label: "Promotions", labelVi: "Khuyến mãi", icon: Gift },
   { href: "/admin/blog", label: "Content & Feedback", labelVi: "Noi dung va Phan hoi", icon: BookOpen },
   { href: "/admin/operations", label: "Operations", labelVi: "Van hanh", icon: Wrench },
   { href: "/admin/reports", label: "Reports", labelVi: "Bao cao", icon: BarChart3 },
