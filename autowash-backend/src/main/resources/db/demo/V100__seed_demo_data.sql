@@ -18,7 +18,7 @@ VALUES
 ('ee000002-0000-0000-0000-000000000000', 'Hoang Van Dung', '0902222302', 'hoang.van.dung@gmail.com', crypt('Password123@', gen_salt('bf', 10)), 'CUSTOMER', 'ACTIVE', NULL, '1990-07-25'),
 ('ee000003-0000-0000-0000-000000000000', 'Nguyen Thi Ha', '0903333403', 'nguyen.thi.ha.95@gmail.com', crypt('Password123@', gen_salt('bf', 10)), 'CUSTOMER', 'ACTIVE', NULL, '1995-11-08'),
 ('ee000004-0000-0000-0000-000000000000', 'Vu Minh Khoa', '0904444504', 'vu.minh.khoa@yahoo.com', crypt('Password123@', gen_salt('bf', 10)), 'CUSTOMER', 'ACTIVE', NULL, '1987-02-14')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO user_preferences (user_id)
 SELECT id FROM users
