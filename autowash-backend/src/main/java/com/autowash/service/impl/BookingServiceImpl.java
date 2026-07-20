@@ -30,9 +30,13 @@ import com.autowash.dto.BookingListItemResponse;
 import com.autowash.dto.CancelBookingResponse;
 import com.autowash.dto.CreateBookingRequest;
 import com.autowash.dto.CreateBookingResponse;
+import com.autowash.dto.DiscountValidationRequest;
+import com.autowash.dto.DiscountValidationResponse;
 import com.autowash.dto.PayBookingResponse;
 import com.autowash.entity.CustomerCombo;
+import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.BookingStatus;
+import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.entity.Booking;
 import com.autowash.entity.BookingPricing;
@@ -42,6 +46,7 @@ import com.autowash.entity.BookingStatusHistory;
 import com.autowash.entity.Payment;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
+import com.autowash.entity.enums.UserDiscountStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.BookingDetailRepository;
 import com.autowash.repository.BookingStatusHistoryRepository;
@@ -169,6 +174,71 @@ public class BookingServiceImpl implements BookingService {
         this.vnpayPaymentServiceProvider = vnpayPaymentServiceProvider;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public DiscountValidationResponse validateDiscount(DiscountValidationRequest request) {
+        User user = currentUserService.getCurrentUser();
+        String code = request.discountCode() == null ? "" : request.discountCode().trim();
+        if (code.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher code is required", ErrorCode.INVALID_DISCOUNT);
+        }
+
+        Discount discount = discountRepository.findByCodeIgnoreCase(code)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "Voucher code does not exist",
+                        ErrorCode.INVALID_DISCOUNT
+                ));
+
+        UserDiscount userDiscount = userDiscountRepository.findByUserIdAndDiscountCodeIgnoreCase(user.getId(), code)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.BAD_REQUEST,
+                        "This voucher is not available in your account",
+                        ErrorCode.INVALID_DISCOUNT
+                ));
+
+        Instant now = Instant.now();
+        if (discount.getStatus() != ActiveStatus.ACTIVE) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher is inactive", ErrorCode.INVALID_DISCOUNT);
+        }
+        if (discount.getStartAt() != null && discount.getStartAt().isAfter(now)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher is not active yet", ErrorCode.INVALID_DISCOUNT);
+        }
+        if (discount.getEndAt() != null && discount.getEndAt().isBefore(now)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher has expired", ErrorCode.INVALID_DISCOUNT);
+        }
+        if (userDiscount.getStatus() != UserDiscountStatus.AVAILABLE) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher has already been used or is unavailable", ErrorCode.INVALID_DISCOUNT);
+        }
+        if (userDiscount.getExpiresAt() != null && userDiscount.getExpiresAt().isBefore(now)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher has expired in your wallet", ErrorCode.INVALID_DISCOUNT);
+        }
+        if (discount.getUsageLimit() != null && discount.getUsedCount() >= discount.getUsageLimit()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher usage limit has been reached", ErrorCode.INVALID_DISCOUNT);
+        }
+
+        long amount = Math.max(0, request.amount());
+        if (discount.getMinOrderAmount() > 0 && amount < discount.getMinOrderAmount()) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Order amount does not meet the minimum requirement for this voucher",
+                    ErrorCode.INVALID_DISCOUNT
+            );
+        }
+
+        long discountAmount = calculateDiscountAmount(amount, discount);
+        return new DiscountValidationResponse(
+                discount.getCode(),
+                true,
+                discount.getDiscountType().name(),
+                discount.getDiscountValue(),
+                discountAmount,
+                Math.max(0, amount - discountAmount),
+                userDiscount.getExpiresAt() != null ? userDiscount.getExpiresAt() : discount.getEndAt()
+        );
+    }
+
+    @Override
     @Transactional
     public CreateBookingResponse createBooking(CreateBookingRequest request, Object metadata) {
         User user = currentUserService.getCurrentUser();
@@ -818,6 +888,19 @@ public class BookingServiceImpl implements BookingService {
                 assignedStaff == null ? null : assignedStaff.getId().toString(),
                 assignedStaff == null ? null : assignedStaff.getFullName()
         );
+    }
+
+    private long calculateDiscountAmount(long amount, Discount discount) {
+        long discountAmount = 0;
+        if (discount.getDiscountType() == DiscountType.FIXED_AMOUNT) {
+            discountAmount = discount.getDiscountValue();
+        } else if (discount.getDiscountType() == DiscountType.PERCENT) {
+            discountAmount = (amount * discount.getDiscountValue()) / 100;
+        }
+        if (discount.getMaxDiscountAmount() != null && discount.getMaxDiscountAmount() > 0) {
+            discountAmount = Math.min(discountAmount, discount.getMaxDiscountAmount());
+        }
+        return Math.min(discountAmount, amount);
     }
 
     private void recordStatusHistory(

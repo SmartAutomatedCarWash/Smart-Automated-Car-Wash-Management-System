@@ -6,16 +6,28 @@ import com.autowash.dto.OperationsQueueResponse;
 import com.autowash.dto.StaffKpiItem;
 import com.autowash.dto.UpdateAdminStaffRequest;
 import com.autowash.dto.UpdateUserStatusRequest;
+import com.autowash.entity.Review;
+import com.autowash.entity.User;
+import com.autowash.entity.WashSession;
+import com.autowash.entity.enums.UserRole;
+import com.autowash.repository.ReviewRepository;
+import com.autowash.repository.UserRepository;
+import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.AdminReportingService;
 import com.autowash.service.OperationsService;
 import com.autowash.shared.dto.ApiResponse;
+import com.autowash.shared.exception.ApiException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -35,12 +47,29 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
 public class ManagerStaffController {
 
+    private static final String DEFAULT_RESET_PASSWORD = "Password123@";
+
     private final AdminReportingService adminReportingService;
     private final OperationsService operationsService;
+    private final UserRepository userRepository;
+    private final WashSessionRepository washSessionRepository;
+    private final ReviewRepository reviewRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public ManagerStaffController(AdminReportingService adminReportingService, OperationsService operationsService) {
+    public ManagerStaffController(
+            AdminReportingService adminReportingService,
+            OperationsService operationsService,
+            UserRepository userRepository,
+            WashSessionRepository washSessionRepository,
+            ReviewRepository reviewRepository,
+            PasswordEncoder passwordEncoder
+    ) {
         this.adminReportingService = adminReportingService;
         this.operationsService = operationsService;
+        this.userRepository = userRepository;
+        this.washSessionRepository = washSessionRepository;
+        this.reviewRepository = reviewRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping
@@ -110,13 +139,47 @@ public class ManagerStaffController {
     }
 
     @GetMapping("/{staffId}/rating-summary")
+    @Transactional(readOnly = true)
     public ApiResponse<RatingSummaryResponse> getRatingSummary(@PathVariable UUID staffId) {
-        return ApiResponse.ok("Manager staff rating summary retrieved", new RatingSummaryResponse(4.8, 0, new RatingDistribution(0, 0, 0, 0, 0)));
+        List<Review> reviews = findStaffReviews(staffId);
+        Map<Integer, Long> distribution = reviews.stream()
+                .collect(java.util.stream.Collectors.groupingBy(Review::getRating, java.util.stream.Collectors.counting()));
+        double average = reviews.stream().mapToInt(Review::getRating).average().orElse(0.0);
+        return ApiResponse.ok(
+                "Manager staff rating summary retrieved",
+                new RatingSummaryResponse(
+                        Math.round(average * 10.0) / 10.0,
+                        reviews.size(),
+                        new RatingDistribution(
+                                distribution.getOrDefault(5, 0L).intValue(),
+                                distribution.getOrDefault(4, 0L).intValue(),
+                                distribution.getOrDefault(3, 0L).intValue(),
+                                distribution.getOrDefault(2, 0L).intValue(),
+                                distribution.getOrDefault(1, 0L).intValue()
+                        )
+                )
+        );
     }
 
     @GetMapping("/{staffId}/reviews")
+    @Transactional(readOnly = true)
     public ApiResponse<List<ReviewRowResponse>> getReviews(@PathVariable UUID staffId, @RequestParam(defaultValue = "3") int limit) {
-        return ApiResponse.ok("Manager staff reviews retrieved", List.of());
+        int safeLimit = Math.max(1, Math.min(limit, 20));
+        List<ReviewRowResponse> reviews = findStaffReviews(staffId).stream()
+                .sorted(Comparator.comparing(Review::getCreatedAt).reversed())
+                .limit(safeLimit)
+                .map(review -> new ReviewRowResponse(
+                        review.getId(),
+                        review.getBooking().getId().toString(),
+                        review.getBooking().getId().toString(),
+                        review.getCustomer().getFullName(),
+                        review.getRating(),
+                        review.getComment(),
+                        review.getCreatedAt(),
+                        review.isFeatured() ? "FEATURED" : "PUBLISHED"
+                ))
+                .toList();
+        return ApiResponse.ok("Manager staff reviews retrieved", reviews);
     }
 
     @PostMapping
@@ -135,14 +198,32 @@ public class ManagerStaffController {
     }
 
     @PostMapping("/{staffId}/reset-password")
+    @Transactional
     public ApiResponse<ResetPasswordResponse> resetPassword(@PathVariable UUID staffId) {
-        return ApiResponse.ok("Manager staff password reset prepared", new ResetPasswordResponse(staffId, "Password reset endpoint stubbed for FE MVP."));
+        User staff = requireStaff(staffId);
+        staff.setPasswordHash(passwordEncoder.encode(DEFAULT_RESET_PASSWORD));
+        userRepository.save(staff);
+        return ApiResponse.ok("Manager staff password reset", new ResetPasswordResponse(staffId, "Password reset to " + DEFAULT_RESET_PASSWORD));
     }
 
     private StaffRowResponse toStaffRow(AdminAccountResponse account) {
         long activeCount = activeCount(account.accountId());
         String currentStatus = !"ACTIVE".equals(account.status()) ? "OFFLINE" : activeCount >= 3 ? "OVERLOADED" : activeCount > 0 ? "BUSY" : "AVAILABLE";
-        return new StaffRowResponse(account.accountId(), account.fullName(), null, account.email(), account.phone(), account.role(), currentStatus, activeCount, 0, 4.8, 0, account.status());
+        ReviewStats reviewStats = reviewStats(account.accountId(), account.role());
+        return new StaffRowResponse(
+                account.accountId(),
+                account.fullName(),
+                null,
+                account.email(),
+                account.phone(),
+                account.role(),
+                currentStatus,
+                activeCount,
+                0,
+                reviewStats.averageRating(),
+                reviewStats.reviewCount(),
+                account.status()
+        );
     }
 
     private long activeCount(UUID staffId) {
@@ -162,6 +243,35 @@ public class ManagerStaffController {
         return false;
     }
 
+    private User requireStaff(UUID staffId) {
+        User staff = userRepository.findById(staffId).orElseThrow(() -> ApiException.notFound("Staff not found"));
+        if (staff.getRole() != UserRole.STAFF) {
+            throw ApiException.businessRule("User is not a staff account");
+        }
+        return staff;
+    }
+
+    private List<Review> findStaffReviews(UUID staffId) {
+        User staff = requireStaff(staffId);
+        List<UUID> bookingIds = washSessionRepository.findByAssignedStaffOrderByCreatedAtDesc(staff).stream()
+                .map(WashSession::getBooking)
+                .map(booking -> booking.getId())
+                .toList();
+        if (bookingIds.isEmpty()) {
+            return List.of();
+        }
+        return reviewRepository.findByBookingIdIn(bookingIds);
+    }
+
+    private ReviewStats reviewStats(UUID staffId, String role) {
+        if (!UserRole.STAFF.name().equalsIgnoreCase(role)) {
+            return new ReviewStats(0.0, 0);
+        }
+        List<Review> reviews = findStaffReviews(staffId);
+        double average = reviews.stream().mapToInt(Review::getRating).average().orElse(0.0);
+        return new ReviewStats(Math.round(average * 10.0) / 10.0, reviews.size());
+    }
+
     public record ManagerStaffListResponse(List<StaffRowResponse> items, int page, int size, int totalItems, int totalPages) {}
     public record StaffSummaryResponse(long totalStaff, long available, long busy, long overloaded, long offline) {}
     public record StaffRowResponse(UUID staffId, String fullName, String avatarUrl, String email, String phone, String role, String currentStatus, long activeBookingCount, int weeklyKpiPercent, double averageRating, int reviewCount, String accountStatus) {}
@@ -171,4 +281,5 @@ public class ManagerStaffController {
     public record RatingDistribution(int five, int four, int three, int two, int one) {}
     public record ReviewRowResponse(UUID reviewId, String bookingId, String bookingCode, String customerName, int rating, String comment, java.time.Instant reviewedAt, String status) {}
     public record ResetPasswordResponse(UUID staffId, String message) {}
+    private record ReviewStats(double averageRating, int reviewCount) {}
 }
