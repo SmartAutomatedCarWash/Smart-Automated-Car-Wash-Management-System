@@ -27,6 +27,26 @@ CREATE INDEX IF NOT EXISTS idx_discounts_type ON discounts (type);
 CREATE INDEX IF NOT EXISTS idx_discounts_status ON discounts (status);
 CREATE INDEX IF NOT EXISTS idx_discounts_start_end ON discounts (start_at, end_at);
 
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS type varchar(20) NOT NULL DEFAULT 'PROMOTION';
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS code varchar(50);
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS name varchar(120) NOT NULL DEFAULT 'Unnamed discount';
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS description text;
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS discount_type varchar(30) NOT NULL DEFAULT 'NONE';
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS discount_value bigint NOT NULL DEFAULT 0;
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS min_order_amount bigint NOT NULL DEFAULT 0;
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS max_discount_amount bigint;
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS required_points integer NOT NULL DEFAULT 0;
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS valid_days_after_claim integer;
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS targeting_mode varchar(30) NOT NULL DEFAULT 'ALL_TIERS';
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS new_customer_only boolean NOT NULL DEFAULT false;
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS usage_limit integer;
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS used_count integer NOT NULL DEFAULT 0;
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS start_at timestamp(6) with time zone NOT NULL DEFAULT now();
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS end_at timestamp(6) with time zone NOT NULL DEFAULT now();
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS status varchar(20) NOT NULL DEFAULT 'ACTIVE';
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS created_at timestamp(6) with time zone NOT NULL DEFAULT now();
+ALTER TABLE discounts ADD COLUMN IF NOT EXISTS updated_at timestamp(6) with time zone NOT NULL DEFAULT now();
+
 CREATE TABLE IF NOT EXISTS discount_tiers (
     discount_id uuid NOT NULL REFERENCES discounts(id) ON DELETE CASCADE,
     tier varchar(50) NOT NULL REFERENCES tier_configs(tier),
@@ -58,6 +78,16 @@ CREATE INDEX IF NOT EXISTS idx_user_discounts_discount_id ON user_discounts (dis
 CREATE INDEX IF NOT EXISTS idx_user_discounts_status ON user_discounts (status);
 CREATE INDEX IF NOT EXISTS idx_user_discounts_used_booking ON user_discounts (used_in_booking_id);
 
+ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES users(id);
+ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS discount_id uuid REFERENCES discounts(id);
+ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS acquisition_method varchar(20) NOT NULL DEFAULT 'AUTO_ELIGIBLE';
+ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS points_spent integer NOT NULL DEFAULT 0;
+ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS claimed_at timestamp(6) with time zone NOT NULL DEFAULT now();
+ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS expires_at timestamp(6) with time zone;
+ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS status varchar(20) NOT NULL DEFAULT 'AVAILABLE';
+ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS used_at timestamp(6) with time zone;
+ALTER TABLE user_discounts ADD COLUMN IF NOT EXISTS used_in_booking_id uuid;
+
 CREATE TABLE IF NOT EXISTS tier_voucher_offers (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
     discount_id uuid NOT NULL REFERENCES discounts(id),
@@ -74,6 +104,16 @@ CREATE TABLE IF NOT EXISTS tier_voucher_offers (
 
 CREATE INDEX IF NOT EXISTS idx_tier_voucher_offers_discount_id ON tier_voucher_offers (discount_id);
 CREATE INDEX IF NOT EXISTS idx_tier_voucher_offers_min_tier ON tier_voucher_offers (min_tier);
+
+ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS discount_id uuid REFERENCES discounts(id);
+ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS points_cost integer NOT NULL DEFAULT 0;
+ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS voucher_value integer NOT NULL DEFAULT 0;
+ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS created_at timestamp(6) with time zone NOT NULL DEFAULT now();
+ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS updated_at timestamp(6) with time zone NOT NULL DEFAULT now();
+ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS accent varchar(20) NOT NULL DEFAULT 'gold';
+ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS badge varchar(20) NOT NULL DEFAULT 'NEW';
+ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS min_tier varchar(50) REFERENCES tier_configs(tier);
+ALTER TABLE tier_voucher_offers ADD COLUMN IF NOT EXISTS title varchar(100) NOT NULL DEFAULT 'Voucher offer';
 
 DO $$
 BEGIN
