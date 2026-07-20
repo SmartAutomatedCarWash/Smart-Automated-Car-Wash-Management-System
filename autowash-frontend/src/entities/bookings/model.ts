@@ -199,6 +199,36 @@ export type CreateBookingResponse = {
   assignedStaffName: string | null;
 };
 
+export type VnpayCheckoutResponse = {
+  bookingId: string;
+  txnRef: string;
+  amount: number;
+  paymentUrl: string;
+};
+
+export type VnpayPaymentResultResponse = {
+  validSignature: boolean;
+  success: boolean;
+  bookingId: string | null;
+  responseCode: string | null;
+  transactionStatus: string | null;
+  transactionRef: string | null;
+  message: string;
+};
+
+export type PayBookingResponse = {
+  bookingId: string;
+  paymentId: string;
+  paymentMethod: PaymentMethod;
+  paymentStatus: string;
+  amount: number;
+  transactionRef: string | null;
+  paidAt: string | null;
+  bookingStatus: BookingStatus;
+  assignedStaffId: string | null;
+  assignedStaffName: string | null;
+};
+
 export type BookingListItem = {
   bookingId: string;
   vehiclePlate: string;

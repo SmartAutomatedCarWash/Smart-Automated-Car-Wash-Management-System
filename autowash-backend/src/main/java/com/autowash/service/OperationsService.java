@@ -13,7 +13,6 @@ import com.autowash.dto.StaffOptionResponse;
 import com.autowash.dto.StaffSessionHistoryResponse;
 import com.autowash.dto.StartWashSessionResponse;
 import com.autowash.dto.StaffTodayResponse;
-import com.autowash.dto.TransferWashSessionResponse;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -26,7 +25,6 @@ public interface OperationsService {
     CheckInWashSessionResponse checkInSession(UUID sessionId);
     StartWashSessionResponse startSession(UUID sessionId);
     CompleteWashSessionResponse completeSession(UUID sessionId);
-    TransferWashSessionResponse transferSession(UUID sessionId, UUID toStaffId, String reason);
     CancelWashSessionResponse cancelSession(UUID sessionId, String reason, String faultType);
     StaffDashboardSummaryResponse getStaffSummary();
     List<StaffOptionResponse> listActiveStaff();

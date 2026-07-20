@@ -10,7 +10,6 @@ import {
   getDemoOperationsQueue,
   isManagerDemoToken,
   startDemoWashSession,
-  transferDemoWashSession,
 } from "@/features/operations/lib/operations-demo-data";
 import type {
   CheckInWashSessionResponse,
@@ -29,7 +28,6 @@ import type {
   StartSessionRequest,
   StartSessionResponse,
   StartWashSessionResponse,
-  TransferWashSessionResponse,
   CancelWashSessionResponse,
 } from "@/entities/operations";
 
@@ -125,18 +123,6 @@ export function completeWashSession(sessionId: string) {
   return apiRequest<CompleteWashSessionResponse>({
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/complete`,
-  });
-}
-
-export function transferWashSession(sessionId: string, toStaffId: string, reason?: string) {
-  if (isManagerDemoToken(getAccessToken())) {
-    return transferDemoWashSession(sessionId, toStaffId, reason);
-  }
-
-  return apiRequest<TransferWashSessionResponse, { toStaffId: string; reason?: string }>({
-    method: "POST",
-    url: `${SESSION_BASE_URL}/${sessionId}/transfer`,
-    data: { toStaffId, reason },
   });
 }
 

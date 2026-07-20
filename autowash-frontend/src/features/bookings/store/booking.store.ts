@@ -63,6 +63,7 @@ const bookingStore = createStore<BookingStore>()(
           draft: EMPTY_BOOKING_DRAFT,
           expiresAt: null,
           validatedDiscount: null,
+          lastCreatedBooking: null,
         })),
       setLastCreatedBooking: (booking) =>
         set(() => ({

@@ -5,19 +5,44 @@ import type { ApiPaginatedResponse, ApiSuccessResponse } from "@/shared/types/ap
 
 const customerDiscountsQueryKey = ["customer-discounts"] as const;
 type CustomerDiscount = UserDiscount & { discount: Discount };
+type SpringPageResponse<T> = {
+  content?: T[];
+  number?: number;
+  size?: number;
+  totalElements?: number;
+  totalPages?: number;
+  last?: boolean;
+};
+
+function normalizeDiscountPage(payload: ApiPaginatedResponse<CustomerDiscount> | SpringPageResponse<CustomerDiscount>) {
+  if ("data" in payload) {
+    return {
+      items: payload.data ?? [],
+      pagination: payload.pagination,
+    };
+  }
+
+  return {
+    items: payload.content ?? [],
+    pagination: {
+      page: payload.number ?? 0,
+      limit: payload.size ?? 20,
+      total: payload.totalElements ?? payload.content?.length ?? 0,
+      totalPages: payload.totalPages ?? 1,
+      hasMore: payload.last === undefined ? false : !payload.last,
+    },
+  };
+}
 
 export function useCustomerDiscounts() {
   return useQuery({
     queryKey: customerDiscountsQueryKey,
     queryFn: async () => {
-      const response = await apiClient.get<ApiPaginatedResponse<CustomerDiscount>>(
+      const response = await apiClient.get<ApiPaginatedResponse<CustomerDiscount> | SpringPageResponse<CustomerDiscount>>(
         "/customer/discounts/my-discounts",
       );
 
-      return {
-        items: response.data.data,
-        pagination: response.data.pagination,
-      };
+      return normalizeDiscountPage(response.data);
     },
   });
 }
@@ -29,7 +54,7 @@ export function useClaimCustomerDiscount() {
       const response = await apiClient.post<ApiSuccessResponse<CustomerDiscount>>(
         `/customer/discounts/${discountId}/claim`,
       );
-      return response.data.data;
+      return "data" in response.data ? response.data.data : response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: customerDiscountsQueryKey });

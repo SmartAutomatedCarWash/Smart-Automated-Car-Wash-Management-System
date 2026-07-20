@@ -15,6 +15,10 @@ import type {
   ApplyBookingPointsRequest,
   ApplyBookingPointsResponse,
   CreateBookingResponse,
+  VnpayCheckoutResponse,
+  VnpayPaymentResultResponse,
+  PayBookingResponse,
+  PaymentMethod,
   CancelBookingResponse,
   PurchaseCustomerComboRequest,
   PurchaseCustomerComboResponse,
@@ -89,6 +93,36 @@ export async function holdBookingSlot(payload: HoldSlotRequest): Promise<HoldSlo
 
 export function releaseBookingSlot(payload: HoldSlotRequest) {
   return apiClient.delete("/slots/hold", { data: payload });
+}
+
+export function createVnpayCheckout(bookingId: string) {
+  return apiRequest<VnpayCheckoutResponse>({
+    method: "POST",
+    url: `/payments/bookings/${bookingId}/vnpay/checkout`,
+  });
+}
+
+export function changeBookingPaymentMethod(bookingId: string, paymentMethod: PaymentMethod) {
+  return apiRequest<PayBookingResponse, { paymentMethod: PaymentMethod }>({
+    method: "POST",
+    url: `/customers/bookings/${bookingId}/payment-method`,
+    data: { paymentMethod },
+  });
+}
+
+export function verifyVnpayReturn(params: Record<string, string>) {
+  return apiRequest<VnpayPaymentResultResponse>({
+    method: "GET",
+    url: "/payments/vnpay/return",
+    params,
+  });
+}
+
+export function queryVnpayTransaction(bookingId: string) {
+  return apiRequest<VnpayPaymentResultResponse>({
+    method: "POST",
+    url: `/payments/bookings/${bookingId}/vnpay/query`,
+  });
 }
 
 export async function listSlotAvailability(bookingDate: string, times: string[]): Promise<SlotAvailability[]> {

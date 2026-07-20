@@ -37,6 +37,7 @@ import {
   useBookingPackages,
   useBookingStaffOptions,
   useCreateCustomerBooking,
+  useCreateVnpayCheckout,
 } from "@/features/bookings/hooks/use-bookings";
 import { useSlotHold } from "@/features/bookings/hooks/use-slot-hold";
 import { useCustomerVehicles } from "@/features/vehicles/hooks/use-customer-vehicles";
@@ -66,13 +67,12 @@ const PAYMENT_OPTIONS: {
   },
   {
     method: "E_WALLET",
-    label: "E-wallet",
-    description: "Pay via MoMo, ZaloPay, VNPay or other e-wallets.",
+    label: "VNPay",
+    description: "Pay online through the VNPay payment gateway.",
     icon: Wallet,
-    badge: "Popular",
+    badge: "Online",
   },
 ];
-
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export function BookingConfirmPage() {
@@ -84,12 +84,15 @@ export function BookingConfirmPage() {
   const updateDraft = useBookingStore((state) => state.updateDraft);
   const resetDraft = useBookingStore((state) => state.resetDraft);
   const setExpiresAt = useBookingStore((state) => state.setExpiresAt);
-  const lastCreatedBooking = useBookingStore((state) => state.lastCreatedBooking);
-  const setLastCreatedBooking = useBookingStore((state) => state.setLastCreatedBooking);
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(draft.paymentMethod);
   const [showPaymentError, setShowPaymentError] = useState(false);
   const [expired, setExpired] = useState(false);
+  const [isRedirectingAfterCreate, setIsRedirectingAfterCreate] = useState(false);
+
+  useEffect(() => {
+    setPaymentMethod(draft.paymentMethod);
+  }, [draft.paymentMethod]);
 
   const vehiclesQuery = useCustomerVehicles();
   const packagesQuery = useBookingPackages();
@@ -97,6 +100,7 @@ export function BookingConfirmPage() {
   const combosQuery = useBookingCombos();
   const activeCustomerCombosQuery = useActiveCustomerCombos();
   const createBookingMutation = useCreateCustomerBooking();
+  const createVnpayCheckoutMutation = useCreateVnpayCheckout();
   const { releaseSlot, isReleasing } = useSlotHold();
 
   const vehicles = vehiclesQuery.data?.items ?? [];
@@ -108,35 +112,79 @@ export function BookingConfirmPage() {
     draft.mode === "COMBO"
       ? (activeCustomerCombos.find((item) => item.comboId === draft.comboId) ?? null)
       : null;
+  const selectedPackage =
+    draft.mode === "PACKAGE" && draft.packageId
+      ? (packages.find((item) => item.packageId === draft.packageId) ?? null)
+      : null;
+  const selectedCombo =
+    draft.mode === "COMBO" && draft.comboId
+      ? (combos.find((item) => item.comboId === draft.comboId) ?? null)
+      : null;
+  const activeAddonIds = useMemo(
+    () => new Set(addons.filter((addon) => addon.status === "ACTIVE").map((addon) => addon.addonId)),
+    [addons],
+  );
+  const selectedPackageServiceIds = useMemo(
+    () => new Set(selectedPackage?.serviceIds ?? []),
+    [selectedPackage],
+  );
+  const selectedComboServiceIds = useMemo(
+    () => new Set((selectedCombo?.services ?? []).map((service) => service.serviceId)),
+    [selectedCombo],
+  );
+  const allowedAddonIds = useMemo(() => {
+    if (draft.mode === "PACKAGE") {
+      return selectedPackageServiceIds;
+    }
+    if (selectedCombo) {
+      return new Set([...activeAddonIds].filter((addonId) => !selectedComboServiceIds.has(addonId)));
+    }
+    return activeAddonIds;
+  }, [activeAddonIds, draft.mode, selectedCombo, selectedComboServiceIds, selectedPackageServiceIds]);
+  const sanitizedAddonIds = useMemo(
+    () => draft.addonIds.filter((addonId) => activeAddonIds.has(addonId) && allowedAddonIds.has(addonId)),
+    [activeAddonIds, allowedAddonIds, draft.addonIds],
+  );
+  const hasStaleAddonIds = sanitizedAddonIds.length !== draft.addonIds.length;
+  const sanitizedDraft = useMemo(
+    () => ({ ...draft, addonIds: sanitizedAddonIds }),
+    [draft, sanitizedAddonIds],
+  );
 
   const summary = useMemo(
     () =>
-      buildBookingSummary(draft, {
+      buildBookingSummary(sanitizedDraft, {
         packages,
         addons,
         combos,
         voucher: validatedDiscount,
         ownedComboApplied: Boolean(selectedCustomerCombo),
       }),
-    [addons, combos, draft, packages, selectedCustomerCombo, validatedDiscount],
+    [addons, combos, packages, sanitizedDraft, selectedCustomerCombo, validatedDiscount],
   );
   const staffOptionsPayload = useMemo(() => {
-    if (!draft.bookingDate || !draft.bookingTime) return null;
-    if (draft.mode === "PACKAGE" && !draft.packageId) return null;
-    if (draft.mode === "COMBO" && !draft.comboId) return null;
+    if (hasStaleAddonIds) return null;
+    if (!sanitizedDraft.bookingDate || !sanitizedDraft.bookingTime) return null;
+    if (sanitizedDraft.mode === "PACKAGE" && !sanitizedDraft.packageId) return null;
+    if (sanitizedDraft.mode === "COMBO" && !sanitizedDraft.comboId) return null;
 
     return {
-      packageId: draft.mode === "PACKAGE" ? draft.packageId : undefined,
-      comboId: draft.mode === "COMBO" ? draft.comboId : undefined,
-      options: draft.addonIds,
-      bookingDate: draft.bookingDate,
-      bookingTime: draft.bookingTime,
+      packageId: sanitizedDraft.mode === "PACKAGE" ? sanitizedDraft.packageId : undefined,
+      comboId: sanitizedDraft.mode === "COMBO" ? sanitizedDraft.comboId : undefined,
+      options: sanitizedAddonIds,
+      bookingDate: sanitizedDraft.bookingDate,
+      bookingTime: sanitizedDraft.bookingTime,
     };
-  }, [draft.addonIds, draft.bookingDate, draft.bookingTime, draft.comboId, draft.mode, draft.packageId]);
+  }, [hasStaleAddonIds, sanitizedAddonIds, sanitizedDraft]);
   const staffOptionsQuery = useBookingStaffOptions(staffOptionsPayload);
   const staffOptions = staffOptionsQuery.data ?? [];
   const selectedStaff = staffOptions.find((staff) => staff.staffId === draft.staffId) ?? null;
   const staffUnavailable = staffOptionsQuery.isSuccess && staffOptions.length === 0;
+
+  useEffect(() => {
+    if (!hasStaleAddonIds) return;
+    updateDraft({ addonIds: sanitizedAddonIds, discountCode: "", staffId: "" });
+  }, [hasStaleAddonIds, sanitizedAddonIds, updateDraft]);
 
   useEffect(() => {
     if (staffOptions.length === 0) return;
@@ -146,11 +194,11 @@ export function BookingConfirmPage() {
   }, [draft.staffId, staffOptions, updateDraft]);
 
   useEffect(() => {
-    if (expired || lastCreatedBooking) return;
+    if (expired || isRedirectingAfterCreate) return;
     if (!draft.vehicleId || !draft.bookingDate || !draft.bookingTime || !expiresAt || expiresAt <= Date.now()) {
       router.replace("/customer/bookings/new");
     }
-  }, [draft.bookingDate, draft.bookingTime, draft.vehicleId, expired, expiresAt, lastCreatedBooking, router]);
+  }, [draft.bookingDate, draft.bookingTime, draft.vehicleId, expired, expiresAt, isRedirectingAfterCreate, router]);
 
   const releaseHeldSlot = useCallback(async () => {
     if (!draft.bookingDate || !draft.bookingTime) return;
@@ -197,10 +245,11 @@ export function BookingConfirmPage() {
       toast.error("No staff is available for this service window.");
       return;
     }
-    if (!isComboBooking && !paymentMethod) return;
+    const selectedPaymentMethod = paymentMethod ?? draft.paymentMethod;
+    if (!isComboBooking && !selectedPaymentMethod) return;
     if (!expiresAt || expiresAt <= Date.now()) { handleExpired(); return; }
-    const effectivePaymentMethod = isComboBooking ? ("CASH_AT_COUNTER" as PaymentMethod) : paymentMethod!;
-    const nextDraft = { ...draft, paymentMethod: effectivePaymentMethod, staffId: draft.staffId || selectedStaff?.staffId || "" };
+    const effectivePaymentMethod = isComboBooking ? ("CASH_AT_COUNTER" as PaymentMethod) : selectedPaymentMethod!;
+    const nextDraft = { ...sanitizedDraft, paymentMethod: effectivePaymentMethod, staffId: draft.staffId || selectedStaff?.staffId || "" };
     const errors = validateBookingDraft(nextDraft, summary, { requirePaymentMethod: !isComboBooking });
     if (Object.keys(errors).length > 0) {
       toast.error(Object.values(errors)[0] ?? "Please complete booking information.");
@@ -209,11 +258,33 @@ export function BookingConfirmPage() {
     try {
       updateDraft({ paymentMethod: effectivePaymentMethod });
       const booking = await createBookingMutation.mutateAsync(nextDraft);
-      setLastCreatedBooking(booking);
+      setIsRedirectingAfterCreate(true);
+
+      if (!isComboBooking && effectivePaymentMethod === "E_WALLET" && booking.pricing.finalAmount > 0) {
+        try {
+          const checkout = await createVnpayCheckoutMutation.mutateAsync(booking.bookingId);
+          resetDraft();
+          toast.success("Booking created. Redirecting to VNPay.");
+          window.location.href = checkout.paymentUrl;
+          return;
+        } catch (checkoutError) {
+          resetDraft();
+          setIsRedirectingAfterCreate(false);
+          toast.error(getErrorMessage(checkoutError));
+          router.push(`/customer/bookings/${booking.bookingId}`);
+          return;
+        }
+      }
+
       resetDraft();
-      toast.success("Booking confirmed.");
-      router.push(`/customer/bookings/${booking.bookingId}`);
+      toast.success(
+        booking.paymentMethod === "CASH_AT_COUNTER"
+          ? "Booking created. Waiting for manager confirmation."
+          : "Booking confirmed.",
+      );
+      window.location.href = `/customer/bookings/success?bookingId=${booking.bookingId}`;
     } catch (error) {
+      setIsRedirectingAfterCreate(false);
       toast.error(getErrorMessage(error));
     }
   };
@@ -379,7 +450,11 @@ export function BookingConfirmPage() {
                     <button
                       key={method}
                       type="button"
-                      onClick={() => { setPaymentMethod(method); setShowPaymentError(false); }}
+                      onClick={() => {
+                        setPaymentMethod(method);
+                        updateDraft({ paymentMethod: method });
+                        setShowPaymentError(false);
+                      }}
                       className={`relative flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                         active
                           ? "border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary)/0.3)]"
@@ -431,7 +506,7 @@ export function BookingConfirmPage() {
               type="button"
               variant="outline"
               onClick={() => void handleBack()}
-              disabled={isReleasing || createBookingMutation.isPending}
+              disabled={isReleasing || createBookingMutation.isPending || createVnpayCheckoutMutation.isPending}
               className="rounded-xl gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -440,15 +515,15 @@ export function BookingConfirmPage() {
             <Button
               type="button"
               onClick={() => void handleConfirm()}
-              disabled={createBookingMutation.isPending || isReleasing || staffOptionsQuery.isPending || staffUnavailable}
+              disabled={createBookingMutation.isPending || createVnpayCheckoutMutation.isPending || isReleasing || staffOptionsQuery.isPending || staffUnavailable}
               className="rounded-xl gap-2 px-8 font-bold"
             >
-              {createBookingMutation.isPending ? (
+              {createBookingMutation.isPending || createVnpayCheckoutMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Sparkles className="h-4 w-4" />
               )}
-              {createBookingMutation.isPending ? "Confirming..." : "Confirm booking"}
+              {createVnpayCheckoutMutation.isPending ? "Redirecting..." : createBookingMutation.isPending ? "Confirming..." : "Confirm booking"}
             </Button>
           </div>
         </div>

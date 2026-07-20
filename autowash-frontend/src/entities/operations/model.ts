@@ -122,18 +122,6 @@ export type CompleteWashSessionResponse = {
   awardedLoyaltyPoints: number;
 };
 
-export type TransferWashSessionResponse = {
-  auditId: string;
-  sessionId: string;
-  bookingId: string;
-  fromStaffId: string | null;
-  fromStaffName: string | null;
-  toStaffId: string;
-  toStaffName: string;
-  reason: string | null;
-  transferredAt: string;
-};
-
 export type CancelFaultType = "CUSTOMER_FAULT" | "CARWASH_FAULT";
 
 export type CancelWashSessionResponse = {

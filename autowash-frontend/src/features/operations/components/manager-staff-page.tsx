@@ -1,15 +1,14 @@
 "use client";
 
 import { useMemo, useState, type ComponentType } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, Car, CheckCircle2, Loader2, RefreshCcw, Repeat2, Star, Timer, UserRound, Users } from "lucide-react";
-import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { CalendarClock, Car, CheckCircle2, RefreshCcw, Star, Timer, UserRound, Users } from "lucide-react";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { DatePickerButton, getTodayInputValue } from "@/shared/ui/date-picker-button";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
-import { getActiveStaffOptions, getOperationsQueue, transferWashSession } from "@/features/operations/lib/operations-service";
+import { getActiveStaffOptions, getOperationsQueue } from "@/features/operations/lib/operations-service";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { OperationsQueueSession, StaffOption, WashSessionStatus } from "@/entities/operations";
 
@@ -62,24 +61,13 @@ export function ManagerStaffPage() {
     void queryClient.invalidateQueries({ queryKey: ["manager-operations"] });
   };
 
-  const transferMutation = useMutation({
-    mutationFn: ({ sessionId, staffId }: { sessionId: string; staffId: string }) => transferWashSession(sessionId, staffId, "Manager staff workload adjustment"),
-    onSuccess: () => {
-      refresh();
-      toast.success("Đã chuyển session cho staff mới.");
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast.error(getErrorMessage(error));
-    },
-  });
-
   return (
     <WorkspacePage className="space-y-5">
       <section className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-700">Team workload</p>
           <h1 className="mt-1 text-2xl font-black text-slate-950">Staff management</h1>
-          <p className="mt-1 text-sm text-slate-500">Theo dõi nhân viên active, session đang phụ trách và điều phối lại workload cho luồng MVP.</p>
+          <p className="mt-1 text-sm text-slate-500">Theo dõi nhân viên active và session đang phụ trách cho luồng MVP.</p>
         </div>
         <div className="relative z-50 flex flex-wrap items-center gap-2">
           <DatePickerButton value={selectedDate} onChange={setSelectedDate} label="Chọn ngày xem staff" buttonClassName="h-9" align="right" />
@@ -124,11 +112,7 @@ export function ManagerStaffPage() {
             {selectedStaff ? (
               <StaffDetailPanel
                 staff={selectedStaff}
-                staffOptions={staffOptions}
                 unassignedSessions={unassignedSessions}
-                transferringSessionId={transferMutation.variables?.sessionId}
-                transferring={transferMutation.isPending}
-                onTransfer={(sessionId, staffId) => transferMutation.mutate({ sessionId, staffId })}
               />
             ) : (
               <div className="py-12 text-center text-sm font-semibold text-slate-400">Chọn một staff để xem chi tiết.</div>
@@ -183,18 +167,10 @@ function StaffCard({ staff, selected, onSelect }: { staff: StaffWorkload; select
 
 function StaffDetailPanel({
   staff,
-  staffOptions,
   unassignedSessions,
-  transferring,
-  transferringSessionId,
-  onTransfer,
 }: {
   staff: StaffWorkload;
-  staffOptions: StaffOption[];
   unassignedSessions: OperationsQueueSession[];
-  transferring: boolean;
-  transferringSessionId?: string;
-  onTransfer: (sessionId: string, staffId: string) => void;
 }) {
   const activeSessions = [...staff.activeSessions, ...unassignedSessions];
 
@@ -206,7 +182,7 @@ function StaffDetailPanel({
         </div>
         <div>
           <p className="text-lg font-black text-slate-950">{staff.staffName}</p>
-          <p className="text-xs font-semibold text-slate-500">Session đang xử lý và phân công nhanh.</p>
+          <p className="text-xs font-semibold text-slate-500">Session đang xử lý theo phân công hiện tại.</p>
         </div>
       </div>
 
@@ -228,25 +204,6 @@ function StaffDetailPanel({
               </div>
               {!session.assignedStaffId ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-black text-amber-800">Unassigned</span> : null}
             </div>
-            <select
-              className="mt-3 h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-700 outline-none disabled:opacity-60"
-              defaultValue=""
-              disabled={transferring && transferringSessionId === session.sessionId}
-              onChange={(event) => {
-                if (!event.target.value) return;
-                onTransfer(session.sessionId, event.target.value);
-                event.target.value = "";
-              }}
-            >
-              <option value="">{transferring && transferringSessionId === session.sessionId ? "Đang chuyển..." : "Chuyển sang staff khác"}</option>
-              {staffOptions
-                .filter((option) => option.staffId !== session.assignedStaffId)
-                .map((option) => (
-                  <option key={option.staffId} value={option.staffId}>
-                    {option.staffName}
-                  </option>
-                ))}
-            </select>
           </div>
         ))}
         {activeSessions.length === 0 ? (

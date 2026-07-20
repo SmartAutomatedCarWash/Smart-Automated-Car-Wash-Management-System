@@ -4,7 +4,9 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import {
   applyBookingPoints,
   cancelCustomerBooking,
+  changeBookingPaymentMethod,
   createCustomerBooking,
+  createVnpayCheckout,
   getActiveWashTracking,
   getCustomerBookingDetail,
   getWashTrackingDetail,
@@ -17,6 +19,7 @@ import {
   listCustomerBookings,
   listSlotAvailability,
   purchaseCustomerCombo,
+  queryVnpayTransaction,
   validateBookingDiscount,
 } from "@/features/bookings/lib/booking-service";
 import {
@@ -42,6 +45,10 @@ import type {
   ApplyBookingPointsRequest,
   ApplyBookingPointsResponse,
   CreateBookingResponse,
+  VnpayCheckoutResponse,
+  VnpayPaymentResultResponse,
+  PayBookingResponse,
+  PaymentMethod,
   CancelBookingResponse,
   PurchaseCustomerComboRequest,
   PurchaseCustomerComboResponse,
@@ -263,6 +270,36 @@ export function useCreateCustomerBooking() {
         queryClient.refetchQueries({ queryKey: bookingQueryScope(userId), type: "active" }),
         queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId), type: "inactive" }),
       ]);
+    },
+  });
+}
+
+export function useCreateVnpayCheckout() {
+  return useMutation<VnpayCheckoutResponse, ApiErrorResponse, string>({
+    mutationFn: createVnpayCheckout,
+  });
+}
+
+export function useQueryVnpayTransaction(bookingId: string) {
+  const queryClient = useQueryClient();
+  const { userId } = useBookingQueryContext();
+
+  return useMutation<VnpayPaymentResultResponse, ApiErrorResponse>({
+    mutationFn: () => queryVnpayTransaction(bookingId),
+    onSuccess: async () => {
+      await invalidateBookingViews(queryClient, userId, bookingId);
+    },
+  });
+}
+
+export function useChangeBookingPaymentMethod(bookingId: string) {
+  const queryClient = useQueryClient();
+  const { userId } = useBookingQueryContext();
+
+  return useMutation<PayBookingResponse, ApiErrorResponse, PaymentMethod>({
+    mutationFn: (paymentMethod) => changeBookingPaymentMethod(bookingId, paymentMethod),
+    onSuccess: async () => {
+      await invalidateBookingViews(queryClient, userId, bookingId);
     },
   });
 }

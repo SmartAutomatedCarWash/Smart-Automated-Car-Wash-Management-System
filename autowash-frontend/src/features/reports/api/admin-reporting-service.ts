@@ -25,7 +25,7 @@ import type {
   UpdateAdminCustomerStatusPayload,
   UpdateAdminCustomerStatusResult,
 } from "@/entities/reports";
-import type { BookingDetail } from "@/entities/bookings";
+import type { BookingDetail, BookingStatus, VnpayPaymentResultResponse } from "@/entities/bookings";
 
 export async function listAdminAccounts(
   filters: AdminAccountsFilters,
@@ -68,6 +68,36 @@ export async function listAdminBookings(
 export async function getAdminBookingDetail(id: string): Promise<BookingDetail> {
   const response = await apiClient.get<ApiSuccessResponse<BookingDetail>>(`/admin/bookings/${id}`);
   return response.data.data;
+}
+
+export async function confirmAdminBooking(id: string): Promise<BookingDetail> {
+  return apiRequest<BookingDetail>({
+    method: "POST",
+    url: `/admin/bookings/${id}/confirm`,
+  });
+}
+
+export async function updateAdminBookingStatus(id: string, status: BookingStatus): Promise<BookingDetail> {
+  return apiRequest<BookingDetail, { status: BookingStatus }>({
+    method: "PATCH",
+    url: `/admin/bookings/${id}/status`,
+    data: { status },
+  });
+}
+
+export async function queryAdminVnpayTransaction(id: string): Promise<VnpayPaymentResultResponse> {
+  return apiRequest<VnpayPaymentResultResponse>({
+    method: "POST",
+    url: `/payments/bookings/${id}/vnpay/query`,
+  });
+}
+
+export async function refundAdminVnpayPayment(id: string, amount?: number): Promise<VnpayPaymentResultResponse> {
+  return apiRequest<VnpayPaymentResultResponse, { amount?: number }>({
+    method: "POST",
+    url: `/payments/bookings/${id}/vnpay/refund`,
+    data: amount ? { amount } : undefined,
+  });
 }
 
 export async function getAdminBusinessHealthReport(params: {

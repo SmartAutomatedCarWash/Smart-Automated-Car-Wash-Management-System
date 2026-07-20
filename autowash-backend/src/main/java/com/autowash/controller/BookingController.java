@@ -4,6 +4,7 @@ import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.BookingListItemResponse;
 import com.autowash.dto.CancelBookingRequest;
 import com.autowash.dto.CancelBookingResponse;
+import com.autowash.dto.ChangeBookingPaymentMethodRequest;
 import com.autowash.dto.BookingStaffOptionResponse;
 import com.autowash.dto.BookingStaffOptionsRequest;
 import com.autowash.dto.CreateBookingRequest;
@@ -117,6 +118,18 @@ public class BookingController {
         return ApiResponse.ok(
                 "Booking payment completed",
                 bookingService.payBooking(bookingId, request == null ? null : request.transactionRef())
+        );
+    }
+
+    @PostMapping("/{bookingId}/payment-method")
+    @Operation(summary = "Change payment method for a pending booking")
+    public ApiResponse<PayBookingResponse> changePaymentMethod(
+            @PathVariable String bookingId,
+            @Valid @RequestBody ChangeBookingPaymentMethodRequest request
+    ) {
+        return ApiResponse.ok(
+                "Booking payment method updated",
+                bookingService.changeBookingPaymentMethod(bookingId, request.paymentMethod())
         );
     }
 

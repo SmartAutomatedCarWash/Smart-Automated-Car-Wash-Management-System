@@ -194,8 +194,13 @@ public ComboResponse getComboById(String comboId) {
 }
 
     private PackageResponse toPackageResponse(Package pkg) {
-        List<String> features = packageServiceRepository.findByPackageIdOrderBySortOrderAsc(pkg.getId()).stream()
+        List<PackageService> packageServices = packageServiceRepository.findByPackageIdOrderBySortOrderAsc(pkg.getId());
+        List<String> features = packageServices.stream()
                 .map(PackageService::getOptionName)
+                .toList();
+        List<String> serviceIds = packageServices.stream()
+                .map(PackageService::getOptionId)
+                .map(UUID::toString)
                 .toList();
 
         Double avgRating = reviewRepository.getAverageRatingByPackageId(pkg.getId());
@@ -210,7 +215,7 @@ public ComboResponse getComboById(String comboId) {
         return catalogMapper.toPackageResponse(
                 pkg,
                 features,
-                null,
+                serviceIds,
                 split(pkg.getImageUrl()),
                 popularity,
                 avgRating != null ? avgRating : 0.0,

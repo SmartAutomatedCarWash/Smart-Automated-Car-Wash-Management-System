@@ -14,7 +14,6 @@ import com.autowash.dto.StaffDashboardSummaryResponse;
 import com.autowash.dto.StaffOptionResponse;
 import com.autowash.dto.StaffSessionHistoryResponse;
 import com.autowash.dto.StaffTodayResponse;
-import com.autowash.dto.TransferWashSessionResponse;
 import com.autowash.entity.Booking;
 import com.autowash.entity.BookingDetail;
 import com.autowash.entity.Notification;
@@ -282,44 +281,6 @@ public class OperationsServiceImpl implements OperationsService {
                 .status(session.getStatus().name())
                 .completedAt(session.getCompletedAt())
                 .awardedLoyaltyPoints(earnResult.pointsAwarded())
-                .build();
-    }
-
-    @Transactional
-    public TransferWashSessionResponse transferSession(UUID sessionId, UUID toStaffId, String reason) {
-        WashSession session = requireSessionForCurrentUser(sessionId);
-        if (session.getStatus() == WashSessionStatus.COMPLETED || session.getStatus() == WashSessionStatus.CANCELLED) {
-            throw new ApiException(
-                    HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Completed or cancelled sessions cannot be transferred",
-                    ErrorCode.BUSINESS_RULE_VIOLATION
-            );
-        }
-
-        User fromStaff = session.getAssignedStaff();
-        User toStaff = staffAssignmentService.requireActiveStaff(toStaffId);
-        if (fromStaff != null && fromStaff.getId().equals(toStaff.getId())) {
-            throw new ApiException(
-                    HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Session is already assigned to this staff member",
-                    ErrorCode.BUSINESS_RULE_VIOLATION
-            );
-        }
-
-        String normalizedReason = reason == null || reason.isBlank() ? null : reason.trim();
-        session.assignStaff(toStaff);
-        session.getBooking().assignStaff(toStaff);
-
-        return TransferWashSessionResponse.builder()
-                .auditId(UUID.randomUUID())
-                .sessionId(session.getId())
-                .bookingId(session.getBooking().getId().toString())
-                .fromStaffId(fromStaff == null ? null : fromStaff.getId())
-                .fromStaffName(fromStaff == null ? null : fromStaff.getFullName())
-                .toStaffId(toStaff.getId())
-                .toStaffName(toStaff.getFullName())
-                .reason(normalizedReason)
-                .transferredAt(Instant.now())
                 .build();
     }
 

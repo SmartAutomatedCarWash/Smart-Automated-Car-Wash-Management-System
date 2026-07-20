@@ -46,7 +46,7 @@ public class OperationsQueueController {
     }
 
     @GetMapping("/staff/active")
-    @Operation(summary = "List active staff members for transfer")
+    @Operation(summary = "List active staff members for assignment")
     public ApiResponse<List<StaffOptionResponse>> listActiveStaff() {
         return ApiResponse.ok("Active staff retrieved", operationsService.listActiveStaff());
     }

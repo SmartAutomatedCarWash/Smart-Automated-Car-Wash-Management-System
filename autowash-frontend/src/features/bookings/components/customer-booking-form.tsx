@@ -44,6 +44,7 @@ import {
   generateTimeSlotsFromRange,
   buildBookingSummary,
   formatBookingCurrency,
+  formatLocalDateInput,
   getModeLabel,
   validateBookingDraft,
 } from "@/features/bookings/lib/booking-format";
@@ -80,8 +81,8 @@ import {
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-function getTomorrowDate() {
-  return new Date().toISOString().slice(0, 10);
+function getTodayDate() {
+  return formatLocalDateInput(0);
 }
 
 function optionCardClass(active: boolean, disabled = false) {
@@ -181,10 +182,10 @@ const PAYMENT_OPTIONS: {
   },
   {
     method: "E_WALLET",
-    label: "E-wallet",
-    description: "Pay via MoMo, ZaloPay or VNPay.",
+    label: "VNPay",
+    description: "Pay online through VNPay.",
     icon: Wallet,
-    badge: "Popular",
+    badge: "Online",
   },
 ];
 
@@ -461,7 +462,7 @@ function AmPmTimePicker({
 
   // When booking date is today, hide time slots that have already passed
   const visibleSlots = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getTodayDate();
     if (bookingDate !== today) return timeSlots;
     const now = new Date();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
@@ -710,7 +711,7 @@ function TimeSlotGrid({
   isRefreshing?: boolean;
 }) {
   const visibleSlotsMap = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getTodayDate();
     const now = new Date();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -927,7 +928,10 @@ export function CustomerBookingForm() {
   );
 
   useEffect(() => {
-    if (!draft.bookingDate) updateDraft({ bookingDate: getTomorrowDate() });
+    const today = getTodayDate();
+    if (!draft.bookingDate || draft.bookingDate < today) {
+      updateDraft({ bookingDate: today, bookingTime: "", staffId: "" });
+    }
   }, [draft.bookingDate, updateDraft]);
 
   useEffect(() => {
@@ -1064,7 +1068,7 @@ export function CustomerBookingForm() {
   );
   const selectedPackageAddons =
     selectedPackage
-      ? addons.filter((addon) => addon.status === "ACTIVE" && (selectedPackageServiceIds.size === 0 || selectedPackageServiceIds.has(addon.addonId)))
+      ? addons.filter((addon) => addon.status === "ACTIVE" && selectedPackageServiceIds.has(addon.addonId))
       : [];
   const selectedComboServiceIds = useMemo(
     () => new Set((selectedCombo?.services ?? []).map((service) => service.serviceId)),
@@ -1091,7 +1095,7 @@ export function CustomerBookingForm() {
     const activeAddonIds = new Set(addons.filter((addon) => addon.status === "ACTIVE").map((addon) => addon.addonId));
     const allowedAddonIds =
       draft.mode === "PACKAGE"
-        ? (selectedPackageServiceIds.size > 0 ? selectedPackageServiceIds : activeAddonIds)
+        ? selectedPackageServiceIds
         : selectedCombo
           ? new Set(addons.map((addon) => addon.addonId).filter((addonId) => !selectedComboServiceIds.has(addonId)))
           : activeAddonIds;
@@ -1607,7 +1611,7 @@ export function CustomerBookingForm() {
                 </label>
                 <DatePickerButton
                   value={draft.bookingDate}
-                  min={getTomorrowDate()}
+                  min={getTodayDate()}
                   onChange={(bookingDate) => updateDraft({ bookingDate, staffId: "" })}
                   label="Select a day"
                   buttonClassName="h-11 w-full justify-start rounded-xl border-input bg-background text-sm"
@@ -1670,7 +1674,7 @@ export function CustomerBookingForm() {
               summary={summary}
               validatedDiscount={validatedDiscount}
               discountMutation={discountMutation}
-              customerDiscounts={customerDiscountsQuery.data?.items.filter((item) => Boolean(item.discount.code)).map((item) => ({ code: item.discount.code ?? "", name: item.discount.name, discountType: item.discount.discountType, discountValue: item.discount.discountValue })) ?? []}
+              customerDiscounts={(customerDiscountsQuery.data?.items ?? []).filter((item) => Boolean(item.discount?.code)).map((item) => ({ code: item.discount.code ?? "", name: item.discount.name, discountType: item.discount.discountType, discountValue: item.discount.discountValue }))}
               onApply={(code) => void validateDiscount(code)}
               onClear={clearDiscount}
               onCodeChange={handleDiscountCodeChange}
