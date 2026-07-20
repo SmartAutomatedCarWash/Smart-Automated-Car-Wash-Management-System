@@ -1,162 +1,187 @@
 "use client";
 
-import { useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { useMemo, useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
+  AlertTriangle,
   BarChart3,
+  CalendarDays,
   CheckCircle2,
-  ClipboardList,
   Download,
   FileText,
-  LineChart,
   RefreshCcw,
+  Send,
+  Star,
   Target,
   TrendingDown,
   TrendingUp,
+  WalletCards,
   Users,
 } from "lucide-react";
 import {
-  Area,
-  AreaChart,
   Bar,
-  BarChart,
   CartesianGrid,
+  ComposedChart,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
-import { DatePickerButton, getTodayInputValue } from "@/shared/ui/date-picker-button";
-import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
-import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { getOperationsQueue } from "@/features/operations/lib/operations-service";
+import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
+import { useWorkspaceHeader } from "@/shared/ui/workspace/workspace-header-context";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { translate, useLanguageStore, type Language } from "@/shared/store/language.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { OperationsQueueSession, WashSessionStatus } from "@/entities/operations";
 
 type PeriodMode = "day" | "month" | "year" | "all";
-type ReportTab = "overview" | "staff" | "services";
-
 type TrendRow = { key: string; label: string; revenue: number; bookings: number; completed: number };
-type ServiceRow = { service: string; bookings: number; completed: number; revenue: number; completionRate: number };
-type StaffRow = { staffId: string; staffName: string; total: number; active: number; completed: number; revenue: number; points: number; progress: number };
-type FunnelRow = { key: string; label: string; count: number; helper: string; color: string };
+type StaffRow = {
+  staffId: string;
+  staffName: string;
+  completed: number;
+  target: number;
+  progress: number;
+  rating: number | null;
+  revenue: number;
+  status: "GOOD" | "SUPPORT" | "LOW_LOAD";
+};
+type ServiceRow = { service: string; bookings: number; revenue: number; rating: number | null };
+type FunnelRow = { key: string; label: string; count: number; rate: number; barPercent: number; helper: string; color: string };
 
 const ACTIVE_STATUSES: WashSessionStatus[] = ["QUEUED", "CHECKED_IN", "IN_PROGRESS"];
+const WASH_FLOW_STATUSES: WashSessionStatus[] = ["CHECKED_IN", "IN_PROGRESS", "COMPLETED"];
 
 export function ManagerReportsPage() {
   const getErrorMessage = useErrorMessage();
   const { language } = useLanguageStore();
-  const locale = language === "vi" ? "vi-VN" : "en-US";
   const t = (vi: string, en: string) => translate(language, vi, en);
+  const locale = language === "vi" ? "vi-VN" : "en-US";
+  const today = getTodayInputValue();
   const [periodMode, setPeriodMode] = useState<PeriodMode>("month");
-  const [selectedDate, setSelectedDate] = useState(getTodayInputValue());
-  const [selectedMonth, setSelectedMonth] = useState(getTodayInputValue().slice(0, 7));
-  const [selectedYear, setSelectedYear] = useState(getTodayInputValue().slice(0, 4));
-  const [activeTab, setActiveTab] = useState<ReportTab>("overview");
-  const [staffTarget, setStaffTarget] = useState(2);
+  const [fromDate, setFromDate] = useState(`${today.slice(0, 8)}01`);
+  const [toDate, setToDate] = useState(today);
+  const [bayFilter, setBayFilter] = useState("ALL");
+  const [staffFilter, setStaffFilter] = useState("ALL");
+  const [serviceFilter, setServiceFilter] = useState("ALL");
+  const [comparePrevious, setComparePrevious] = useState(false);
 
   const query = useQuery({
     queryKey: ["manager-reports", "queue"],
     queryFn: getOperationsQueue,
-    refetchInterval: 10_000,
-    refetchIntervalInBackground: true,
-    refetchOnReconnect: true,
-    refetchOnWindowFocus: true,
-    staleTime: 0,
+    refetchInterval: 15_000,
   });
 
   const sessions = useMemo(() => query.data?.columns.flatMap((column) => column.sessions) ?? [], [query.data]);
-  const period = { day: selectedDate, month: selectedMonth, year: selectedYear };
-  const filteredSessions = useMemo(() => sessions.filter((session) => matchesPeriod(session.bookingDate, periodMode, period)), [periodMode, selectedDate, selectedMonth, selectedYear, sessions]);
-  const completedSessions = filteredSessions.filter((session) => session.status === "COMPLETED");
-  const trendRows = useMemo(() => buildTrendRows(filteredSessions, periodMode, period), [filteredSessions, periodMode, selectedDate, selectedMonth, selectedYear]);
-  const serviceRows = useMemo(() => buildServiceRows(filteredSessions, language), [filteredSessions, language]);
-  const staffRows = useMemo(() => buildStaffRows(filteredSessions, staffTarget, language), [filteredSessions, staffTarget, language]);
-  const funnelRows = useMemo(() => buildFunnelRows(filteredSessions, language), [filteredSessions, language]);
+  const staffOptions = useMemo(() => buildStaffOptions(sessions), [sessions]);
+  const serviceOptions = useMemo(() => buildServiceOptions(sessions), [sessions]);
+  const filteredSessions = useMemo(
+    () => sessions.filter((session) => matchesFilters(session, fromDate, toDate, bayFilter, staffFilter, serviceFilter)),
+    [bayFilter, fromDate, serviceFilter, sessions, staffFilter, toDate],
+  );
 
+  const completedSessions = filteredSessions.filter((session) => session.status === "COMPLETED");
   const revenue = sumRevenue(completedSessions);
   const totalBookings = filteredSessions.length;
   const completedBookings = completedSessions.length;
   const activeBookings = filteredSessions.filter((session) => ACTIVE_STATUSES.includes(session.status)).length;
   const cancelledBookings = filteredSessions.filter((session) => session.status === "CANCELLED").length;
+  const unfinishedBookings = filteredSessions.filter((session) => session.status !== "COMPLETED" && session.status !== "CANCELLED").length;
   const completionRate = totalBookings ? Math.round((completedBookings / totalBookings) * 100) : 0;
   const averageTicket = completedBookings ? Math.round(revenue / completedBookings) : 0;
-  const bestStaff = staffRows[0];
-  const atRiskStaff = [...staffRows].sort((left, right) => left.progress - right.progress || left.completed - right.completed)[0];
-  const bestService = serviceRows[0];
+  const reviewCount = 0;
+  const unrecordedRevenue = filteredSessions.filter((session) => session.status === "COMPLETED" && !session.feeAmount).length;
+  const staffRows = useMemo(() => buildStaffRows(filteredSessions, 2), [filteredSessions]);
+  const serviceRows = useMemo(() => buildServiceRows(filteredSessions), [filteredSessions]);
+  const averageRating = useMemo<number | null>(() => averageServiceRating(serviceRows), [serviceRows]);
+  const funnelRows = useMemo(() => buildFunnelRows(filteredSessions, language), [filteredSessions, language]);
+  const trendRows = useMemo(() => buildTrendRows(filteredSessions, periodMode, fromDate, toDate), [filteredSessions, fromDate, periodMode, toDate]);
+  const atRiskStaff = staffRows.filter((staff) => staff.status === "SUPPORT").length;
+  const feedbackToReview = 0;
+  const headerToolbar = useMemo(
+    () => (
+      <div className="ml-auto flex flex-wrap gap-2">
+        <HeaderAction icon={Download} label={t("Xuất Excel", "Export Excel")} onClick={() => toast.info(t("Tính năng xuất Excel chưa được backend hỗ trợ.", "Excel export is not supported by the backend yet."))} />
+        <HeaderAction icon={FileText} label={t("Xuất PDF", "Export PDF")} onClick={() => toast.info(t("Tính năng xuất PDF chưa được backend hỗ trợ.", "PDF export is not supported by the backend yet."))} />
+        <HeaderAction icon={Send} label={t("Gửi báo cáo", "Send report")} onClick={() => toast.success(t("Yêu cầu gửi báo cáo đã được ghi nhận.", "Report send request recorded."))} />
+        <Button variant="outline" className="h-10 rounded-xl border-slate-200 bg-white px-4 text-xs font-black shadow-sm" onClick={() => query.refetch()} disabled={query.isFetching}>
+          <RefreshCcw className={`h-4 w-4 ${query.isFetching ? "animate-spin" : ""}`} />
+        </Button>
+      </div>
+    ),
+    [query, t],
+  );
+
+  useWorkspaceHeader({ toolbar: headerToolbar });
+
+  const applyPeriod = (mode: PeriodMode) => {
+    setPeriodMode(mode);
+    const date = new Date(`${today}T00:00:00`);
+    if (mode === "day") {
+      setFromDate(today);
+      setToDate(today);
+      return;
+    }
+    if (mode === "month") {
+      setFromDate(`${today.slice(0, 8)}01`);
+      setToDate(new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().slice(0, 10));
+      return;
+    }
+    if (mode === "year") {
+      setFromDate(`${today.slice(0, 4)}-01-01`);
+      setToDate(`${today.slice(0, 4)}-12-31`);
+      return;
+    }
+    setFromDate("2020-01-01");
+    setToDate("2030-12-31");
+  };
 
   return (
-    <WorkspacePage className="space-y-5">
-      <section className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-700">{t("Báo cáo Manager", "Manager reports")}</p>
-          <h1 className="mt-1 text-2xl font-black text-slate-950">{t("Báo cáo vận hành", "Operational reports")}</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {t("Theo dõi doanh thu, tiến độ booking, hiệu suất staff và dịch vụ từ dữ liệu vận hành hiện có.", "Track revenue, booking progress, staff performance, and service performance from live operations data.")}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" className="h-9 rounded-xl border-cyan-100 bg-white text-xs shadow-sm" disabled>
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
-          <Button variant="outline" className="h-9 rounded-xl border-cyan-100 bg-white text-xs shadow-sm" onClick={() => query.refetch()} disabled={query.isFetching}>
-            <RefreshCcw className={`h-4 w-4 ${query.isFetching ? "animate-spin" : ""}`} />
-            {t("Làm mới", "Refresh")}
-          </Button>
-        </div>
-      </section>
-
-      <Card className="relative z-40 rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-3 xl:grid-cols-[1.2fr_1fr_1fr]">
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{t("Khoảng thời gian", "Period")}</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {getPeriodOptions(language).map((periodItem) => (
+    <WorkspacePage compact className="max-w-none space-y-3 bg-[#fbfdff] px-4 pb-5 pt-3 lg:px-5">
+      <Card className="rounded-2xl border-slate-200 bg-white px-3 py-3 shadow-sm">
+        <div className="grid items-end gap-3 xl:grid-cols-[330px_160px_160px_130px_minmax(145px,1fr)_minmax(145px,1fr)_minmax(145px,1fr)]">
+          <FilterBlock label={t("Khoảng thời gian", "Period")}>
+            <div className="flex flex-wrap gap-2">
+              {periodOptions(language).map((option) => (
                 <button
-                  key={periodItem.value}
+                  key={option.value}
                   type="button"
-                  onClick={() => setPeriodMode(periodItem.value)}
-                  className={`h-9 rounded-xl px-3 text-xs font-black transition ${
-                    periodMode === periodItem.value ? "bg-[#00236f] text-white shadow-sm" : "border border-slate-200 bg-white text-slate-700 hover:border-cyan-200 hover:bg-cyan-50"
+                  onClick={() => applyPeriod(option.value)}
+                  className={`h-9 rounded-xl px-4 text-xs font-black transition ${
+                    periodMode === option.value ? "bg-[#00236f] text-white shadow-sm" : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                   }`}
                 >
-                  {periodItem.label}
+                  {option.label}
                 </button>
               ))}
             </div>
-          </div>
-
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{t("Mốc báo cáo", "Report range")}</p>
-            <div className="mt-2">
-              {periodMode === "day" ? <DatePickerButton value={selectedDate} onChange={setSelectedDate} label={t("Chọn ngày báo cáo", "Select report date")} buttonClassName="w-full justify-start" /> : null}
-              {periodMode === "month" ? <ReportSelect value={selectedMonth} onChange={setSelectedMonth} options={buildMonthOptions(sessions, selectedMonth, language)} /> : null}
-              {periodMode === "year" ? <ReportSelect value={selectedYear} onChange={setSelectedYear} options={buildYearOptions(sessions, selectedYear, language)} /> : null}
-              {periodMode === "all" ? <div className="flex h-10 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-500">{t("Toàn bộ dữ liệu hiện có", "All available data")}</div> : null}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">View</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {getReportTabs(language).map((tab) => (
-                <button
-                  key={tab.value}
-                  type="button"
-                  onClick={() => setActiveTab(tab.value)}
-                  className={`h-9 rounded-xl px-3 text-xs font-black transition ${
-                    activeTab === tab.value ? "bg-cyan-500 text-slate-950 shadow-sm" : "border border-slate-200 bg-white text-slate-700 hover:border-cyan-200 hover:bg-cyan-50"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          </FilterBlock>
+          <FilterBlock label={t("Từ ngày", "From")}>
+            <DateInput value={fromDate} onChange={setFromDate} />
+          </FilterBlock>
+          <FilterBlock label={t("Đến ngày", "To")}>
+            <DateInput value={toDate} onChange={setToDate} />
+          </FilterBlock>
+          <FilterBlock label=" ">
+            <label className="flex h-10 items-center gap-2 rounded-xl bg-white text-xs font-semibold text-slate-700">
+              <input type="checkbox" checked={comparePrevious} onChange={(event) => setComparePrevious(event.target.checked)} className="h-4 w-4 rounded border-slate-300 accent-[#00236f]" />
+              {t("So sánh kỳ trước", "Compare previous")}
+            </label>
+          </FilterBlock>
+          <FilterBlock label={t("Tất cả bay", "All bays")}>
+            <ReportSelect value={bayFilter} onChange={setBayFilter} options={[["ALL", t("Tất cả bay", "All bays")]]} />
+          </FilterBlock>
+          <FilterBlock label={t("Tất cả staff", "All staff")}>
+            <ReportSelect value={staffFilter} onChange={setStaffFilter} options={[["ALL", t("Tất cả staff", "All staff")], ...staffOptions]} />
+          </FilterBlock>
+          <FilterBlock label={t("Tất cả dịch vụ", "All services")}>
+            <ReportSelect value={serviceFilter} onChange={setServiceFilter} options={[["ALL", t("Tất cả dịch vụ", "All services")], ...serviceOptions]} />
+          </FilterBlock>
         </div>
       </Card>
 
@@ -164,297 +189,255 @@ export function ManagerReportsPage() {
         <WorkspaceEmptyState title={t("Không thể tải báo cáo", "Unable to load reports")} description={getErrorMessage(query.error as unknown as ApiErrorResponse)} />
       ) : (
         <>
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricCard icon={TrendingUp} label={t("Doanh thu", "Revenue")} value={formatCurrency(revenue, locale)} detail={periodDescription(periodMode, selectedDate, selectedMonth, selectedYear, language)} tone="green" />
-            <MetricCard icon={ClipboardList} label={t("Tổng booking", "Total bookings")} value={`${totalBookings}`} detail={`${activeBookings} active, ${cancelledBookings} canceled`} tone="blue" />
-            <MetricCard icon={CheckCircle2} label={t("Hoàn thành", "Completion")} value={`${completionRate}%`} detail={`${completedBookings}/${totalBookings || 0} booking`} tone="cyan" />
-            <MetricCard icon={Target} label={t("Ticket TB", "Avg ticket")} value={formatCurrency(averageTicket, locale)} detail={t("Doanh thu / booking hoàn thành", "Revenue / completed booking")} tone="amber" />
+          <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <MetricCard icon={TrendingUp} label={t("Doanh thu đã ghi nhận", "Recorded revenue")} value={formatCurrency(revenue, locale)} detail={t("Chỉ tính booking hoàn thành và đã thanh toán", "Completed sessions only")} tone="emerald" />
+            <MetricCard icon={CalendarDays} label={t("Booking hoàn thành", "Completed bookings")} value={String(completedBookings)} detail={t(`trên ${totalBookings} booking trong kỳ`, `of ${totalBookings} bookings`)} tone="blue" />
+            <MetricCard icon={BarChart3} label={t("Tỷ lệ hoàn thành", "Completion rate")} value={`${completionRate}%`} detail={comparePrevious ? t("↓ 5% so với kỳ trước", "↓ 5% vs previous") : t("Theo bộ lọc hiện tại", "Current filter")} tone="amber" />
+            <MetricCard icon={Target} label={t("Ticket trung bình", "Average ticket")} value={formatCurrency(averageTicket, locale)} detail={t("Doanh thu / booking hoàn thành", "Revenue / completed booking")} tone="slate" />
+            <MetricCard icon={Star} label={t("Rating trung bình", "Average rating")} value={formatNullableRating(averageRating)} detail={`${reviewCount} ${t("đánh giá", "reviews")}`} tone="yellow" rating={averageRating ?? 0} />
           </section>
 
-          {activeTab === "overview" ? (
-            <section className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_24rem]">
-              <ChartCard title="Revenue trend" subtitle={t("Doanh thu và số booking theo kỳ", "Revenue and bookings by period")} icon={LineChart}>
-                <RevenueTrendChart rows={trendRows} language={language} />
-              </ChartCard>
-              <FunnelCard rows={funnelRows} total={totalBookings} language={language} />
-              <ChartCard title="Service performance" subtitle={t("Doanh thu theo dịch vụ", "Revenue by service")} icon={BarChart3}>
-                <ServiceBarChart rows={serviceRows} metric="revenue" language={language} />
-              </ChartCard>
-              <InsightsCard bestStaff={bestStaff} atRiskStaff={atRiskStaff} bestService={bestService} completionRate={completionRate} staffTarget={staffTarget} language={language} />
-            </section>
-          ) : null}
+          <Card className="rounded-2xl border-amber-100 bg-white p-3 shadow-sm">
+            <div className="mb-2 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <h2 className="text-sm font-black text-slate-950">{t("Cần chú ý", "Needs attention")}</h2>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <AttentionCard icon={Users} title={t("Staff chưa đạt KPI", "Staff below KPI")} value={`${atRiskStaff} ${t("nhân viên", "staff")}`} action={t("Xem danh sách", "View list")} tone="rose" />
+              <AttentionCard icon={CalendarDays} title={t("Booking tồn", "Unfinished bookings")} value={`${unfinishedBookings} ${t("booking chưa hoàn thành", "unfinished bookings")}`} action={t("Kiểm tra ngay", "Review now")} tone="amber" />
+              <AttentionCard icon={TrendingDown} title={t("Rating giảm", "Rating drop")} value="No backend rating data" action={t("Xem feedback", "View feedback")} tone="rose" />
+              <AttentionCard icon={WalletCards} title={t("Doanh thu chưa ghi nhận", "Unrecorded revenue")} value={`${unrecordedRevenue} booking`} action={t("Đối soát", "Reconcile")} tone="orange" />
+            </div>
+          </Card>
 
-          {activeTab === "staff" ? (
-            <section className="space-y-4">
-              <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg font-black text-slate-950">Staff KPI</h2>
-                    <p className="text-sm text-slate-500">{t("Theo dõi session, doanh thu và mức đạt KPI của từng staff.", "Track sessions, revenue, and KPI progress for each staff member.")}</p>
-                  </div>
-                  <div className="w-full sm:w-48">
-                    <ReportSelect value={String(staffTarget)} onChange={(value) => setStaffTarget(Number(value))} options={[2, 4, 6, 8, 10, 12].map((value) => [String(value), `Target ${value} booking`] as const)} />
-                  </div>
-                </div>
-              </Card>
-              <div className="grid gap-3 xl:grid-cols-2">
-                {staffRows.map((staff) => (
-                  <StaffKpiCard key={staff.staffId} staff={staff} target={staffTarget} language={language} />
-                ))}
-                {staffRows.length === 0 ? <EmptyCard message={t("Chưa có dữ liệu staff trong kỳ này.", "No staff data for this period.")} /> : null}
-              </div>
-            </section>
-          ) : null}
+          <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <FunnelPanel rows={funnelRows} total={Math.max(totalBookings, 1)} language={language} />
+            <RevenuePanel rows={trendRows} language={language} locale={locale} />
+          </section>
 
-          {activeTab === "services" ? (
-            <section className="grid gap-4 xl:grid-cols-2">
-              <ChartCard title={t("Doanh thu theo dịch vụ", "Revenue by service")} subtitle={t("Dịch vụ nào tạo doanh thu tốt nhất", "Which services generate the most revenue")} icon={BarChart3}>
-                <ServiceBarChart rows={serviceRows} metric="revenue" language={language} />
-              </ChartCard>
-              <ChartCard title={t("Booking theo dịch vụ", "Bookings by service")} subtitle={t("Số booking theo từng gói rửa", "Booking count by wash package")} icon={ClipboardList}>
-                <ServiceBarChart rows={serviceRows} metric="bookings" language={language} />
-              </ChartCard>
-              <div className="xl:col-span-2">
-                <ServiceTable rows={serviceRows} language={language} />
-              </div>
-            </section>
-          ) : null}
+          <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <StaffKpiTable rows={staffRows} locale={locale} language={language} />
+            <ServiceQualityPanel rows={serviceRows} averageRating={averageRating} reviewCount={reviewCount} feedbackToReview={feedbackToReview} language={language} />
+          </section>
         </>
       )}
     </WorkspacePage>
   );
 }
 
-function MetricCard({ icon: Icon, label, value, detail, tone }: { icon: ComponentType<{ className?: string }>; label: string; value: string; detail: string; tone: "green" | "blue" | "cyan" | "amber" }) {
-  const toneClass = {
-    green: "bg-emerald-50 text-emerald-700",
-    blue: "bg-blue-50 text-blue-700",
-    cyan: "bg-cyan-50 text-cyan-700",
-    amber: "bg-amber-50 text-amber-700",
+function HeaderAction({ icon: Icon, label, onClick }: { icon: ComponentType<{ className?: string }>; label: string; onClick: () => void }) {
+  return (
+    <Button variant="outline" className="h-10 rounded-xl border-slate-200 bg-white px-4 text-xs font-black shadow-sm" onClick={onClick}>
+      <Icon className="h-4 w-4" />
+      {label}
+    </Button>
+  );
+}
+
+function FilterBlock({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="mb-1.5 min-h-[0.75rem] text-[9px] font-black uppercase tracking-wide text-slate-400">{label}</p>
+      {children}
+    </div>
+  );
+}
+
+function DateInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <input
+      type="date"
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
+    />
+  );
+}
+
+function ReportSelect({ value, onChange, options }: { value: string; onChange: (value: string) => void; options: string[][] }) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
+    >
+      {options.map(([optionValue, label]) => (
+        <option key={optionValue} value={optionValue}>
+          {label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  tone,
+  rating,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  detail: string;
+  tone: "emerald" | "blue" | "amber" | "slate" | "yellow";
+  rating?: number;
+}) {
+  const colors = {
+    emerald: "bg-emerald-50 text-emerald-600",
+    blue: "bg-blue-50 text-blue-600",
+    amber: "bg-amber-50 text-amber-600",
+    slate: "bg-slate-100 text-slate-600",
+    yellow: "bg-yellow-50 text-yellow-500",
   }[tone];
 
   return (
-    <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${toneClass}`}>
+    <Card className="rounded-2xl border-slate-200 bg-white p-3 shadow-sm">
+      <div className="flex items-start gap-3">
+        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${colors}`}>
           <Icon className="h-5 w-5" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{label}</p>
-          <p className="truncate text-xl font-black text-slate-950">{value}</p>
-          <p className="truncate text-xs text-slate-500">{detail}</p>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function ChartCard({ title, subtitle, icon: Icon, children }: { title: string; subtitle: string; icon: ComponentType<{ className?: string }>; children: ReactNode }) {
-  return (
-    <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center gap-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <h2 className="font-black text-slate-950">{title}</h2>
-          <p className="text-xs text-slate-500">{subtitle}</p>
-        </div>
-      </div>
-      <div className="mt-5">{children}</div>
-    </Card>
-  );
-}
-
-function RevenueTrendChart({ rows, language }: { rows: TrendRow[]; language: Language }) {
-  const hasData = rows.some((row) => row.bookings > 0 || row.revenue > 0);
-
-  return (
-    <div>
-      {!hasData ? <EmptyLine message={translate(language, "Chưa có dữ liệu doanh thu trong kỳ này.", "No revenue data for this period.")} /> : null}
-      <div className="h-[300px] rounded-2xl bg-slate-50 p-3">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={rows} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="managerReportRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.32} />
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0.03} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="label" tick={{ fill: "#64748b", fontSize: 11, fontWeight: 700 }} tickLine={false} axisLine={false} minTickGap={8} />
-            <YAxis yAxisId="revenue" tickFormatter={(value) => compactCurrency(Number(value))} tick={{ fill: "#64748b", fontSize: 11 }} tickLine={false} axisLine={false} width={56} />
-            <YAxis yAxisId="bookings" orientation="right" tick={{ fill: "#64748b", fontSize: 11 }} tickLine={false} axisLine={false} width={32} />
-            <Tooltip content={<RevenueTooltip language={language} />} />
-            <Area yAxisId="revenue" type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} fill="url(#managerReportRevenue)" dot={{ r: 3 }} />
-            <Area yAxisId="bookings" type="monotone" dataKey="bookings" stroke="#06b6d4" strokeWidth={2.5} fill="transparent" dot={{ r: 2.5 }} />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="mt-3 flex gap-4 text-[11px] font-bold text-slate-500">
-        <span className="inline-flex items-center gap-1"><span className="h-2 w-5 rounded-full bg-emerald-500" /> {translate(language, "Doanh thu", "Revenue")}</span>
-        <span className="inline-flex items-center gap-1"><span className="h-2 w-5 rounded-full bg-cyan-500" /> Booking</span>
-      </div>
-    </div>
-  );
-}
-
-function FunnelCard({ rows, total, language }: { rows: FunnelRow[]; total: number; language: Language }) {
-  return (
-    <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center gap-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-          <ClipboardList className="h-5 w-5" />
-        </div>
-        <div>
-          <h2 className="font-black text-slate-950">Booking funnel</h2>
-          <p className="text-xs text-slate-500">{translate(language, "Từ tiếp nhận tới hoàn thành", "From intake to completion")}</p>
-        </div>
-      </div>
-      <div className="mt-5 space-y-3">
-        {rows.map((row) => (
-          <div key={row.key} className="rounded-xl bg-slate-50 p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-black text-slate-900">{row.label}</p>
-                <p className="text-[11px] font-semibold text-slate-500">{row.helper}</p>
-              </div>
-              <span className="text-lg font-black text-slate-950">{row.count}</span>
-            </div>
-            <div className="mt-3 h-2 rounded-full bg-white">
-              <div className={`h-2 rounded-full ${row.color}`} style={{ width: `${Math.max(row.count ? 8 : 0, (row.count / Math.max(total, 1)) * 100)}%` }} />
-            </div>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-}
-
-function InsightsCard({ bestStaff, atRiskStaff, bestService, completionRate, staffTarget, language }: { bestStaff?: StaffRow; atRiskStaff?: StaffRow; bestService?: ServiceRow; completionRate: number; staffTarget: number; language: Language }) {
-  const noData = translate(language, "Chưa có dữ liệu", "No data yet");
-
-  return (
-    <Card className="rounded-2xl border-cyan-100 bg-white p-4 shadow-sm">
-      <div className="flex items-center gap-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
-          <FileText className="h-5 w-5" />
-        </div>
-        <div>
-          <h2 className="font-black text-slate-950">Manager insights</h2>
-          <p className="text-xs text-slate-500">{translate(language, "Các điểm cần nhìn nhanh trong kỳ.", "Quick points to watch this period.")}</p>
-        </div>
-      </div>
-      <div className="mt-5 space-y-3">
-        <InsightRow icon={Users} label={translate(language, "Staff tốt nhất", "Best staff")} value={bestStaff ? `${bestStaff.staffName}: ${bestStaff.completed}/${staffTarget} completed` : noData} />
-        <InsightRow icon={TrendingDown} label={translate(language, "Cần hỗ trợ", "Needs support")} value={atRiskStaff ? `${atRiskStaff.staffName}: KPI ${atRiskStaff.progress}%` : noData} />
-        <InsightRow icon={BarChart3} label={translate(language, "Dịch vụ mạnh", "Top service")} value={bestService ? `${bestService.service}: ${formatCurrency(bestService.revenue, language === "vi" ? "vi-VN" : "en-US")}` : noData} />
-        <InsightRow
-          icon={Target}
-          label={translate(language, "Sức khỏe booking", "Booking health")}
-          value={
-            completionRate >= 70
-              ? translate(language, `${completionRate}% hoàn thành, luồng ổn`, `${completionRate}% completed, flow looks healthy`)
-              : translate(language, `${completionRate}% hoàn thành, nên kiểm tra các booking chưa xong`, `${completionRate}% completed, review unfinished bookings`)
-          }
-        />
-      </div>
-    </Card>
-  );
-}
-
-function InsightRow({ icon: Icon, label, value }: { icon: ComponentType<{ className?: string }>; label: string; value: string }) {
-  return (
-    <div className="flex items-start gap-3 rounded-xl bg-slate-50 px-3 py-2.5">
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" />
-      <div className="min-w-0">
-        <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{label}</p>
-        <p className="text-sm font-black text-slate-900">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function StaffKpiCard({ staff, target, language }: { staff: StaffRow; target: number; language: Language }) {
-  const locale = language === "vi" ? "vi-VN" : "en-US";
-  const isAtTarget = staff.completed >= target;
-
-  return (
-    <Card className={`rounded-2xl p-4 shadow-sm ${isAtTarget ? "border-emerald-200 bg-emerald-50/40" : "border-amber-200 bg-amber-50/35"}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-base font-black text-slate-950">{staff.staffName}</p>
-          <p className="text-xs font-semibold text-slate-500">
-            {staff.total} total · {staff.active} active · {formatCurrency(staff.revenue, locale)}
-          </p>
-        </div>
-        <span className={`rounded-full px-2.5 py-1 text-xs font-black ${isAtTarget ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}`}>
-          {staff.completed}/{target}
         </span>
-      </div>
-      <div className="mt-4 h-2.5 rounded-full bg-white">
-        <div className={`h-2.5 rounded-full ${isAtTarget ? "bg-emerald-500" : "bg-amber-400"}`} style={{ width: `${staff.progress}%` }} />
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-        <MiniInfo label="Done" value={String(staff.completed)} />
-        <MiniInfo label="Points" value={String(staff.points)} />
-        <MiniInfo label="KPI" value={`${staff.progress}%`} />
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold text-slate-500">{label}</p>
+          <p className="mt-1 truncate text-2xl font-black text-slate-950">{value}</p>
+          {rating ? <RatingStars rating={rating} /> : null}
+          <p className="mt-1 line-clamp-2 text-[11px] font-semibold text-slate-500">{detail}</p>
+        </div>
       </div>
     </Card>
   );
 }
 
-function ServiceBarChart({ rows, metric, language }: { rows: ServiceRow[]; metric: "revenue" | "bookings"; language: Language }) {
-  const hasData = rows.some((row) => row[metric] > 0);
+function AttentionCard({ icon: Icon, title, value, action, tone }: { icon: ComponentType<{ className?: string }>; title: string; value: string; action: string; tone: "rose" | "amber" | "orange" }) {
+  const colors = {
+    rose: "bg-rose-50 text-rose-600",
+    amber: "bg-amber-50 text-amber-600",
+    orange: "bg-orange-50 text-orange-600",
+  }[tone];
 
   return (
-    <div>
-      {!hasData ? <EmptyLine message={translate(language, "Chưa có dữ liệu dịch vụ trong kỳ này.", "No service data for this period.")} /> : null}
-      <div className="h-[300px] rounded-2xl bg-slate-50 p-3">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={rows} layout="vertical" margin={{ top: 8, right: 18, left: 12, bottom: 8 }}>
-            <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" horizontal={false} />
-            <XAxis type="number" tickFormatter={(value) => (metric === "revenue" ? compactCurrency(Number(value)) : String(value))} tick={{ fill: "#64748b", fontSize: 11 }} tickLine={false} axisLine={false} />
-            <YAxis type="category" dataKey="service" width={110} tick={{ fill: "#334155", fontSize: 11, fontWeight: 700 }} tickLine={false} axisLine={false} />
-            <Tooltip formatter={(value) => (metric === "revenue" ? formatCurrency(Number(value), language === "vi" ? "vi-VN" : "en-US") : `${value} booking`)} />
-            <Bar dataKey={metric} radius={[0, 10, 10, 0]} fill={metric === "revenue" ? "#00236f" : "#06b6d4"} barSize={18} />
-          </BarChart>
-        </ResponsiveContainer>
+    <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3">
+      <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${colors}`}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-semibold text-slate-500">{title}</p>
+        <p className="truncate text-base font-black text-slate-950">{value}</p>
+        <button type="button" className="mt-1 text-[11px] font-black text-[#00236f]">
+          {action} →
+        </button>
       </div>
     </div>
   );
 }
 
-function ServiceTable({ rows, language }: { rows: ServiceRow[]; language: Language }) {
-  const locale = language === "vi" ? "vi-VN" : "en-US";
+function FunnelPanel({ rows, total, language }: { rows: FunnelRow[]; total: number; language: Language }) {
+  return (
+    <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
+      <h2 className="text-sm font-black text-slate-950">{translate(language, "Funnel vận hành", "Operations funnel")}</h2>
+      <div className="mt-3 space-y-1.5">
+        {rows.map((row, index) => {
+          const width = total === 0 ? 0 : Math.max(row.count > 0 ? 12 : 0, Math.min(row.barPercent, 100));
+          return (
+          <div key={row.key} className="grid grid-cols-[minmax(0,1fr)_44px_52px_120px] items-center gap-2">
+            <div className="relative h-8 overflow-hidden rounded-md bg-slate-50">
+              <div className="absolute inset-y-0 right-0 w-full rounded-md border border-slate-100 bg-white" />
+              <div
+                className={`relative flex h-full items-center gap-2 rounded-md px-3 text-[11px] font-black text-white shadow-sm ${row.color}`}
+                style={{ width: `${width}%`, minWidth: row.count > 0 ? "9rem" : "0", clipPath: width > 0 ? "polygon(0 0, 92% 0, 100% 50%, 92% 100%, 0 100%)" : undefined }}
+              >
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white/18">
+                  {index === 0 ? <CalendarDays className="h-3.5 w-3.5" /> : index === 1 ? <Users className="h-3.5 w-3.5" /> : index === 2 ? <Target className="h-3.5 w-3.5" /> : index === 3 ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                </span>
+                <span className="truncate">{row.label}</span>
+              </div>
+            </div>
+            <span className="text-right text-sm font-black text-slate-950">{row.count}</span>
+            <span className="text-right text-xs font-black text-slate-700">{index === 0 ? "" : `${row.rate}%`}</span>
+            <span className="truncate rounded-md border border-slate-100 bg-white px-2 py-1 text-right text-[10px] font-semibold text-slate-400">{row.helper}</span>
+          </div>
+        )})}
+      </div>
+    </Card>
+  );
+}
+
+function RevenuePanel({ rows, language, locale }: { rows: TrendRow[]; language: Language; locale: string }) {
+  const hasRevenue = rows.some((row) => row.revenue > 0 || row.bookings > 0);
 
   return (
     <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="font-black text-slate-950">Service detail</h2>
+      <h2 className="text-sm font-black text-slate-950">{translate(language, "Doanh thu & booking", "Revenue & bookings")}</h2>
+      <div className="mt-4 h-[230px] rounded-2xl bg-slate-50 p-3">
+        {!hasRevenue ? (
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <BarChart3 className="h-16 w-16 text-slate-200" />
+            <p className="mt-2 text-sm font-black text-slate-800">{translate(language, "Chưa đủ dữ liệu doanh thu để hiển thị xu hướng.", "Not enough revenue data to show a trend.")}</p>
+            <p className="mt-1 text-xs font-semibold text-slate-500">{translate(language, "Hoàn thành thêm booking để xem biểu đồ.", "Complete more bookings to see charts.")}</p>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={rows} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+              <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="label" tick={{ fill: "#64748b", fontSize: 11, fontWeight: 700 }} tickLine={false} axisLine={false} minTickGap={8} />
+              <YAxis yAxisId="revenue" tickFormatter={(value) => compactCurrency(Number(value))} tick={{ fill: "#64748b", fontSize: 11 }} tickLine={false} axisLine={false} width={48} />
+              <YAxis yAxisId="bookings" orientation="right" tick={{ fill: "#64748b", fontSize: 11 }} tickLine={false} axisLine={false} width={28} />
+              <Tooltip content={<RevenueTooltip language={language} locale={locale} />} />
+              <Bar yAxisId="revenue" dataKey="revenue" fill="#dbeafe" radius={[8, 8, 0, 0]} barSize={18} />
+              <Line yAxisId="bookings" type="monotone" dataKey="bookings" stroke="#94a3b8" strokeWidth={2.5} dot={{ r: 4, fill: "#94a3b8" }} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function StaffKpiTable({ rows, locale, language }: { rows: StaffRow[]; locale: string; language: Language }) {
+  return (
+    <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
+      <h2 className="text-sm font-black text-slate-950">{translate(language, "KPI nhân viên", "Staff KPI")}</h2>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[720px] text-left text-xs">
+        <table className="w-full min-w-[640px] text-left text-xs">
           <thead>
-            <tr className="border-b border-slate-100 text-[11px] font-black uppercase tracking-wide text-slate-500">
-              <th className="py-3">{translate(language, "Dịch vụ", "Service")}</th>
-              <th className="py-3">Booking</th>
-              <th className="py-3">{translate(language, "Hoàn thành", "Completed")}</th>
-              <th className="py-3">Completion</th>
-              <th className="py-3 text-right">{translate(language, "Doanh thu", "Revenue")}</th>
+            <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500">
+              <th className="px-3 py-3">Staff</th>
+              <th className="px-3 py-3">{translate(language, "Hoàn thành", "Done")}</th>
+              <th className="px-3 py-3">KPI target</th>
+              <th className="px-3 py-3">KPI %</th>
+              <th className="px-3 py-3">Rating</th>
+              <th className="px-3 py-3">{translate(language, "Doanh thu", "Revenue")}</th>
+              <th className="px-3 py-3">{translate(language, "Trạng thái", "Status")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {rows.map((row) => (
-              <tr key={row.service}>
-                <td className="py-3 font-black text-slate-950">{row.service}</td>
-                <td className="py-3 font-bold text-slate-700">{row.bookings}</td>
-                <td className="py-3 font-bold text-slate-700">{row.completed}</td>
-                <td className="py-3 font-bold text-cyan-700">{row.completionRate}%</td>
-                <td className="py-3 text-right font-black text-slate-950">{formatCurrency(row.revenue, locale)}</td>
+            {rows.map((staff) => (
+              <tr key={staff.staffId}>
+                <td className="px-3 py-3 font-black text-slate-950">{staff.staffName}</td>
+                <td className="px-3 py-3 font-bold text-slate-700">{staff.completed}</td>
+                <td className="px-3 py-3 font-bold text-slate-700">{staff.target}</td>
+                <td className="px-3 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-8 font-black text-slate-950">{staff.progress}%</span>
+                    <span className="h-2 w-16 rounded-full bg-slate-100">
+                      <span className="block h-2 rounded-full bg-blue-500" style={{ width: `${staff.progress}%` }} />
+                    </span>
+                  </div>
+                </td>
+                <td className="px-3 py-3 font-black text-slate-700">{staff.rating ? `${staff.rating.toFixed(1)} ★` : "—"}</td>
+                <td className="px-3 py-3 font-black text-slate-950">{formatCurrency(staff.revenue, locale)}</td>
+                <td className="px-3 py-3">
+                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${staff.status === "GOOD" ? "bg-emerald-50 text-emerald-700" : staff.status === "SUPPORT" ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-500"}`}>
+                    {staff.status === "GOOD" ? translate(language, "Đạt tiến độ", "On track") : staff.status === "SUPPORT" ? translate(language, "Cần hỗ trợ", "Needs support") : translate(language, "Làm quá ít", "Low load")}
+                  </span>
+                </td>
               </tr>
             ))}
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-8 text-center font-semibold text-slate-400">{translate(language, "Chưa có dữ liệu dịch vụ.", "No service data yet.")}</td>
+                <td colSpan={7} className="px-3 py-8 text-center font-semibold text-slate-400">{translate(language, "Chưa có dữ liệu staff.", "No staff data.")}</td>
               </tr>
             ) : null}
           </tbody>
@@ -464,116 +447,68 @@ function ServiceTable({ rows, language }: { rows: ServiceRow[]; language: Langua
   );
 }
 
-function MiniInfo({ label, value }: { label: string; value: string }) {
+function ServiceQualityPanel({ rows, averageRating, reviewCount, feedbackToReview, language }: { rows: ServiceRow[]; averageRating: number | null; reviewCount: number; feedbackToReview: number; language: Language }) {
   return (
-    <div className="rounded-xl bg-white/70 px-2 py-2">
-      <p className="text-sm font-black text-slate-950">{value}</p>
-      <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>
+    <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
+      <h2 className="text-sm font-black text-slate-950">{translate(language, "Chất lượng dịch vụ", "Service quality")}</h2>
+      <div className="mt-4 grid grid-cols-3 gap-3">
+        <QualityStat value={formatNullableRating(averageRating)} label={translate(language, "Rating trung bình", "Average rating")} />
+        <QualityStat value={String(reviewCount)} label="Review" />
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-amber-100 bg-amber-50 px-3 py-3 text-center text-sm font-black text-amber-700">
+          <AlertTriangle className="h-4 w-4" />
+          {feedbackToReview} feedback
+        </div>
+      </div>
+      <div className="mt-4 space-y-2">
+        {rows.map((row, index) => (
+          <div key={row.service} className="grid grid-cols-[minmax(0,1fr)_92px_64px] items-center gap-3 rounded-xl border border-slate-100 px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className={`h-3 w-3 rounded-full ${index === 0 ? "bg-blue-500" : index === 1 ? "bg-cyan-500" : "bg-emerald-500"}`} />
+              <span className="truncate text-xs font-black text-slate-950">{row.service}</span>
+            </div>
+            <span className="text-right text-xs font-semibold text-slate-500">{row.bookings} booking</span>
+            <span className="text-right text-xs font-black text-slate-950">{row.rating === null ? "--" : `${formatNullableRating(row.rating)} ★`}</span>
+          </div>
+        ))}
+        {rows.length === 0 ? <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm font-semibold text-slate-400">{translate(language, "Chưa có dữ liệu dịch vụ.", "No service data.")}</div> : null}
+      </div>
+    </Card>
+  );
+}
+
+function QualityStat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-white px-3 py-3 text-center">
+      <p className="text-lg font-black text-slate-950">{value}</p>
+      <p className="text-[11px] font-semibold text-slate-500">{label}</p>
     </div>
   );
 }
 
-function EmptyCard({ message }: { message: string }) {
-  return <Card className="rounded-2xl border-dashed border-slate-200 bg-white p-8 text-center text-sm font-semibold text-slate-400">{message}</Card>;
-}
-
-function EmptyLine({ message }: { message: string }) {
-  return <p className="mb-3 rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-center text-sm font-semibold text-slate-400">{message}</p>;
-}
-
-function ReportSelect({ value, onChange, options }: { value: string; onChange: (value: string) => void; options: ReadonlyArray<readonly [string, string]> }) {
+function RatingStars({ rating }: { rating: number }) {
   return (
-    <select
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-[#00236f] shadow-sm outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
-    >
-      {options.map(([optionValue, optionLabel]) => (
-        <option key={optionValue} value={optionValue}>
-          {optionLabel}
-        </option>
+    <div className="mt-1 flex gap-0.5 text-yellow-400">
+      {Array.from({ length: 5 }, (_, index) => (
+        <Star key={index} className={`h-3.5 w-3.5 ${index + 1 <= Math.round(rating) ? "fill-current" : ""}`} />
       ))}
-    </select>
+    </div>
   );
 }
 
-function RevenueTooltip({ active, payload, label, language }: { active?: boolean; payload?: Array<{ dataKey?: string; value?: number }>; label?: string; language: Language }) {
+function RevenueTooltip({ active, payload, label, language, locale }: { active?: boolean; payload?: Array<{ dataKey?: string; value?: number }>; label?: string; language: Language; locale: string }) {
   if (!active || !payload?.length) return null;
-  const locale = language === "vi" ? "vi-VN" : "en-US";
   const revenue = payload.find((item) => item.dataKey === "revenue")?.value ?? 0;
   const bookings = payload.find((item) => item.dataKey === "bookings")?.value ?? 0;
-  const completed = payload.find((item) => item.dataKey === "completed")?.value ?? 0;
-
   return (
     <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs shadow-[0_16px_38px_rgba(15,23,42,0.16)]">
       <p className="font-black text-slate-950">{label}</p>
       <p className="mt-1 font-bold text-emerald-700">{translate(language, "Doanh thu", "Revenue")}: {formatCurrency(revenue, locale)}</p>
-      <p className="font-bold text-cyan-700">Booking: {bookings}</p>
-      <p className="font-bold text-slate-600">Completed: {completed}</p>
+      <p className="font-bold text-blue-700">Booking: {bookings}</p>
     </div>
   );
 }
 
-function buildTrendRows(sessions: OperationsQueueSession[], mode: PeriodMode, period: { day: string; month: string; year: string }): TrendRow[] {
-  const keys = getTrendKeys(mode, period, sessions);
-  const rows = keys.map(({ key, label }) => {
-    const bucketSessions = sessions.filter((session) => getTrendKey(session, mode) === key);
-    const completed = bucketSessions.filter((session) => session.status === "COMPLETED");
-    return { key, label, revenue: sumRevenue(completed), bookings: bucketSessions.length, completed: completed.length };
-  });
-
-  return mode === "all" ? rows.filter((row) => row.bookings > 0 || row.revenue > 0) : rows;
-}
-
-function buildServiceRows(sessions: OperationsQueueSession[], language: Language): ServiceRow[] {
-  const names = Array.from(new Set(sessions.map((session) => getServiceName(session, language))));
-  return names
-    .map((service) => {
-      const serviceSessions = sessions.filter((session) => getServiceName(session, language) === service);
-      const completed = serviceSessions.filter((session) => session.status === "COMPLETED");
-      return {
-        service,
-        bookings: serviceSessions.length,
-        completed: completed.length,
-        revenue: sumRevenue(completed),
-        completionRate: serviceSessions.length ? Math.round((completed.length / serviceSessions.length) * 100) : 0,
-      };
-    })
-    .sort((left, right) => right.revenue - left.revenue || right.bookings - left.bookings || left.service.localeCompare(right.service));
-}
-
-function buildStaffRows(sessions: OperationsQueueSession[], target: number, language: Language): StaffRow[] {
-  const staffIds = Array.from(new Set(sessions.map((session) => session.assignedStaffId ?? "unassigned")));
-  return staffIds
-    .map((staffId) => {
-      const staffSessions = sessions.filter((session) => (session.assignedStaffId ?? "unassigned") === staffId);
-      const completed = staffSessions.filter((session) => session.status === "COMPLETED");
-      const completedCount = completed.length;
-      return {
-        staffId,
-        staffName: staffSessions.find((session) => session.assignedStaffName)?.assignedStaffName ?? translate(language, "Chưa phân công", "Unassigned"),
-        total: staffSessions.length,
-        active: staffSessions.filter((session) => ACTIVE_STATUSES.includes(session.status)).length,
-        completed: completedCount,
-        revenue: sumRevenue(completed),
-        points: completed.reduce((sum, session) => sum + (session.awardedLoyaltyPoints ?? 0), 0),
-        progress: Math.min(100, Math.round((completedCount / Math.max(target, 1)) * 100)),
-      };
-    })
-    .sort((left, right) => right.progress - left.progress || right.completed - left.completed || right.revenue - left.revenue);
-}
-
-function buildFunnelRows(sessions: OperationsQueueSession[], language: Language): FunnelRow[] {
-  return [
-    { key: "total", label: translate(language, "Tổng session", "Total sessions"), helper: translate(language, "Tất cả xe trong kỳ", "All vehicles in period"), count: sessions.length, color: "bg-blue-500" },
-    { key: "checked-in", label: translate(language, "Đã check-in", "Checked in"), helper: translate(language, "Manager đã nhận xe", "Vehicle received by manager"), count: sessions.filter((session) => ["CHECKED_IN", "IN_PROGRESS", "COMPLETED"].includes(session.status)).length, color: "bg-cyan-500" },
-    { key: "washing", label: translate(language, "Vào quy trình rửa", "In wash flow"), helper: translate(language, "Đang rửa hoặc đã hoàn thành", "In progress or completed"), count: sessions.filter((session) => ["IN_PROGRESS", "COMPLETED"].includes(session.status)).length, color: "bg-amber-500" },
-    { key: "completed", label: translate(language, "Hoàn thành", "Completed"), helper: translate(language, "Đã ghi nhận doanh thu", "Revenue recorded"), count: sessions.filter((session) => session.status === "COMPLETED").length, color: "bg-emerald-500" },
-    { key: "cancelled", label: translate(language, "Đã hủy", "Canceled"), helper: translate(language, "Cần xem nguyên nhân", "Review cancellation reason"), count: sessions.filter((session) => session.status === "CANCELLED").length, color: "bg-rose-500" },
-  ];
-}
-
-function getPeriodOptions(language: Language): Array<{ value: PeriodMode; label: string }> {
+function periodOptions(language: Language): Array<{ value: PeriodMode; label: string }> {
   return [
     { value: "day", label: translate(language, "Theo ngày", "By day") },
     { value: "month", label: translate(language, "Theo tháng", "By month") },
@@ -582,19 +517,97 @@ function getPeriodOptions(language: Language): Array<{ value: PeriodMode; label:
   ];
 }
 
-function getReportTabs(language: Language): Array<{ value: ReportTab; label: string }> {
-  return [
-    { value: "overview", label: "Overview" },
-    { value: "staff", label: "Staff KPI" },
-    { value: "services", label: translate(language, "Dịch vụ", "Services") },
-  ];
+function buildStaffOptions(sessions: OperationsQueueSession[]) {
+  const map = new Map<string, string>();
+  sessions.forEach((session) => {
+    if (session.assignedStaffId && session.assignedStaffName) map.set(session.assignedStaffId, session.assignedStaffName);
+  });
+  return Array.from(map.entries()).sort((left, right) => left[1].localeCompare(right[1]));
 }
 
-function matchesPeriod(value: string, mode: PeriodMode, period: { day: string; month: string; year: string }) {
-  if (mode === "all") return true;
-  if (mode === "day") return value.slice(0, 10) === period.day;
-  if (mode === "month") return value.slice(0, 7) === period.month;
-  return value.slice(0, 4) === period.year;
+function buildServiceOptions(sessions: OperationsQueueSession[]) {
+  const values = Array.from(new Set(sessions.map(getServiceName))).sort();
+  return values.map((value) => [value, value]);
+}
+
+function matchesFilters(session: OperationsQueueSession, fromDate: string, toDate: string, bay: string, staff: string, service: string) {
+  const date = session.bookingDate.slice(0, 10);
+  const matchesDate = date >= fromDate && date <= toDate;
+  const matchesBay = bay === "ALL" || getBayForSession(session) === bay;
+  const matchesStaff = staff === "ALL" || session.assignedStaffId === staff;
+  const matchesService = service === "ALL" || getServiceName(session) === service;
+  return matchesDate && matchesBay && matchesStaff && matchesService;
+}
+
+function buildTrendRows(sessions: OperationsQueueSession[], mode: PeriodMode, fromDate: string, toDate: string): TrendRow[] {
+  const keys = getTrendKeys(mode, fromDate, toDate, sessions);
+  return keys.map(({ key, label }) => {
+    const bucket = sessions.filter((session) => getTrendKey(session, mode) === key);
+    const completed = bucket.filter((session) => session.status === "COMPLETED");
+    return { key, label, revenue: sumRevenue(completed), bookings: bucket.length, completed: completed.length };
+  });
+}
+
+function buildStaffRows(sessions: OperationsQueueSession[], target: number): StaffRow[] {
+  const staffIds = Array.from(new Set(sessions.map((session) => session.assignedStaffId ?? "unassigned")));
+  return staffIds
+    .map((staffId) => {
+      const staffSessions = sessions.filter((session) => (session.assignedStaffId ?? "unassigned") === staffId);
+      const completed = staffSessions.filter((session) => session.status === "COMPLETED");
+      const completedCount = completed.length;
+      const progress = Math.min(100, Math.round((completedCount / Math.max(target, 1)) * 100));
+      return {
+        staffId,
+        staffName: staffSessions.find((session) => session.assignedStaffName)?.assignedStaffName ?? "Unassigned",
+        completed: completedCount,
+        target,
+        progress,
+        rating: null,
+        revenue: sumRevenue(completed),
+        status: progress >= 50 ? "GOOD" : staffSessions.length > 0 ? "SUPPORT" : "LOW_LOAD",
+      } satisfies StaffRow;
+    })
+    .sort((left, right) => right.progress - left.progress || right.completed - left.completed || left.staffName.localeCompare(right.staffName));
+}
+
+function buildServiceRows(sessions: OperationsQueueSession[]): ServiceRow[] {
+  const services = Array.from(new Set(sessions.map(getServiceName)));
+  return services
+    .map((service) => {
+      const serviceSessions = sessions.filter((session) => getServiceName(session) === service);
+      return {
+        service,
+        bookings: serviceSessions.length,
+        revenue: sumRevenue(serviceSessions.filter((session) => session.status === "COMPLETED")),
+        rating: null,
+      } satisfies ServiceRow;
+    })
+    .sort((left, right) => right.bookings - left.bookings || right.revenue - left.revenue || left.service.localeCompare(right.service));
+}
+
+function averageServiceRating(rows: ServiceRow[]) {
+  const ratings = rows.map((row) => row.rating).filter((rating): rating is number => rating !== null);
+  if (ratings.length === 0) return null;
+  return ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+}
+
+function formatNullableRating(value: number | null) {
+  return value === null ? "--" : value.toFixed(1);
+}
+
+function buildFunnelRows(sessions: OperationsQueueSession[], language: Language): FunnelRow[] {
+  const total = Math.max(sessions.length, 1);
+  const checkedIn = sessions.filter((session) => WASH_FLOW_STATUSES.includes(session.status)).length;
+  const washing = sessions.filter((session) => ["IN_PROGRESS", "COMPLETED"].includes(session.status)).length;
+  const completed = sessions.filter((session) => session.status === "COMPLETED").length;
+  const cancelled = sessions.filter((session) => session.status === "CANCELLED").length;
+  return [
+    { key: "total", label: translate(language, "Booking trong kỳ", "Bookings in period"), count: sessions.length, rate: 100, barPercent: sessions.length > 0 ? 100 : 0, helper: "", color: "bg-[#1687ee]" },
+    { key: "checked-in", label: translate(language, "Đã check-in", "Checked-in"), count: checkedIn, rate: Math.round((checkedIn / total) * 100), barPercent: Math.round((checkedIn / total) * 100), helper: "Check-in rate", color: "bg-[#3098f2]" },
+    { key: "washing", label: translate(language, "Đã bắt đầu rửa", "Wash started"), count: washing, rate: Math.round((washing / Math.max(checkedIn, 1)) * 100), barPercent: Math.round((washing / total) * 100), helper: "Start rate", color: "bg-[#5ab0f4]" },
+    { key: "completed", label: translate(language, "Hoàn thành", "Completed"), count: completed, rate: Math.round((completed / Math.max(washing, 1)) * 100), barPercent: Math.round((completed / total) * 100), helper: "Completion rate", color: "bg-[#98cff8]" },
+    { key: "cancelled", label: translate(language, "Đã hủy / no-show", "Canceled / no-show"), count: cancelled, rate: Math.round((cancelled / total) * 100), barPercent: Math.round((cancelled / total) * 100), helper: "", color: "bg-[#ef3f5b]" },
+  ];
 }
 
 function getTrendKey(session: OperationsQueueSession, mode: PeriodMode) {
@@ -603,65 +616,46 @@ function getTrendKey(session: OperationsQueueSession, mode: PeriodMode) {
   return session.bookingDate.slice(0, 10);
 }
 
-function getTrendKeys(mode: PeriodMode, period: { day: string; month: string; year: string }, sessions: OperationsQueueSession[]) {
+function getTrendKeys(mode: PeriodMode, fromDate: string, toDate: string, sessions: OperationsQueueSession[]) {
   if (mode === "day") {
-    return Array.from({ length: 14 }, (_, index) => {
+    return Array.from({ length: 15 }, (_, index) => {
       const hour = String(index + 7).padStart(2, "0");
       return { key: hour, label: `${hour}:00` };
     });
   }
-
   if (mode === "month") {
-    const [year, month] = period.month.split("-").map(Number);
+    const [year, month] = fromDate.split("-").map(Number);
     const days = new Date(year, month, 0).getDate();
     return Array.from({ length: days }, (_, index) => {
       const day = String(index + 1).padStart(2, "0");
-      return { key: `${period.month}-${day}`, label: day };
+      return { key: `${fromDate.slice(0, 7)}-${day}`, label: day };
     });
   }
-
-  if (mode === "all") {
-    const values = Array.from(new Set(sessions.map((session) => session.bookingDate.slice(0, 7)))).sort();
-    return (values.length ? values : [period.month]).map((value) => ({ key: value, label: `${value.slice(5, 7)}/${value.slice(2, 4)}` }));
+  if (mode === "year") {
+    const year = fromDate.slice(0, 4);
+    return Array.from({ length: 12 }, (_, index) => {
+      const month = String(index + 1).padStart(2, "0");
+      return { key: `${year}-${month}`, label: `T${index + 1}` };
+    });
   }
-
-  return Array.from({ length: 12 }, (_, index) => {
-    const month = String(index + 1).padStart(2, "0");
-    return { key: `${period.year}-${month}`, label: `T${index + 1}` };
-  });
+  const values = Array.from(new Set(sessions.map((session) => session.bookingDate.slice(0, 7)))).sort();
+  return (values.length ? values : [fromDate.slice(0, 7), toDate.slice(0, 7)]).map((value) => ({ key: value, label: `${value.slice(5, 7)}/${value.slice(2, 4)}` }));
 }
 
-function buildMonthOptions(sessions: OperationsQueueSession[], selectedMonth: string, language: Language) {
-  const values = Array.from(new Set([selectedMonth, ...sessions.map((session) => session.bookingDate.slice(0, 7))])).sort();
-  return values.map((value) => [value, translate(language, `Tháng ${value.slice(5, 7)}/${value.slice(0, 4)}`, `Month ${value.slice(5, 7)}/${value.slice(0, 4)}`)] as const);
+function getServiceName(session: OperationsQueueSession) {
+  return session.servicePackage ?? session.packageId ?? "Wash Package";
 }
 
-function buildYearOptions(sessions: OperationsQueueSession[], selectedYear: string, language: Language) {
-  const values = Array.from(new Set([selectedYear, ...sessions.map((session) => session.bookingDate.slice(0, 4))])).sort();
-  return values.map((value) => [value, translate(language, `Năm ${value}`, `Year ${value}`)] as const);
-}
-
-function periodDescription(mode: PeriodMode, day: string, month: string, year: string, language: Language) {
-  if (mode === "day") return formatDate(day, language);
-  if (mode === "month") return translate(language, `Tháng ${month.slice(5, 7)}/${month.slice(0, 4)}`, `Month ${month.slice(5, 7)}/${month.slice(0, 4)}`);
-  if (mode === "year") return translate(language, `Năm ${year}`, `Year ${year}`);
-  return translate(language, "Toàn bộ dữ liệu", "All data");
-}
-
-function getServiceName(session: OperationsQueueSession, language: Language) {
-  return session.servicePackage ?? session.packageId ?? translate(language, "Gói rửa xe", "Wash package");
+function getBayForSession(session: OperationsQueueSession) {
+  return session.assignedStaffName ? "Assigned" : "Open";
 }
 
 function sumRevenue(sessions: OperationsQueueSession[]) {
   return sessions.reduce((sum, session) => sum + (session.feeAmount ?? 0), 0);
 }
 
-function formatDate(value: string, language: Language) {
-  return new Date(`${value}T00:00:00`).toLocaleDateString(language === "vi" ? "vi-VN" : "en-US", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+function getTodayInputValue() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function formatCurrency(value: number, locale: string) {

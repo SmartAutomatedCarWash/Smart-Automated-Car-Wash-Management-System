@@ -274,7 +274,7 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
       setBlockedActionMessage(null);
     },
     onSuccess: (response, variables) => {
-      setNotice(formatActionNotice(variables.action, response));
+      setNotice(formatActionNotice(variables.action, variables.session, response));
       setPlateConfirmed(false);
       void queryClient.invalidateQueries({ queryKey: QUEUE_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: ["staff-operations", "eligible-bookings"] });
@@ -287,8 +287,8 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
   const cancelSessionMutation = useMutation({
     mutationFn: ({ sessionId, reason, faultType }: { sessionId: string; reason: string; faultType?: string }) =>
       cancelWashSession(sessionId, reason, faultType),
-    onSuccess: (response) => {
-      setNotice(`Đã hủy phiên ${response.sessionId} thành công.`);
+    onSuccess: () => {
+      setNotice(`Đã hủy phiên xe ${cancellingSession?.vehiclePlate ?? "đang chọn"} thành công.`);
       setCancellingSession(null);
       setCancelReason("");
       setCancelFaultType("");
@@ -462,7 +462,7 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
             session={activeSession}
             onAction={handleAction}
             canAct={canAct}
-            emptyMessage={`Không tìm thấy phiên ${sessionId ?? ""} trong hàng đợi hiện tại.`}
+            emptyMessage="Không tìm thấy phiên xe đang chọn trong hàng đợi hiện tại."
           />
         </div>
       ) : null}
@@ -813,11 +813,11 @@ function EligibleBookingsPanel({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="flex items-center gap-2 truncate text-sm font-black text-slate-950">
-                    {booking.bookingId}
+                    {booking.vehiclePlate}
                     <TierBadge tier={booking.customerTier} />
                   </p>
                   <p className="mt-1 truncate text-xs font-semibold text-slate-600">
-                    {booking.customerName} · {booking.vehiclePlate}
+                    {booking.customerName}
                   </p>
                 </div>
                 <Button
@@ -881,7 +881,7 @@ function CheckInApprovalPanel({
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Biển số cần kiểm tra</p>
           <p className="mt-1 text-2xl font-black text-slate-950">{session.vehiclePlate}</p>
           <p className="mt-2 text-sm text-slate-600">
-            {session.customerName} · {session.bookingId}
+            {session.customerName}
           </p>
         </div>
 
@@ -958,7 +958,7 @@ function SessionDetailDialog({
                     Chi tiết phiên rửa
                   </DialogTitle>
                   <DialogDescription>
-                    {session.bookingId} · {session.customerName} · {session.vehiclePlate}
+                    {session.vehiclePlate} · {session.customerName}
                   </DialogDescription>
                 </div>
                 <StatusBadge status={session.status} />
@@ -999,7 +999,7 @@ function SessionLifecyclePanel({
   onAction: (action: ActionType, session: OperationsQueueSession) => void;
   canAct: boolean;
 }) {
-  if (!session) return <EmptyState message={`Không tìm thấy phiên ${requestedSessionId} trong hàng đợi hiện tại.`} />;
+  if (!session) return <EmptyState message={requestedSessionId ? "Không tìm thấy phiên xe đang chọn trong hàng đợi hiện tại." : "Chọn một phiên xe trong hàng đợi hiện tại."} />;
   return <SessionCard session={session} onAction={onAction} canAct={canAct} />;
 }
 
@@ -1037,9 +1037,9 @@ function SessionCard({
       <button type="button" className="block w-full text-left" onClick={() => onSelect?.(session.sessionId)}>
         <div className="flex min-w-0 items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-sm font-black text-slate-950">{session.bookingId}</p>
+            <p className="truncate text-sm font-black text-slate-950">{session.vehiclePlate}</p>
             <p className="mt-1 truncate text-xs font-semibold text-slate-500">
-              {session.customerName} · {session.vehiclePlate}
+              {session.customerName}
             </p>
           </div>
           <StatusBadge status={session.status} />
@@ -1105,10 +1105,9 @@ function SessionCard({
 function InfoGrid({ session }: { session: OperationsQueueSession }) {
   return (
     <div className="grid gap-2 text-sm text-slate-700">
-      <Info label="Mã đặt lịch" value={session.bookingId} />
+      <Info label="Biển số" value={session.vehiclePlate} />
       <Info label="Khách hàng" value={session.customerName} />
       <Info label="Số điện thoại" value={session.customerPhone || "Chưa có"} />
-      <Info label="Biển số" value={session.vehiclePlate} />
       <Info label="Gói rửa" value={getServicePackage(session)} />
       <Info label="Nhân viên" value={getAssignedStaff(session)} />
       <Info label="Giờ hẹn" value={formatSchedule(session)} />
@@ -1129,10 +1128,9 @@ function InfoGrid({ session }: { session: OperationsQueueSession }) {
 
 function DialogInfoGrid({ session }: { session: OperationsQueueSession }) {
   const items = [
-    ["Mã đặt lịch", session.bookingId],
+    ["Biển số", session.vehiclePlate],
     ["Khách hàng", session.customerName],
     ["Số điện thoại", session.customerPhone || "Chưa có"],
-    ["Biển số", session.vehiclePlate],
     ["Gói rửa", getServicePackage(session)],
     ["Nhân viên", getAssignedStaff(session)],
     ["Giờ hẹn", formatSchedule(session)],
@@ -1414,22 +1412,22 @@ async function runAction(action: ActionType, session: OperationsQueueSession): P
   return completeWashSession(session.sessionId);
 }
 
-function formatActionNotice(action: ActionType, response: LifecycleActionResponse) {
+function formatActionNotice(action: ActionType, session: OperationsQueueSession, response: LifecycleActionResponse) {
   if (action === "check-in") {
     const projectedPoints = response.projectedLoyaltyPoints != null
       ? ` Điểm tích lũy dự kiến: ${response.projectedLoyaltyPoints}.`
       : "";
-    return `Phiên ${response.sessionId} đã check-in thành công.${projectedPoints}`;
+    return `Phiên xe ${session.vehiclePlate} đã check-in thành công.${projectedPoints}`;
   }
 
   if (action === "start") {
-    return `Phiên ${response.sessionId} đã bắt đầu rửa xe.`;
+    return `Phiên xe ${session.vehiclePlate} đã bắt đầu rửa xe.`;
   }
 
   const awardedPoints = response.awardedLoyaltyPoints != null
     ? ` Điểm thưởng nhận được: ${response.awardedLoyaltyPoints}.`
     : "";
-  return `Phiên ${response.sessionId} đã hoàn thành.${awardedPoints}`;
+  return `Phiên xe ${session.vehiclePlate} đã hoàn thành.${awardedPoints}`;
 }
 
 function readError(error: unknown) {

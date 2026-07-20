@@ -478,11 +478,45 @@ public class OperationsServiceImpl implements OperationsService {
             throw new ApiException(HttpStatus.FORBIDDEN, "Staff role required", ErrorCode.FORBIDDEN);
         }
 
-        int safePage = Math.max(page, 1);
-        int safeLimit = Math.max(1, Math.min(limit, 100));
-
         List<WashSession> completedSessions = washSessionRepository
                 .findByAssignedStaffAndStatusOrderByCompletedAtDesc(staff, WashSessionStatus.COMPLETED);
+        return buildSessionHistoryResponse(completedSessions, page, limit, period, date, servicePackage, rating, search, sort);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StaffSessionHistoryResponse getManagerSessionHistory(
+            int page,
+            int limit,
+            String period,
+            LocalDate date,
+            String servicePackage,
+            String rating,
+            String search,
+            String sort,
+            UUID staffId
+    ) {
+        List<WashSession> completedSessions = washSessionRepository
+                .findByStatusOrderByCompletedAtDesc(WashSessionStatus.COMPLETED)
+                .stream()
+                .filter(session -> staffId == null || (session.getAssignedStaff() != null && staffId.equals(session.getAssignedStaff().getId())))
+                .toList();
+        return buildSessionHistoryResponse(completedSessions, page, limit, period, date, servicePackage, rating, search, sort);
+    }
+
+    private StaffSessionHistoryResponse buildSessionHistoryResponse(
+            List<WashSession> completedSessions,
+            int page,
+            int limit,
+            String period,
+            LocalDate date,
+            String servicePackage,
+            String rating,
+            String search,
+            String sort
+    ) {
+        int safePage = Math.max(page, 1);
+        int safeLimit = Math.max(1, Math.min(limit, 100));
         Map<UUID, Review> reviewsByBookingId = reviewsByBookingId(completedSessions);
 
         List<WashSession> filteredSessions = completedSessions.stream()

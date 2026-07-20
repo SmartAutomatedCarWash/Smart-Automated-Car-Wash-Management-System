@@ -134,6 +134,18 @@ export type CancelWashSessionResponse = {
   cancelledAt: string;
 };
 
+export type TransferWashSessionResponse = {
+  auditId?: string;
+  sessionId: string;
+  bookingId: string;
+  fromStaffId?: string | null;
+  fromStaffName?: string | null;
+  toStaffId: string;
+  toStaffName?: string | null;
+  reason?: string | null;
+  transferredAt?: string;
+};
+
 // ─── Staff Today (My Sessions) ────────────────────────────────────────────────
 
 export type BookingStatus =
@@ -247,6 +259,7 @@ export type StaffSessionHistoryParams = {
   rating?: "ALL" | "5" | "4" | "LOW" | "NONE";
   search?: string;
   sort?: "COMPLETED_DESC" | "COMPLETED_ASC" | "DURATION_DESC" | "RATING_ASC";
+  staffId?: string;
 };
 
 export type StartSessionRequest = {

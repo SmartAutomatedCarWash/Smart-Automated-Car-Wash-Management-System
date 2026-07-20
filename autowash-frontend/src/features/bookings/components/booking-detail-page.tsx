@@ -673,6 +673,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
           {showReviewPopup && (
             <BookingCompletionPopup
               bookingId={bookingId}
+              vehiclePlate={booking.vehiclePlate}
               pointsEarned={10}
               isOpen={showReviewPopup}
               onClose={() => setShowReviewPopup(false)}

@@ -1,5 +1,6 @@
 autowash-frontend/node_modules/
 autowash-frontend/.next/
+autowash-frontend/.next.bak.*/
 autowash-frontend/out/
 autowash-frontend/.env.local
 autowash-frontend/.codex-dev.log

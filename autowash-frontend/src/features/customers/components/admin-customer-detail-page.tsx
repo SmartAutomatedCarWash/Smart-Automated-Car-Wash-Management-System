@@ -955,7 +955,7 @@ function WashHistoryTab({
               <TableHeader className="bg-slate-50">
                 <TableRow>
                   <TableHead>{translate(language, "Trạng thái", "Tracking")}</TableHead>
-                  <TableHead>{translate(language, "Mã đặt lịch", "Booking")}</TableHead>
+                  <TableHead>{translate(language, "Biển số", "Plate")}</TableHead>
                   <TableHead>{translate(language, "Xe", "Vehicle")}</TableHead>
                   <TableHead>{translate(language, "Dịch vụ", "Service")}</TableHead>
                   <TableHead>{translate(language, "Lịch rửa", "Schedule")}</TableHead>
@@ -979,7 +979,7 @@ function WashHistoryTab({
                     </TableCell>
                     <TableCell>
                       <Button asChild variant="link" className="h-auto p-0 text-sky-700">
-                        <Link href={`/admin/bookings/${item.bookingId}`}>{shortId(item.bookingId)}</Link>
+                        <Link href={`/admin/bookings/${item.bookingId}`}>{item.vehiclePlate}</Link>
                       </Button>
                     </TableCell>
                     <TableCell className="font-mono text-xs">{item.vehiclePlate}</TableCell>

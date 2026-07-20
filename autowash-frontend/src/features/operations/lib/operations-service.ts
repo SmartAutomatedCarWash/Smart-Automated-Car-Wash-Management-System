@@ -29,6 +29,7 @@ import type {
   StartSessionResponse,
   StartWashSessionResponse,
   CancelWashSessionResponse,
+  TransferWashSessionResponse,
 } from "@/entities/operations";
 
 const SESSION_BASE_URL = "/operations/sessions";
@@ -138,6 +139,14 @@ export function cancelWashSession(sessionId: string, reason: string, faultType?:
   });
 }
 
+export function transferWashSession(sessionId: string, toStaffId: string, reason?: string) {
+  return apiRequest<TransferWashSessionResponse, { toStaffId: string; reason?: string }>({
+    method: "POST",
+    url: `/manager/operations/sessions/${sessionId}/transfer`,
+    data: { toStaffId, reason },
+  });
+}
+
 // ─── Staff Today (My Sessions) ────────────────────────────────────────────────
 
 export function getStaffSessionHistory(params: StaffSessionHistoryParams = {}) {
@@ -153,6 +162,24 @@ export function getStaffSessionHistory(params: StaffSessionHistoryParams = {}) {
       rating: params.rating ?? "ALL",
       ...(params.search && { search: params.search }),
       sort: params.sort ?? "COMPLETED_DESC",
+    },
+  });
+}
+
+export function getManagerSessionHistory(params: StaffSessionHistoryParams = {}) {
+  return apiRequest<StaffSessionHistoryResponse>({
+    method: "GET",
+    url: "/operations/manager/sessions/history",
+    params: {
+      page: params.page ?? 1,
+      limit: params.limit ?? 5,
+      period: params.period ?? "ALL",
+      ...(params.date && { date: params.date }),
+      ...(params.servicePackage && { servicePackage: params.servicePackage }),
+      rating: params.rating ?? "ALL",
+      ...(params.search && { search: params.search }),
+      sort: params.sort ?? "COMPLETED_DESC",
+      ...(params.staffId && { staffId: params.staffId }),
     },
   });
 }

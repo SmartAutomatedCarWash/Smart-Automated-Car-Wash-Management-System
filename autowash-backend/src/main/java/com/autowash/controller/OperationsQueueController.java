@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -78,6 +79,27 @@ public class OperationsQueueController {
         return ApiResponse.ok(
                 "Staff completed session history retrieved",
                 operationsService.getMySessionHistory(page, limit, period, date, servicePackage, rating, search, sort)
+        );
+    }
+
+    @GetMapping("/manager/sessions/history")
+    @Operation(summary = "Get completed session history for manager operations")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public ApiResponse<StaffSessionHistoryResponse> getManagerSessionHistory(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "ALL") String period,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) String servicePackage,
+            @RequestParam(defaultValue = "ALL") String rating,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "COMPLETED_DESC") String sort,
+            @RequestParam(required = false) UUID staffId
+    ) {
+        return ApiResponse.ok(
+                "Manager completed session history retrieved",
+                operationsService.getManagerSessionHistory(page, limit, period, date, servicePackage, rating, search, sort, staffId)
         );
     }
 }

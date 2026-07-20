@@ -42,5 +42,16 @@ public interface OperationsService {
             String search,
             String sort
     );
+    StaffSessionHistoryResponse getManagerSessionHistory(
+            int page,
+            int limit,
+            String period,
+            LocalDate date,
+            String servicePackage,
+            String rating,
+            String search,
+            String sort,
+            UUID staffId
+    );
 }
 
