@@ -33,6 +33,7 @@ export const EMPTY_BOOKING_DRAFT: BookingDraft = {
   discountCode: "",
   confirmationEmail: "",
   paymentMethod: null,
+  staffId: "",
 };
 
 const bookingStore = createStore<BookingStore>()(

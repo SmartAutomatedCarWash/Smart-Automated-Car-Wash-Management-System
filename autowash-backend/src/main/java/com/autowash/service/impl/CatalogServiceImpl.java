@@ -159,23 +159,24 @@ public class CatalogServiceImpl implements CatalogService {
         }
 
         assertActiveServices(parsedOptionIds);
-        Map<UUID, ComboService> optionsById = comboServiceRepository
-                .findByComboIdAndOptionIdIn(combo.getId(), parsedOptionIds)
+        Set<UUID> includedServiceIds = comboServiceRepository.findByComboIdOrderBySortOrderAsc(combo.getId())
                 .stream()
-                .collect(Collectors.toMap(ComboService::getOptionId, Function.identity()));
+                .map(ComboService::getOptionId)
+                .collect(Collectors.toSet());
 
         return parsedOptionIds.stream()
                 .map(optionId -> {
-                    ComboService option = optionsById.get(optionId);
-                    if (option == null) {
+                    if (includedServiceIds.contains(optionId)) {
                         throw optionUnavailable();
                     }
-                    return new CatalogService.CatalogOption(
-                            option.getOptionId(),
-                            option.getOptionName(),
-                            option.getOptionPrice(),
-                            option.getOptionDurationMinutes()
-                    );
+                    return serviceRepository.findByIdAndStatus(optionId, ActiveStatus.ACTIVE)
+                            .map(service -> new CatalogService.CatalogOption(
+                                    service.getId(),
+                                    service.getName(),
+                                    service.getPrice(),
+                                    service.getDurationMinutes()
+                            ))
+                            .orElseThrow(this::optionUnavailable);
                 })
                 .toList();
     }

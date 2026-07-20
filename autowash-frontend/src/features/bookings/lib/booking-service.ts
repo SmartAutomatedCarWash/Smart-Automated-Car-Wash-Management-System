@@ -3,6 +3,8 @@ import type { ApiPaginatedResponse } from "@/shared/types/api.types";
 import type {
   BookingAddon,
   BookingCombo,
+  BookingStaffOption,
+  BookingStaffOptionsRequest,
   BookingDetail,
   BookingDraft,
   BookingListFilters,
@@ -21,6 +23,8 @@ import type {
   WashTrackingSession,
   HoldSlotRequest,
   HoldSlotResponse,
+  SlotAvailability,
+  ExtraServiceRecommendation,
 } from "@/entities/bookings";
 import { buildCreateBookingPayload } from "@/features/bookings/lib/booking-format";
 import type { ApiSuccessResponse } from "@/shared/types/api.types";
@@ -85,6 +89,42 @@ export async function holdBookingSlot(payload: HoldSlotRequest): Promise<HoldSlo
 
 export function releaseBookingSlot(payload: HoldSlotRequest) {
   return apiClient.delete("/slots/hold", { data: payload });
+}
+
+export async function listSlotAvailability(bookingDate: string, times: string[]): Promise<SlotAvailability[]> {
+  if (!bookingDate || times.length === 0) {
+    return [];
+  }
+
+  const params = new URLSearchParams({ date: bookingDate });
+  times.forEach((time) => params.append("times", time));
+
+  const response = await apiClient.get<ApiSuccessResponse<SlotAvailability[]>>("/slots/availability", {
+    params,
+  });
+
+  return response.data.data;
+}
+
+export async function listExtraServiceRecommendations(comboId: string): Promise<ExtraServiceRecommendation[]> {
+  if (!comboId) {
+    return [];
+  }
+
+  const response = await apiClient.get<ApiSuccessResponse<ExtraServiceRecommendation[]>>(
+    "/recommendations/extra-services",
+    { params: { comboId } },
+  );
+
+  return response.data.data;
+}
+
+export function listBookingStaffOptions(payload: BookingStaffOptionsRequest) {
+  return apiRequest<BookingStaffOption[], BookingStaffOptionsRequest>({
+    method: "POST",
+    url: "/customers/bookings/staff-options",
+    data: payload,
+  });
 }
 
 export async function purchaseCustomerCombo(payload: PurchaseCustomerComboRequest) {

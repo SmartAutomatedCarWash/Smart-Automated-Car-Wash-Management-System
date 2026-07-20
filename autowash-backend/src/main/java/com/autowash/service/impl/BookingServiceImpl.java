@@ -57,6 +57,7 @@ import com.autowash.service.BookingService;
 import com.autowash.service.CatalogService;
 import com.autowash.service.CustomerComboService;
 import com.autowash.service.DiscountRedemptionService;
+import com.autowash.service.StaffAssignmentService;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.service.BookingEmailDeliveryService;
 import com.autowash.service.CurrentUserService;
@@ -117,6 +118,7 @@ public class BookingServiceImpl implements BookingService {
     private final ViolationRecordRepository violationRecordRepository;
     private final NotificationRepository notificationRepository;
     private final BookingResponseAssembler bookingResponseAssembler;
+    private final StaffAssignmentService staffAssignmentService;
 
     public BookingServiceImpl(
             CurrentUserService currentUserService,
@@ -137,7 +139,8 @@ public class BookingServiceImpl implements BookingService {
             SlotHoldRepository slotHoldRepository,
             ViolationRecordRepository violationRecordRepository,
             NotificationRepository notificationRepository,
-            BookingResponseAssembler bookingResponseAssembler
+            BookingResponseAssembler bookingResponseAssembler,
+            StaffAssignmentService staffAssignmentService
     ) {
         this.currentUserService = currentUserService;
         this.VehicleRepository = VehicleRepository;
@@ -158,6 +161,7 @@ public class BookingServiceImpl implements BookingService {
         this.violationRecordRepository = violationRecordRepository;
         this.notificationRepository = notificationRepository;
         this.bookingResponseAssembler = bookingResponseAssembler;
+        this.staffAssignmentService = staffAssignmentService;
     }
 
     @Transactional
@@ -275,6 +279,8 @@ public class BookingServiceImpl implements BookingService {
                 .build());
         }
 
+        booking.assignStaff(resolveAssignedStaff(request.staffId(), booking));
+
         BookingRepository.save(booking);
 
         // Apply discount if provided
@@ -363,7 +369,9 @@ public class BookingServiceImpl implements BookingService {
                 Combo == null ? null : Combo.getId().toString(),
                 customerComboId,
                 comboPurchased,
-                null
+                null,
+                booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getId().toString(),
+                booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getFullName()
         );
     }
 
@@ -592,6 +600,24 @@ public class BookingServiceImpl implements BookingService {
         if (existingBookings + activeHolds >= maxBookingsPerTimeSlot) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking slot is full", ErrorCode.BOOKING_SLOT_FULL);
         }
+    }
+
+    private User resolveAssignedStaff(String staffId, Booking booking) {
+        if (staffId == null || staffId.isBlank()) {
+            return staffAssignmentService.pickLeastLoadedActiveStaffForBooking(booking);
+        }
+
+        User staff;
+        try {
+            staff = staffAssignmentService.requireActiveStaff(UUID.fromString(staffId));
+        } catch (IllegalArgumentException exception) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid staff id", ErrorCode.INVALID_INPUT);
+        }
+
+        if (!staffAssignmentService.isStaffAvailableForBooking(staff, booking)) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Selected staff is not available for this booking time", ErrorCode.BUSINESS_RULE_VIOLATION);
+        }
+        return staff;
     }
 
     private void validateCustomerCanCreateBooking(User user) {

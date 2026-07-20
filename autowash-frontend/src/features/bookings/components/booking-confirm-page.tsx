@@ -15,6 +15,8 @@ import {
   Sparkles,
   Tag,
   Timer,
+  UserCheck,
+  Users,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -33,6 +35,7 @@ import {
   useBookingAddons,
   useBookingCombos,
   useBookingPackages,
+  useBookingStaffOptions,
   useCreateCustomerBooking,
 } from "@/features/bookings/hooks/use-bookings";
 import { useSlotHold } from "@/features/bookings/hooks/use-slot-hold";
@@ -117,11 +120,35 @@ export function BookingConfirmPage() {
       }),
     [addons, combos, draft, packages, selectedCustomerCombo, validatedDiscount],
   );
+  const staffOptionsPayload = useMemo(() => {
+    if (!draft.bookingDate || !draft.bookingTime) return null;
+    if (draft.mode === "PACKAGE" && !draft.packageId) return null;
+    if (draft.mode === "COMBO" && !draft.comboId) return null;
+
+    return {
+      packageId: draft.mode === "PACKAGE" ? draft.packageId : undefined,
+      comboId: draft.mode === "COMBO" ? draft.comboId : undefined,
+      options: draft.addonIds,
+      bookingDate: draft.bookingDate,
+      bookingTime: draft.bookingTime,
+    };
+  }, [draft.addonIds, draft.bookingDate, draft.bookingTime, draft.comboId, draft.mode, draft.packageId]);
+  const staffOptionsQuery = useBookingStaffOptions(staffOptionsPayload);
+  const staffOptions = staffOptionsQuery.data ?? [];
+  const selectedStaff = staffOptions.find((staff) => staff.staffId === draft.staffId) ?? null;
+  const staffUnavailable = staffOptionsQuery.isSuccess && staffOptions.length === 0;
+
+  useEffect(() => {
+    if (staffOptions.length === 0) return;
+    if (!draft.staffId || !staffOptions.some((staff) => staff.staffId === draft.staffId)) {
+      updateDraft({ staffId: staffOptions[0].staffId });
+    }
+  }, [draft.staffId, staffOptions, updateDraft]);
 
   useEffect(() => {
     if (expired || lastCreatedBooking) return;
     if (!draft.vehicleId || !draft.bookingDate || !draft.bookingTime || !expiresAt || expiresAt <= Date.now()) {
-      router.replace("/customer/booking");
+      router.replace("/customer/bookings/new");
     }
   }, [draft.bookingDate, draft.bookingTime, draft.vehicleId, expired, expiresAt, lastCreatedBooking, router]);
 
@@ -139,7 +166,7 @@ export function BookingConfirmPage() {
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
-      router.push("/customer/booking");
+      router.push("/customer/bookings/new");
     }
   }, [releaseHeldSlot, router]);
 
@@ -151,7 +178,7 @@ export function BookingConfirmPage() {
         window.history.pushState({ bookingConfirm: true }, "", window.location.href);
         return;
       }
-      void releaseHeldSlot().finally(() => router.push("/customer/booking"));
+      void releaseHeldSlot().finally(() => router.push("/customer/bookings/new"));
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -166,10 +193,14 @@ export function BookingConfirmPage() {
 
   const handleConfirm = async () => {
     setShowPaymentError(true);
+    if (staffUnavailable) {
+      toast.error("No staff is available for this service window.");
+      return;
+    }
     if (!isComboBooking && !paymentMethod) return;
     if (!expiresAt || expiresAt <= Date.now()) { handleExpired(); return; }
     const effectivePaymentMethod = isComboBooking ? ("CASH_AT_COUNTER" as PaymentMethod) : paymentMethod!;
-    const nextDraft = { ...draft, paymentMethod: effectivePaymentMethod };
+    const nextDraft = { ...draft, paymentMethod: effectivePaymentMethod, staffId: draft.staffId || selectedStaff?.staffId || "" };
     const errors = validateBookingDraft(nextDraft, summary, { requirePaymentMethod: !isComboBooking });
     if (Object.keys(errors).length > 0) {
       toast.error(Object.values(errors)[0] ?? "Please complete booking information.");
@@ -251,6 +282,69 @@ export function BookingConfirmPage() {
               </div>
             </div>
           </div>
+
+          {/* Staff selection */}
+          <Card className="border-slate-200/80 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <CardHeader className="pb-3 pt-5">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-bold">Assigned staff</CardTitle>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Choose one of the available staff for {summary.itemName}.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-3 pb-5">
+              {staffOptionsQuery.isPending ? (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[1, 2, 3].map((item) => (
+                    <div key={item} className="h-28 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
+                  ))}
+                </div>
+              ) : staffUnavailable ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  No staff is available for this service window. Please choose another time.
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {staffOptions.map((staff) => {
+                    const active = draft.staffId === staff.staffId;
+                    return (
+                      <button
+                        key={staff.staffId}
+                        type="button"
+                        onClick={() => updateDraft({ staffId: staff.staffId })}
+                        className={`relative rounded-2xl border p-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                          active
+                            ? "border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary)/0.3)]"
+                            : "border-border bg-card hover:border-primary/40 hover:bg-muted/30"
+                        }`}
+                      >
+                        {staff.recommended && (
+                          <span className="absolute right-3 top-3 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                            Auto
+                          </span>
+                        )}
+                        <span className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+                          active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                        }`}>
+                          <UserCheck className="h-5 w-5" />
+                        </span>
+                        <div className="mt-3 space-y-1">
+                          <p className="truncate text-sm font-bold text-foreground">{staff.staffName}</p>
+                          <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{staff.reason}</p>
+                        </div>
+                        {active && <CheckCircle2 className="absolute bottom-3 right-3 h-4 w-4 text-primary" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {staffOptionsQuery.isError && (
+                <p className="text-xs text-rose-600">{getErrorMessage(staffOptionsQuery.error)}</p>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Payment method — hidden when using an owned (pre-paid) combo */}
           {isComboBooking ? (
@@ -346,7 +440,7 @@ export function BookingConfirmPage() {
             <Button
               type="button"
               onClick={() => void handleConfirm()}
-              disabled={createBookingMutation.isPending || isReleasing}
+              disabled={createBookingMutation.isPending || isReleasing || staffOptionsQuery.isPending || staffUnavailable}
               className="rounded-xl gap-2 px-8 font-bold"
             >
               {createBookingMutation.isPending ? (
@@ -388,6 +482,13 @@ export function BookingConfirmPage() {
                 icon={Clock}
                 label="Duration"
                 value={summary.estimatedDurationLabel}
+              />
+
+              {/* Staff */}
+              <SummaryRow
+                icon={UserCheck}
+                label="Staff"
+                value={selectedStaff?.staffName ?? "Auto assign"}
               />
 
               {/* Service */}

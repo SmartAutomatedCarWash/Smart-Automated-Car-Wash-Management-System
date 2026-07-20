@@ -4,11 +4,14 @@ import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.BookingListItemResponse;
 import com.autowash.dto.CancelBookingRequest;
 import com.autowash.dto.CancelBookingResponse;
+import com.autowash.dto.BookingStaffOptionResponse;
+import com.autowash.dto.BookingStaffOptionsRequest;
 import com.autowash.dto.CreateBookingRequest;
 import com.autowash.dto.CreateBookingResponse;
 import com.autowash.dto.PayBookingRequest;
 import com.autowash.dto.PayBookingResponse;
 import com.autowash.service.BookingService;
+import com.autowash.service.BookingStaffRecommendationService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -41,9 +44,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final BookingStaffRecommendationService bookingStaffRecommendationService;
 
-    public BookingController(BookingService bookingService) {
+    public BookingController(
+            BookingService bookingService,
+            BookingStaffRecommendationService bookingStaffRecommendationService
+    ) {
         this.bookingService = bookingService;
+        this.bookingStaffRecommendationService = bookingStaffRecommendationService;
     }
 
     @PostMapping
@@ -53,6 +61,17 @@ public class BookingController {
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created("Booking created.", bookingService.createBooking(request, null)));
+    }
+
+    @PostMapping("/staff-options")
+    @Operation(summary = "Recommend staff for a booking draft")
+    public ApiResponse<List<BookingStaffOptionResponse>> recommendStaffOptions(
+            @Valid @RequestBody BookingStaffOptionsRequest request
+    ) {
+        return ApiResponse.ok(
+                "Booking staff options retrieved",
+                bookingStaffRecommendationService.recommendStaffOptions(request)
+        );
     }
 
     @GetMapping

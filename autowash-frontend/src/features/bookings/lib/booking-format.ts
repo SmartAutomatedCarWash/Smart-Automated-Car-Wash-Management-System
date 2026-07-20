@@ -49,6 +49,11 @@ export function buildCreateBookingPayload(draft: BookingDraft): CreateBookingReq
     payload.comboId = draft.comboId;
   }
 
+  const staffId = normalizeOptionalText(draft.staffId ?? "");
+  if (staffId) {
+    payload.staffId = staffId;
+  }
+
   const discountCode = normalizeOptionalText(sanitizeVoucherCodeInput(draft.discountCode));
   if (discountCode) {
     payload.discountCode = discountCode;
@@ -107,7 +112,7 @@ export function buildBookingSummary(
     return null;
   }
 
-  const subtotal = input.ownedComboApplied ? 0 : selectedCombo.basePrice;
+  const subtotal = (input.ownedComboApplied ? 0 : selectedCombo.basePrice) + addonsTotal;
   const totalDiscountAmount = Math.min(input.voucher?.discountAmount ?? 0, subtotal);
   
   const finalAmount = Math.max(subtotal - totalDiscountAmount, 0);
@@ -117,12 +122,12 @@ export function buildBookingSummary(
     itemId: selectedCombo.comboId,
     itemName: selectedCombo.name,
     baseAmount: selectedCombo.basePrice,
-    addonsTotal: 0,
+    addonsTotal,
     subtotal,
     discountAmount: totalDiscountAmount,
     finalAmount,
     estimatedDurationLabel: `${selectedCombo.durationDays} day combo`,
-    selectedAddons: [],
+    selectedAddons,
     selectedDiscountCode: input.voucher?.discountCode ?? null,
     paymentMethod: draft.paymentMethod,
   };

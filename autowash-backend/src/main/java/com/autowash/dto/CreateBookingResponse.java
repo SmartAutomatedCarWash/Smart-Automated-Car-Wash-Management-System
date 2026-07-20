@@ -27,7 +27,9 @@ public record CreateBookingResponse(
         String comboId,
         String customerComboId,
         boolean comboPurchased,
-        String devOtp
+        String devOtp,
+        String assignedStaffId,
+        String assignedStaffName
 ) {
     public record Pricing(
             long subtotal,

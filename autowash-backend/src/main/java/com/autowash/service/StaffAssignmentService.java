@@ -15,6 +15,8 @@ public interface StaffAssignmentService {
 
     User pickLeastLoadedActiveStaffForBooking(Booking booking);
 
+    List<User> rankAvailableStaffForBooking(Booking booking, int limit);
+
     boolean isStaffAvailableForBooking(User staff, Booking booking);
 
     User requireActiveStaff(UUID staffId);
