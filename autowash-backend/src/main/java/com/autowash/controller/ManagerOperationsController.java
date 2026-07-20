@@ -6,8 +6,15 @@ import com.autowash.dto.CreateWashSessionResponse;
 import com.autowash.dto.EligibleSessionBookingResponse;
 import com.autowash.dto.OperationsQueueResponse;
 import com.autowash.dto.StaffOptionResponse;
+import com.autowash.entity.User;
+import com.autowash.entity.WashSession;
+import com.autowash.entity.enums.UserRole;
+import com.autowash.entity.enums.UserStatus;
+import com.autowash.repository.UserRepository;
+import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.OperationsService;
 import com.autowash.shared.dto.ApiResponse;
+import com.autowash.shared.exception.ApiException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,6 +31,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,9 +50,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class ManagerOperationsController {
 
     private final OperationsService operationsService;
+    private final WashSessionRepository washSessionRepository;
+    private final UserRepository userRepository;
 
-    public ManagerOperationsController(OperationsService operationsService) {
+    public ManagerOperationsController(
+            OperationsService operationsService,
+            WashSessionRepository washSessionRepository,
+            UserRepository userRepository
+    ) {
         this.operationsService = operationsService;
+        this.washSessionRepository = washSessionRepository;
+        this.userRepository = userRepository;
     }
 
     @GetMapping("/command-center")
@@ -176,24 +192,34 @@ public class ManagerOperationsController {
     }
 
     @PostMapping("/sessions/{sessionId}/transfer")
+    @Transactional
     public ApiResponse<TransferSessionResponse> transferSession(
             @PathVariable UUID sessionId,
             @Valid @RequestBody TransferSessionRequest request
     ) {
-        OperationsQueueResponse.WashSessionCard session = flattenSessions(operationsService.getQueue()).stream()
-                .filter(item -> item.sessionId().equals(sessionId))
-                .findFirst()
-                .orElseThrow();
+        WashSession session = washSessionRepository.findWithBookingById(sessionId)
+                .orElseThrow(() -> ApiException.notFound("Wash session not found"));
+        User targetStaff = userRepository.findById(request.toStaffId())
+                .orElseThrow(() -> ApiException.notFound("Target staff not found"));
+        if (targetStaff.getRole() != UserRole.STAFF || targetStaff.getStatus() != UserStatus.ACTIVE) {
+            throw ApiException.businessRule("Target user must be an active staff member");
+        }
+
+        User fromStaff = session.getAssignedStaff();
+        session.assignStaff(targetStaff);
+        session.getBooking().assignStaff(targetStaff);
+        washSessionRepository.save(session);
+
         return ApiResponse.ok(
-                "Manager session transfer prepared",
+                "Manager session transferred",
                 new TransferSessionResponse(
                         UUID.randomUUID(),
                         sessionId,
-                        session.bookingId(),
-                        session.assignedStaffId(),
-                        session.assignedStaffName(),
-                        request.toStaffId(),
-                        "Selected staff",
+                        session.getBooking().getId().toString(),
+                        fromStaff == null ? null : fromStaff.getId(),
+                        fromStaff == null ? null : fromStaff.getFullName(),
+                        targetStaff.getId(),
+                        targetStaff.getFullName(),
                         request.reason(),
                         Instant.now()
                 )

@@ -8,6 +8,8 @@ import com.autowash.dto.BookingListItemResponse;
 import com.autowash.dto.CancelBookingResponse;
 import com.autowash.dto.CreateBookingRequest;
 import com.autowash.dto.CreateBookingResponse;
+import com.autowash.dto.DiscountValidationRequest;
+import com.autowash.dto.DiscountValidationResponse;
 import com.autowash.dto.PayBookingResponse;
 import com.autowash.entity.Booking;
 import com.autowash.entity.enums.BookingStatus;
@@ -20,6 +22,7 @@ import java.util.List;
 
 public interface BookingService {
     CreateBookingResponse createBooking(CreateBookingRequest request, Object metadata);
+    DiscountValidationResponse validateDiscount(DiscountValidationRequest request);
     BookingPage listBookings(String status, LocalDate dateFrom, LocalDate dateTo, int page, int limit);
     BookingDetailResponse getBooking(String bookingId);
     CancelBookingResponse cancelBooking(String bookingId, String reason);

@@ -9,6 +9,8 @@ import com.autowash.dto.BookingStaffOptionResponse;
 import com.autowash.dto.BookingStaffOptionsRequest;
 import com.autowash.dto.CreateBookingRequest;
 import com.autowash.dto.CreateBookingResponse;
+import com.autowash.dto.DiscountValidationRequest;
+import com.autowash.dto.DiscountValidationResponse;
 import com.autowash.dto.PayBookingRequest;
 import com.autowash.dto.PayBookingResponse;
 import com.autowash.service.BookingService;
@@ -73,6 +75,14 @@ public class BookingController {
                 "Booking staff options retrieved",
                 bookingStaffRecommendationService.recommendStaffOptions(request)
         );
+    }
+
+    @PostMapping("/validate-voucher")
+    @Operation(summary = "Validate booking voucher before checkout")
+    public ApiResponse<DiscountValidationResponse> validateVoucher(
+            @Valid @RequestBody DiscountValidationRequest request
+    ) {
+        return ApiResponse.ok("Voucher validated", bookingService.validateDiscount(request));
     }
 
     @GetMapping
