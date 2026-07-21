@@ -156,7 +156,11 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
   const handleQueryVnpay = async () => {
     try {
       const result = await queryVnpayMutation.mutateAsync();
-      toast.success(result.message || translate(language, "Đã kiểm tra giao dịch VNPay.", "VNPay transaction checked."));
+      if (result.success) {
+        toast.success(result.message || translate(language, "Đã kiểm tra giao dịch VNPay.", "VNPay transaction checked."));
+      } else {
+        toast.error(result.message || translate(language, "VNPay chưa xác nhận thanh toán.", "VNPay has not confirmed the payment."));
+      }
     } catch (queryError) {
       toast.error(getErrorMessage(queryError));
     }
