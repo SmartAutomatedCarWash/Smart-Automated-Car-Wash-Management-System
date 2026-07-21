@@ -125,7 +125,7 @@ export function AdminAccountsPageContent() {
   const accountsQuery = useAdminAccounts(
     normalizedFilters,
     page,
-    isStaffClientFiltering ? 100 : PAGE_LIMIT,
+    isStaffClientFiltering ? 200 : PAGE_LIMIT,
   );
   
   const rawAccounts = accountsQuery.data?.items ?? [];
@@ -134,7 +134,7 @@ export function AdminAccountsPageContent() {
       return rawAccounts;
     } else {
       if (!normalizedFilters.role) {
-        return rawAccounts.filter((acc) => acc.role === "STAFF" || acc.role === "ADMIN");
+        return rawAccounts.filter((acc) => acc.role === "STAFF" || acc.role === "ADMIN" || acc.role === "MANAGER");
       }
       return rawAccounts;
     }
