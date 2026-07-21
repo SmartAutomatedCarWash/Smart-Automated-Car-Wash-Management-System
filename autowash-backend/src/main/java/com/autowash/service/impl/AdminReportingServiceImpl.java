@@ -498,7 +498,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending())
         );
 
-        Map<UUID, WashSession> sessionsByBookingId = sessionsByBookingId(bookings.getContent());
+        Map<UUID, WashSessionRepository.SessionSummary> sessionsByBookingId = sessionSummariesByBookingId(bookings.getContent());
         Map<UUID, String> serviceNames = serviceNames(bookings.getContent());
         List<AdminBookingResponse> items = bookings.getContent().stream()
                 .map(booking -> toBookingResponse(booking, sessionsByBookingId.get(booking.getId()), serviceNames))
@@ -546,8 +546,8 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                         booking.getBookingTime().plusMinutes(booking.getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum()).format(DateTimeFormatter.ofPattern("HH:mm"))
                 ),
                 new BookingDetailResponse.Payment(
-                        payment.method().name(),
-                        payment.status().name(),
+                        payment.method(),
+                        payment.status(),
                         payment.transactionRef(),
                         payment.paidAt()
                 ),
@@ -772,13 +772,13 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         return searchQuery == null || searchQuery.isBlank() ? null : searchQuery.trim();
     }
 
-    private Map<UUID, WashSession> sessionsByBookingId(List<Booking> bookings) {
+    private Map<UUID, WashSessionRepository.SessionSummary> sessionSummariesByBookingId(List<Booking> bookings) {
         List<UUID> bookingIds = bookings.stream().map(Booking::getId).toList();
         if (bookingIds.isEmpty()) {
             return Map.of();
         }
-        return washSessionRepository.findByBooking_IdIn(bookingIds).stream()
-                .collect(Collectors.toMap(session -> session.getBooking().getId(), Function.identity(), (first, second) -> first));
+        return washSessionRepository.findLatestSummariesByBookingIds(bookingIds).stream()
+                .collect(Collectors.toMap(WashSessionRepository.SessionSummary::getBookingId, Function.identity(), (first, second) -> first));
     }
 
     private Map<UUID, String> serviceNames(Collection<Booking> bookings) {
@@ -801,7 +801,11 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         return names;
     }
 
-    private AdminBookingResponse toBookingResponse(Booking booking, WashSession session, Map<UUID, String> serviceNames) {
+    private AdminBookingResponse toBookingResponse(
+            Booking booking,
+            WashSessionRepository.SessionSummary session,
+            Map<UUID, String> serviceNames
+    ) {
         String staffName = booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getFullName();
         PaymentInfo payment = resolvePaymentInfo(booking);
         return new AdminBookingResponse(
@@ -815,11 +819,11 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 booking.getBookingDate(),
                 booking.getBookingTime(),
                 (booking.getPricing() != null ? booking.getPricing().getFinalAmount() : 0L),
-                payment.method().name(),
-                payment.status().name(),
+                payment.method(),
+                payment.status(),
                 booking.getStatus().name(),
                 session == null ? null : session.getId(),
-                session == null ? null : session.getStatus().name(),
+                session == null ? null : session.getStatus(),
                 booking.getCreatedAt(),
                 staffName
         );
@@ -1241,22 +1245,26 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     }
 
     private PaymentInfo resolvePaymentInfo(Booking booking) {
-        return paymentRepository.findFirstByBookingOrderByCreatedAtDesc(booking)
+        return paymentRepository.findLatestSummaryByBookingId(booking.getId())
                 .map(payment -> new PaymentInfo(
-                        payment.getMethod() == null ? PaymentMethod.CASH_AT_COUNTER : payment.getMethod(),
-                        payment.getStatus() == null ? PaymentStatus.UNPAID : payment.getStatus(),
+                        defaultString(payment.getMethod(), PaymentMethod.CASH_AT_COUNTER.name()),
+                        defaultString(payment.getStatus(), PaymentStatus.UNPAID.name()),
                         payment.getTransactionRef(),
                         payment.getPaidAt()
                 ))
-                .orElseGet(() -> new PaymentInfo(PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, null, null));
+                .orElseGet(() -> new PaymentInfo(PaymentMethod.CASH_AT_COUNTER.name(), PaymentStatus.UNPAID.name(), null, null));
+    }
+
+    private String defaultString(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
     }
 
     private record TierChange(String fromTier, String toTier) {
     }
 
     private record PaymentInfo(
-            PaymentMethod method,
-            PaymentStatus status,
+            String method,
+            String status,
             String transactionRef,
             Instant paidAt
     ) {
