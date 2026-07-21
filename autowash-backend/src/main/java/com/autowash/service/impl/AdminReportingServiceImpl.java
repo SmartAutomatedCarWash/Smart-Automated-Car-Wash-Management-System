@@ -511,16 +511,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         Booking booking = bookingRepository.findById(UUID.fromString(bookingId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", ErrorCode.RESOURCE_NOT_FOUND));
         
-        String packageName = null;
-        if ((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null)) != null) {
-            packageName = PackageRepository.findById((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null)))
-                    .map(com.autowash.entity.Package::getName)
-                    .orElse((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null)).toString());
-        } else if ((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null)) != null) {
-            packageName = ComboRepository.findById((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null)))
-                    .map(com.autowash.entity.Combo::getName)
-                    .orElse((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null)).toString());
-        }
+        String packageName = primaryServiceName(booking);
 
         var washSession = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
                 .orElse(null);
@@ -792,12 +783,12 @@ public class AdminReportingServiceImpl implements AdminReportingService {
 
     private Map<UUID, String> serviceNames(Collection<Booking> bookings) {
         List<UUID> packageIds = bookings.stream()
-                .map(b -> b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null))
+                .map(b -> firstDetailRefId(b, BookingItemType.PACKAGE))
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
         List<UUID> comboIds = bookings.stream()
-                .map(b -> b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null))
+                .map(b -> firstDetailRefId(b, BookingItemType.COMBO))
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
@@ -916,7 +907,33 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     }
 
     private UUID serviceId(Booking booking) {
-        return (booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null)) == null ? (booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null)) : (booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null));
+        UUID packageId = firstDetailRefId(booking, BookingItemType.PACKAGE);
+        return packageId != null ? packageId : firstDetailRefId(booking, BookingItemType.COMBO);
+    }
+
+    private String primaryServiceName(Booking booking) {
+        UUID packageId = firstDetailRefId(booking, BookingItemType.PACKAGE);
+        if (packageId != null) {
+            return PackageRepository.findById(packageId)
+                    .map(com.autowash.entity.Package::getName)
+                    .orElse(packageId.toString());
+        }
+        UUID comboId = firstDetailRefId(booking, BookingItemType.COMBO);
+        if (comboId != null) {
+            return ComboRepository.findById(comboId)
+                    .map(com.autowash.entity.Combo::getName)
+                    .orElse(comboId.toString());
+        }
+        return null;
+    }
+
+    private UUID firstDetailRefId(Booking booking, BookingItemType itemType) {
+        return booking.getDetails().stream()
+                .filter(detail -> detail.getItemType() == itemType)
+                .map(BookingDetail::getRefId)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 
     private long sumPoints(User customer, PointTransactionType type) {
