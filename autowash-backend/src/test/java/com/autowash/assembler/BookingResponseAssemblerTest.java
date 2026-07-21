@@ -1,6 +1,8 @@
 package com.autowash.assembler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.BookingStatusHistoryItem;
@@ -16,6 +18,8 @@ import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.entity.enums.VehicleType;
+import com.autowash.repository.BookingStaffAssignmentRepository;
+import com.autowash.repository.WashSessionStaffAssignmentRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -27,7 +31,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 class BookingResponseAssemblerTest {
 
-    private final BookingResponseAssembler assembler = new BookingResponseAssembler();
+    private final BookingStaffAssignmentRepository bookingStaffAssignmentRepository = mock(BookingStaffAssignmentRepository.class);
+    private final WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository = mock(WashSessionStaffAssignmentRepository.class);
+    private final BookingResponseAssembler assembler = new BookingResponseAssembler(
+            bookingStaffAssignmentRepository,
+            washSessionStaffAssignmentRepository
+    );
 
     @Test
     void toDetailResponsePreservesAggregateFieldsAndHistoryOrder() {
@@ -53,6 +62,8 @@ class BookingResponseAssemblerTest {
                 .notes("Done cleanly")
                 .createdAt(Instant.parse("2026-07-20T02:00:00Z"))
                 .build();
+        when(washSessionStaffAssignmentRepository.findBySessionOrderBySortOrderAsc(washSession)).thenReturn(List.of());
+        when(bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking)).thenReturn(List.of());
         var payment = new BookingResponseAssembler.PaymentInfo(
                 PaymentMethod.BANK_TRANSFER,
                 PaymentStatus.PAID,
@@ -98,6 +109,7 @@ class BookingResponseAssemblerTest {
         Booking booking = new Booking(UUID.randomUUID(), customer, vehicle, scheduledAt);
         attachPricing(booking, 100_000, 0, 100_000, 45, null);
         attachDetails(booking, packageDetail("Basic Wash", 100_000));
+        when(bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking)).thenReturn(List.of());
 
         var response = assembler.toListItem(booking, null);
 

@@ -103,6 +103,7 @@ class BusinessRuleValidationTest {
                 "customer@example.com",
                 PaymentMethod.CASH_AT_COUNTER,
                 null,
+                null,
                 null
         ))).isEmpty();
 
@@ -115,6 +116,7 @@ class BusinessRuleValidationTest {
                         null,
                         "not-an-email",
                         PaymentMethod.CASH_AT_COUNTER,
+                        null,
                         null,
                         null
                 )).stream()
