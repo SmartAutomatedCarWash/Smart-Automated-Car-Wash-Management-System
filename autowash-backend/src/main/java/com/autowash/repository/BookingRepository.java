@@ -225,7 +225,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             @Param("checkedInStatuses") Collection<WashSessionStatus> checkedInStatuses
     );
 
-    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff", "details", "pricing"})
     @Query("""
             select booking from Booking booking
             left join LoyaltyAccount la on la.customer = booking.customer
@@ -244,7 +244,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             Pageable pageable
     );
 
-    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff", "details", "pricing"})
     @Query("""
             select booking from Booking booking
             left join LoyaltyAccount la on la.customer = booking.customer
