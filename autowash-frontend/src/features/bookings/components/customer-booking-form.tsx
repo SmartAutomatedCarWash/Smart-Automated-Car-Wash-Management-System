@@ -1195,9 +1195,9 @@ export function CustomerBookingForm() {
         bookingTime: draft.bookingTime,
       });
       const booking = await createBookingMutation.mutateAsync(nextDraft);
-      setLastCreatedBooking(booking);
       resetDraft();
       setExpiresAt(null);
+      setLastCreatedBooking(booking);
       setShowPaymentDialog(false);
       toast.success("Booking confirmed.");
       router.push(`/customer/bookings/${booking.bookingId}`);

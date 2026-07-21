@@ -41,7 +41,7 @@ import {
 } from "@/features/bookings/hooks/use-bookings";
 import { useSlotHold } from "@/features/bookings/hooks/use-slot-hold";
 import { useCustomerVehicles } from "@/features/vehicles/hooks/use-customer-vehicles";
-import { useBookingStore, resetBookingDraft } from "@/features/bookings/store/booking.store";
+import { getBookingDraftSnapshot, useBookingStore } from "@/features/bookings/store/booking.store";
 import { clearCustomerCart } from "@/features/cart/store/cart.store";
 import type { PaymentMethod } from "@/entities/bookings";
 
@@ -85,6 +85,8 @@ export function BookingConfirmPage() {
   const updateDraft = useBookingStore((state) => state.updateDraft);
   const resetDraft = useBookingStore((state) => state.resetDraft);
   const setExpiresAt = useBookingStore((state) => state.setExpiresAt);
+  const lastCreatedBooking = useBookingStore((state) => state.lastCreatedBooking);
+  const setLastCreatedBooking = useBookingStore((state) => state.setLastCreatedBooking);
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(draft.paymentMethod);
   const [showPaymentError, setShowPaymentError] = useState(false);
@@ -182,6 +184,26 @@ export function BookingConfirmPage() {
   const selectedStaff = staffOptions.find((staff) => staff.staffId === draft.staffId) ?? null;
   const staffUnavailable = staffOptionsQuery.isSuccess && staffOptions.length === 0;
 
+  const redirectToLastCreatedBooking = useCallback(
+    (bookingId?: string) => {
+      const snapshot = getBookingDraftSnapshot();
+      const hasActiveDraft = Boolean(
+        snapshot.draft.vehicleId &&
+          snapshot.draft.bookingDate &&
+          snapshot.draft.bookingTime &&
+          snapshot.expiresAt &&
+          snapshot.expiresAt > Date.now(),
+      );
+      if (hasActiveDraft) return false;
+
+      const targetBookingId = bookingId ?? snapshot.lastCreatedBooking?.bookingId;
+      if (!targetBookingId) return false;
+      router.replace(`/customer/bookings/${targetBookingId}`);
+      return true;
+    },
+    [router],
+  );
+
   useEffect(() => {
     if (!hasStaleAddonIds) return;
     updateDraft({ addonIds: sanitizedAddonIds, discountCode: "", staffId: "" });
@@ -197,9 +219,30 @@ export function BookingConfirmPage() {
   useEffect(() => {
     if (expired || isRedirectingAfterCreate) return;
     if (!draft.vehicleId || !draft.bookingDate || !draft.bookingTime || !expiresAt || expiresAt <= Date.now()) {
+      if (redirectToLastCreatedBooking(lastCreatedBooking?.bookingId)) return;
       router.replace("/customer/bookings/new");
     }
-  }, [draft.bookingDate, draft.bookingTime, draft.vehicleId, expired, expiresAt, isRedirectingAfterCreate, router]);
+  }, [
+    draft.bookingDate,
+    draft.bookingTime,
+    draft.vehicleId,
+    expired,
+    expiresAt,
+    isRedirectingAfterCreate,
+    lastCreatedBooking?.bookingId,
+    redirectToLastCreatedBooking,
+    router,
+  ]);
+
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      redirectToLastCreatedBooking();
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, [redirectToLastCreatedBooking]);
 
   const releaseHeldSlot = useCallback(async () => {
     if (!draft.bookingDate || !draft.bookingTime) return;
@@ -222,6 +265,7 @@ export function BookingConfirmPage() {
   useEffect(() => {
     window.history.pushState({ bookingConfirm: true }, "", window.location.href);
     const handlePopState = () => {
+      if (redirectToLastCreatedBooking()) return;
       const confirmed = window.confirm("Release held slot and go back to edit?");
       if (!confirmed) {
         window.history.pushState({ bookingConfirm: true }, "", window.location.href);
@@ -231,7 +275,7 @@ export function BookingConfirmPage() {
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [releaseHeldSlot, router]);
+  }, [redirectToLastCreatedBooking, releaseHeldSlot, router]);
 
   const handleExpired = useCallback(() => {
     setExpired(true);
@@ -265,11 +309,13 @@ export function BookingConfirmPage() {
         try {
           const checkout = await createVnpayCheckoutMutation.mutateAsync(booking.bookingId);
           resetDraft();
+          setLastCreatedBooking(booking);
           toast.success("Booking created. Redirecting to VNPay.");
           window.location.href = checkout.paymentUrl;
           return;
         } catch (checkoutError) {
           resetDraft();
+          setLastCreatedBooking(booking);
           setIsRedirectingAfterCreate(false);
           toast.error(getErrorMessage(checkoutError));
           router.push(`/customer/bookings/${booking.bookingId}`);
@@ -278,6 +324,7 @@ export function BookingConfirmPage() {
       }
 
       resetDraft();
+      setLastCreatedBooking(booking);
       clearCustomerCart();
       toast.success(
         booking.paymentMethod === "CASH_AT_COUNTER"
