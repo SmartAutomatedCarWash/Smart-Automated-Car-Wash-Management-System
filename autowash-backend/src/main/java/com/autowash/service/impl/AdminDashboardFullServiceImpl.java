@@ -17,6 +17,7 @@ import com.autowash.dto.AdminDashboardFullResponse.ReviewSummary;
 import com.autowash.dto.AdminDashboardFullResponse.TopServices;
 import com.autowash.dto.AdminDashboardFullResponse.VoucherStats;
 import com.autowash.entity.Booking;
+import com.autowash.entity.BookingDetail;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
@@ -114,10 +115,10 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
     // -------------------------------------------------------------------------
     private Map<UUID, String> buildServiceNameMap(List<Booking> bookings) {
         List<UUID> packageIds = bookings.stream()
-                .map(b -> b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null))
+                .map(b -> firstDetailRefId(b, BookingItemType.PACKAGE))
                 .filter(Objects::nonNull).distinct().toList();
         List<UUID> comboIds = bookings.stream()
-                .map(b -> b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null))
+                .map(b -> firstDetailRefId(b, BookingItemType.COMBO))
                 .filter(Objects::nonNull).distinct().toList();
         Map<UUID, String> names = new HashMap<>();
         packageRepository.findAllById(packageIds).forEach(p -> names.put(p.getId(), p.getName()));
@@ -141,8 +142,17 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
     // Helper: resolve service ID from booking
     // -------------------------------------------------------------------------
     private UUID serviceId(Booking b) {
-        UUID pkgId = b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null);
-        return pkgId != null ? pkgId : b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null);
+        UUID pkgId = firstDetailRefId(b, BookingItemType.PACKAGE);
+        return pkgId != null ? pkgId : firstDetailRefId(b, BookingItemType.COMBO);
+    }
+
+    private UUID firstDetailRefId(Booking booking, BookingItemType itemType) {
+        return booking.getDetails().stream()
+                .filter(detail -> detail.getItemType() == itemType)
+                .map(BookingDetail::getRefId)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 
     // -------------------------------------------------------------------------
