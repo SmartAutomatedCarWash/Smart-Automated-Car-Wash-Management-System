@@ -23,6 +23,7 @@ import { useBookingPackages, useBookingCombos } from "@/features/bookings/hooks/
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
 import { cn } from "@/shared/lib/utils";
+import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
 
 
 export default function ServiceCatalogPage() {
@@ -215,15 +216,25 @@ export default function ServiceCatalogPage() {
                         {formatBookingCurrency(item.price)}
                       </span>
                     </div>
-                    <Button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleQuickBook(item);
-                      }}
-                      className="h-10 w-full shrink-0 rounded-xl bg-[#0566D9]/10 px-3 text-xs font-black text-[#0566D9] shadow-none transition-all duration-200 hover:bg-[#0566D9] hover:text-white"
-                    >
-                      {t("Quick Book", "Quick Book")}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <AddToCartButton
+                        itemId={item.id}
+                        type={item.type === "combo" ? "COMBO" : "PACKAGE"}
+                        name={item.name}
+                        price={item.price}
+                        description={item.description}
+                        className="h-10 flex-1 rounded-xl"
+                      />
+                      <Button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuickBook(item);
+                        }}
+                        className="h-10 flex-1 rounded-xl bg-[#0566D9]/10 px-3 text-xs font-black text-[#0566D9] shadow-none transition-all duration-200 hover:bg-[#0566D9] hover:text-white"
+                      >
+                        {t("Quick Book", "Quick Book")}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -328,16 +339,26 @@ export default function ServiceCatalogPage() {
                 </div>
               </div>
 
-              <Button 
-                onClick={() => {
-                  if (selectedItem) handleQuickBook(selectedItem);
-                  setSelectedItem(null);
-                }}
-                className="w-full rounded-2xl bg-[#0566D9] text-white hover:bg-[#0455B6] h-14 text-base font-black shadow-lg shadow-[#0566D9]/20 transition-all active:scale-[0.98]"
-              >
-                <Zap className="mr-2 h-5 w-5" />
-                {t("Đặt Lịch Ngay", "Book Now")}
-              </Button>
+              <div className="flex items-center gap-3">
+                <AddToCartButton
+                  itemId={selectedItem.id}
+                  type={selectedItem.type === "combo" ? "COMBO" : "PACKAGE"}
+                  name={selectedItem.name}
+                  price={selectedItem.price}
+                  description={selectedItem.description}
+                  className="h-14 flex-1 rounded-2xl text-base font-bold"
+                />
+                <Button 
+                  onClick={() => {
+                    if (selectedItem) handleQuickBook(selectedItem);
+                    setSelectedItem(null);
+                  }}
+                  className="flex-1 rounded-2xl bg-[#0566D9] text-white hover:bg-[#0455B6] h-14 text-base font-black shadow-lg shadow-[#0566D9]/20 transition-all active:scale-[0.98]"
+                >
+                  <Zap className="mr-2 h-5 w-5" />
+                  {t("Đặt Lịch Ngay", "Book Now")}
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
