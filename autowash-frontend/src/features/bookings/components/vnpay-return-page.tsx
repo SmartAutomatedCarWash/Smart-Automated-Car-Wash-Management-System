@@ -72,7 +72,7 @@ export function VnpayReturnPage() {
         : hasSyncFailure
           ? failureMessage
           : isSuccess
-            ? translate(language, "VNPay trả kết quả thanh toán thành công, nhưng hệ thống chưa đồng bộ xong. Mở chi tiết lịch đặt và dùng Query VNPay nếu cần.", "VNPay returned a successful payment, but local sync could not be completed. Open the booking detail and use Query VNPay if needed.")
+            ? translate(language, "VNPay trả kết quả thanh toán thành công, nhưng hệ thống chưa đồng bộ xong. Mở chi tiết lịch đặt và tải lại sau ít giây.", "VNPay returned a successful payment, but local sync could not be completed. Open the booking detail and refresh after a few seconds.")
         : isInvalidSignature
           ? translate(language, "Dữ liệu trả về không thể xác minh.", "The returned data could not be verified.")
           : failureMessage;
@@ -122,7 +122,7 @@ export function VnpayReturnPage() {
                     : isSynced
                       ? translate(language, "Đã xác nhận", "Confirmed")
                       : syncQuery.isError || hasSyncFailure
-                        ? translate(language, "Cần kiểm tra lại", "Needs manual query")
+                        ? translate(language, "Cần đồng bộ lại", "Needs resync")
                         : "-"
                 }
               />

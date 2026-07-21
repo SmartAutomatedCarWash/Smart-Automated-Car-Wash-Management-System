@@ -4,7 +4,6 @@ import com.autowash.dto.VnpayCheckoutResponse;
 import com.autowash.dto.VnpayIpnResponse;
 import com.autowash.dto.VnpayPaymentResultResponse;
 import com.autowash.dto.VnpayRefundRequest;
-import com.autowash.dto.SepayPaymentResultResponse;
 import com.autowash.service.SepayPaymentService;
 import com.autowash.service.VnpayPaymentService;
 import com.autowash.shared.dto.ApiResponse;
@@ -72,18 +71,10 @@ public class PaymentController {
         return ResponseEntity.ok(Map.of("success", true));
     }
 
-    @PostMapping("/bookings/{bookingId}/sepay/query")
-    @PreAuthorize("hasAnyRole('CUSTOMER','MANAGER','ADMIN')")
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Query SePay transaction status and sync booking/payment")
-    public ApiResponse<SepayPaymentResultResponse> querySepayTransaction(@PathVariable UUID bookingId) {
-        return ApiResponse.ok("SePay transaction queried", sepayPaymentService.queryTransaction(bookingId));
-    }
-
     @PostMapping("/bookings/{bookingId}/vnpay/query")
     @PreAuthorize("hasAnyRole('CUSTOMER','MANAGER','ADMIN')")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Query VNPay transaction status and sync booking/payment")
+    @Operation(summary = "Sync VNPay transaction status after browser return")
     public ApiResponse<VnpayPaymentResultResponse> queryVnpayTransaction(
             @PathVariable UUID bookingId,
             HttpServletRequest request

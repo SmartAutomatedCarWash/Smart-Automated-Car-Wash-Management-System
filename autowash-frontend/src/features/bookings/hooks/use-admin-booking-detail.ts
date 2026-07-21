@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   confirmAdminBooking,
   getAdminBookingDetail,
-  queryAdminVnpayTransaction,
   refundAdminVnpayPayment,
   updateAdminBookingStatus,
 } from "@/features/reports/api/admin-reporting-service";
@@ -41,20 +40,6 @@ export function useUpdateAdminBookingStatus(id: string) {
 
   return useMutation<BookingDetail, ApiErrorResponse, BookingStatus>({
     mutationFn: (status) => updateAdminBookingStatus(id, status),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["admin-booking-detail", id] }),
-        queryClient.invalidateQueries({ queryKey: ["admin-bookings"] }),
-      ]);
-    },
-  });
-}
-
-export function useQueryAdminVnpayTransaction(id: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation<VnpayPaymentResultResponse, ApiErrorResponse>({
-    mutationFn: () => queryAdminVnpayTransaction(id),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin-booking-detail", id] }),

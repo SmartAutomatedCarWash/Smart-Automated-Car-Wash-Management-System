@@ -99,13 +99,6 @@ export async function updateAdminBookingStatus(id: string, status: BookingStatus
   });
 }
 
-export async function queryAdminVnpayTransaction(id: string): Promise<VnpayPaymentResultResponse> {
-  return apiRequest<VnpayPaymentResultResponse>({
-    method: "POST",
-    url: `/payments/bookings/${id}/vnpay/query`,
-  });
-}
-
 export async function refundAdminVnpayPayment(id: string, amount?: number): Promise<VnpayPaymentResultResponse> {
   return apiRequest<VnpayPaymentResultResponse, { amount?: number }>({
     method: "POST",

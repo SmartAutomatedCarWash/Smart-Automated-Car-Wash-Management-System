@@ -10,8 +10,10 @@ import {
   Car,
   CheckCircle2,
   Clock,
+  Copy,
   CreditCard,
   Loader2,
+  QrCode,
   Sparkles,
   Tag,
   Timer,
@@ -40,11 +42,20 @@ import {
   useCreateCustomerBooking,
   useCreateVnpayCheckout,
 } from "@/features/bookings/hooks/use-bookings";
+import { getCustomerBookingDetail } from "@/features/bookings/lib/booking-service";
 import { useSlotHold } from "@/features/bookings/hooks/use-slot-hold";
 import { useCustomerVehicles } from "@/features/vehicles/hooks/use-customer-vehicles";
 import { getBookingDraftSnapshot, useBookingStore } from "@/features/bookings/store/booking.store";
 import { clearCustomerCart } from "@/features/cart/store/cart.store";
-import type { BookingStaffOption, PaymentMethod } from "@/entities/bookings";
+import type { BookingDetail, BookingStaffOption, PaymentMethod } from "@/entities/bookings";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/ui/ui/dialog";
 
 // ─── Payment method config ───────────────────────────────────────────────────
 
@@ -102,6 +113,7 @@ export function BookingConfirmPage() {
   const [showPaymentError, setShowPaymentError] = useState(false);
   const [expired, setExpired] = useState(false);
   const [isRedirectingAfterCreate, setIsRedirectingAfterCreate] = useState(false);
+  const [sepayPaymentBooking, setSepayPaymentBooking] = useState<BookingDetail | null>(null);
 
   useEffect(() => {
     setPaymentMethod(draft.paymentMethod);
@@ -316,6 +328,28 @@ export function BookingConfirmPage() {
     resetDraft();
   }, [resetDraft]);
 
+  useEffect(() => {
+    if (!sepayPaymentBooking || sepayPaymentBooking.payment.status === "PAID" || sepayPaymentBooking.status !== "PENDING") {
+      return;
+    }
+
+    const refreshPaymentStatus = async () => {
+      try {
+        const detail = await getCustomerBookingDetail(sepayPaymentBooking.bookingId);
+        setSepayPaymentBooking(detail);
+        if (detail.payment.status === "PAID" || detail.status === "CONFIRMED") {
+          toast.success("SePay payment confirmed.");
+          router.replace(`/customer/bookings/${detail.bookingId}`);
+        }
+      } catch (error) {
+        // Keep the QR visible; the next poll can recover from a transient network error.
+      }
+    };
+
+    const id = window.setInterval(() => void refreshPaymentStatus(), 5_000);
+    return () => window.clearInterval(id);
+  }, [router, sepayPaymentBooking]);
+
   const isComboBooking = draft.mode === "COMBO" && Boolean(selectedCustomerCombo);
 
   const handleConfirm = async () => {
@@ -366,6 +400,26 @@ export function BookingConfirmPage() {
         }
       }
 
+      if (!isComboBooking && effectivePaymentMethod === "BANK_TRANSFER" && booking.pricing.finalAmount > 0) {
+        try {
+          const detail = await getCustomerBookingDetail(booking.bookingId);
+          resetDraft();
+          setLastCreatedBooking(booking);
+          clearCustomerCart();
+          setSepayPaymentBooking(detail);
+          toast.success("Booking created. Scan the SePay QR to pay.");
+          return;
+        } catch (detailError) {
+          resetDraft();
+          setLastCreatedBooking(booking);
+          clearCustomerCart();
+          setIsRedirectingAfterCreate(false);
+          toast.error(getErrorMessage(detailError));
+          router.push(`/customer/bookings/${booking.bookingId}`);
+          return;
+        }
+      }
+
       resetDraft();
       setLastCreatedBooking(booking);
       clearCustomerCart();
@@ -378,6 +432,16 @@ export function BookingConfirmPage() {
     } catch (error) {
       setIsRedirectingAfterCreate(false);
       toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleCopyPaymentText = async (value: string | null | undefined, message: string) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(message);
+    } catch {
+      toast.error("Unable to copy.");
     }
   };
 
@@ -764,6 +828,88 @@ export function BookingConfirmPage() {
         </div>
 
       </div>
+      <Dialog
+        open={Boolean(sepayPaymentBooking)}
+        onOpenChange={(open) => {
+          if (!open && sepayPaymentBooking) {
+            router.push(`/customer/bookings/${sepayPaymentBooking.bookingId}`);
+          }
+        }}
+      >
+        <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700">
+              <QrCode className="h-6 w-6" />
+            </div>
+            <DialogTitle>Pay with SePay</DialogTitle>
+            <DialogDescription>
+              Scan the QR code or transfer with the exact details below. Your booking will confirm automatically after payment is received.
+            </DialogDescription>
+          </DialogHeader>
+
+          {sepayPaymentBooking ? (
+            <div className="space-y-4">
+              {sepayPaymentBooking.payment.qrUrl ? (
+                <div className="flex justify-center rounded-xl border bg-slate-50 p-3">
+                  <img
+                    src={sepayPaymentBooking.payment.qrUrl}
+                    alt="SePay payment QR code"
+                    className="h-auto w-full max-w-[300px] rounded-lg"
+                  />
+                </div>
+              ) : (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  QR is not configured yet. Use the transfer details below.
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <SepayPaymentInfoRow label="Bank" value={sepayPaymentBooking.payment.bankCode ?? "TPBank"} />
+                <SepayPaymentInfoRow
+                  label="Account"
+                  value={sepayPaymentBooking.payment.accountNumber ?? "--"}
+                  onCopy={() => handleCopyPaymentText(sepayPaymentBooking.payment.accountNumber, "Account number copied.")}
+                />
+                <SepayPaymentInfoRow label="Account name" value={sepayPaymentBooking.payment.accountName ?? "--"} />
+                <SepayPaymentInfoRow
+                  label="Amount"
+                  value={formatBookingCurrency(sepayPaymentBooking.pricing.finalAmount)}
+                  onCopy={() => handleCopyPaymentText(String(sepayPaymentBooking.pricing.finalAmount), "Amount copied.")}
+                />
+                <SepayPaymentInfoRow
+                  label="Description"
+                  value={sepayPaymentBooking.payment.transferDescription ?? sepayPaymentBooking.payment.transactionId ?? "--"}
+                  monospace
+                  onCopy={() =>
+                    handleCopyPaymentText(
+                      sepayPaymentBooking.payment.transferDescription ?? sepayPaymentBooking.payment.transactionId,
+                      "Transfer description copied.",
+                    )
+                  }
+                />
+              </div>
+
+              <div className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs font-semibold text-sky-800">
+                Waiting for SePay webhook. This window refreshes automatically every few seconds.
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (sepayPaymentBooking) {
+                  router.push(`/customer/bookings/${sepayPaymentBooking.bookingId}`);
+                }
+              }}
+            >
+              View booking
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -786,6 +932,35 @@ function SummaryRow({
         <span>{label}</span>
       </div>
       <span className="text-right text-xs font-semibold text-foreground max-w-[55%] truncate">{value}</span>
+    </div>
+  );
+}
+
+function SepayPaymentInfoRow({
+  label,
+  value,
+  monospace = false,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  monospace?: boolean;
+  onCopy?: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-sm">
+      <span className="shrink-0 text-muted-foreground">{label}</span>
+      <div className="flex min-w-0 items-center gap-2">
+        <span className={`truncate text-right font-bold text-foreground ${monospace ? "font-mono tracking-wide" : ""}`}>
+          {value}
+        </span>
+        {onCopy ? (
+          <Button type="button" size="sm" variant="outline" className="h-7 shrink-0 bg-white px-2 text-[11px]" onClick={onCopy}>
+            <Copy className="mr-1 h-3 w-3" />
+            Copy
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }
