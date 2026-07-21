@@ -751,7 +751,8 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                     <div className="space-y-3 rounded-2xl border border-rose-100 bg-rose-50 p-3">
                       <textarea
                         value={cancelReason}
-                        onChange={(event) => setCancelReason(event.target.value)}
+                        onChange={(event) => setCancelReason(event.target.value.slice(0, 500))}
+                        maxLength={500}
                         placeholder={translate(language, "Lý do huỷ", "Cancel reason")}
                         className="min-h-24 w-full rounded-xl border border-rose-100 bg-white p-3 text-sm outline-none"
                       />
