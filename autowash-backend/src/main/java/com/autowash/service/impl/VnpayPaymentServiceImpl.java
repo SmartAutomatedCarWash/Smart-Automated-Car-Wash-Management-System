@@ -486,7 +486,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
             if (transactionStatus.equals(responseCode)) {
                 return statusMessage;
             }
-            return statusMessage + " VNPay response code: " + safeVnpayCode(responseCode) + ". Transaction status: " + transactionStatus + ".";
+            return statusMessage;
         }
         return responseCodeMessage(responseCode);
     }
@@ -497,24 +497,24 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         }
         return switch (code) {
             case "00" -> "VNPay approved the payment.";
-            case "01" -> "VNPay transaction has not been completed.";
-            case "02" -> "VNPay transaction failed.";
-            case "04" -> "VNPay transaction was reversed.";
-            case "05" -> "VNPay is processing the transaction.";
-            case "06" -> "VNPay sent a refund request.";
-            case "07" -> "VNPay flagged the transaction as suspicious.";
-            case "09" -> "The card or account is not registered for Internet Banking.";
-            case "10" -> "Card or account authentication failed too many times.";
-            case "11" -> "The payment session expired.";
-            case "12" -> "The card or account is locked or not active.";
-            case "13" -> "The OTP was incorrect.";
-            case "24" -> "The payment was cancelled.";
-            case "51" -> "The card or account has insufficient funds.";
-            case "65" -> "The transaction exceeded the allowed limit.";
-            case "75" -> "The bank is temporarily under maintenance.";
-            case "79" -> "The payment password was entered incorrectly too many times.";
-            case "99" -> "VNPay returned an unknown payment error.";
-            default -> "VNPay rejected the transaction with response code " + code + ".";
+            case "01" -> "Payment was not completed. The transaction is still incomplete or was interrupted before confirmation.";
+            case "02" -> "Payment failed. The bank or VNPay declined the transaction.";
+            case "04" -> "Payment was reversed. The transaction was cancelled or rolled back by the bank.";
+            case "05" -> "Payment is still being processed by VNPay. Please check the booking again later before retrying.";
+            case "06" -> "A refund request was sent for this payment.";
+            case "07" -> "Payment was rejected because VNPay marked the transaction as suspicious.";
+            case "09" -> "Payment failed because the card or account is not registered for Internet Banking.";
+            case "10" -> "Payment failed because card or account authentication was entered incorrectly too many times.";
+            case "11" -> "Payment failed because the VNPay payment session expired.";
+            case "12" -> "Payment failed because the card or account is locked or not activated.";
+            case "13" -> "Payment failed because the OTP was incorrect.";
+            case "24" -> "Payment was cancelled by the customer.";
+            case "51" -> "Payment failed because the card or account has insufficient funds.";
+            case "65" -> "Payment failed because the transaction exceeded the card or account limit.";
+            case "75" -> "Payment failed because the selected bank is temporarily under maintenance.";
+            case "79" -> "Payment failed because the payment password was entered incorrectly too many times.";
+            case "99" -> "Payment failed because VNPay returned an unknown payment error.";
+            default -> "Payment failed because VNPay returned an unsupported error code: " + code + ".";
         };
     }
 
@@ -543,10 +543,6 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
             case "99" -> "unknown payment error";
             default -> "code " + status;
         };
-    }
-
-    private String safeVnpayCode(String code) {
-        return code == null || code.isBlank() ? "missing" : code;
     }
 
     private String resolveTransactionRef(Map<String, String> params) {

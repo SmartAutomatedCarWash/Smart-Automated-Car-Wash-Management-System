@@ -160,15 +160,7 @@ function buildVnpayFailureMessage(
   const responseCode = result?.responseCode ?? params.vnp_ResponseCode;
   const transactionStatus = result?.transactionStatus ?? params.vnp_TransactionStatus;
   if (transactionStatus && transactionStatus !== "00") {
-    const statusMessage = vnpayResponseMessage(transactionStatus, language);
-    if (responseCode && responseCode !== transactionStatus) {
-      return `${statusMessage} ${translate(
-        language,
-        `Mã phản hồi VNPay: ${responseCode}. Trạng thái giao dịch: ${transactionStatus}.`,
-        `VNPay response code: ${responseCode}. Transaction status: ${transactionStatus}.`,
-      )}`;
-    }
-    return statusMessage;
+    return vnpayResponseMessage(transactionStatus, language);
   }
 
   const baseMessage = vnpayResponseMessage(responseCode, language, result?.message);
@@ -181,23 +173,23 @@ function buildVnpayFailureMessage(
 function vnpayResponseMessage(code: string | null | undefined, language: Language, fallback?: string) {
   const messages: Record<string, { vi: string; en: string }> = {
     "00": { vi: "VNPay đã chấp nhận thanh toán.", en: "VNPay approved the payment." },
-    "01": { vi: "Giao dịch VNPay chưa hoàn tất.", en: "VNPay transaction has not been completed." },
-    "02": { vi: "Giao dịch VNPay thất bại.", en: "VNPay transaction failed." },
-    "04": { vi: "Giao dịch VNPay đã bị đảo.", en: "VNPay transaction was reversed." },
-    "05": { vi: "VNPay đang xử lý giao dịch.", en: "VNPay is processing the transaction." },
-    "06": { vi: "VNPay đã gửi yêu cầu hoàn tiền.", en: "VNPay sent a refund request." },
-    "07": { vi: "Giao dịch bị nghi ngờ gian lận.", en: "VNPay flagged the transaction as suspicious." },
-    "09": { vi: "Thẻ hoặc tài khoản chưa đăng ký Internet Banking.", en: "The card or account is not registered for Internet Banking." },
-    "10": { vi: "Xác thực thẻ hoặc tài khoản sai quá số lần quy định.", en: "Card or account authentication failed too many times." },
-    "11": { vi: "Phiên thanh toán đã hết hạn.", en: "The payment session expired." },
-    "12": { vi: "Thẻ hoặc tài khoản bị khóa hoặc chưa kích hoạt.", en: "The card or account is locked or not active." },
-    "13": { vi: "Mã OTP không đúng.", en: "The OTP was incorrect." },
-    "24": { vi: "Bạn đã hủy giao dịch.", en: "The payment was cancelled." },
-    "51": { vi: "Thẻ hoặc tài khoản không đủ số dư.", en: "The card or account has insufficient funds." },
-    "65": { vi: "Giao dịch vượt hạn mức cho phép.", en: "The transaction exceeded the allowed limit." },
-    "75": { vi: "Ngân hàng đang bảo trì.", en: "The bank is temporarily under maintenance." },
-    "79": { vi: "Sai mật khẩu thanh toán quá số lần quy định.", en: "The payment password was entered incorrectly too many times." },
-    "99": { vi: "VNPay trả về lỗi thanh toán không xác định.", en: "VNPay returned an unknown payment error." },
+    "01": { vi: "Thanh toán chưa hoàn tất. Giao dịch bị gián đoạn hoặc chưa được xác nhận.", en: "Payment was not completed. The transaction was interrupted or not confirmed." },
+    "02": { vi: "Thanh toán thất bại. Ngân hàng hoặc VNPay đã từ chối giao dịch.", en: "Payment failed. The bank or VNPay declined the transaction." },
+    "04": { vi: "Thanh toán đã bị đảo giao dịch. Ngân hàng đã hủy hoặc hoàn tác giao dịch này.", en: "Payment was reversed. The bank cancelled or rolled back this transaction." },
+    "05": { vi: "Thanh toán vẫn đang được VNPay xử lý. Vui lòng kiểm tra lại lịch đặt trước khi thanh toán lại.", en: "Payment is still being processed by VNPay. Please check the booking again before retrying." },
+    "06": { vi: "Giao dịch này đã được gửi yêu cầu hoàn tiền.", en: "A refund request was sent for this payment." },
+    "07": { vi: "Thanh toán bị từ chối vì VNPay đánh dấu giao dịch có dấu hiệu nghi ngờ.", en: "Payment was rejected because VNPay marked the transaction as suspicious." },
+    "09": { vi: "Thanh toán thất bại vì thẻ hoặc tài khoản chưa đăng ký Internet Banking.", en: "Payment failed because the card or account is not registered for Internet Banking." },
+    "10": { vi: "Thanh toán thất bại vì xác thực thẻ hoặc tài khoản sai quá số lần quy định.", en: "Payment failed because card or account authentication was entered incorrectly too many times." },
+    "11": { vi: "Thanh toán thất bại vì phiên thanh toán VNPay đã hết hạn.", en: "Payment failed because the VNPay payment session expired." },
+    "12": { vi: "Thanh toán thất bại vì thẻ hoặc tài khoản bị khóa hoặc chưa kích hoạt.", en: "Payment failed because the card or account is locked or not activated." },
+    "13": { vi: "Thanh toán thất bại vì mã OTP không đúng.", en: "Payment failed because the OTP was incorrect." },
+    "24": { vi: "Thanh toán đã bị hủy bởi khách hàng.", en: "Payment was cancelled by the customer." },
+    "51": { vi: "Thanh toán thất bại vì thẻ hoặc tài khoản không đủ số dư.", en: "Payment failed because the card or account has insufficient funds." },
+    "65": { vi: "Thanh toán thất bại vì giao dịch vượt hạn mức của thẻ hoặc tài khoản.", en: "Payment failed because the transaction exceeded the card or account limit." },
+    "75": { vi: "Thanh toán thất bại vì ngân hàng đang tạm bảo trì.", en: "Payment failed because the selected bank is temporarily under maintenance." },
+    "79": { vi: "Thanh toán thất bại vì nhập sai mật khẩu thanh toán quá số lần quy định.", en: "Payment failed because the payment password was entered incorrectly too many times." },
+    "99": { vi: "Thanh toán thất bại vì VNPay trả về lỗi không xác định.", en: "Payment failed because VNPay returned an unknown payment error." },
   };
   if (code && messages[code]) {
     return messages[code][language];
@@ -206,7 +198,7 @@ function vnpayResponseMessage(code: string | null | undefined, language: Languag
     return fallback;
   }
   return code
-    ? translate(language, `VNPay từ chối giao dịch với mã ${code}.`, `VNPay rejected the transaction with response code ${code}.`)
+    ? translate(language, `Thanh toán thất bại vì VNPay trả về mã lỗi chưa hỗ trợ: ${code}.`, `Payment failed because VNPay returned an unsupported error code: ${code}.`)
     : translate(language, "VNPay không trả về mã phản hồi.", "VNPay did not return a response code.");
 }
 
