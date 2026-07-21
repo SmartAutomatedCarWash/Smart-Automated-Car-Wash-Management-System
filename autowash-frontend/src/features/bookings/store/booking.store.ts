@@ -106,3 +106,8 @@ export function setBookingValidatedVoucher(voucher: DiscountValidationResult | n
 export function setLastCreatedBooking(booking: CreateBookingResponse | null) {
   bookingStore.getState().setLastCreatedBooking(booking);
 }
+
+export function getBookingDraftSnapshot() {
+  const { draft, expiresAt, lastCreatedBooking } = bookingStore.getState();
+  return { draft, expiresAt, lastCreatedBooking };
+}
