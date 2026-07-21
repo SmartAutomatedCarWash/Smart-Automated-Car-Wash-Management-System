@@ -28,7 +28,7 @@ function ComboCard({ combo }: { combo: BookingCombo }) {
       <p className="mt-3 text-sm leading-6 text-slate-600">{combo.description}</p>
 
       <div className="mt-5 flex flex-wrap gap-2">
-        {combo.benefits.slice(0, 4).map((benefit) => (
+        {combo.benefits?.slice(0, 4).map((benefit) => (
           <span
             key={benefit}
             className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 shadow-sm"
