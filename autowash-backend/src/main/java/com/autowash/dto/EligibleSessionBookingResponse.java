@@ -2,6 +2,7 @@ package com.autowash.dto;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 public record EligibleSessionBookingResponse(
         String bookingId,
@@ -16,6 +17,7 @@ public record EligibleSessionBookingResponse(
         int estimatedDurationMinutes,
         String assignedStaffId,
         String assignedStaffName,
+        List<BookingDetailResponse.StaffAssignment> assignedStaff,
         String customerTier,
         int customerPriorityScore
 ) {

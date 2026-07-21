@@ -17,6 +17,13 @@ export type AdminBooking = {
   washStatus: string | null;
   createdAt: string;
   staffName: string | null;
+  assignedStaff?: AdminBookingStaffAssignment[];
+};
+
+export type AdminBookingStaffAssignment = {
+  staffId: string;
+  staffName: string;
+  sortOrder: number;
 };
 
 export type AdminBookingResponse = AdminBooking;

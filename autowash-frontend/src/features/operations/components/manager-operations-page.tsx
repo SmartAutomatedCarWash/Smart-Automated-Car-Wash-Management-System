@@ -38,7 +38,7 @@ import {
 } from "@/features/operations/lib/operations-service";
 import { useManagerNotificationStore } from "@/features/operations/store/manager-notification.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
-import type { EligibleSessionBooking, OperationsQueueSession, StaffOption, WashSessionStatus } from "@/entities/operations";
+import type { EligibleSessionBooking, OperationStaffAssignment, OperationsQueueSession, StaffOption, WashSessionStatus } from "@/entities/operations";
 
 type FocusFilter = "ALL" | "NEEDS_ACTION" | "DELAYED" | "UNASSIGNED";
 type BoardStage = "WAITING_CUSTOMER" | "CHECKED_IN" | "WAITING_START" | "IN_PROGRESS" | "INSPECTION" | "COMPLETED";
@@ -57,6 +57,7 @@ type OperationRow = {
   status: WashSessionStatus;
   assignedStaffId: string | null;
   assignedStaffName: string | null;
+  assignedStaff: OperationStaffAssignment[];
   amount: number | null;
   estimatedDurationMinutes: number | null;
   notes: string | null;
@@ -491,7 +492,7 @@ function CheckInCandidateRow({
       <button type="button" onClick={onSelect} className="min-w-0 text-left">
         <p className="truncate text-[10px] font-bold text-slate-400">{row.servicePackage}</p>
       </button>
-      <span className="justify-self-center rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-black text-[#00236f]">{row.assignedStaffName ? "Assigned" : "Open"}</span>
+      <span className="justify-self-center rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-black text-[#00236f]">{hasAssignedStaff(row) ? "Assigned" : "Open"}</span>
       <span className={`justify-self-start rounded-md px-2 py-1 text-[10px] font-black ${display.statusClass}`}>{display.statusLabel}</span>
       <Button
         size="sm"
@@ -737,7 +738,7 @@ function BoardCard({
       <p className="truncate text-[11px] font-semibold text-slate-400">{row.servicePackage}</p>
       <div className="mt-2 flex items-center justify-between gap-2 text-[11px] font-bold">
         <span className={isDelayed(row) ? "text-rose-600" : "text-slate-400"}>{getWaitLabel(row)}</span>
-        {row.assignedStaffName ? <span className="truncate text-slate-400">{row.assignedStaffName.split(" ").slice(-2).join(" ")}</span> : <span className="text-amber-600">Unassigned</span>}
+        {hasAssignedStaff(row) ? <span className="truncate text-slate-400">{formatShortStaffNames(row)}</span> : <span className="text-amber-600">Unassigned</span>}
       </div>
       <Button
         size="sm"
@@ -776,7 +777,7 @@ function SessionDetailPanel({
   onCancel: () => void;
 }) {
   const [selectedStaffId, setSelectedStaffId] = useState("");
-  const transferOptions = staffOptions.filter((staff) => staff.staffId !== row?.assignedStaffId);
+  const transferOptions = staffOptions.filter((staff) => !row || !rowHasStaff(row, staff.staffId));
   const canTransfer = Boolean(row?.sessionId) && row?.status !== "COMPLETED" && row?.status !== "CANCELLED";
 
   if (!row) {
@@ -822,6 +823,21 @@ function SessionDetailPanel({
             <MiniInfo label="ETA" value={row.estimatedDurationMinutes ? `${row.estimatedDurationMinutes} min` : "—"} />
             <MiniInfo label="Schedule" value={row.bookingTime} />
             <MiniInfo label="Payment" value={row.amount ? formatCurrency(row.amount) : "Not calculated"} />
+          </div>
+
+          <div className="rounded-xl bg-slate-50 p-3">
+            <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-slate-400">Assigned staff</p>
+            {hasAssignedStaff(row) ? (
+              <div className="flex flex-wrap gap-1.5">
+                {row.assignedStaff.map((staff) => (
+                  <span key={staff.staffId} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-slate-700 shadow-sm">
+                    {staff.staffName}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs font-bold text-amber-600">Unassigned</p>
+            )}
           </div>
 
           <div>
@@ -990,6 +1006,7 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
       status: "PENDING",
       assignedStaffId: booking.assignedStaffId,
       assignedStaffName: booking.assignedStaffName,
+      assignedStaff: normalizeAssignedStaff(booking.assignedStaff, booking.assignedStaffId, booking.assignedStaffName),
       amount: booking.finalAmount,
       estimatedDurationMinutes: booking.estimatedDurationMinutes,
       notes: null,
@@ -1013,6 +1030,7 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
     status: session.status,
     assignedStaffId: session.assignedStaffId ?? null,
     assignedStaffName: session.assignedStaffName ?? null,
+    assignedStaff: normalizeAssignedStaff(session.assignedStaff, session.assignedStaffId, session.assignedStaffName),
     amount: session.feeAmount ?? null,
     estimatedDurationMinutes: session.estimatedDurationMinutes ?? null,
     notes: session.notes ?? null,
@@ -1028,7 +1046,7 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
 function buildStaffWorkload(staffOptions: StaffOption[], rows: OperationRow[]): StaffWorkloadItem[] {
   return staffOptions
     .map((staff) => {
-      const assignedRows = rows.filter((row) => row.assignedStaffId === staff.staffId);
+      const assignedRows = rows.filter((row) => rowHasStaff(row, staff.staffId));
       const waitingCount = assignedRows.filter((row) => row.status === "PENDING" || row.status === "QUEUED" || row.status === "CHECKED_IN").length;
       const activeCount = assignedRows.filter((row) => row.status === "IN_PROGRESS").length;
       const completedCount = assignedRows.filter((row) => row.status === "COMPLETED").length;
@@ -1075,7 +1093,7 @@ function buildInterventions(rows: OperationRow[], staffWorkload: StaffWorkloadIt
   staffWorkload
     .filter((staff) => staff.status === "OVERLOADED")
     .forEach((staff) => {
-      const targetRow = rows.find((row) => row.assignedStaffId === staff.staffId && row.status !== "COMPLETED" && row.status !== "CANCELLED");
+      const targetRow = rows.find((row) => rowHasStaff(row, staff.staffId) && row.status !== "COMPLETED" && row.status !== "CANCELLED");
       if (!targetRow) return;
       items.push({
         id: `overloaded-${staff.staffId}`,
@@ -1106,17 +1124,17 @@ function applyCommandFilters(rows: OperationRow[], search: string, bayFilter: st
   return rows.filter((row) => {
     const matchesSearch =
       !normalizedSearch ||
-      [row.vehiclePlate, row.customerName, row.customerPhone, row.servicePackage, row.assignedStaffName ?? "", row.bookingId, row.sessionId ?? ""]
+      [row.vehiclePlate, row.customerName, row.customerPhone, row.servicePackage, formatAssignedStaffNames(row), row.bookingId, row.sessionId ?? ""]
         .join(" ")
         .toLowerCase()
         .includes(normalizedSearch);
     const matchesBay = bayFilter === "ALL" || getBayForRow(row) === bayFilter;
-    const matchesStaff = staffFilter === "ALL" || row.assignedStaffId === staffFilter;
+    const matchesStaff = staffFilter === "ALL" || rowHasStaff(row, staffFilter);
     const matchesFocus =
       focusFilter === "ALL" ||
       (focusFilter === "NEEDS_ACTION" && hasWarning(row)) ||
       (focusFilter === "DELAYED" && isDelayed(row)) ||
-      (focusFilter === "UNASSIGNED" && !row.assignedStaffId && row.status !== "COMPLETED");
+      (focusFilter === "UNASSIGNED" && !hasAssignedStaff(row) && row.status !== "COMPLETED");
 
     return matchesSearch && matchesBay && matchesStaff && matchesFocus;
   });
@@ -1208,7 +1226,7 @@ function isMutatingRow(
 }
 
 function hasWarning(row: OperationRow) {
-  return Boolean(row.notes || isDelayed(row) || (!row.assignedStaffId && row.status !== "COMPLETED"));
+  return Boolean(row.notes || isDelayed(row) || (!hasAssignedStaff(row) && row.status !== "COMPLETED"));
 }
 
 function isDelayed(row: OperationRow) {
@@ -1245,7 +1263,39 @@ function getWaitLabel(row: OperationRow) {
 }
 
 function getBayForRow(row: OperationRow) {
-  return row.assignedStaffName ? "Assigned" : "Open";
+  return hasAssignedStaff(row) ? "Assigned" : "Open";
+}
+
+function normalizeAssignedStaff(
+  assignedStaff: OperationStaffAssignment[] | undefined,
+  fallbackId?: string | null,
+  fallbackName?: string | null,
+) {
+  const normalized = (assignedStaff ?? [])
+    .filter((staff) => staff.staffId && staff.staffName)
+    .slice()
+    .sort((left, right) => left.sortOrder - right.sortOrder);
+  if (normalized.length > 0 || !fallbackId || !fallbackName) {
+    return normalized;
+  }
+  return [{ staffId: fallbackId, staffName: fallbackName, sortOrder: 1 }];
+}
+
+function hasAssignedStaff(row: OperationRow) {
+  return row.assignedStaff.length > 0;
+}
+
+function rowHasStaff(row: OperationRow, staffId: string) {
+  return row.assignedStaff.some((staff) => staff.staffId === staffId);
+}
+
+function formatAssignedStaffNames(row: OperationRow) {
+  return row.assignedStaff.map((staff) => staff.staffName).join(", ");
+}
+
+function formatShortStaffNames(row: OperationRow) {
+  const names = row.assignedStaff.map((staff) => staff.staffName.split(" ").slice(-2).join(" "));
+  return names.join(", ");
 }
 
 function formatCurrency(value: number) {

@@ -514,8 +514,9 @@ export function BookingConfirmPage() {
                               className="min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)]"
                             >
                               {staffOptions.map((staff) => {
-                                const disabled = staff.available === false || (selectedStaffIds.includes(staff.staffId) && staff.staffId !== currentStaffId);
-                                const statusLabel = getStaffAvailabilityLabel(staff);
+                                const selectedInOtherSlot = selectedStaffIds.includes(staff.staffId) && staff.staffId !== currentStaffId;
+                                const disabled = staff.available === false || selectedInOtherSlot;
+                                const statusLabel = selectedInOtherSlot ? "Selected" : getStaffAvailabilityLabel(staff);
                                 return (
                                   <SelectItem
                                     key={staff.staffId}
@@ -527,7 +528,9 @@ export function BookingConfirmPage() {
                                       <span className="min-w-0 flex-1 truncate font-medium">{staff.staffName}</span>
                                       <span
                                         className={`shrink-0 text-[11px] font-bold ${
-                                          staff.available === false
+                                          selectedInOtherSlot
+                                            ? "text-slate-500 dark:text-slate-400"
+                                            : staff.available === false
                                             ? "text-amber-600 dark:text-amber-400"
                                             : "text-emerald-700 dark:text-emerald-400"
                                         }`}
