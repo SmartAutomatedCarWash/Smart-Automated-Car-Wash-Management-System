@@ -15,7 +15,6 @@ import type {
   ApplyBookingPointsRequest,
   ApplyBookingPointsResponse,
   CreateBookingResponse,
-  SepayPaymentResultResponse,
   VnpayCheckoutResponse,
   VnpayPaymentResultResponse,
   PayBookingResponse,
@@ -123,13 +122,6 @@ export function queryVnpayTransaction(bookingId: string) {
   return apiRequest<VnpayPaymentResultResponse>({
     method: "POST",
     url: `/payments/bookings/${bookingId}/vnpay/query`,
-  });
-}
-
-export function querySepayTransaction(bookingId: string) {
-  return apiRequest<SepayPaymentResultResponse>({
-    method: "POST",
-    url: `/payments/bookings/${bookingId}/sepay/query`,
   });
 }
 

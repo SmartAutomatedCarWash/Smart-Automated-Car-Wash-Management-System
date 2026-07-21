@@ -220,15 +220,6 @@ export type VnpayPaymentResultResponse = {
   message: string;
 };
 
-export type SepayPaymentResultResponse = {
-  success: boolean;
-  bookingId: string;
-  paymentCode: string;
-  amount: number | null;
-  transactionRef: string | null;
-  message: string;
-};
-
 export type PayBookingResponse = {
   bookingId: string;
   paymentId: string;

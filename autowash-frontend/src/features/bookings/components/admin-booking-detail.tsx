@@ -6,11 +6,10 @@ import { toast } from "sonner";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import {
   useAdminBookingDetail,
-  useQueryAdminVnpayTransaction,
   useRefundAdminVnpayPayment,
   useUpdateAdminBookingStatus,
 } from "../hooks/use-admin-booking-detail";
-import { ArrowLeft, Calendar, Loader2, Clock, User, Car, CreditCard, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Loader2, Clock, User, Car, CreditCard, CheckCircle, XCircle, Copy } from "lucide-react";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
@@ -76,7 +75,6 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
   const router = useRouter();
   const { language } = useLanguageStore();
   const { data: booking, isPending, isError, error } = useAdminBookingDetail(bookingId);
-  const queryVnpayMutation = useQueryAdminVnpayTransaction(bookingId);
   const refundVnpayMutation = useRefundAdminVnpayPayment(bookingId);
   const updateStatusMutation = useUpdateAdminBookingStatus(bookingId);
   const [selectedStatus, setSelectedStatus] = useState<BookingStatus | "">("");
@@ -138,7 +136,15 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
   const availableStatuses = getAvailableStatuses().filter((status) => status !== booking.status);
   const statusDirty = Boolean(selectedStatus && selectedStatus !== booking.status);
   const isVnpayPayment = booking.payment.method === "E_WALLET";
-  const canQueryVnpay = isVnpayPayment && booking.payment.status !== "PAID";
+  const isSepayPayment = booking.payment.method === "BANK_TRANSFER";
+  const hasSepayTransferInfo = isSepayPayment && Boolean(
+    booking.payment.qrUrl
+      || booking.payment.bankCode
+      || booking.payment.accountNumber
+      || booking.payment.accountName
+      || booking.payment.transferDescription
+      || booking.payment.transactionId,
+  );
   const canRefundVnpay = isVnpayPayment && booking.payment.status === "PAID";
 
   const handleSaveStatus = async () => {
@@ -153,19 +159,6 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
     }
   };
 
-  const handleQueryVnpay = async () => {
-    try {
-      const result = await queryVnpayMutation.mutateAsync();
-      if (result.success) {
-        toast.success(result.message || translate(language, "Đã kiểm tra giao dịch VNPay.", "VNPay transaction checked."));
-      } else {
-        toast.error(result.message || translate(language, "VNPay chưa xác nhận thanh toán.", "VNPay has not confirmed the payment."));
-      }
-    } catch (queryError) {
-      toast.error(getErrorMessage(queryError));
-    }
-  };
-
   const handleRefundVnpay = async () => {
     try {
       const confirmed = window.confirm(translate(language, "Hoàn tiền toàn bộ giao dịch VNPay này?", "Refund this VNPay payment in full?"));
@@ -174,6 +167,18 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
       toast.success(result.message || translate(language, "Đã gửi yêu cầu hoàn tiền VNPay.", "VNPay refund requested."));
     } catch (refundError) {
       toast.error(getErrorMessage(refundError));
+    }
+  };
+
+  const handleCopyPaymentText = async (value: string | null | undefined, successMessage: string) => {
+    if (!value) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(successMessage);
+    } catch {
+      toast.error(translate(language, "Không thể copy nội dung.", "Could not copy text."));
     }
   };
 
@@ -381,17 +386,34 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
                   {translatePaymentStatus(booking.payment.status, language as "vi" | "en")}
                 </Badge>
               </div>
-              {canQueryVnpay ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleQueryVnpay}
-                  disabled={queryVnpayMutation.isPending}
-                >
-                  {queryVnpayMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {translate(language, "Kiểm tra VNPay", "Query VNPay")}
-                </Button>
+              {hasSepayTransferInfo ? (
+                <div className="space-y-3 rounded-lg border border-cyan-100 bg-cyan-50/60 p-3 text-sm">
+                  {booking.payment.qrUrl ? (
+                    <div className="rounded-lg border border-cyan-100 bg-white p-2">
+                      <img
+                        src={booking.payment.qrUrl}
+                        alt={translate(language, "Mã QR chuyển khoản SePay", "SePay transfer QR code")}
+                        className="mx-auto h-auto max-h-56 w-full max-w-56 object-contain"
+                      />
+                    </div>
+                  ) : null}
+                  <AdminSepayInfoRow label={translate(language, "Ngân hàng", "Bank")} value={booking.payment.bankCode ?? "--"} />
+                  <AdminSepayInfoRow
+                    label={translate(language, "Số tài khoản", "Account")}
+                    value={booking.payment.accountNumber ?? "--"}
+                    onCopy={() => handleCopyPaymentText(booking.payment.accountNumber, translate(language, "Đã copy số tài khoản.", "Account number copied."))}
+                  />
+                  <AdminSepayInfoRow label={translate(language, "Tên tài khoản", "Account name")} value={booking.payment.accountName ?? "--"} />
+                  <AdminSepayInfoRow label={translate(language, "Số tiền", "Amount")} value={formatCurrency(booking.pricing.finalAmount)} />
+                  <AdminSepayInfoRow
+                    label={translate(language, "Nội dung", "Description")}
+                    value={booking.payment.transferDescription ?? booking.payment.transactionId ?? "--"}
+                    onCopy={() => handleCopyPaymentText(
+                      booking.payment.transferDescription ?? booking.payment.transactionId,
+                      translate(language, "Đã copy nội dung chuyển khoản.", "Transfer description copied."),
+                    )}
+                  />
+                </div>
               ) : null}
               {canRefundVnpay ? (
                 <Button
@@ -423,4 +445,28 @@ function assignedStaffList(
     .map((item) => ({ staffName: item.staffName }))
     .filter((item) => Boolean(item.staffName));
   return staff.length > 0 || !fallback ? staff : [{ staffName: fallback }];
+}
+
+function AdminSepayInfoRow({
+  label,
+  value,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  onCopy?: () => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <span className="shrink-0 text-slate-500">{label}</span>
+      <div className="flex min-w-0 items-start gap-1.5 text-right">
+        <span className="break-words font-semibold text-slate-900">{value}</span>
+        {onCopy ? (
+          <Button type="button" variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={onCopy}>
+            <Copy className="h-3.5 w-3.5" />
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
 }

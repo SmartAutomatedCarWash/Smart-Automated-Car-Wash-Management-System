@@ -1,29 +1,21 @@
 package com.autowash.service.impl;
 
-import com.autowash.dto.SepayPaymentResultResponse;
-import com.autowash.entity.Booking;
 import com.autowash.entity.Payment;
-import com.autowash.entity.User;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
-import com.autowash.entity.enums.UserRole;
-import com.autowash.repository.BookingRepository;
 import com.autowash.repository.PaymentRepository;
 import com.autowash.service.BookingService;
-import com.autowash.service.CurrentUserService;
 import com.autowash.service.SepayPaymentService;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.shared.exception.ErrorCode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.crypto.Mac;
@@ -32,7 +24,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
 
 @Service
 public class SepayPaymentServiceImpl implements SepayPaymentService {
@@ -41,37 +32,22 @@ public class SepayPaymentServiceImpl implements SepayPaymentService {
     private static final Duration PENDING_BOOKING_HOLD_DURATION = Duration.ofMinutes(15);
 
     private final ObjectMapper objectMapper;
-    private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
-    private final CurrentUserService currentUserService;
     private final BookingService bookingService;
-    private final RestClient restClient;
     private final String webhookSecret;
-    private final String apiToken;
-    private final String apiBaseUrl;
     private final String paymentCodePrefix;
 
     public SepayPaymentServiceImpl(
             ObjectMapper objectMapper,
-            BookingRepository bookingRepository,
             PaymentRepository paymentRepository,
-            CurrentUserService currentUserService,
             BookingService bookingService,
-            RestClient.Builder restClientBuilder,
             @Value("${autowash.payment.sepay.webhook-secret:}") String webhookSecret,
-            @Value("${autowash.payment.sepay.api-token:}") String apiToken,
-            @Value("${autowash.payment.sepay.api-base-url:https://userapi.sepay.vn/v2}") String apiBaseUrl,
             @Value("${autowash.payment.sepay.payment-code-prefix:AU}") String paymentCodePrefix
     ) {
         this.objectMapper = objectMapper;
-        this.bookingRepository = bookingRepository;
         this.paymentRepository = paymentRepository;
-        this.currentUserService = currentUserService;
         this.bookingService = bookingService;
-        this.restClient = restClientBuilder.build();
         this.webhookSecret = webhookSecret;
-        this.apiToken = apiToken;
-        this.apiBaseUrl = apiBaseUrl;
         this.paymentCodePrefix = paymentCodePrefix;
     }
 
@@ -88,7 +64,7 @@ public class SepayPaymentServiceImpl implements SepayPaymentService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid SePay webhook payload", ErrorCode.INVALID_INPUT);
         }
 
-        if (!"in".equalsIgnoreCase(text(payload, "transferType"))) {
+        if (!"in".equalsIgnoreCase(firstText(payload, "transferType", "transfer_type"))) {
             return;
         }
 
@@ -113,47 +89,12 @@ public class SepayPaymentServiceImpl implements SepayPaymentService {
             return;
         }
 
-        long transferAmount = payload.path("transferAmount").asLong(0);
+        long transferAmount = amountIn(payload);
         if (transferAmount < payment.getAmount()) {
             return;
         }
 
         bookingService.markBookingPaidForOperations(payment.getBooking().getId().toString(), paymentCode);
-    }
-
-    @Override
-    @Transactional
-    public SepayPaymentResultResponse queryTransaction(UUID bookingId) {
-        ensureApiConfigured();
-        Booking booking = requireVisibleBooking(bookingId);
-        Payment payment = paymentRepository.findByBooking(booking)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking payment not found", ErrorCode.RESOURCE_NOT_FOUND));
-        if (payment.getMethod() != PaymentMethod.BANK_TRANSFER) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking is not a SePay payment", ErrorCode.BUSINESS_RULE_VIOLATION);
-        }
-        String paymentCode = normalizePaymentCode(payment.getTransactionRef());
-        if (paymentCode == null) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SePay payment code is missing", ErrorCode.BUSINESS_RULE_VIOLATION);
-        }
-        if (payment.getStatus() == PaymentStatus.PAID) {
-            return new SepayPaymentResultResponse(true, booking.getId().toString(), paymentCode, payment.getAmount(), payment.getTransactionRef(), "SePay payment already synced.");
-        }
-        if (booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.NO_SHOW) {
-            return new SepayPaymentResultResponse(false, booking.getId().toString(), paymentCode, payment.getAmount(), null, "Booking cannot be paid.");
-        }
-        if (booking.getStatus() == BookingStatus.PENDING
-                && !booking.getCreatedAt().plus(PENDING_BOOKING_HOLD_DURATION).isAfter(Instant.now())) {
-            return new SepayPaymentResultResponse(false, booking.getId().toString(), paymentCode, payment.getAmount(), null, "Booking hold expired. Please create a new booking.");
-        }
-
-        JsonNode transaction = findMatchingTransaction(paymentCode, payment.getAmount());
-        if (transaction == null) {
-            return new SepayPaymentResultResponse(false, booking.getId().toString(), paymentCode, payment.getAmount(), null, "SePay has not found a matching incoming transfer yet.");
-        }
-
-        String transactionRef = resolveGatewayTransactionRef(transaction, paymentCode);
-        bookingService.markBookingPaidForOperations(booking.getId().toString(), paymentCode);
-        return new SepayPaymentResultResponse(true, booking.getId().toString(), paymentCode, amountIn(transaction), transactionRef, "SePay payment synced.");
     }
 
     private void ensureConfigured() {
@@ -162,73 +103,11 @@ public class SepayPaymentServiceImpl implements SepayPaymentService {
         }
     }
 
-    private void ensureApiConfigured() {
-        if (apiToken == null || apiToken.isBlank() || apiBaseUrl == null || apiBaseUrl.isBlank()) {
-            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "SePay API token is not configured", "SEPAY_NOT_CONFIGURED");
-        }
-    }
-
-    private Booking requireVisibleBooking(UUID bookingId) {
-        User user = currentUserService.getCurrentUser();
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", ErrorCode.RESOURCE_NOT_FOUND));
-        if (user.getRole() == UserRole.CUSTOMER && !booking.getCustomer().getId().equals(user.getId())) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Booking does not belong to current customer", ErrorCode.FORBIDDEN);
-        }
-        return booking;
-    }
-
-    private JsonNode findMatchingTransaction(String paymentCode, long expectedAmount) {
-        JsonNode response = restClient.get()
-                .uri(normalizedApiBaseUrl() + "/transactions?q=" + URLEncoder.encode(paymentCode, StandardCharsets.UTF_8))
-                .header("Authorization", "Bearer " + apiToken)
-                .header("Content-Type", "application/json")
-                .retrieve()
-                .body(JsonNode.class);
-        JsonNode data = response == null ? null : response.get("data");
-        if (data == null || !data.isArray()) {
-            return null;
-        }
-        for (JsonNode transaction : data) {
-            if (isMatchingIncomingTransfer(transaction, paymentCode, expectedAmount)) {
-                return transaction;
-            }
-        }
-        return null;
-    }
-
-    private boolean isMatchingIncomingTransfer(JsonNode transaction, String paymentCode, long expectedAmount) {
-        String transferType = firstText(transaction, "transferType", "transfer_type");
-        if (!"in".equalsIgnoreCase(transferType)) {
-            return false;
-        }
-        if (amountIn(transaction) < expectedAmount) {
-            return false;
-        }
-        String code = normalizePaymentCode(firstText(transaction, "code"));
-        if (paymentCode.equals(code)) {
-            return true;
-        }
-        String content = firstText(transaction, "content", "transaction_content");
-        String description = firstText(transaction, "description");
-        return paymentCode.equals(findPaymentCode(content)) || paymentCode.equals(findPaymentCode(description));
-    }
-
     private long amountIn(JsonNode transaction) {
         if (transaction.hasNonNull("transferAmount")) {
             return transaction.path("transferAmount").asLong(0);
         }
         return transaction.path("amount_in").asLong(0);
-    }
-
-    private String resolveGatewayTransactionRef(JsonNode transaction, String paymentCode) {
-        String reference = firstText(transaction, "referenceCode", "reference_number", "id");
-        return reference == null || reference.isBlank() ? paymentCode : "SEPAY-" + reference;
-    }
-
-    private String normalizedApiBaseUrl() {
-        String trimmed = apiBaseUrl.trim();
-        return trimmed.endsWith("/") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
     }
 
     private void verifySignature(byte[] rawBody, String signature, String timestamp) {

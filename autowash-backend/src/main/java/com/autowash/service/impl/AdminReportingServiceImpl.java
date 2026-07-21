@@ -1,5 +1,6 @@
 package com.autowash.service.impl;
 
+import com.autowash.assembler.BookingResponseAssembler;
 import com.autowash.entity.WashSession;
 import com.autowash.entity.BookingStaffAssignment;
 import com.autowash.entity.WashSessionStaffAssignment;
@@ -129,6 +130,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     private final LoyaltyAccountRepository loyaltyAccountRepository;
     private final BookingStaffAssignmentRepository bookingStaffAssignmentRepository;
     private final WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository;
+    private final BookingResponseAssembler bookingResponseAssembler;
 
     public AdminReportingServiceImpl(
             BookingRepository bookingRepository,
@@ -143,7 +145,8 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             PaymentRepository paymentRepository,
             LoyaltyAccountRepository loyaltyAccountRepository,
             BookingStaffAssignmentRepository bookingStaffAssignmentRepository,
-            WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository
+            WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository,
+            BookingResponseAssembler bookingResponseAssembler
     ) {
         this.bookingRepository = bookingRepository;
         this.washSessionRepository = washSessionRepository;
@@ -158,6 +161,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         this.loyaltyAccountRepository = loyaltyAccountRepository;
         this.bookingStaffAssignmentRepository = bookingStaffAssignmentRepository;
         this.washSessionStaffAssignmentRepository = washSessionStaffAssignmentRepository;
+        this.bookingResponseAssembler = bookingResponseAssembler;
     }
 
     @Transactional
@@ -558,16 +562,14 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                         booking.getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum(),
                         booking.getBookingTime().plusMinutes(booking.getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum()).format(DateTimeFormatter.ofPattern("HH:mm"))
                 ),
-                new BookingDetailResponse.Payment(
-                        payment.method(),
-                        payment.status(),
-                        payment.transactionRef(),
-                        payment.paidAt(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null
+                bookingResponseAssembler.toPaymentResponse(
+                        booking,
+                        new BookingResponseAssembler.PaymentInfo(
+                                PaymentMethod.valueOf(payment.method()),
+                                PaymentStatus.valueOf(payment.status()),
+                                payment.transactionRef(),
+                                payment.paidAt()
+                        )
                 ),
                 booking.getStatus().name(),
                 booking.getConfirmationStatus().name(),

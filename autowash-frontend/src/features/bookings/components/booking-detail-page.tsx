@@ -14,7 +14,6 @@ import {
   Loader2,
   Mail,
   Phone,
-  ReceiptText,
   Star,
   User,
   XCircle,
@@ -37,8 +36,6 @@ import {
   useCancelCustomerBooking,
   useCreateVnpayCheckout,
   useCustomerBookingDetail,
-  useQuerySepayTransaction,
-  useQueryVnpayTransaction,
 } from "@/features/bookings/hooks/use-bookings";
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
 import { BookingCompletionPopup } from "@/features/bookings/components/booking-completion-popup";
@@ -231,8 +228,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const cancelBookingMutation = useCancelCustomerBooking(bookingId);
   const changePaymentMethodMutation = useChangeBookingPaymentMethod(bookingId);
   const createVnpayCheckoutMutation = useCreateVnpayCheckout();
-  const querySepayTransactionMutation = useQuerySepayTransaction(bookingId);
-  const queryVnpayTransactionMutation = useQueryVnpayTransaction(bookingId);
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showReviewPopup, setShowReviewPopup] = useState(false);
@@ -326,7 +321,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const isPendingBookingHold = booking.status === "PENDING" && !isPaymentPaid;
   const canChoosePendingPaymentAction = isPendingBookingHold && !pendingHoldExpired;
   const canPayAgainWithVnpay = canChoosePendingPaymentAction && booking.pricing.finalAmount > 0;
-  const canQueryVnpayPayment = canChoosePendingPaymentAction && paymentMethod === "E_WALLET";
   const canChangeToCash = canChoosePendingPaymentAction && paymentMethod !== "CASH_AT_COUNTER";
   const canShowSepayInstructions = canChoosePendingPaymentAction && paymentMethod === "BANK_TRANSFER";
   const sepayPaymentCode = canShowSepayInstructions ? booking.payment.transactionId : null;
@@ -335,7 +329,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     : null;
   const canShowAppointmentCountdown = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS"].includes(booking.status);
   const showCashConfirmationNote = booking.status === "PENDING" && paymentMethod === "CASH_AT_COUNTER";
-  const isPaymentActionPending = changePaymentMethodMutation.isPending || createVnpayCheckoutMutation.isPending || querySepayTransactionMutation.isPending || queryVnpayTransactionMutation.isPending;
+  const isPaymentActionPending = changePaymentMethodMutation.isPending || createVnpayCheckoutMutation.isPending;
   const refundStatusLabel = getRefundStatusLabel(booking, language);
   const customerName = booking.customerName || profileQuery.data?.fullName || translate(language, "Khách hàng", "Customer");
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || translate(language, "Chưa có số điện thoại", "No phone number");
@@ -421,32 +415,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
       toast.success(successMessage);
     } catch {
       toast.error(translate(language, "Không thể copy.", "Unable to copy."));
-    }
-  };
-
-  const handleQueryVnpayPayment = async () => {
-    try {
-      const result = await queryVnpayTransactionMutation.mutateAsync();
-      if (result.success) {
-        toast.success(translate(language, "Đã đồng bộ thanh toán VNPay.", "VNPay payment synced."));
-      } else {
-        toast.error(result.message || translate(language, "VNPay chưa xác nhận thanh toán.", "VNPay has not confirmed the payment."));
-      }
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
-  };
-
-  const handleQuerySepayPayment = async () => {
-    try {
-      const result = await querySepayTransactionMutation.mutateAsync();
-      if (result.success) {
-        toast.success(translate(language, "Đã đồng bộ thanh toán SePay.", "SePay payment synced."));
-      } else {
-        toast.error(result.message || translate(language, "SePay chưa tìm thấy chuyển khoản phù hợp.", "SePay has not found a matching transfer yet."));
-      }
-    } catch (error) {
-      toast.error(getErrorMessage(error));
     }
   };
 
@@ -731,16 +699,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                           onCopy={handleCopySepayCode}
                         />
                       </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="mt-2 w-full bg-white"
-                        onClick={handleQuerySepayPayment}
-                        disabled={isPaymentActionPending}
-                      >
-                        {querySepayTransactionMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ReceiptText className="mr-2 h-4 w-4" />}
-                        {translate(language, "Kiểm tra trạng thái SePay", "Check SePay status")}
-                      </Button>
                     </div>
                   ) : null}
                   {canPayAgainWithVnpay ? (
@@ -752,18 +710,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                     >
                       {createVnpayCheckoutMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
                       {translate(language, "Thanh toán VNPay", "Pay with VNPay")}
-                    </Button>
-                  ) : null}
-                  {canQueryVnpayPayment ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full bg-white"
-                      onClick={handleQueryVnpayPayment}
-                      disabled={isPaymentActionPending}
-                    >
-                      {queryVnpayTransactionMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ReceiptText className="mr-2 h-4 w-4" />}
-                      {translate(language, "Kiểm tra VNPay", "Check VNPay status")}
                     </Button>
                   ) : null}
                   {canChangeToCash ? (

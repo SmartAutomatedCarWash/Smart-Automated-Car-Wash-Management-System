@@ -114,17 +114,7 @@ public class BookingResponseAssembler {
                                 .plusMinutes(booking.getPricing().getEstimatedDurationMinutes())
                                 .format(DateTimeFormatter.ofPattern("HH:mm"))
                 ),
-                new BookingDetailResponse.Payment(
-                        payment.method().name(),
-                        payment.status().name(),
-                        payment.transactionRef(),
-                        payment.paidAt(),
-                        buildSepayQrUrl(booking, payment),
-                        sepayPaymentField(sepayBankCode),
-                        sepayPaymentField(sepayAccountNumber),
-                        sepayPaymentField(sepayAccountName),
-                        buildSepayTransferDescription(payment)
-                ),
+                toPaymentResponse(booking, payment),
                 booking.getStatus().name(),
                 booking.getConfirmationStatus().name(),
                 resolveConfirmationExpiresAt(booking, payment),
@@ -136,6 +126,20 @@ public class BookingResponseAssembler {
                 booking.getCreatedAt(),
                 null,
                 statusHistory
+        );
+    }
+
+    public BookingDetailResponse.Payment toPaymentResponse(Booking booking, PaymentInfo payment) {
+        return new BookingDetailResponse.Payment(
+                payment.method().name(),
+                payment.status().name(),
+                payment.transactionRef(),
+                payment.paidAt(),
+                buildSepayQrUrl(booking, payment),
+                sepayPaymentField(sepayBankCode),
+                sepayPaymentField(sepayAccountNumber),
+                sepayPaymentField(sepayAccountName),
+                buildSepayTransferDescription(payment)
         );
     }
 
