@@ -78,12 +78,14 @@ import java.time.LocalTime;
 import java.util.Set;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -133,6 +135,9 @@ public class BookingServiceImpl implements BookingService {
     private final BookingResponseAssembler bookingResponseAssembler;
     private final StaffAssignmentService staffAssignmentService;
     private final ObjectProvider<VnpayPaymentService> vnpayPaymentServiceProvider;
+
+    @Value("${autowash.payment.sepay.payment-code-prefix:AU}")
+    private String sepayPaymentCodePrefix;
 
     public BookingServiceImpl(
             CurrentUserService currentUserService,
@@ -382,12 +387,16 @@ public class BookingServiceImpl implements BookingService {
             loyaltyService.postBonusTransaction(user.getId(), 30, "First booking bonus");
         }
         
-        Payment payment = paymentRepository.save(new Payment(
+        Payment payment = new Payment(
                 booking,
                 request.paymentMethod(),
                 initialPaymentStatus(request.paymentMethod()),
                 booking.getPricing().getFinalAmount()
-        ));
+        );
+        if (request.paymentMethod() == PaymentMethod.BANK_TRANSFER) {
+            payment.prepareSepayPayment(booking.getPricing().getFinalAmount(), generateSepayTransferCode());
+        }
+        payment = paymentRepository.save(payment);
         
         slotHoldRepository.findByCustomerAndSlotTime(user, scheduledLocalDateTime.atZone(ZoneId.systemDefault()).toInstant())
                 .ifPresent(slotHoldRepository::delete);
@@ -672,6 +681,8 @@ public class BookingServiceImpl implements BookingService {
 
         if (paymentMethod == PaymentMethod.CASH_AT_COUNTER) {
             payment.changeToCashAtCounter();
+        } else if (paymentMethod == PaymentMethod.BANK_TRANSFER) {
+            payment.prepareSepayPayment(booking.getPricing().getFinalAmount(), generateSepayTransferCode());
         } else if (paymentMethod == PaymentMethod.E_WALLET) {
             payment.prepareOnlinePayment(booking.getPricing().getFinalAmount(), booking.getId().toString());
         } else {
@@ -924,6 +935,19 @@ public class BookingServiceImpl implements BookingService {
 
     private PaymentStatus initialPaymentStatus(PaymentMethod method) {
         return method == PaymentMethod.CASH_AT_COUNTER ? PaymentStatus.UNPAID : PaymentStatus.PENDING_PAYMENT;
+    }
+
+    private String generateSepayTransferCode() {
+        String prefix = sepayPaymentCodePrefix == null || sepayPaymentCodePrefix.isBlank()
+                ? "AU"
+                : sepayPaymentCodePrefix.trim().toUpperCase(Locale.ROOT);
+        for (int attempt = 0; attempt < 20; attempt++) {
+            String code = prefix + String.format("%08d", ThreadLocalRandom.current().nextInt(100_000_000));
+            if (!paymentRepository.existsByTransactionRef(code)) {
+                return code;
+            }
+        }
+        throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to generate SePay payment code", ErrorCode.SYSTEM_ERROR);
     }
 
     private void ensurePendingBookingHoldOpen(Booking booking) {

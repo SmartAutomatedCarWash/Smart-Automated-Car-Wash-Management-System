@@ -203,7 +203,7 @@ export function getBookingStatusLabel(status: BookingStatus) {
 export function getPaymentMethodLabel(method: PaymentMethod | string) {
   switch (method) {
     case "BANK_TRANSFER":
-      return "Bank transfer";
+      return "SePay";
     case "E_WALLET":
       return "VNPay";
     case "CASH_AT_COUNTER":

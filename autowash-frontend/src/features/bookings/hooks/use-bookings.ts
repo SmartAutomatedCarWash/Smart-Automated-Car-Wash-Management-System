@@ -19,6 +19,7 @@ import {
   listCustomerBookings,
   listSlotAvailability,
   purchaseCustomerCombo,
+  querySepayTransaction,
   queryVnpayTransaction,
   validateBookingDiscount,
 } from "@/features/bookings/lib/booking-service";
@@ -45,6 +46,7 @@ import type {
   ApplyBookingPointsRequest,
   ApplyBookingPointsResponse,
   CreateBookingResponse,
+  SepayPaymentResultResponse,
   VnpayCheckoutResponse,
   VnpayPaymentResultResponse,
   PayBookingResponse,
@@ -288,6 +290,18 @@ export function useQueryVnpayTransaction(bookingId: string) {
 
   return useMutation<VnpayPaymentResultResponse, ApiErrorResponse>({
     mutationFn: () => queryVnpayTransaction(bookingId),
+    onSuccess: async () => {
+      await invalidateBookingViews(queryClient, userId, bookingId);
+    },
+  });
+}
+
+export function useQuerySepayTransaction(bookingId: string) {
+  const queryClient = useQueryClient();
+  const { userId } = useBookingQueryContext();
+
+  return useMutation<SepayPaymentResultResponse, ApiErrorResponse>({
+    mutationFn: () => querySepayTransaction(bookingId),
     onSuccess: async () => {
       await invalidateBookingViews(queryClient, userId, bookingId);
     },

@@ -35,7 +35,12 @@ class BookingResponseAssemblerTest {
     private final WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository = mock(WashSessionStaffAssignmentRepository.class);
     private final BookingResponseAssembler assembler = new BookingResponseAssembler(
             bookingStaffAssignmentRepository,
-            washSessionStaffAssignmentRepository
+            washSessionStaffAssignmentRepository,
+            "TPBank",
+            "1234567890",
+            "AURA CAR WASH",
+            "Aura Car Wash",
+            "AUR"
     );
 
     @Test

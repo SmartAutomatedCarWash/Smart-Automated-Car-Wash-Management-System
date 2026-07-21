@@ -63,9 +63,10 @@ const PAYMENT_OPTIONS: {
   },
   {
     method: "BANK_TRANSFER",
-    label: "Bank transfer",
-    description: "Transfer to our account before your appointment.",
+    label: "SePay",
+    description: "Transfer with an AU payment code for automatic confirmation.",
     icon: Building2,
+    badge: "QR",
   },
   {
     method: "E_WALLET",

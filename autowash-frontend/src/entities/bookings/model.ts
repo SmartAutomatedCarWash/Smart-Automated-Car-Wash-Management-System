@@ -220,6 +220,15 @@ export type VnpayPaymentResultResponse = {
   message: string;
 };
 
+export type SepayPaymentResultResponse = {
+  success: boolean;
+  bookingId: string;
+  paymentCode: string;
+  amount: number | null;
+  transactionRef: string | null;
+  message: string;
+};
+
 export type PayBookingResponse = {
   bookingId: string;
   paymentId: string;
@@ -302,8 +311,13 @@ export type BookingDetail = {
   payment: {
     method: string;
     status: string;
-    transactionId: string;
+    transactionId: string | null;
     paidAt: string | null;
+    qrUrl?: string | null;
+    bankCode?: string | null;
+    accountNumber?: string | null;
+    accountName?: string | null;
+    transferDescription?: string | null;
   };
   status: BookingStatus;
   confirmationStatus: BookingConfirmationStatus;

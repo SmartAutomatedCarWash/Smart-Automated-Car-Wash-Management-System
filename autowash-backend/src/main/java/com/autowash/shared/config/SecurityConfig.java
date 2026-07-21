@@ -53,6 +53,7 @@ public class SecurityConfig {
                                 "/api/v1/reviews/featured",
                                 "/api/v1/payments/vnpay/return",
                                 "/api/v1/payments/vnpay/ipn",
+                                "/api/v1/payments/sepay/webhook",
                                 "/api/v1/packages/*",
                                 "/api/v1/combos/*",
                                 "/api/v1/settings/public",

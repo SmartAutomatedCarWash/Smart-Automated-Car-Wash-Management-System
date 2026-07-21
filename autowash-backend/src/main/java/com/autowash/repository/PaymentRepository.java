@@ -18,6 +18,8 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     Optional<Payment> findByBookingId(UUID bookingId);
     Optional<Payment> findFirstByBookingOrderByCreatedAtDesc(Booking booking);
     Optional<Payment> findFirstByBookingIdOrderByCreatedAtDesc(UUID bookingId);
+    Optional<Payment> findByTransactionRef(String transactionRef);
+    boolean existsByTransactionRef(String transactionRef);
 
     @Query("""
             select payment from Payment payment

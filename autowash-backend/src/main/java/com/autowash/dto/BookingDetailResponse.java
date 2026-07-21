@@ -51,7 +51,12 @@ public record BookingDetailResponse(
             String method,
             String status,
             String transactionId,
-            Instant paidAt
+            Instant paidAt,
+            String qrUrl,
+            String bankCode,
+            String accountNumber,
+            String accountName,
+            String transferDescription
     ) {}
 
     public record StaffAssignment(

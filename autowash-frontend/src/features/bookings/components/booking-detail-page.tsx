@@ -37,6 +37,7 @@ import {
   useCancelCustomerBooking,
   useCreateVnpayCheckout,
   useCustomerBookingDetail,
+  useQuerySepayTransaction,
   useQueryVnpayTransaction,
 } from "@/features/bookings/hooks/use-bookings";
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
@@ -230,6 +231,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const cancelBookingMutation = useCancelCustomerBooking(bookingId);
   const changePaymentMethodMutation = useChangeBookingPaymentMethod(bookingId);
   const createVnpayCheckoutMutation = useCreateVnpayCheckout();
+  const querySepayTransactionMutation = useQuerySepayTransaction(bookingId);
   const queryVnpayTransactionMutation = useQueryVnpayTransaction(bookingId);
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
@@ -326,9 +328,14 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const canPayAgainWithVnpay = canChoosePendingPaymentAction && booking.pricing.finalAmount > 0;
   const canQueryVnpayPayment = canChoosePendingPaymentAction && paymentMethod === "E_WALLET";
   const canChangeToCash = canChoosePendingPaymentAction && paymentMethod !== "CASH_AT_COUNTER";
+  const canShowSepayInstructions = canChoosePendingPaymentAction && paymentMethod === "BANK_TRANSFER";
+  const sepayPaymentCode = canShowSepayInstructions ? booking.payment.transactionId : null;
+  const sepayTransferDescription = canShowSepayInstructions
+    ? (booking.payment.transferDescription || sepayPaymentCode)
+    : null;
   const canShowAppointmentCountdown = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS"].includes(booking.status);
   const showCashConfirmationNote = booking.status === "PENDING" && paymentMethod === "CASH_AT_COUNTER";
-  const isPaymentActionPending = changePaymentMethodMutation.isPending || createVnpayCheckoutMutation.isPending || queryVnpayTransactionMutation.isPending;
+  const isPaymentActionPending = changePaymentMethodMutation.isPending || createVnpayCheckoutMutation.isPending || querySepayTransactionMutation.isPending || queryVnpayTransactionMutation.isPending;
   const refundStatusLabel = getRefundStatusLabel(booking, language);
   const customerName = booking.customerName || profileQuery.data?.fullName || translate(language, "Khách hàng", "Customer");
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || translate(language, "Chưa có số điện thoại", "No phone number");
@@ -402,6 +409,21 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     }
   };
 
+  const handleCopySepayCode = async () => {
+    if (!sepayTransferDescription) return;
+    await handleCopyText(sepayTransferDescription, translate(language, "Đã copy nội dung chuyển khoản.", "Transfer description copied."));
+  };
+
+  const handleCopyText = async (value: string | null | undefined, successMessage: string) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(successMessage);
+    } catch {
+      toast.error(translate(language, "Không thể copy.", "Unable to copy."));
+    }
+  };
+
   const handleQueryVnpayPayment = async () => {
     try {
       const result = await queryVnpayTransactionMutation.mutateAsync();
@@ -409,6 +431,19 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
         toast.success(translate(language, "Đã đồng bộ thanh toán VNPay.", "VNPay payment synced."));
       } else {
         toast.error(result.message || translate(language, "VNPay chưa xác nhận thanh toán.", "VNPay has not confirmed the payment."));
+      }
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleQuerySepayPayment = async () => {
+    try {
+      const result = await querySepayTransactionMutation.mutateAsync();
+      if (result.success) {
+        toast.success(translate(language, "Đã đồng bộ thanh toán SePay.", "SePay payment synced."));
+      } else {
+        toast.error(result.message || translate(language, "SePay chưa tìm thấy chuyển khoản phù hợp.", "SePay has not found a matching transfer yet."));
       }
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -649,6 +684,65 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                       "This booking is pending. You can pay again, switch to cash, or cancel it.",
                     )}
                   </p>
+                  {canShowSepayInstructions ? (
+                    <div className="rounded-xl border border-cyan-100 bg-white p-3 text-xs text-slate-700">
+                      <p className="font-bold text-slate-900">
+                        {translate(language, "Thanh toán SePay", "SePay payment")}
+                      </p>
+                      <p className="mt-1">
+                        {translate(
+                          language,
+                          "Quét mã QR hoặc chuyển khoản đúng thông tin bên dưới để hệ thống tự xác nhận.",
+                          "Scan the QR or transfer with the exact details below so the system can confirm automatically.",
+                        )}
+                      </p>
+                      {booking.payment.qrUrl ? (
+                        <div className="mt-3 flex justify-center rounded-xl border border-slate-100 bg-slate-50 p-3">
+                          <img
+                            src={booking.payment.qrUrl}
+                            alt={translate(language, "Mã QR thanh toán SePay", "SePay payment QR code")}
+                            className="h-auto w-full max-w-[280px] rounded-lg"
+                          />
+                        </div>
+                      ) : null}
+                      <div className="mt-3 space-y-2">
+                        <SepayInfoRow
+                          label={translate(language, "Ngân hàng", "Bank")}
+                          value={booking.payment.bankCode ?? "TPBank"}
+                        />
+                        <SepayInfoRow
+                          label={translate(language, "Số tài khoản", "Account number")}
+                          value={booking.payment.accountNumber ?? "--"}
+                          onCopy={() => handleCopyText(booking.payment.accountNumber, translate(language, "Đã copy số tài khoản.", "Account number copied."))}
+                        />
+                        <SepayInfoRow
+                          label={translate(language, "Chủ tài khoản", "Account holder")}
+                          value={booking.payment.accountName ?? "--"}
+                        />
+                        <SepayInfoRow
+                          label={translate(language, "Số tiền", "Amount")}
+                          value={formatBookingCurrency(booking.pricing.finalAmount)}
+                          onCopy={() => handleCopyText(String(booking.pricing.finalAmount), translate(language, "Đã copy số tiền.", "Amount copied."))}
+                        />
+                        <SepayInfoRow
+                          label={translate(language, "Nội dung", "Description")}
+                          value={sepayTransferDescription ?? "--"}
+                          monospace
+                          onCopy={handleCopySepayCode}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="mt-2 w-full bg-white"
+                        onClick={handleQuerySepayPayment}
+                        disabled={isPaymentActionPending}
+                      >
+                        {querySepayTransactionMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ReceiptText className="mr-2 h-4 w-4" />}
+                        {translate(language, "Kiểm tra trạng thái SePay", "Check SePay status")}
+                      </Button>
+                    </div>
+                  ) : null}
                   {canPayAgainWithVnpay ? (
                     <Button
                       type="button"
@@ -812,6 +906,34 @@ function DetailSection({ title, rows }: { title: string; rows: Array<[string, st
         ))}
       </CardContent>
     </Card>
+  );
+}
+
+function SepayInfoRow({
+  label,
+  value,
+  monospace = false,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  monospace?: boolean;
+  onCopy?: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2">
+      <span className="shrink-0 text-slate-500">{label}</span>
+      <div className="flex min-w-0 items-center gap-2">
+        <span className={cn("truncate text-right font-bold text-slate-950", monospace ? "font-mono tracking-wide" : "")}>
+          {value}
+        </span>
+        {onCopy ? (
+          <Button type="button" size="sm" variant="outline" className="h-7 shrink-0 bg-white px-2 text-[11px]" onClick={onCopy}>
+            Copy
+          </Button>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
