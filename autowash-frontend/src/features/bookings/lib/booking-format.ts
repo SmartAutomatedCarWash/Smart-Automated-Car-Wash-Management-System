@@ -49,9 +49,18 @@ export function buildCreateBookingPayload(draft: BookingDraft): CreateBookingReq
     payload.comboId = draft.comboId;
   }
 
-  const staffId = normalizeOptionalText(draft.staffId ?? "");
-  if (staffId) {
-    payload.staffId = staffId;
+  const staffIds = (draft.staffIds ?? [])
+    .map((staffId) => normalizeOptionalText(staffId))
+    .filter((staffId): staffId is string => Boolean(staffId));
+  if (staffIds.length > 0) {
+    payload.staffIds = staffIds;
+    payload.staffId = staffIds[0];
+  } else {
+    const staffId = normalizeOptionalText(draft.staffId ?? "");
+    if (staffId) {
+      payload.staffId = staffId;
+      payload.staffIds = [staffId];
+    }
   }
 
   const discountCode = normalizeOptionalText(sanitizeVoucherCodeInput(draft.discountCode));

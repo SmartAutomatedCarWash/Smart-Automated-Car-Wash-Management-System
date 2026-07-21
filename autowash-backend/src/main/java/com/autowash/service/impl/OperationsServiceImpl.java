@@ -5,6 +5,7 @@ import com.autowash.dto.CheckInWashSessionResponse;
 import com.autowash.dto.CompleteWashSessionResponse;
 import com.autowash.dto.CreateWashSessionRequest;
 import com.autowash.dto.CreateWashSessionResponse;
+import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.EarnPointsResponse;
 import com.autowash.dto.EligibleSessionBookingResponse;
 import com.autowash.dto.OperationsQueueResponse;
@@ -16,10 +17,12 @@ import com.autowash.dto.StaffSessionHistoryResponse;
 import com.autowash.dto.StaffTodayResponse;
 import com.autowash.entity.Booking;
 import com.autowash.entity.BookingDetail;
+import com.autowash.entity.BookingStaffAssignment;
 import com.autowash.entity.Notification;
 import com.autowash.entity.Review;
 import com.autowash.entity.User;
 import com.autowash.entity.WashSession;
+import com.autowash.entity.WashSessionStaffAssignment;
 import com.autowash.entity.enums.BookingItemType;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.CancelFaultType;
@@ -27,8 +30,10 @@ import com.autowash.entity.enums.NotificationType;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.BookingRepository;
+import com.autowash.repository.BookingStaffAssignmentRepository;
 import com.autowash.repository.NotificationRepository;
 import com.autowash.repository.ReviewRepository;
+import com.autowash.repository.WashSessionStaffAssignmentRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.BookingService;
 import com.autowash.service.CurrentUserService;
@@ -63,7 +68,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class OperationsServiceImpl implements OperationsService {
 
     private static final Set<BookingStatus> ELIGIBLE_BOOKING_STATUSES = Set.of(
-            BookingStatus.PENDING,
             BookingStatus.CONFIRMED
     );
 
@@ -77,6 +81,8 @@ public class OperationsServiceImpl implements OperationsService {
     private final BookingService bookingService;
     private final BookingRepository BookingRepository;
     private final WashSessionRepository washSessionRepository;
+    private final BookingStaffAssignmentRepository bookingStaffAssignmentRepository;
+    private final WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository;
     private final LoyaltyService loyaltyService;
     private final CurrentUserService currentUserService;
     private final StaffAssignmentService staffAssignmentService;
@@ -89,6 +95,8 @@ public class OperationsServiceImpl implements OperationsService {
             BookingService bookingService,
             BookingRepository BookingRepository,
             WashSessionRepository washSessionRepository,
+            BookingStaffAssignmentRepository bookingStaffAssignmentRepository,
+            WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository,
             LoyaltyService loyaltyService,
             CurrentUserService currentUserService,
             StaffAssignmentService staffAssignmentService,
@@ -100,6 +108,8 @@ public class OperationsServiceImpl implements OperationsService {
         this.bookingService = bookingService;
         this.BookingRepository = BookingRepository;
         this.washSessionRepository = washSessionRepository;
+        this.bookingStaffAssignmentRepository = bookingStaffAssignmentRepository;
+        this.washSessionStaffAssignmentRepository = washSessionStaffAssignmentRepository;
         this.loyaltyService = loyaltyService;
         this.currentUserService = currentUserService;
         this.staffAssignmentService = staffAssignmentService;
@@ -112,10 +122,10 @@ public class OperationsServiceImpl implements OperationsService {
     @Transactional
     public CreateWashSessionResponse createSession(CreateWashSessionRequest request) {
         Booking booking = bookingService.requireBookingForOperations(request.bookingId());
-        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING) {
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Booking must be CONFIRMED or PENDING to create a wash session",
+                    "Booking must be CONFIRMED to create a wash session",
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
@@ -130,12 +140,14 @@ public class OperationsServiceImpl implements OperationsService {
         User actor = currentUserService.getCurrentUser();
         User assignedStaff = resolveSessionAssigneeForCreate(booking, actor);
         WashSession session = washSessionRepository.save(WashSession.create(booking, request.notes(), assignedStaff));
+        List<BookingDetailResponse.StaffAssignment> assignedStaffList = copyBookingStaffAssignmentsToSession(booking, session);
         return CreateWashSessionResponse.builder()
                 .sessionId(session.getId())
                 .status(session.getStatus().name())
                 .bookingId(booking.getId().toString())
                 .assignedStaffId(assignedStaff == null ? null : assignedStaff.getId())
                 .assignedStaffName(assignedStaff == null ? null : assignedStaff.getFullName())
+                .assignedStaff(assignedStaffList)
                 .createdAt(session.getCreatedAt())
                 .build();
     }
@@ -828,6 +840,7 @@ public class OperationsServiceImpl implements OperationsService {
     }
 
     private User resolveSessionAssigneeForCreate(Booking booking, User actor) {
+        ensureBookingStaffAssignments(booking);
         User assignedStaff = booking.getAssignedStaff();
         if (actor.getRole() == UserRole.STAFF) {
             if (assignedStaff != null && !assignedStaff.getId().equals(actor.getId())) {
@@ -840,6 +853,38 @@ public class OperationsServiceImpl implements OperationsService {
             booking.assignStaff(assignedStaff);
         }
         return assignedStaff;
+    }
+
+    private void ensureBookingStaffAssignments(Booking booking) {
+        List<BookingStaffAssignment> existingAssignments = bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking);
+        if (!existingAssignments.isEmpty()) {
+            if (booking.getAssignedStaff() == null) {
+                booking.assignStaff(existingAssignments.get(0).getStaff());
+            }
+            return;
+        }
+
+        List<UUID> preferredStaffIds = booking.getAssignedStaff() == null ? List.of() : List.of(booking.getAssignedStaff().getId());
+        List<User> staffGroup = staffAssignmentService.pickStaffGroupForBooking(booking, preferredStaffIds, 3);
+        for (int index = 0; index < staffGroup.size(); index++) {
+            bookingStaffAssignmentRepository.save(new BookingStaffAssignment(booking, staffGroup.get(index), index + 1));
+        }
+        booking.assignStaff(staffGroup.get(0));
+    }
+
+    private List<BookingDetailResponse.StaffAssignment> copyBookingStaffAssignmentsToSession(Booking booking, WashSession session) {
+        washSessionStaffAssignmentRepository.deleteBySession(session);
+        List<BookingStaffAssignment> bookingAssignments = bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking);
+        List<BookingDetailResponse.StaffAssignment> response = new ArrayList<>();
+        for (BookingStaffAssignment assignment : bookingAssignments) {
+            washSessionStaffAssignmentRepository.save(new WashSessionStaffAssignment(session, assignment.getStaff(), assignment.getSortOrder()));
+            response.add(new BookingDetailResponse.StaffAssignment(
+                    assignment.getStaff().getId().toString(),
+                    assignment.getStaff().getFullName(),
+                    assignment.getSortOrder()
+            ));
+        }
+        return response;
     }
 
     private void ensureSessionAssigneeForCheckIn(WashSession session) {

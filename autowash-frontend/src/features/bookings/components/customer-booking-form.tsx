@@ -909,7 +909,7 @@ export function CustomerBookingForm() {
     if (!draft.bookingTime) return;
     const slot = availabilityByTime.get(draft.bookingTime);
     if (slot && !slot.available) {
-      updateDraft({ bookingTime: "", staffId: "" });
+      updateDraft({ bookingTime: "", staffId: "", staffIds: [] });
       toast.error("Booking slot is full");
     }
   }, [availabilityByTime, draft.bookingTime, updateDraft]);
@@ -930,7 +930,7 @@ export function CustomerBookingForm() {
   useEffect(() => {
     const today = getTodayDate();
     if (!draft.bookingDate || draft.bookingDate < today) {
-      updateDraft({ bookingDate: today, bookingTime: "", staffId: "" });
+      updateDraft({ bookingDate: today, bookingTime: "", staffId: "", staffIds: [] });
     }
   }, [draft.bookingDate, updateDraft]);
 
@@ -1108,7 +1108,7 @@ export function CustomerBookingForm() {
     }
 
     resetValidatedDiscount();
-      updateDraft({ addonIds: validAddonIds, discountCode: "", staffId: "" });
+      updateDraft({ addonIds: validAddonIds, discountCode: "", staffId: "", staffIds: [] });
   }, [addons, draft.addonIds, draft.mode, selectedCombo, selectedComboServiceIds, selectedPackageServiceIds, updateDraft]);
 
   const vehicleOptions = [
@@ -1232,6 +1232,7 @@ export function CustomerBookingForm() {
       addonIds: [],
       discountCode: "",
       staffId: "",
+      staffIds: [],
     });
   };
 
@@ -1424,7 +1425,7 @@ export function CustomerBookingForm() {
                     onClick={() => {
                       if (active) {
                         resetValidatedDiscount();
-                        updateDraft({ mode, packageId: "", comboId: "", addonIds: [], discountCode: "", staffId: "" });
+                        updateDraft({ mode, packageId: "", comboId: "", addonIds: [], discountCode: "", staffId: "", staffIds: [] });
                         return;
                       }
                       updateMode(mode);
@@ -1453,6 +1454,7 @@ export function CustomerBookingForm() {
                     addonIds: [],
                     discountCode: "",
                     staffId: "",
+                    staffIds: [],
                   });
                 }}
                 placeholder="Select a package"
@@ -1483,6 +1485,7 @@ export function CustomerBookingForm() {
                           comboId: active ? "" : item.comboId,
                           discountCode: "",
                           staffId: "",
+                          staffIds: [],
                         });
                       }}
                     >
@@ -1553,6 +1556,7 @@ export function CustomerBookingForm() {
                               addonIds: [...draft.addonIds, service.serviceId],
                               discountCode: "",
                               staffId: "",
+                              staffIds: [],
                             });
                           }}
                           className="rounded-xl border border-sky-200 bg-white px-3 py-2 text-left transition hover:border-sky-400 hover:bg-sky-50 dark:border-sky-900 dark:bg-slate-900 dark:hover:border-sky-600"
@@ -1576,7 +1580,7 @@ export function CustomerBookingForm() {
                   value={draft.addonIds}
                   onValueChange={(ids) => {
                     resetValidatedDiscount();
-                    updateDraft({ addonIds: ids, discountCode: "", staffId: "" });
+                    updateDraft({ addonIds: ids, discountCode: "", staffId: "", staffIds: [] });
                   }}
                   placeholder="Select extra services (optional)"
                   searchPlaceholder="Search extra services..."
@@ -1593,7 +1597,7 @@ export function CustomerBookingForm() {
                 value={draft.addonIds}
                 onValueChange={(ids) => {
                   resetValidatedDiscount();
-                  updateDraft({ addonIds: ids, discountCode: "", staffId: "" });
+                  updateDraft({ addonIds: ids, discountCode: "", staffId: "", staffIds: [] });
                 }}
                 placeholder="Select add-ons (optional)"
                 searchPlaceholder="Search add-ons..."
@@ -1612,7 +1616,7 @@ export function CustomerBookingForm() {
                 <DatePickerButton
                   value={draft.bookingDate}
                   min={getTodayDate()}
-                  onChange={(bookingDate) => updateDraft({ bookingDate, staffId: "" })}
+                  onChange={(bookingDate) => updateDraft({ bookingDate, staffId: "", staffIds: [] })}
                   label="Select a day"
                   buttonClassName="h-11 w-full justify-start rounded-xl border-input bg-background text-sm"
                 />
@@ -1626,7 +1630,7 @@ export function CustomerBookingForm() {
                 <TimeSlotGrid
                   timeSlots={timeSlots}
                   value={draft.bookingTime}
-                  onChange={(time) => updateDraft({ bookingTime: time, staffId: "" })}
+                  onChange={(time) => updateDraft({ bookingTime: time, staffId: "", staffIds: [] })}
                   bookingDate={draft.bookingDate}
                   availabilityByTime={availabilityByTime}
                   isRefreshing={slotAvailabilityQuery.isFetching && !slotAvailabilityQuery.isPending}

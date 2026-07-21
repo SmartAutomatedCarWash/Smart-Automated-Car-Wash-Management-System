@@ -34,6 +34,7 @@ export const EMPTY_BOOKING_DRAFT: BookingDraft = {
   confirmationEmail: "",
   paymentMethod: null,
   staffId: "",
+  staffIds: [],
 };
 
 const bookingStore = createStore<BookingStore>()(

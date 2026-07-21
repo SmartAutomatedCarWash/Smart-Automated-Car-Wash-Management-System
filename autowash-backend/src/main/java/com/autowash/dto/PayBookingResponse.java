@@ -1,6 +1,7 @@
 package com.autowash.dto;
 
 import java.time.Instant;
+import java.util.List;
 
 public record PayBookingResponse(
         String bookingId,
@@ -12,6 +13,7 @@ public record PayBookingResponse(
         Instant paidAt,
         String bookingStatus,
         String assignedStaffId,
-        String assignedStaffName
+        String assignedStaffName,
+        List<BookingDetailResponse.StaffAssignment> assignedStaff
 ) {
 }

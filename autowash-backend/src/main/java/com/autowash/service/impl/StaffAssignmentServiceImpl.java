@@ -15,6 +15,7 @@ import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.BookingRepository;
+import com.autowash.repository.BookingStaffAssignmentRepository;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.StaffAssignmentService;
@@ -22,6 +23,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -50,15 +53,18 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
 
     private final UserRepository UserRepository;
     private final BookingRepository bookingRepository;
+    private final BookingStaffAssignmentRepository bookingStaffAssignmentRepository;
     private final WashSessionRepository washSessionRepository;
 
     public StaffAssignmentServiceImpl(
             UserRepository UserRepository,
             BookingRepository bookingRepository,
+            BookingStaffAssignmentRepository bookingStaffAssignmentRepository,
             WashSessionRepository washSessionRepository
     ) {
         this.UserRepository = UserRepository;
         this.bookingRepository = bookingRepository;
+        this.bookingStaffAssignmentRepository = bookingStaffAssignmentRepository;
         this.washSessionRepository = washSessionRepository;
     }
 
@@ -109,16 +115,60 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
 
     @Override
     public List<User> rankAvailableStaffForBooking(Booking booking, int limit) {
-        return UserRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE)
+        return rankActiveStaffForBooking(booking)
                 .stream()
                 .filter(staff -> isStaffAvailableForBooking(staff, booking))
+                .limit(Math.max(limit, 0))
+                .toList();
+    }
+
+    @Override
+    public List<User> rankActiveStaffForBooking(Booking booking) {
+        return UserRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE)
+                .stream()
                 .sorted(Comparator
-                        .comparingLong((User staff) -> bookingRepository.countByAssignedStaffAndStatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES))
+                        .comparingLong((User staff) -> bookingStaffAssignmentRepository.countByStaffAndBooking_StatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES))
                         .thenComparingLong((User staff) -> washSessionRepository.countByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES))
                         .thenComparing(User::getFullName)
                         .thenComparing(User::getId))
-                .limit(Math.max(limit, 0))
                 .toList();
+    }
+
+    @Override
+    public List<User> pickStaffGroupForBooking(Booking booking, List<UUID> preferredStaffIds, int requiredCount) {
+        int count = Math.max(requiredCount, 0);
+        List<User> selected = new ArrayList<>();
+        Set<UUID> selectedIds = new LinkedHashSet<>();
+
+        if (preferredStaffIds != null) {
+            for (UUID staffId : preferredStaffIds) {
+                if (staffId == null || !selectedIds.add(staffId)) {
+                    continue;
+                }
+                User staff = requireActiveStaff(staffId);
+                if (isStaffAvailableForBooking(staff, booking)) {
+                    selected.add(staff);
+                }
+                if (selected.size() == count) {
+                    return selected;
+                }
+            }
+        }
+
+        for (User staff : rankAvailableStaffForBooking(booking, Integer.MAX_VALUE)) {
+            if (selectedIds.add(staff.getId())) {
+                selected.add(staff);
+            }
+            if (selected.size() == count) {
+                return selected;
+            }
+        }
+
+        throw new ApiException(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "Not enough available staff for this booking time",
+                "NO_AVAILABLE_STAFF"
+        );
     }
 
     @Override
@@ -136,6 +186,25 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
                         targetEnd,
                         session.getBooking().getScheduledAt(),
                         session.getBooking().getScheduledAt().plusSeconds((long) session.getBooking().getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum() * 60)
+                ))
+                && bookingStaffAssignmentRepository.findByStaffAndBooking_StatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES)
+                .stream()
+                .map(assignment -> assignment.getBooking())
+                .filter(existingBooking -> !existingBooking.getId().equals(booking.getId()))
+                .noneMatch(existingBooking -> overlaps(
+                        targetStart,
+                        targetEnd,
+                        existingBooking.getScheduledAt(),
+                        existingBooking.getScheduledAt().plusSeconds((long) existingBooking.getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum() * 60)
+                ))
+                && bookingRepository.findByAssignedStaffAndStatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES)
+                .stream()
+                .filter(existingBooking -> !existingBooking.getId().equals(booking.getId()))
+                .noneMatch(existingBooking -> overlaps(
+                        targetStart,
+                        targetEnd,
+                        existingBooking.getScheduledAt(),
+                        existingBooking.getScheduledAt().plusSeconds((long) existingBooking.getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum() * 60)
                 ));
     }
 

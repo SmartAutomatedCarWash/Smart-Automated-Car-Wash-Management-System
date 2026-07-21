@@ -181,8 +181,22 @@ export function BookingConfirmPage() {
   }, [hasStaleAddonIds, sanitizedAddonIds, sanitizedDraft]);
   const staffOptionsQuery = useBookingStaffOptions(staffOptionsPayload);
   const staffOptions = staffOptionsQuery.data ?? [];
-  const selectedStaff = staffOptions.find((staff) => staff.staffId === draft.staffId) ?? null;
-  const staffUnavailable = staffOptionsQuery.isSuccess && staffOptions.length === 0;
+  const availableStaffOptions = useMemo(
+    () => staffOptions.filter((staff) => staff.available !== false),
+    [staffOptions],
+  );
+  const selectedStaffIds = useMemo(
+    () => (draft.staffIds && draft.staffIds.length > 0 ? draft.staffIds : draft.staffId ? [draft.staffId] : []).slice(0, 3),
+    [draft.staffId, draft.staffIds],
+  );
+  const selectedStaff = useMemo(
+    () =>
+      selectedStaffIds
+        .map((staffId) => staffOptions.find((staff) => staff.staffId === staffId))
+        .filter((staff): staff is NonNullable<typeof staff> => Boolean(staff)),
+    [selectedStaffIds, staffOptions],
+  );
+  const staffUnavailable = staffOptionsQuery.isSuccess && availableStaffOptions.length < 3;
 
   const redirectToLastCreatedBooking = useCallback(
     (bookingId?: string) => {
@@ -206,15 +220,25 @@ export function BookingConfirmPage() {
 
   useEffect(() => {
     if (!hasStaleAddonIds) return;
-    updateDraft({ addonIds: sanitizedAddonIds, discountCode: "", staffId: "" });
+    updateDraft({ addonIds: sanitizedAddonIds, discountCode: "", staffId: "", staffIds: [] });
   }, [hasStaleAddonIds, sanitizedAddonIds, updateDraft]);
 
   useEffect(() => {
     if (staffOptions.length === 0) return;
-    if (!draft.staffId || !staffOptions.some((staff) => staff.staffId === draft.staffId)) {
-      updateDraft({ staffId: staffOptions[0].staffId });
+    const availableIds = new Set(availableStaffOptions.map((staff) => staff.staffId));
+    const nextStaffIds = selectedStaffIds.filter((staffId) => availableIds.has(staffId));
+    for (const staff of availableStaffOptions) {
+      if (nextStaffIds.length >= 3) break;
+      if (!nextStaffIds.includes(staff.staffId)) {
+        nextStaffIds.push(staff.staffId);
+      }
     }
-  }, [draft.staffId, staffOptions, updateDraft]);
+    const currentKey = selectedStaffIds.join("|");
+    const nextKey = nextStaffIds.join("|");
+    if (nextKey !== currentKey || draft.staffId !== (nextStaffIds[0] ?? "")) {
+      updateDraft({ staffId: nextStaffIds[0] ?? "", staffIds: nextStaffIds });
+    }
+  }, [availableStaffOptions, draft.staffId, selectedStaffIds, staffOptions.length, updateDraft]);
 
   useEffect(() => {
     if (expired || isRedirectingAfterCreate) return;
@@ -290,11 +314,15 @@ export function BookingConfirmPage() {
       toast.error("No staff is available for this service window.");
       return;
     }
+    if (selectedStaffIds.length < 3) {
+      toast.error("Please select 3 available staff.");
+      return;
+    }
     const selectedPaymentMethod = paymentMethod ?? draft.paymentMethod;
     if (!isComboBooking && !selectedPaymentMethod) return;
     if (!expiresAt || expiresAt <= Date.now()) { handleExpired(); return; }
     const effectivePaymentMethod = isComboBooking ? ("CASH_AT_COUNTER" as PaymentMethod) : selectedPaymentMethod!;
-    const nextDraft = { ...sanitizedDraft, paymentMethod: effectivePaymentMethod, staffId: draft.staffId || selectedStaff?.staffId || "" };
+    const nextDraft = { ...sanitizedDraft, paymentMethod: effectivePaymentMethod, staffId: selectedStaffIds[0] ?? "", staffIds: selectedStaffIds };
     const errors = validateBookingDraft(nextDraft, summary, { requirePaymentMethod: !isComboBooking });
     if (Object.keys(errors).length > 0) {
       toast.error(Object.values(errors)[0] ?? "Please complete booking information.");
@@ -416,7 +444,7 @@ export function BookingConfirmPage() {
                 <CardTitle className="text-sm font-bold">Assigned staff</CardTitle>
               </div>
               <p className="text-xs text-muted-foreground">
-                Choose one of the available staff for {summary.itemName}.
+                Three available staff will be assigned after the booking is confirmed.
               </p>
             </CardHeader>
             <CardContent className="space-y-3 pb-5">
@@ -428,41 +456,65 @@ export function BookingConfirmPage() {
                 </div>
               ) : staffUnavailable ? (
                 <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  No staff is available for this service window. Please choose another time.
+                  Fewer than 3 staff are available for this service window. Please choose another time.
                 </div>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {staffOptions.map((staff) => {
-                    const active = draft.staffId === staff.staffId;
-                    return (
-                      <button
-                        key={staff.staffId}
-                        type="button"
-                        onClick={() => updateDraft({ staffId: staff.staffId })}
-                        className={`relative rounded-2xl border p-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-                          active
-                            ? "border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary)/0.3)]"
-                            : "border-border bg-card hover:border-primary/40 hover:bg-muted/30"
-                        }`}
-                      >
-                        {staff.recommended && (
-                          <span className="absolute right-3 top-3 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                            Auto
+                <div className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {[0, 1, 2].map((index) => {
+                      const currentStaffId = selectedStaffIds[index] ?? "";
+                      return (
+                        <label key={index} className="rounded-2xl border border-border bg-card p-4">
+                          <span className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                            <UserCheck className="h-3.5 w-3.5" />
+                            Staff {index + 1}
                           </span>
-                        )}
-                        <span className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
-                          active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                        }`}>
-                          <UserCheck className="h-5 w-5" />
-                        </span>
-                        <div className="mt-3 space-y-1">
-                          <p className="truncate text-sm font-bold text-foreground">{staff.staffName}</p>
-                          <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{staff.reason}</p>
+                          <select
+                            value={currentStaffId}
+                            onChange={(event) => {
+                              const nextStaffIds = [...selectedStaffIds];
+                              nextStaffIds[index] = event.target.value;
+                              const uniqueStaffIds = nextStaffIds.filter((staffId, staffIndex) => staffId && nextStaffIds.indexOf(staffId) === staffIndex);
+                              updateDraft({ staffId: uniqueStaffIds[0] ?? "", staffIds: uniqueStaffIds });
+                            }}
+                            className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm font-semibold text-foreground outline-none transition focus:border-primary"
+                          >
+                            <option value="">Select staff</option>
+                            {staffOptions.map((staff) => {
+                              const disabled = staff.available === false || (selectedStaffIds.includes(staff.staffId) && staff.staffId !== currentStaffId);
+                              return (
+                                <option key={staff.staffId} value={staff.staffId} disabled={disabled}>
+                                  {staff.staffName} - {staff.available === false ? "Busy" : "Available"}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {staffOptions.map((staff) => {
+                      const active = selectedStaffIds.includes(staff.staffId);
+                      const available = staff.available !== false;
+                      return (
+                        <div
+                          key={staff.staffId}
+                          className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-xs ${
+                            active
+                              ? "border-primary bg-primary/5"
+                              : available
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                                : "border-slate-200 bg-slate-50 text-slate-500"
+                          }`}
+                        >
+                          <span className="truncate font-semibold">{staff.staffName}</span>
+                          <span className="shrink-0 font-bold">{available ? "Available" : "Busy"}</span>
                         </div>
-                        {active && <CheckCircle2 className="absolute bottom-3 right-3 h-4 w-4 text-primary" />}
-                      </button>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               )}
               {staffOptionsQuery.isError && (
@@ -569,7 +621,7 @@ export function BookingConfirmPage() {
             <Button
               type="button"
               onClick={() => void handleConfirm()}
-              disabled={createBookingMutation.isPending || createVnpayCheckoutMutation.isPending || isReleasing || staffOptionsQuery.isPending || staffUnavailable}
+              disabled={createBookingMutation.isPending || createVnpayCheckoutMutation.isPending || isReleasing || staffOptionsQuery.isPending || staffUnavailable || selectedStaffIds.length < 3}
               className="rounded-xl gap-2 px-8 font-bold"
             >
               {createBookingMutation.isPending || createVnpayCheckoutMutation.isPending ? (
@@ -617,7 +669,7 @@ export function BookingConfirmPage() {
               <SummaryRow
                 icon={UserCheck}
                 label="Staff"
-                value={selectedStaff?.staffName ?? "Auto assign"}
+                value={selectedStaff.length > 0 ? selectedStaff.map((staff) => staff.staffName).join(", ") : "Auto assign"}
               />
 
               {/* Service */}
