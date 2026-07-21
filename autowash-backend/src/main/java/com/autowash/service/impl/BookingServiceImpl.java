@@ -843,7 +843,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private PaymentStatus initialPaymentStatus(PaymentMethod method) {
-        return method == PaymentMethod.CASH_AT_COUNTER ? PaymentStatus.UNPAID : PaymentStatus.PENDING;
+        return method == PaymentMethod.CASH_AT_COUNTER ? PaymentStatus.UNPAID : PaymentStatus.PENDING_PAYMENT;
     }
 
     private long resolveRefundAmount(long paymentAmount, long hoursUntilScheduled) {
