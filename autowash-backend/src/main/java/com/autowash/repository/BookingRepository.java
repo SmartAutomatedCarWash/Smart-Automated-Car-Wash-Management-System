@@ -210,6 +210,83 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("select coalesce(sum(b.pricing.finalAmount), 0) from Booking b where b.status = :status")
     long sumFinalAmountByStatus(@Param("status") BookingStatus status);
 
+    // ---- Dashboard aggregate queries (avoid findAll) ----
+
+    @Query("select count(b) from Booking b where b.status not in :excludedStatuses and b.scheduledAt >= :from and b.scheduledAt < :to")
+    long countByScheduledAtBetweenAndStatusNotIn(@Param("from") Instant from, @Param("to") Instant to, @Param("excludedStatuses") Collection<BookingStatus> excludedStatuses);
+
+    @Query("select count(b) from Booking b where b.status = :status and b.updatedAt >= :from")
+    long countByStatusAndUpdatedAtAfter(@Param("status") BookingStatus status, @Param("from") Instant from);
+
+    @Query("select count(b) from Booking b where b.status = :status")
+    long countByStatusEnum(@Param("status") BookingStatus status);
+
+    @Query("select coalesce(sum(b.pricing.finalAmount), 0) from Booking b where b.status = 'COMPLETED'")
+    long sumTotalRevenue();
+
+    // Booking trend: count per day
+    @Query("select count(b) from Booking b where b.scheduledAt >= :from and b.scheduledAt < :to")
+    long countByScheduledAtBetween(@Param("from") Instant from, @Param("to") Instant to);
+
+    // Status distribution in one shot
+    @Query("select b.status, count(b) from Booking b group by b.status")
+    List<Object[]> countGroupByStatus();
+
+    // Peak hour: count bookings per hour bucket
+    @Query("select count(b) from Booking b where b.scheduledAt >= :from")
+    long countByScheduledAtAfter(@Param("from") Instant from);
+
+    // No-show alerts: top customers by no-show count
+    @Query(value = """
+            select b.customer_id, u.full_name, u.phone, count(b.id)
+            from bookings b
+            join users u on u.id = b.customer_id
+            where b.status = 'NO_SHOW'
+            group by b.customer_id, u.full_name, u.phone
+            order by count(b.id) desc
+            limit 10
+            """, nativeQuery = true)
+    List<Object[]> findTopNoShowCustomers();
+
+    // Last no-show date per customer
+    @Query("""
+            select b.customer.id, max(b.createdAt)
+            from Booking b
+            where b.status = 'NO_SHOW'
+            group by b.customer.id
+            """)
+    List<Object[]> findLastNoShowDateByCustomer();
+
+    // Recent bookings: last 10
+    @EntityGraph(attributePaths = {"customer", "pricing", "details"})
+    @Query("select b from Booking b order by b.createdAt desc")
+    List<Booking> findTop10ByOrderByCreatedAtDesc(org.springframework.data.domain.Pageable pageable);
+
+    // Returning customers: customers with >1 completed booking
+    @Query(value = """
+            select count(*) from (
+              select customer_id
+              from bookings
+              where status = 'COMPLETED'
+              group by customer_id
+              having count(*) > 1
+            ) as sub
+            """, nativeQuery = true)
+    long countReturningCustomers();
+
+    // Top services: count by packageId or comboId
+    @Query("""
+            select bd.refId, bd.itemType, count(bd)
+            from BookingDetail bd
+            group by bd.refId, bd.itemType
+            order by count(bd) desc
+            """)
+    List<Object[]> countGroupByRefIdAndItemType();
+
+    // Peak hours data (bookings in last 30 days)
+    @Query("select b.scheduledAt from Booking b where b.scheduledAt >= :from")
+    List<Instant> findScheduledAtAfter(@Param("from") Instant from);
+
     List<Booking> findByScheduledAtBetweenAndStatusIn(Instant from, Instant to, Collection<BookingStatus> statuses);
 
     @Query("SELECT b FROM Booking b WHERE b.scheduledAt BETWEEN :from AND :to AND b.status IN :statuses AND b.reminderSent = false")
