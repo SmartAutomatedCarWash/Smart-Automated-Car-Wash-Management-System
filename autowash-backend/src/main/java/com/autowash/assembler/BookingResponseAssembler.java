@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class BookingResponseAssembler {
 
-    private static final Duration PENDING_ONLINE_PAYMENT_HOLD_DURATION = Duration.ofMinutes(15);
+    private static final Duration PENDING_BOOKING_HOLD_DURATION = Duration.ofMinutes(15);
 
     public BookingListItemResponse toListItem(Booking booking, WashSession washSession) {
         return toListItem(booking, washSession, booking.getDetails());
@@ -40,6 +40,7 @@ public class BookingResponseAssembler {
                 booking.getStatus().name(),
                 washStatus,
                 booking.getCreatedAt(),
+                resolveConfirmationExpiresAt(booking, null),
                 washSession == null ? null : washSession.getCompletedAt()
         );
     }
@@ -100,10 +101,9 @@ public class BookingResponseAssembler {
     }
 
     private Instant resolveConfirmationExpiresAt(Booking booking, PaymentInfo payment) {
-        if (booking.getStatus().name().equals("PENDING")
-                && payment.method() == PaymentMethod.E_WALLET
-                && payment.status() != PaymentStatus.PAID) {
-            return booking.getCreatedAt().plus(PENDING_ONLINE_PAYMENT_HOLD_DURATION);
+        PaymentStatus paymentStatus = payment == null ? PaymentStatus.UNPAID : payment.status();
+        if (booking.getStatus().name().equals("PENDING") && paymentStatus != PaymentStatus.PAID) {
+            return booking.getCreatedAt().plus(PENDING_BOOKING_HOLD_DURATION);
         }
         return booking.getConfirmationExpiresAt();
     }

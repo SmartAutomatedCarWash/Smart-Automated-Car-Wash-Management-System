@@ -89,6 +89,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BookingServiceImpl implements BookingService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BookingServiceImpl.class);
+    private static final Duration PENDING_BOOKING_HOLD_DURATION = Duration.ofMinutes(15);
 
     private static final Set<BookingStatus> ACTIVE_BOOKING_STATUSES = Set.of(
             BookingStatus.CONFIRMED,
@@ -654,6 +655,7 @@ public class BookingServiceImpl implements BookingService {
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Payment method can only be changed while booking is pending", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
+        ensurePendingBookingHoldOpen(booking);
         Payment payment = paymentRepository.findByBooking(booking)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking payment not found", ErrorCode.RESOURCE_NOT_FOUND));
         if (payment.getStatus() == PaymentStatus.PAID) {
@@ -678,6 +680,7 @@ public class BookingServiceImpl implements BookingService {
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Only pending bookings can be confirmed", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
+        ensurePendingBookingHoldOpen(booking);
         BookingStatus oldStatus = booking.getStatus();
         booking.updateStatus(BookingStatus.CONFIRMED);
         recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), "Booking confirmed manually");
@@ -703,6 +706,9 @@ public class BookingServiceImpl implements BookingService {
         BookingStatus oldStatus = booking.getStatus();
         if (oldStatus == status) {
             return toDetailResponse(booking);
+        }
+        if (oldStatus == BookingStatus.PENDING && status != BookingStatus.CANCELLED) {
+            ensurePendingBookingHoldOpen(booking);
         }
         booking.updateStatus(status);
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), "Booking status updated by admin");
@@ -856,6 +862,20 @@ public class BookingServiceImpl implements BookingService {
 
     private PaymentStatus initialPaymentStatus(PaymentMethod method) {
         return method == PaymentMethod.CASH_AT_COUNTER ? PaymentStatus.UNPAID : PaymentStatus.PENDING_PAYMENT;
+    }
+
+    private void ensurePendingBookingHoldOpen(Booking booking) {
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            return;
+        }
+        Instant expiresAt = booking.getCreatedAt().plus(PENDING_BOOKING_HOLD_DURATION);
+        if (!expiresAt.isAfter(Instant.now())) {
+            throw new ApiException(
+                    HttpStatus.GONE,
+                    "Booking hold expired. Please create a new booking.",
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
     }
 
     private long resolveRefundAmount(long paymentAmount, long hoursUntilScheduled) {

@@ -13,6 +13,7 @@ public record BookingListItemResponse(
         String status,
         String washStatus,
         Instant createdAt,
+        Instant confirmationExpiresAt,
         Instant completedAt
 ) {
 }
