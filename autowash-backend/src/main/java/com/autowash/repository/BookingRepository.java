@@ -87,7 +87,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
         return findByCustomerAndScheduledAtBetweenOrderByCreatedAtDesc(customer, scheduledFrom, scheduledTo, pageable);
     }
 
-    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff", "details", "pricing"})
     @Query("""
             select booking from Booking booking
             where (:#{#statusFilter == false} = true or booking.status in :statuses)
