@@ -857,10 +857,10 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private BookingResponseAssembler.PaymentInfo resolvePaymentInfo(Booking booking) {
-        return paymentRepository.findByBooking(booking)
+        return paymentRepository.findFirstByBookingOrderByCreatedAtDesc(booking)
                 .map(payment -> new BookingResponseAssembler.PaymentInfo(
-                        payment.getMethod(),
-                        payment.getStatus(),
+                        payment.getMethod() == null ? PaymentMethod.CASH_AT_COUNTER : payment.getMethod(),
+                        payment.getStatus() == null ? PaymentStatus.UNPAID : payment.getStatus(),
                         payment.getTransactionRef(),
                         payment.getPaidAt()
                 ))
