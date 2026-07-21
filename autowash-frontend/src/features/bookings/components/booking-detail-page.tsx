@@ -327,6 +327,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const canPayAgainWithVnpay = canChoosePendingPaymentAction && booking.pricing.finalAmount > 0;
   const canQueryVnpayPayment = canChoosePendingPaymentAction && paymentMethod === "E_WALLET";
   const canChangeToCash = canChoosePendingPaymentAction && paymentMethod !== "CASH_AT_COUNTER";
+  const canShowAppointmentCountdown = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS"].includes(booking.status);
   const showCashConfirmationNote = booking.status === "PENDING" && paymentMethod === "CASH_AT_COUNTER";
   const isPaymentActionPending = changePaymentMethodMutation.isPending || createVnpayCheckoutMutation.isPending || queryVnpayTransactionMutation.isPending;
   const refundStatusLabel = getRefundStatusLabel(booking, language);
@@ -457,17 +458,15 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                     <CardTitle>{translate(language, "Tiến trình đặt lịch", "Booking progress")}</CardTitle>
                     <CardDescription>{translate(language, "Theo dõi trạng thái từng bước của lịch đặt.", "Track each step of your booking session.")}</CardDescription>
                   </div>
-                  {booking.status !== "COMPLETED" && (
-                    paymentHoldExpiresAtMs ? (
-                      <PaymentHoldBadge expiresAtMs={paymentHoldExpiresAtMs} language={language} />
-                    ) : (
-                      <CountdownBadge
-                        bookingDate={booking.scheduling.bookingDate}
-                        bookingTime={booking.scheduling.bookingTime}
-                        language={language}
-                      />
-                    )
-                  )}
+                  {paymentHoldExpiresAtMs ? (
+                    <PaymentHoldBadge expiresAtMs={paymentHoldExpiresAtMs} language={language} />
+                  ) : canShowAppointmentCountdown ? (
+                    <CountdownBadge
+                      bookingDate={booking.scheduling.bookingDate}
+                      bookingTime={booking.scheduling.bookingTime}
+                      language={language}
+                    />
+                  ) : null}
                 </div>
               </CardHeader>
               <CardContent>
