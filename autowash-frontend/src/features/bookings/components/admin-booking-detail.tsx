@@ -337,6 +337,27 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
             </CardContent>
           </Card>
 
+          {/* Staff Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{translate(language, "Nhân viên phụ trách", "Assigned Staff")}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {assignedStaffList(booking.assignedStaff, booking.staffName).length > 0 ? (
+                assignedStaffList(booking.assignedStaff, booking.staffName).map((staff, index) => (
+                  <div key={`${staff.staffName}-${index}`} className="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-black text-blue-700">
+                      {index + 1}
+                    </span>
+                    <span className="min-w-0 truncate text-sm font-semibold text-slate-700">{staff.staffName}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">{translate(language, "Chưa phân công", "Not assigned")}</p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Payment Info */}
           <Card>
             <CardHeader>
@@ -390,4 +411,16 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
       </div>
     </div>
   );
+}
+
+function assignedStaffList(
+  assignedStaff: Array<{ staffName: string; sortOrder: number }> | undefined,
+  fallback?: string | null,
+) {
+  const staff = (assignedStaff ?? [])
+    .slice()
+    .sort((left, right) => left.sortOrder - right.sortOrder)
+    .map((item) => ({ staffName: item.staffName }))
+    .filter((item) => Boolean(item.staffName));
+  return staff.length > 0 || !fallback ? staff : [{ staffName: fallback }];
 }

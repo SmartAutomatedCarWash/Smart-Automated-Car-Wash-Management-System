@@ -520,7 +520,7 @@ function periodOptions(language: Language): Array<{ value: PeriodMode; label: st
 function buildStaffOptions(sessions: OperationsQueueSession[]) {
   const map = new Map<string, string>();
   sessions.forEach((session) => {
-    if (session.assignedStaffId && session.assignedStaffName) map.set(session.assignedStaffId, session.assignedStaffName);
+    getAssignedStaff(session).forEach((staff) => map.set(staff.staffId, staff.staffName));
   });
   return Array.from(map.entries()).sort((left, right) => left[1].localeCompare(right[1]));
 }
@@ -534,7 +534,7 @@ function matchesFilters(session: OperationsQueueSession, fromDate: string, toDat
   const date = session.bookingDate.slice(0, 10);
   const matchesDate = date >= fromDate && date <= toDate;
   const matchesBay = bay === "ALL" || getBayForSession(session) === bay;
-  const matchesStaff = staff === "ALL" || session.assignedStaffId === staff;
+  const matchesStaff = staff === "ALL" || sessionHasStaff(session, staff);
   const matchesService = service === "ALL" || getServiceName(session) === service;
   return matchesDate && matchesBay && matchesStaff && matchesService;
 }
@@ -549,16 +549,22 @@ function buildTrendRows(sessions: OperationsQueueSession[], mode: PeriodMode, fr
 }
 
 function buildStaffRows(sessions: OperationsQueueSession[], target: number): StaffRow[] {
-  const staffIds = Array.from(new Set(sessions.map((session) => session.assignedStaffId ?? "unassigned")));
+  const staffIds = Array.from(new Set(sessions.flatMap((session) => {
+    const assignedStaff = getAssignedStaff(session);
+    return assignedStaff.length > 0 ? assignedStaff.map((staff) => staff.staffId) : ["unassigned"];
+  })));
   return staffIds
     .map((staffId) => {
-      const staffSessions = sessions.filter((session) => (session.assignedStaffId ?? "unassigned") === staffId);
+      const staffSessions = sessions.filter((session) => {
+        const assignedStaff = getAssignedStaff(session);
+        return staffId === "unassigned" ? assignedStaff.length === 0 : sessionHasStaff(session, staffId);
+      });
       const completed = staffSessions.filter((session) => session.status === "COMPLETED");
       const completedCount = completed.length;
       const progress = Math.min(100, Math.round((completedCount / Math.max(target, 1)) * 100));
       return {
         staffId,
-        staffName: staffSessions.find((session) => session.assignedStaffName)?.assignedStaffName ?? "Unassigned",
+        staffName: staffId === "unassigned" ? "Unassigned" : getAssignedStaff(staffSessions[0]!).find((staff) => staff.staffId === staffId)?.staffName ?? "Unassigned",
         completed: completedCount,
         target,
         progress,
@@ -647,7 +653,22 @@ function getServiceName(session: OperationsQueueSession) {
 }
 
 function getBayForSession(session: OperationsQueueSession) {
-  return session.assignedStaffName ? "Assigned" : "Open";
+  return getAssignedStaff(session).length > 0 ? "Assigned" : "Open";
+}
+
+function getAssignedStaff(session: OperationsQueueSession) {
+  const assignedStaff = (session.assignedStaff ?? [])
+    .filter((staff) => staff.staffId && staff.staffName)
+    .slice()
+    .sort((left, right) => left.sortOrder - right.sortOrder);
+  if (assignedStaff.length > 0 || !session.assignedStaffId || !session.assignedStaffName) {
+    return assignedStaff;
+  }
+  return [{ staffId: session.assignedStaffId, staffName: session.assignedStaffName, sortOrder: 1 }];
+}
+
+function sessionHasStaff(session: OperationsQueueSession, staffId: string) {
+  return getAssignedStaff(session).some((staff) => staff.staffId === staffId);
 }
 
 function sumRevenue(sessions: OperationsQueueSession[]) {

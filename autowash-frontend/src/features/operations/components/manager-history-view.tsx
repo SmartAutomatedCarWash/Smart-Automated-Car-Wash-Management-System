@@ -179,7 +179,7 @@ function HistoryRow({ item, onViewDetails }: { item: StaffSessionHistoryItem; on
       </div>
       <div className="min-w-0">
         <p className="truncate text-sm font-bold text-slate-900">{serviceName}</p>
-        <p className="truncate text-xs font-semibold text-slate-500">{item.assignedStaffName ?? "Unassigned"}</p>
+        <p className="truncate text-xs font-semibold text-slate-500">{formatHistoryStaff(item)}</p>
       </div>
       <div>
         <p className="text-sm font-black text-slate-900">{formatTime(item.startedAt)} {"->"} {formatTime(item.completedAt)}</p>
@@ -204,7 +204,7 @@ function SessionDetailDialog({ item }: { item: StaffSessionHistoryItem }) {
       <div>
         <p className="text-xs font-black uppercase tracking-wider text-cyan-700">Wash session history</p>
         <h2 className="mt-1 text-2xl font-black text-slate-950">#{item.vehiclePlate}</h2>
-        <p className="mt-1 text-sm font-semibold text-slate-500">{item.customerName} · {item.assignedStaffName ?? "Unassigned"}</p>
+        <p className="mt-1 text-sm font-semibold text-slate-500">{item.customerName} · {formatHistoryStaff(item)}</p>
       </div>
       <div className="mt-5 grid gap-2 sm:grid-cols-2">
         <Info label="Service" value={item.servicePackage ?? item.packageId ?? "Wash package"} />
@@ -266,6 +266,15 @@ function RatingCell({ review }: { review: StaffSessionHistoryItem["review"] }) {
       <span className="text-xs font-black text-slate-900">{review.rating.toFixed(1)}</span>
     </div>
   );
+}
+
+function formatHistoryStaff(item: StaffSessionHistoryItem) {
+  const names = (item.assignedStaff ?? [])
+    .slice()
+    .sort((left, right) => left.sortOrder - right.sortOrder)
+    .map((staff) => staff.staffName)
+    .filter(Boolean);
+  return names.length > 0 ? names.join(", ") : (item.assignedStaffName ?? "Unassigned");
 }
 
 function Info({ label, value }: { label: string; value: string }) {

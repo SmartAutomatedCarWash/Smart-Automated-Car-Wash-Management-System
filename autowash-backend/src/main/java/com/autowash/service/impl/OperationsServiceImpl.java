@@ -511,7 +511,7 @@ public class OperationsServiceImpl implements OperationsService {
         List<WashSession> completedSessions = washSessionRepository
                 .findByStatusOrderByCompletedAtDesc(WashSessionStatus.COMPLETED)
                 .stream()
-                .filter(session -> staffId == null || (session.getAssignedStaff() != null && staffId.equals(session.getAssignedStaff().getId())))
+                .filter(session -> staffId == null || hasAssignedStaff(session, staffId))
                 .toList();
         return buildSessionHistoryResponse(completedSessions, page, limit, period, date, servicePackage, rating, search, sort);
     }
@@ -620,6 +620,7 @@ public class OperationsServiceImpl implements OperationsService {
     private StaffSessionHistoryResponse.Item toHistoryItem(WashSession session, Review review) {
         Booking booking = session.getBooking();
         User assignedStaff = session.getAssignedStaff();
+        List<BookingDetailResponse.StaffAssignment> assignedStaffList = sessionStaffAssignments(session);
         UUID packageId = resolveBookingDetailRefId(booking, BookingItemType.PACKAGE);
 
         return StaffSessionHistoryResponse.Item.builder()
@@ -630,8 +631,9 @@ public class OperationsServiceImpl implements OperationsService {
                 .vehiclePlate(booking.getVehicle().getPlate())
                 .packageId(packageId == null ? null : packageId.toString())
                 .servicePackage(resolvePrimaryItemName(booking))
-                .assignedStaffId(assignedStaff == null ? null : assignedStaff.getId())
-                .assignedStaffName(assignedStaff == null ? null : assignedStaff.getFullName())
+                .assignedStaffId(primaryStaffId(assignedStaffList, assignedStaff))
+                .assignedStaffName(primaryStaffName(assignedStaffList, assignedStaff))
+                .assignedStaff(assignedStaffList)
                 .status(session.getStatus().name())
                 .bookingDate(booking.getBookingDate())
                 .bookingTime(booking.getBookingTime() == null ? null : booking.getBookingTime().toString().substring(0, 5))
@@ -712,6 +714,7 @@ public class OperationsServiceImpl implements OperationsService {
         return containsIgnoreCase(booking.getVehicle().getPlate(), needle)
                 || containsIgnoreCase(booking.getCustomer().getFullName(), needle)
                 || containsIgnoreCase(booking.getCustomer().getPhone(), needle)
+                || containsIgnoreCase(assignedStaffNames(sessionStaffAssignments(session)), needle)
                 || booking.getId().toString().toLowerCase().contains(needle)
                 || session.getId().toString().toLowerCase().contains(needle);
     }
@@ -964,6 +967,7 @@ public class OperationsServiceImpl implements OperationsService {
     private OperationsQueueResponse.WashSessionCard toQueueCard(WashSession session) {
         Booking booking = session.getBooking();
         User assignedStaff = session.getAssignedStaff();
+        List<BookingDetailResponse.StaffAssignment> assignedStaffList = sessionStaffAssignments(session);
         UUID packageId = resolveBookingDetailRefId(booking, BookingItemType.PACKAGE);
         return OperationsQueueResponse.WashSessionCard.builder()
                 .sessionId(session.getId())
@@ -973,8 +977,9 @@ public class OperationsServiceImpl implements OperationsService {
                 .vehiclePlate(booking.getVehicle().getPlate())
                 .packageId(packageId == null ? null : packageId.toString())
                 .servicePackage(resolvePrimaryItemName(booking))
-                .assignedStaffId(assignedStaff == null ? null : assignedStaff.getId())
-                .assignedStaffName(assignedStaff == null ? null : assignedStaff.getFullName())
+                .assignedStaffId(primaryStaffId(assignedStaffList, assignedStaff))
+                .assignedStaffName(primaryStaffName(assignedStaffList, assignedStaff))
+                .assignedStaff(assignedStaffList)
                 .status(session.getStatus().name())
                 .bookingDate(booking.getBookingDate())
                 .bookingTime(booking.getBookingTime())
@@ -993,6 +998,7 @@ public class OperationsServiceImpl implements OperationsService {
 
     private EligibleSessionBookingResponse toEligibleBooking(Booking booking) {
         User assignedStaff = booking.getAssignedStaff();
+        List<BookingDetailResponse.StaffAssignment> assignedStaffList = bookingStaffAssignments(booking);
         String customerTier = loyaltyService.getAccount(booking.getCustomer().getId()).tier();
         int customerPriorityScore = tierConfigService.getConfig(customerTier).priorityScore();
         UUID packageId = resolveBookingDetailRefId(booking, BookingItemType.PACKAGE);
@@ -1008,11 +1014,77 @@ public class OperationsServiceImpl implements OperationsService {
                 booking.getBookingTime(),
                 (booking.getPricing() != null ? booking.getPricing().getFinalAmount() : 0L),
                 resolveEstimatedDurationMinutes(booking),
-                assignedStaff == null ? null : assignedStaff.getId().toString(),
-                assignedStaff == null ? null : assignedStaff.getFullName(),
+                primaryStaffId(assignedStaffList, assignedStaff) == null ? null : primaryStaffId(assignedStaffList, assignedStaff).toString(),
+                primaryStaffName(assignedStaffList, assignedStaff),
+                assignedStaffList,
                 customerTier,
                 customerPriorityScore
         );
+    }
+
+    private List<BookingDetailResponse.StaffAssignment> bookingStaffAssignments(Booking booking) {
+        List<BookingDetailResponse.StaffAssignment> assignments = bookingStaffAssignmentRepository
+                .findByBookingOrderBySortOrderAsc(booking)
+                .stream()
+                .map(this::toStaffAssignment)
+                .toList();
+        if (!assignments.isEmpty() || booking.getAssignedStaff() == null) {
+            return assignments;
+        }
+        return List.of(toStaffAssignment(booking.getAssignedStaff(), 1));
+    }
+
+    private List<BookingDetailResponse.StaffAssignment> sessionStaffAssignments(WashSession session) {
+        List<BookingDetailResponse.StaffAssignment> assignments = washSessionStaffAssignmentRepository
+                .findBySessionOrderBySortOrderAsc(session)
+                .stream()
+                .map(this::toStaffAssignment)
+                .toList();
+        if (!assignments.isEmpty() || session.getAssignedStaff() == null) {
+            return assignments;
+        }
+        return List.of(toStaffAssignment(session.getAssignedStaff(), 1));
+    }
+
+    private BookingDetailResponse.StaffAssignment toStaffAssignment(BookingStaffAssignment assignment) {
+        return toStaffAssignment(assignment.getStaff(), assignment.getSortOrder());
+    }
+
+    private BookingDetailResponse.StaffAssignment toStaffAssignment(WashSessionStaffAssignment assignment) {
+        return toStaffAssignment(assignment.getStaff(), assignment.getSortOrder());
+    }
+
+    private BookingDetailResponse.StaffAssignment toStaffAssignment(User staff, int sortOrder) {
+        return new BookingDetailResponse.StaffAssignment(
+                staff.getId().toString(),
+                staff.getFullName(),
+                sortOrder
+        );
+    }
+
+    private UUID primaryStaffId(List<BookingDetailResponse.StaffAssignment> assignments, User fallback) {
+        if (!assignments.isEmpty()) {
+            return UUID.fromString(assignments.get(0).staffId());
+        }
+        return fallback == null ? null : fallback.getId();
+    }
+
+    private String primaryStaffName(List<BookingDetailResponse.StaffAssignment> assignments, User fallback) {
+        if (!assignments.isEmpty()) {
+            return assignments.get(0).staffName();
+        }
+        return fallback == null ? null : fallback.getFullName();
+    }
+
+    private String assignedStaffNames(List<BookingDetailResponse.StaffAssignment> assignments) {
+        return assignments.stream()
+                .map(BookingDetailResponse.StaffAssignment::staffName)
+                .collect(Collectors.joining(" "));
+    }
+
+    private boolean hasAssignedStaff(WashSession session, UUID staffId) {
+        return sessionStaffAssignments(session).stream()
+                .anyMatch(staff -> staffId.toString().equals(staff.staffId()));
     }
 
     private String resolvePrimaryItemName(Booking booking) {

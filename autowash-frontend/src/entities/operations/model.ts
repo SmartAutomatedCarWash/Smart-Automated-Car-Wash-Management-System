@@ -14,6 +14,12 @@ export type OperationsQueueSummary = {
   completed: number;
 };
 
+export type OperationStaffAssignment = {
+  staffId: string;
+  staffName: string;
+  sortOrder: number;
+};
+
 export type OperationsQueueSession = {
   sessionId: string;
   bookingId: string;
@@ -24,6 +30,7 @@ export type OperationsQueueSession = {
   servicePackage?: string | null;
   assignedStaffId?: string | null;
   assignedStaffName?: string | null;
+  assignedStaff?: OperationStaffAssignment[];
   status: WashSessionStatus;
   bookingDate: string;
   bookingTime: string;
@@ -81,6 +88,7 @@ export type EligibleSessionBooking = {
   estimatedDurationMinutes: number;
   assignedStaffId: string | null;
   assignedStaffName: string | null;
+  assignedStaff?: OperationStaffAssignment[];
   customerTier: string | null;
   customerPriorityScore: number;
 };
@@ -89,6 +97,9 @@ export type CreateWashSessionResponse = {
   sessionId: string;
   status: WashSessionStatus;
   bookingId: string;
+  assignedStaffId?: string | null;
+  assignedStaffName?: string | null;
+  assignedStaff?: OperationStaffAssignment[];
   createdAt: string;
 };
 
@@ -216,6 +227,7 @@ export type StaffSessionHistoryItem = {
   servicePackage?: string | null;
   assignedStaffId?: string | null;
   assignedStaffName?: string | null;
+  assignedStaff?: OperationStaffAssignment[];
   status: string;
   bookingDate: string;
   bookingTime: string;

@@ -106,11 +106,20 @@ function DelayedRow({ session }: { session: OperationsQueueSession }) {
     <div className="flex items-center justify-between gap-4 bg-rose-50/60 px-5 py-4">
       <div className="min-w-0">
         <p className="font-bold text-slate-900">{session.vehiclePlate}</p>
-        <p className="truncate text-xs text-slate-500">{session.servicePackage ?? "Wash package"} · {session.assignedStaffName ?? "Unassigned"}</p>
+        <p className="truncate text-xs text-slate-500">{session.servicePackage ?? "Wash package"} · {formatSessionStaff(session)}</p>
       </div>
       <span className="shrink-0 rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-bold text-rose-700">At risk</span>
     </div>
   );
+}
+
+function formatSessionStaff(session: OperationsQueueSession) {
+  const names = (session.assignedStaff ?? [])
+    .slice()
+    .sort((left, right) => left.sortOrder - right.sortOrder)
+    .map((staff) => staff.staffName)
+    .filter(Boolean);
+  return names.length > 0 ? names.join(", ") : (session.assignedStaffName ?? "Unassigned");
 }
 
 function MetricCard({ icon: Icon, label, value, tone }: { icon: typeof Users; label: string; value: number; tone: "amber" | "cyan" | "emerald" | "slate" }) {

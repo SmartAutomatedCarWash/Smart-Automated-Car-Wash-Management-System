@@ -240,7 +240,9 @@ export function AdminBookingsPageContent() {
                       <div className="text-xs text-muted-foreground">{row.bookingTime}</div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-xs font-medium text-slate-500">{row.staffName || translate(language, "Chưa phân công", "Not assigned")}</div>
+                      <div className="max-w-[180px] truncate text-xs font-medium text-slate-500">
+                        {formatAssignedStaff(row.assignedStaff, row.staffName) || translate(language, "Chưa phân công", "Not assigned")}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -290,6 +292,18 @@ export function AdminBookingsPageContent() {
       </div>
     </div>
   );
+}
+
+function formatAssignedStaff(
+  assignedStaff: Array<{ staffName: string; sortOrder: number }> | undefined,
+  fallback?: string | null,
+) {
+  const names = (assignedStaff ?? [])
+    .slice()
+    .sort((left, right) => left.sortOrder - right.sortOrder)
+    .map((staff) => staff.staffName)
+    .filter(Boolean);
+  return names.length > 0 ? names.join(", ") : (fallback ?? "");
 }
 
 function formatDate(dateString: string, language: "vi" | "en") {
