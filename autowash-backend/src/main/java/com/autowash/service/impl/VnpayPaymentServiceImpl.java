@@ -106,7 +106,9 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         ensurePaymentHoldOpen(booking, payment);
 
         long amount = booking.getPricing().getFinalAmount();
-        String txnRef = booking.getId().toString();
+        LocalDateTime createDate = LocalDateTime.ofInstant(Instant.now(), VNPAY_ZONE);
+        String createDateText = createDate.format(VNPAY_DATE_FORMAT);
+        String txnRef = newPaymentTxnRef(booking.getId(), createDateText);
 
         Map<String, String> params = new TreeMap<>();
         params.put("vnp_Version", "2.1.0");
@@ -120,10 +122,9 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         params.put("vnp_Locale", "vn");
         params.put("vnp_ReturnUrl", returnUrl);
         params.put("vnp_IpAddr", normalizeIp(ipAddress));
-        LocalDateTime createDate = LocalDateTime.ofInstant(Instant.now(), VNPAY_ZONE);
-        params.put("vnp_CreateDate", createDate.format(VNPAY_DATE_FORMAT));
+        params.put("vnp_CreateDate", createDateText);
         params.put("vnp_ExpireDate", createDate.plusMinutes(15).format(VNPAY_DATE_FORMAT));
-        payment.prepareOnlinePayment(amount, pendingTransactionRef(txnRef, params.get("vnp_CreateDate")));
+        payment.prepareOnlinePayment(amount, pendingTransactionRef(txnRef, createDateText));
 
         String query = buildQuery(params);
         String secureHash = hmacSha512(buildQuery(params), hashSecret);
@@ -162,11 +163,12 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         String requestId = newRequestId();
         String createDate = nowVnpay();
         String txnDate = resolveVnpayCreateDate(payment);
+        String txnRef = resolveVnpayTxnRef(booking, payment);
         request.put("vnp_RequestId", requestId);
         request.put("vnp_Version", "2.1.0");
         request.put("vnp_Command", "querydr");
         request.put("vnp_TmnCode", tmnCode);
-        request.put("vnp_TxnRef", booking.getId().toString());
+        request.put("vnp_TxnRef", txnRef);
         request.put("vnp_OrderInfo", "Query booking " + booking.getId());
         request.put("vnp_TransactionDate", txnDate);
         request.put("vnp_CreateDate", createDate);
@@ -176,7 +178,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
                 "2.1.0",
                 "querydr",
                 tmnCode,
-                booking.getId().toString(),
+                txnRef,
                 txnDate,
                 createDate,
                 normalizeIp(ipAddress),
@@ -274,11 +276,18 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
             return failure(false, params, "Invalid secure hash");
         }
 
+        UUID bookingId;
+        try {
+            bookingId = parseTxnRef(params.get("vnp_TxnRef"));
+        } catch (ApiException exception) {
+            return failure(true, params, "Invalid VNPay transaction reference");
+        }
+
         boolean success = isSuccess(params);
         return new VnpayPaymentResultResponse(
                 true,
                 success,
-                params.get("vnp_TxnRef"),
+                bookingId.toString(),
                 params.get("vnp_ResponseCode"),
                 params.get("vnp_TransactionStatus"),
                 resolveTransactionRef(params),
@@ -441,8 +450,16 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
     }
 
     private UUID parseTxnRef(String txnRef) {
+        String raw = txnRef == null ? "" : txnRef.trim();
+        if (raw.length() >= 36) {
+            String bookingIdPart = raw.substring(0, 36);
+            try {
+                return UUID.fromString(bookingIdPart);
+            } catch (RuntimeException ignored) {
+            }
+        }
         try {
-            return UUID.fromString(txnRef);
+            return UUID.fromString(raw);
         } catch (RuntimeException exception) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid VNPay transaction reference", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
@@ -533,6 +550,21 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
 
     private String pendingTransactionRef(String txnRef, String createDate) {
         return "VNPAY-PENDING:" + txnRef + ":" + createDate;
+    }
+
+    private String newPaymentTxnRef(UUID bookingId, String createDate) {
+        return bookingId + "-" + createDate + "-" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    private String resolveVnpayTxnRef(Booking booking, Payment payment) {
+        String ref = payment.getTransactionRef();
+        if (ref != null && ref.startsWith("VNPAY-PENDING:")) {
+            String[] parts = ref.split(":");
+            if (parts.length == 3 && !parts[1].isBlank()) {
+                return parts[1];
+            }
+        }
+        return booking.getId().toString();
     }
 
     private String resolveVnpayCreateDate(Payment payment) {
