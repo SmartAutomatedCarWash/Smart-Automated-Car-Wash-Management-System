@@ -17,4 +17,8 @@ public interface LoyaltyAccountRepository extends JpaRepository<LoyaltyAccount, 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select account from LoyaltyAccount account where account.customer.id = :customerId")
     Optional<LoyaltyAccount> findLockedByCustomerId(@Param("customerId") UUID customerId);
+
+    @Override
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"customer"})
+    java.util.List<LoyaltyAccount> findAll();
 }
