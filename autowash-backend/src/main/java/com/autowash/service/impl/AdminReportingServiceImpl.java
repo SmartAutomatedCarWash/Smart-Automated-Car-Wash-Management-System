@@ -562,7 +562,12 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                         payment.method(),
                         payment.status(),
                         payment.transactionRef(),
-                        payment.paidAt()
+                        payment.paidAt(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
                 ),
                 booking.getStatus().name(),
                 booking.getConfirmationStatus().name(),

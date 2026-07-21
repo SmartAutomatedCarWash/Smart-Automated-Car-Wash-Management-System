@@ -238,8 +238,8 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
   ];
   const paymentMethods = [
     {
-      label: "Chuyển khoản ngân hàng",
-      note: "Xác nhận tự động sau khi nối cổng thanh toán",
+      label: "SePay",
+      note: "Xác nhận tự động bằng mã thanh toán AU",
     },
     {
       label: "Ví điện tử",

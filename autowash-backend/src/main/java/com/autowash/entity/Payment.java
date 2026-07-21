@@ -77,6 +77,14 @@ public class Payment {
         this.paidAt = null;
     }
 
+    public void prepareSepayPayment(long amount, String transferCode) {
+        this.method = PaymentMethod.BANK_TRANSFER;
+        this.status = PaymentStatus.PENDING_PAYMENT;
+        this.amount = amount;
+        this.transactionRef = transferCode;
+        this.paidAt = null;
+    }
+
     public void markFailed() {
         if (this.status == PaymentStatus.PAID) {
             return;
