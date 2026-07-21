@@ -11,6 +11,7 @@ import com.autowash.entity.WashSession;
 import com.autowash.entity.enums.BookingItemType;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -18,6 +19,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class BookingResponseAssembler {
+
+    private static final Duration PENDING_ONLINE_PAYMENT_HOLD_DURATION = Duration.ofMinutes(15);
 
     public BookingListItemResponse toListItem(Booking booking, WashSession washSession) {
         return toListItem(booking, washSession, booking.getDetails());
@@ -85,7 +88,7 @@ public class BookingResponseAssembler {
                 ),
                 booking.getStatus().name(),
                 booking.getConfirmationStatus().name(),
-                booking.getConfirmationExpiresAt(),
+                resolveConfirmationExpiresAt(booking, payment),
                 washSession == null ? null : washSession.getId().toString(),
                 resolveAssignedStaffName(booking, washSession),
                 washSession == null ? null : washSession.getStatus().name(),
@@ -94,6 +97,15 @@ public class BookingResponseAssembler {
                 null,
                 statusHistory
         );
+    }
+
+    private Instant resolveConfirmationExpiresAt(Booking booking, PaymentInfo payment) {
+        if (booking.getStatus().name().equals("PENDING")
+                && payment.method() == PaymentMethod.E_WALLET
+                && payment.status() != PaymentStatus.PAID) {
+            return booking.getCreatedAt().plus(PENDING_ONLINE_PAYMENT_HOLD_DURATION);
+        }
+        return booking.getConfirmationExpiresAt();
     }
 
     private String resolveAssignedStaffName(Booking booking, WashSession washSession) {
