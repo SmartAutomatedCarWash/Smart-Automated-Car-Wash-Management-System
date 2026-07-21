@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { CountdownTimer } from "@/features/bookings/components/countdown-timer";
 import {
@@ -43,7 +44,7 @@ import { useSlotHold } from "@/features/bookings/hooks/use-slot-hold";
 import { useCustomerVehicles } from "@/features/vehicles/hooks/use-customer-vehicles";
 import { getBookingDraftSnapshot, useBookingStore } from "@/features/bookings/store/booking.store";
 import { clearCustomerCart } from "@/features/cart/store/cart.store";
-import type { PaymentMethod } from "@/entities/bookings";
+import type { BookingStaffOption, PaymentMethod } from "@/entities/bookings";
 
 // ─── Payment method config ───────────────────────────────────────────────────
 
@@ -74,6 +75,14 @@ const PAYMENT_OPTIONS: {
     badge: "Online",
   },
 ];
+
+function getStaffAvailabilityLabel(staff?: BookingStaffOption | null) {
+  if (!staff) return "Select staff";
+  if (staff.available === false) {
+    return staff.busyUntil ? `Busy until ${staff.busyUntil}` : "Busy";
+  }
+  return "Available";
+}
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export function BookingConfirmPage() {
@@ -460,41 +469,78 @@ export function BookingConfirmPage() {
                 </div>
               ) : (
                 <div>
-                  <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))]">
                     {[0, 1, 2].map((index) => {
                       const currentStaffId = selectedStaffIds[index] ?? "";
+                      const selectedStaffOption = staffOptions.find((staff) => staff.staffId === currentStaffId);
+                      const selectedAvailabilityLabel = getStaffAvailabilityLabel(selectedStaffOption);
                       return (
-                        <label key={index} className="rounded-2xl border border-border bg-card p-4">
+                        <div key={index} className="rounded-2xl border border-border bg-card p-4">
                           <span className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                             <UserCheck className="h-3.5 w-3.5" />
                             Staff {index + 1}
                           </span>
-                          <select
-                            value={currentStaffId}
-                            onChange={(event) => {
+                          <Select
+                            value={currentStaffId || undefined}
+                            onValueChange={(staffId) => {
                               const nextStaffIds = [...selectedStaffIds];
-                              nextStaffIds[index] = event.target.value;
+                              nextStaffIds[index] = staffId;
                               const uniqueStaffIds = nextStaffIds.filter((staffId, staffIndex) => staffId && nextStaffIds.indexOf(staffId) === staffIndex);
                               updateDraft({ staffId: uniqueStaffIds[0] ?? "", staffIds: uniqueStaffIds });
                             }}
-                            className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm font-semibold text-foreground outline-none transition focus:border-primary"
                           >
-                            <option value="">Select staff</option>
-                            {staffOptions.map((staff) => {
-                              const disabled = staff.available === false || (selectedStaffIds.includes(staff.staffId) && staff.staffId !== currentStaffId);
-                              const statusLabel = staff.available === false
-                                ? staff.busyUntil
-                                  ? `Busy until ${staff.busyUntil}`
-                                  : "Busy"
-                                : "Available";
-                              return (
-                                <option key={staff.staffId} value={staff.staffId} disabled={disabled}>
-                                  {staff.staffName} - {statusLabel}
-                                </option>
-                              );
-                            })}
-                          </select>
-                        </label>
+                            <SelectTrigger className="h-auto min-h-12 rounded-xl border-input bg-background px-3 py-2 text-left [&>span]:line-clamp-none">
+                              <SelectValue placeholder="Select staff">
+                                {selectedStaffOption ? (
+                                  <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 pr-2 leading-snug">
+                                    <span className="block max-w-full truncate text-sm font-semibold text-foreground">
+                                      {selectedStaffOption.staffName}
+                                    </span>
+                                    <span
+                                      className={`text-[11px] font-bold ${
+                                        selectedStaffOption.available === false
+                                          ? "text-amber-600 dark:text-amber-400"
+                                          : "text-emerald-700 dark:text-emerald-400"
+                                      }`}
+                                    >
+                                      {selectedAvailabilityLabel}
+                                    </span>
+                                  </span>
+                                ) : null}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent
+                              position="item-aligned"
+                              className="min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)]"
+                            >
+                              {staffOptions.map((staff) => {
+                                const disabled = staff.available === false || (selectedStaffIds.includes(staff.staffId) && staff.staffId !== currentStaffId);
+                                const statusLabel = getStaffAvailabilityLabel(staff);
+                                return (
+                                  <SelectItem
+                                    key={staff.staffId}
+                                    value={staff.staffId}
+                                    disabled={disabled}
+                                    className="py-2 pr-8 [&>span:last-child]:w-full"
+                                  >
+                                    <span className="flex min-w-0 items-center gap-3">
+                                      <span className="min-w-0 flex-1 truncate font-medium">{staff.staffName}</span>
+                                      <span
+                                        className={`shrink-0 text-[11px] font-bold ${
+                                          staff.available === false
+                                            ? "text-amber-600 dark:text-amber-400"
+                                            : "text-emerald-700 dark:text-emerald-400"
+                                        }`}
+                                      >
+                                        {statusLabel}
+                                      </span>
+                                    </span>
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       );
                     })}
                   </div>
