@@ -20,6 +20,7 @@ public class PendingOnlinePaymentCleanupJob {
     private static final Logger LOGGER = LoggerFactory.getLogger(PendingOnlinePaymentCleanupJob.class);
     private static final Duration PENDING_ONLINE_PAYMENT_HOLD_DURATION = Duration.ofMinutes(15);
     private static final List<PaymentStatus> EXPIRABLE_PAYMENT_STATUSES = List.of(
+            PaymentStatus.PENDING,
             PaymentStatus.PENDING_PAYMENT,
             PaymentStatus.FAILED,
             PaymentStatus.CANCELLED

@@ -504,6 +504,7 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public CancelBookingResponse cancelBooking(String bookingId, String reason) {
         Booking booking = findOwnedBooking(bookingId);
+        String cancelReason = sanitizeCancelReason(reason);
         if (!CANCELLABLE_BOOKING_STATUSES.contains(booking.getStatus())) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking cannot be cancelled", ErrorCode.RESOURCE_LOCKED);
         }
@@ -523,7 +524,7 @@ public class BookingServiceImpl implements BookingService {
             payment.markCancelled();
         }
         BookingStatus oldStatus = booking.getStatus();
-        booking.cancel(reason);
+        booking.cancel(cancelReason);
 
         long hoursUntilScheduled = timeUntilScheduled.toHours();
         
@@ -575,7 +576,7 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
-        recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), reason);
+        recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), cancelReason);
         return new CancelBookingResponse(
                 booking.getId().toString(),
                 booking.getStatus().name(),
@@ -585,6 +586,17 @@ public class BookingServiceImpl implements BookingService {
                 voucherRefundStatus,
                 refundMessage
         );
+    }
+
+    private String sanitizeCancelReason(String reason) {
+        if (reason == null) {
+            return null;
+        }
+        String trimmed = reason.trim();
+        if (trimmed.isBlank()) {
+            return null;
+        }
+        return trimmed.length() <= 500 ? trimmed : trimmed.substring(0, 500);
     }
 
     @Transactional

@@ -34,6 +34,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.web.client.RestClient;
 
 @Service
@@ -190,7 +191,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public VnpayPaymentResultResponse refund(UUID bookingId, Long amount, String createdBy, String ipAddress) {
         ensureApiConfigured();
         Booking booking = bookingRepository.findById(bookingId)
