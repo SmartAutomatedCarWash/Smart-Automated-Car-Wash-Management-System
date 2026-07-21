@@ -12,6 +12,7 @@ export type CartItem = {
   itemId: string; // packageId, addonId, or comboId
   name: string;
   price: number;
+  quantity: number;
   durationMinutes?: number;
   description?: string;
   categoryName?: string;
@@ -22,7 +23,8 @@ type CartState = {
 };
 
 type CartActions = {
-  addItem: (item: Omit<CartItem, "id">) => void;
+  addItem: (item: Omit<CartItem, "id" | "quantity"> & { quantity?: number }) => void;
+  updateQuantity: (id: string, delta: number) => void;
   removeItem: (id: string) => void;
   removeByItemId: (itemId: string, type: CartItemType) => void;
   clearCart: () => void;
@@ -37,32 +39,40 @@ const cartStore = createStore<CartStore>()(
       items: [],
       addItem: (itemData) => {
         const currentItems = get().items;
-        
-        // If type is PACKAGE or COMBO, client can only choose 1 primary wash package/combo at a time.
-        // Replace existing package/combo if adding new one
-        if (itemData.type === "PACKAGE" || itemData.type === "COMBO") {
-          const filtered = currentItems.filter(
-            (i) => i.type !== "PACKAGE" && i.type !== "COMBO"
-          );
-          const newItem: CartItem = {
-            ...itemData,
-            id: `${itemData.type}-${itemData.itemId}`,
-          };
-          set({ items: [...filtered, newItem] });
-          return;
-        }
+        const targetId = `${itemData.type}-${itemData.itemId}`;
+        const existingIndex = currentItems.findIndex((i) => i.id === targetId);
 
-        // For ADDON, prevent duplicates
-        const exists = currentItems.some(
-          (i) => i.itemId === itemData.itemId && i.type === itemData.type
-        );
-        if (!exists) {
+        const addQty = itemData.quantity && itemData.quantity > 0 ? itemData.quantity : 1;
+
+        if (existingIndex > -1) {
+          const updatedItems = [...currentItems];
+          updatedItems[existingIndex] = {
+            ...updatedItems[existingIndex],
+            quantity: updatedItems[existingIndex].quantity + addQty,
+          };
+          set({ items: updatedItems });
+        } else {
           const newItem: CartItem = {
             ...itemData,
-            id: `${itemData.type}-${itemData.itemId}`,
+            id: targetId,
+            quantity: addQty,
           };
           set({ items: [...currentItems, newItem] });
         }
+      },
+      updateQuantity: (id, delta) => {
+        const currentItems = get().items;
+        const updatedItems = currentItems
+          .map((item) => {
+            if (item.id === id) {
+              const newQty = item.quantity + delta;
+              return newQty > 0 ? { ...item, quantity: newQty } : null;
+            }
+            return item;
+          })
+          .filter((item): item is CartItem => item !== null);
+
+        set({ items: updatedItems });
       },
       removeItem: (id) =>
         set((state) => ({
@@ -89,8 +99,12 @@ export function useCartStore<T>(selector: (state: CartStore) => T) {
   return useStore(cartStore, selector);
 }
 
-export function addCartItem(item: Omit<CartItem, "id">) {
+export function addCartItem(item: Omit<CartItem, "id" | "quantity"> & { quantity?: number }) {
   cartStore.getState().addItem(item);
+}
+
+export function updateCartItemQuantity(id: string, delta: number) {
+  cartStore.getState().updateQuantity(id, delta);
 }
 
 export function removeCartItem(id: string) {
