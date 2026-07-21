@@ -60,6 +60,9 @@ public class Booking {
     @Column(name = "confirmation_email", length = 255)
     private String confirmationEmail;
 
+    @Column(name = "preferred_staff_ids", length = 500)
+    private String preferredStaffIds;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BookingStatus status;
@@ -162,6 +165,11 @@ public class Booking {
 
     public void assignStaff(User staff) {
         this.assignedStaff = staff;
+        this.updatedAt = Instant.now();
+    }
+
+    public void setPreferredStaffIds(String preferredStaffIds) {
+        this.preferredStaffIds = preferredStaffIds;
         this.updatedAt = Instant.now();
     }
 

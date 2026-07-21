@@ -116,6 +116,7 @@ export type CreateBookingRequest = {
   confirmationEmail?: string;
   paymentMethod: PaymentMethod;
   staffId?: string;
+  staffIds?: string[];
 };
 
 export type BookingStaffOptionsRequest = {
@@ -132,6 +133,8 @@ export type BookingStaffOption = {
   serviceName: string;
   recommended: boolean;
   reason: string;
+  available?: boolean;
+  availabilityStatus?: "AVAILABLE" | "BUSY" | string;
 };
 
 export type HoldSlotRequest = {
@@ -227,6 +230,13 @@ export type PayBookingResponse = {
   bookingStatus: BookingStatus;
   assignedStaffId: string | null;
   assignedStaffName: string | null;
+  assignedStaff?: BookingStaffAssignment[];
+};
+
+export type BookingStaffAssignment = {
+  staffId: string;
+  staffName: string;
+  sortOrder: number;
 };
 
 export type BookingListItem = {
@@ -299,6 +309,7 @@ export type BookingDetail = {
   confirmationExpiresAt: string | null;
   washSessionId: string | null;
   staffName: string | null;
+  assignedStaff?: BookingStaffAssignment[];
   washStatus: string | null;
   notes: string | null;
   createdAt: string;
@@ -398,6 +409,7 @@ export type BookingDraft = {
   confirmationEmail?: string;
   paymentMethod: PaymentMethod | null;
   staffId?: string;
+  staffIds?: string[];
 };
 
 export type BookingDraftErrors = Partial<Record<keyof BookingDraft, string>>;

@@ -17,6 +17,10 @@ public interface StaffAssignmentService {
 
     List<User> rankAvailableStaffForBooking(Booking booking, int limit);
 
+    List<User> rankActiveStaffForBooking(Booking booking);
+
+    List<User> pickStaffGroupForBooking(Booking booking, List<UUID> preferredStaffIds, int requiredCount);
+
     boolean isStaffAvailableForBooking(User staff, Booking booking);
 
     User requireActiveStaff(UUID staffId);

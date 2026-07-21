@@ -5,12 +5,16 @@ import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.BookingListItemResponse;
 import com.autowash.dto.BookingStatusHistoryItem;
 import com.autowash.entity.Booking;
+import com.autowash.entity.BookingStaffAssignment;
 import com.autowash.entity.BookingDetail;
 import com.autowash.entity.User;
 import com.autowash.entity.WashSession;
+import com.autowash.entity.WashSessionStaffAssignment;
 import com.autowash.entity.enums.BookingItemType;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
+import com.autowash.repository.BookingStaffAssignmentRepository;
+import com.autowash.repository.WashSessionStaffAssignmentRepository;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -21,6 +25,16 @@ import org.springframework.stereotype.Component;
 public class BookingResponseAssembler {
 
     private static final Duration PENDING_BOOKING_HOLD_DURATION = Duration.ofMinutes(15);
+    private final BookingStaffAssignmentRepository bookingStaffAssignmentRepository;
+    private final WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository;
+
+    public BookingResponseAssembler(
+            BookingStaffAssignmentRepository bookingStaffAssignmentRepository,
+            WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository
+    ) {
+        this.bookingStaffAssignmentRepository = bookingStaffAssignmentRepository;
+        this.washSessionStaffAssignmentRepository = washSessionStaffAssignmentRepository;
+    }
 
     public BookingListItemResponse toListItem(Booking booking, WashSession washSession) {
         return toListItem(booking, washSession, booking.getDetails());
@@ -92,6 +106,7 @@ public class BookingResponseAssembler {
                 resolveConfirmationExpiresAt(booking, payment),
                 washSession == null ? null : washSession.getId().toString(),
                 resolveAssignedStaffName(booking, washSession),
+                resolveAssignedStaff(booking, washSession),
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
                 booking.getCreatedAt(),
@@ -109,11 +124,62 @@ public class BookingResponseAssembler {
     }
 
     private String resolveAssignedStaffName(Booking booking, WashSession washSession) {
+        List<BookingDetailResponse.StaffAssignment> assignedStaff = resolveAssignedStaff(booking, washSession);
+        if (!assignedStaff.isEmpty()) {
+            return assignedStaff.get(0).staffName();
+        }
         if (washSession != null && washSession.getAssignedStaff() != null) {
             return washSession.getAssignedStaff().getFullName();
         }
-        User assignedStaff = booking.getAssignedStaff();
-        return assignedStaff == null ? null : assignedStaff.getFullName();
+        User leadStaff = booking.getAssignedStaff();
+        return leadStaff == null ? null : leadStaff.getFullName();
+    }
+
+    private List<BookingDetailResponse.StaffAssignment> resolveAssignedStaff(Booking booking, WashSession washSession) {
+        List<BookingDetailResponse.StaffAssignment> sessionAssignments = washSession == null
+                ? List.of()
+                : washSessionStaffAssignmentRepository.findBySessionOrderBySortOrderAsc(washSession)
+                .stream()
+                .map(this::toStaffAssignment)
+                .toList();
+        if (!sessionAssignments.isEmpty()) {
+            return sessionAssignments;
+        }
+
+        List<BookingDetailResponse.StaffAssignment> bookingAssignments = bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking)
+                .stream()
+                .map(this::toStaffAssignment)
+                .toList();
+        if (!bookingAssignments.isEmpty()) {
+            return bookingAssignments;
+        }
+
+        User assignedStaff = washSession != null && washSession.getAssignedStaff() != null
+                ? washSession.getAssignedStaff()
+                : booking.getAssignedStaff();
+        return assignedStaff == null
+                ? List.of()
+                : List.of(new BookingDetailResponse.StaffAssignment(
+                        assignedStaff.getId().toString(),
+                        assignedStaff.getFullName(),
+                        1
+                ));
+    }
+
+    private BookingDetailResponse.StaffAssignment toStaffAssignment(BookingStaffAssignment assignment) {
+        return new BookingDetailResponse.StaffAssignment(
+                assignment.getStaff().getId().toString(),
+                assignment.getStaff().getFullName(),
+                assignment.getSortOrder()
+        );
+    }
+
+    private BookingDetailResponse.StaffAssignment toStaffAssignment(WashSessionStaffAssignment assignment) {
+        return new BookingDetailResponse.StaffAssignment(
+                assignment.getStaff().getId().toString(),
+                assignment.getStaff().getFullName(),
+                assignment.getSortOrder()
+        );
     }
 
     private String resolvePackageName(Booking booking) {

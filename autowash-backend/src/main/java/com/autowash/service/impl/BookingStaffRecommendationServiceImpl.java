@@ -40,17 +40,19 @@ public class BookingStaffRecommendationServiceImpl implements BookingStaffRecomm
     @Transactional(readOnly = true)
     public List<BookingStaffOptionResponse> recommendStaffOptions(BookingStaffOptionsRequest request) {
         BookingDraft draft = buildDraftBooking(request);
-        List<User> staffOptions = staffAssignmentService.rankAvailableStaffForBooking(draft.booking(), 3);
+        List<User> recommendedStaff = staffAssignmentService.rankAvailableStaffForBooking(draft.booking(), 3);
 
-        return staffOptions.stream()
+        return staffAssignmentService.rankActiveStaffForBooking(draft.booking()).stream()
                 .map(staff -> new BookingStaffOptionResponse(
                         staff.getId().toString(),
                         staff.getFullName(),
                         draft.serviceName(),
-                        staffOptions.indexOf(staff) == 0,
-                        staffOptions.indexOf(staff) == 0
-                                ? "Best current workload match"
-                                : "Available for this service window"
+                        recommendedStaff.stream().anyMatch(recommended -> recommended.getId().equals(staff.getId())),
+                        staffAssignmentService.isStaffAvailableForBooking(staff, draft.booking())
+                                ? "Available for this service window"
+                                : "Busy during this service window",
+                        staffAssignmentService.isStaffAvailableForBooking(staff, draft.booking()),
+                        staffAssignmentService.isStaffAvailableForBooking(staff, draft.booking()) ? "AVAILABLE" : "BUSY"
                 ))
                 .toList();
     }

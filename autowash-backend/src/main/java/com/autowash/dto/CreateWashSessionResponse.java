@@ -1,6 +1,7 @@
 package com.autowash.dto;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import lombok.Builder;
 
@@ -11,6 +12,7 @@ public record CreateWashSessionResponse(
         String bookingId,
         UUID assignedStaffId,
         String assignedStaffName,
+        List<BookingDetailResponse.StaffAssignment> assignedStaff,
         Instant createdAt
 ) {
 }

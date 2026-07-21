@@ -8,6 +8,7 @@ import com.autowash.entity.SystemSettings;
 import com.autowash.repository.NotificationRepository;
 import com.autowash.repository.SystemSettingsRepository;
 import com.autowash.entity.BookingDetail;
+import com.autowash.entity.BookingStaffAssignment;
 import com.autowash.entity.enums.BookingItemType;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.shared.exception.ErrorCode;
@@ -49,6 +50,7 @@ import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.entity.enums.UserDiscountStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.BookingDetailRepository;
+import com.autowash.repository.BookingStaffAssignmentRepository;
 import com.autowash.repository.BookingStatusHistoryRepository;
 import com.autowash.repository.PaymentRepository;
 import com.autowash.repository.DiscountRepository;
@@ -74,6 +76,8 @@ import com.autowash.repository.VehicleRepository;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -116,6 +120,7 @@ public class BookingServiceImpl implements BookingService {
     private final CustomerComboService customerComboService;
     private final BookingDetailRepository bookingDetailRepository;
     private final PaymentRepository paymentRepository;
+    private final BookingStaffAssignmentRepository bookingStaffAssignmentRepository;
     private final BookingStatusHistoryRepository bookingStatusHistoryRepository;
     private final BookingEmailDeliveryService bookingEmailDeliveryService;
     private final DiscountRedemptionService discountRedemptionService;
@@ -139,6 +144,7 @@ public class BookingServiceImpl implements BookingService {
             CustomerComboService customerComboService,
             BookingDetailRepository bookingDetailRepository,
             PaymentRepository paymentRepository,
+            BookingStaffAssignmentRepository bookingStaffAssignmentRepository,
             BookingStatusHistoryRepository bookingStatusHistoryRepository,
             BookingEmailDeliveryService bookingEmailDeliveryService,
             DiscountRedemptionService discountRedemptionService,
@@ -161,6 +167,7 @@ public class BookingServiceImpl implements BookingService {
         this.customerComboService = customerComboService;
         this.bookingDetailRepository = bookingDetailRepository;
         this.paymentRepository = paymentRepository;
+        this.bookingStaffAssignmentRepository = bookingStaffAssignmentRepository;
         this.bookingStatusHistoryRepository = bookingStatusHistoryRepository;
         this.bookingEmailDeliveryService = bookingEmailDeliveryService;
         this.discountRedemptionService = discountRedemptionService;
@@ -345,7 +352,7 @@ public class BookingServiceImpl implements BookingService {
                 .build());
         }
 
-        booking.assignStaff(resolveAssignedStaff(request.staffId(), booking));
+        booking.setPreferredStaffIds(normalizePreferredStaffIds(request.staffIds(), request.staffId()));
 
         BookingRepository.save(booking);
 
@@ -631,6 +638,7 @@ public class BookingServiceImpl implements BookingService {
             if (booking.getStatus() == BookingStatus.PENDING) {
                 BookingStatus oldStatus = booking.getStatus();
                 booking.updateStatus(BookingStatus.CONFIRMED);
+                assignStaffGroupOnConfirmation(booking);
                 recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), "Payment verified");
                 
                 notificationRepository.save(Notification.builder()
@@ -683,6 +691,7 @@ public class BookingServiceImpl implements BookingService {
         ensurePendingBookingHoldOpen(booking);
         BookingStatus oldStatus = booking.getStatus();
         booking.updateStatus(BookingStatus.CONFIRMED);
+        assignStaffGroupOnConfirmation(booking);
         recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), "Booking confirmed manually");
         notificationRepository.save(Notification.builder()
                 .id(UUID.randomUUID())
@@ -711,6 +720,9 @@ public class BookingServiceImpl implements BookingService {
             ensurePendingBookingHoldOpen(booking);
         }
         booking.updateStatus(status);
+        if (status == BookingStatus.CONFIRMED) {
+            assignStaffGroupOnConfirmation(booking);
+        }
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), "Booking status updated by admin");
         return toDetailResponse(booking);
     }
@@ -775,6 +787,56 @@ public class BookingServiceImpl implements BookingService {
         if (existingBookings + activeHolds >= maxBookingsPerTimeSlot) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking slot is full", ErrorCode.BOOKING_SLOT_FULL);
         }
+    }
+
+    private String normalizePreferredStaffIds(List<String> staffIds, String legacyStaffId) {
+        List<String> rawIds = staffIds == null || staffIds.isEmpty() ? List.of(legacyStaffId) : staffIds;
+        List<String> normalized = new ArrayList<>();
+        Set<UUID> seen = new LinkedHashSet<>();
+        for (String rawId : rawIds) {
+            if (rawId == null || rawId.isBlank()) {
+                continue;
+            }
+            UUID staffId;
+            try {
+                staffId = UUID.fromString(rawId.trim());
+            } catch (IllegalArgumentException exception) {
+                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid staff id", ErrorCode.INVALID_INPUT);
+            }
+            if (seen.add(staffId)) {
+                normalized.add(staffId.toString());
+            }
+        }
+        return normalized.isEmpty() ? null : String.join(",", normalized);
+    }
+
+    private List<UUID> parsePreferredStaffIds(Booking booking) {
+        String preferredStaffIds = booking.getPreferredStaffIds();
+        if (preferredStaffIds == null || preferredStaffIds.isBlank()) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(preferredStaffIds.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .map(UUID::fromString)
+                .toList();
+    }
+
+    private void assignStaffGroupOnConfirmation(Booking booking) {
+        List<BookingStaffAssignment> existingAssignments = bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking);
+        if (!existingAssignments.isEmpty()) {
+            if (booking.getAssignedStaff() == null) {
+                booking.assignStaff(existingAssignments.get(0).getStaff());
+            }
+            return;
+        }
+
+        List<User> staffGroup = staffAssignmentService.pickStaffGroupForBooking(booking, parsePreferredStaffIds(booking), 3);
+        bookingStaffAssignmentRepository.deleteByBooking(booking);
+        for (int index = 0; index < staffGroup.size(); index++) {
+            bookingStaffAssignmentRepository.save(new BookingStaffAssignment(booking, staffGroup.get(index), index + 1));
+        }
+        booking.assignStaff(staffGroup.get(0));
     }
 
     private User resolveAssignedStaff(String staffId, Booking booking) {
@@ -908,6 +970,15 @@ public class BookingServiceImpl implements BookingService {
 
     private PayBookingResponse toPayBookingResponse(Booking booking, Payment payment) {
         User assignedStaff = booking.getAssignedStaff();
+        List<BookingDetailResponse.StaffAssignment> assignedStaffList = bookingStaffAssignmentRepository
+                .findByBookingOrderBySortOrderAsc(booking)
+                .stream()
+                .map(assignment -> new BookingDetailResponse.StaffAssignment(
+                        assignment.getStaff().getId().toString(),
+                        assignment.getStaff().getFullName(),
+                        assignment.getSortOrder()
+                ))
+                .toList();
         return new PayBookingResponse(
                 booking.getId().toString(),
                 payment.getId().toString(),
@@ -918,7 +989,8 @@ public class BookingServiceImpl implements BookingService {
                 payment.getPaidAt(),
                 booking.getStatus().name(),
                 assignedStaff == null ? null : assignedStaff.getId().toString(),
-                assignedStaff == null ? null : assignedStaff.getFullName()
+                assignedStaff == null ? null : assignedStaff.getFullName(),
+                assignedStaffList
         );
     }
 

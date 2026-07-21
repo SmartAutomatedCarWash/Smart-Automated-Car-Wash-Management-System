@@ -33,6 +33,9 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     long countByAssignedStaffAndStatusIn(User assignedStaff, Collection<BookingStatus> statuses);
 
+    @EntityGraph(attributePaths = {"details"})
+    List<Booking> findByAssignedStaffAndStatusIn(User assignedStaff, Collection<BookingStatus> statuses);
+
     long countByAssignedStaffAndStatus(User assignedStaff, BookingStatus status);
 
     @Query("select coalesce(sum(booking.pricing.finalAmount), 0) from Booking booking where booking.assignedStaff = :staff and booking.status = :status")

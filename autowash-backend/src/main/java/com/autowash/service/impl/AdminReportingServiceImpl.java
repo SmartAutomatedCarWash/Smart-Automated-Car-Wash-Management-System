@@ -556,6 +556,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 booking.getConfirmationExpiresAt(),
                 washSession == null ? null : washSession.getId().toString(),
                 null,
+                List.of(),
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
                 booking.getCreatedAt(),
