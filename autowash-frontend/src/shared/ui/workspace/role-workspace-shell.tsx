@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { TierBadge } from "@/shared/ui/customer/customer-experience";
+import { CartDrawer } from "@/features/cart/components/cart-drawer";
 import {
   ArrowRightFromLine,
   Bell,
@@ -499,6 +500,9 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <Moon className="h-4 w-4 text-muted-foreground" />
                 )}
               </button>
+
+              {/* Customer cart drawer */}
+              {isCustomer && <CartDrawer />}
 
               {/* Staff notification bell */}
               {isStaff && (

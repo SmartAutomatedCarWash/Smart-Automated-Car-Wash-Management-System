@@ -41,7 +41,8 @@ import {
 } from "@/features/bookings/hooks/use-bookings";
 import { useSlotHold } from "@/features/bookings/hooks/use-slot-hold";
 import { useCustomerVehicles } from "@/features/vehicles/hooks/use-customer-vehicles";
-import { useBookingStore } from "@/features/bookings/store/booking.store";
+import { useBookingStore, resetBookingDraft } from "@/features/bookings/store/booking.store";
+import { clearCustomerCart } from "@/features/cart/store/cart.store";
 import type { PaymentMethod } from "@/entities/bookings";
 
 // ─── Payment method config ───────────────────────────────────────────────────
@@ -277,6 +278,7 @@ export function BookingConfirmPage() {
       }
 
       resetDraft();
+      clearCustomerCart();
       toast.success(
         booking.paymentMethod === "CASH_AT_COUNTER"
           ? "Booking created. Waiting for manager confirmation."
