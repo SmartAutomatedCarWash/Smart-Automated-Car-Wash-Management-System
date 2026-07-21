@@ -459,7 +459,7 @@ export function BookingConfirmPage() {
                   Fewer than 3 staff are available for this service window. Please choose another time.
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div>
                   <div className="grid gap-3 sm:grid-cols-3">
                     {[0, 1, 2].map((index) => {
                       const currentStaffId = selectedStaffIds[index] ?? "";
@@ -482,36 +482,19 @@ export function BookingConfirmPage() {
                             <option value="">Select staff</option>
                             {staffOptions.map((staff) => {
                               const disabled = staff.available === false || (selectedStaffIds.includes(staff.staffId) && staff.staffId !== currentStaffId);
+                              const statusLabel = staff.available === false
+                                ? staff.busyUntil
+                                  ? `Busy until ${staff.busyUntil}`
+                                  : "Busy"
+                                : "Available";
                               return (
                                 <option key={staff.staffId} value={staff.staffId} disabled={disabled}>
-                                  {staff.staffName} - {staff.available === false ? "Busy" : "Available"}
+                                  {staff.staffName} - {statusLabel}
                                 </option>
                               );
                             })}
                           </select>
                         </label>
-                      );
-                    })}
-                  </div>
-
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {staffOptions.map((staff) => {
-                      const active = selectedStaffIds.includes(staff.staffId);
-                      const available = staff.available !== false;
-                      return (
-                        <div
-                          key={staff.staffId}
-                          className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-xs ${
-                            active
-                              ? "border-primary bg-primary/5"
-                              : available
-                                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                                : "border-slate-200 bg-slate-50 text-slate-500"
-                          }`}
-                        >
-                          <span className="truncate font-semibold">{staff.staffName}</span>
-                          <span className="shrink-0 font-bold">{available ? "Available" : "Busy"}</span>
-                        </div>
                       );
                     })}
                   </div>

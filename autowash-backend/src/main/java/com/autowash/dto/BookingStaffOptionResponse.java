@@ -7,6 +7,7 @@ public record BookingStaffOptionResponse(
         boolean recommended,
         String reason,
         boolean available,
-        String availabilityStatus
+        String availabilityStatus,
+        String busyUntil
 ) {
 }

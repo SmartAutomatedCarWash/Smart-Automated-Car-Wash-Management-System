@@ -135,6 +135,7 @@ export type BookingStaffOption = {
   reason: string;
   available?: boolean;
   availabilityStatus?: "AVAILABLE" | "BUSY" | string;
+  busyUntil?: string | null;
 };
 
 export type HoldSlotRequest = {
