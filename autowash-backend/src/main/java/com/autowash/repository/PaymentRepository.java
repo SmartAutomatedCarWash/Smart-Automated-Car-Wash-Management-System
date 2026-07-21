@@ -9,4 +9,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     Optional<Payment> findByBooking(Booking booking);
     Optional<Payment> findByBookingId(UUID bookingId);
+    Optional<Payment> findFirstByBookingOrderByCreatedAtDesc(Booking booking);
+    Optional<Payment> findFirstByBookingIdOrderByCreatedAtDesc(UUID bookingId);
 }
