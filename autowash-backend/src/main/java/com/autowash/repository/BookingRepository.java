@@ -22,6 +22,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
+    @Override
+    @EntityGraph(attributePaths = {"customer", "pricing", "details"})
+    List<Booking> findAll();
+
     @Query("SELECT bd.refId FROM BookingDetail bd JOIN bd.booking b WHERE bd.itemType = 'PACKAGE' AND b.status IN ('COMPLETED', 'CONFIRMED') GROUP BY bd.refId ORDER BY COUNT(bd.id) DESC LIMIT 1")
     Optional<UUID> findTopPackageId();
 
