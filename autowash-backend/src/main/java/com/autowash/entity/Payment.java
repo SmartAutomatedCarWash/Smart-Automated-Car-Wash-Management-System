@@ -64,7 +64,7 @@ public class Payment {
 
     public void prepareOnlinePayment(long amount, String transactionRef) {
         this.method = PaymentMethod.E_WALLET;
-        this.status = PaymentStatus.PENDING;
+        this.status = PaymentStatus.PENDING_PAYMENT;
         this.amount = amount;
         this.transactionRef = transactionRef;
         this.paidAt = null;
