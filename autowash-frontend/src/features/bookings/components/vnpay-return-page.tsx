@@ -9,10 +9,13 @@ import { queryVnpayTransaction, verifyVnpayReturn } from "@/features/bookings/li
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
 import { cn } from "@/shared/lib/utils";
+import { translate, useLanguageStore, type Language } from "@/shared/store/language.store";
+import type { VnpayPaymentResultResponse } from "@/entities/bookings";
 
 export function VnpayReturnPage() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const { language } = useLanguageStore();
   const params = useMemo(() => Object.fromEntries(searchParams.entries()), [searchParams]);
   const hasParams = Object.keys(params).length > 0;
 
@@ -41,30 +44,43 @@ export function VnpayReturnPage() {
   });
   const syncResult = syncQuery.data;
   const isSynced = Boolean(syncResult?.success);
+  const hasSyncFailure = Boolean(syncResult && !syncResult.success);
   const isInvalidSignature = Boolean(result && !result.validSignature);
+  const failureMessage = buildVnpayFailureMessage(syncResult ?? result, params, language);
   const title = !hasParams
-    ? "Missing VNPay result"
+    ? translate(language, "Thiếu kết quả VNPay", "Missing VNPay result")
     : resultQuery.isPending || syncQuery.isPending
-      ? "Checking payment"
+      ? translate(language, "Đang kiểm tra thanh toán", "Checking payment")
       : isSuccess && isSynced
-        ? "Payment successful"
-        : isSuccess
-          ? "Payment received"
+        ? translate(language, "Thanh toán thành công", "Payment successful")
+        : hasSyncFailure
+          ? translate(language, "Thanh toán chưa được xác nhận", "Payment not confirmed")
+          : isSuccess
+            ? translate(language, "Đã nhận kết quả thanh toán", "Payment received")
         : isInvalidSignature
-          ? "Invalid payment signature"
-          : "Payment not completed";
+          ? translate(language, "Chữ ký thanh toán không hợp lệ", "Invalid payment signature")
+          : translate(language, "Thanh toán không hoàn tất", "Payment not completed");
   const description = !hasParams
-    ? "No payment information was returned."
+    ? translate(language, "VNPay không trả về thông tin thanh toán.", "No payment information was returned.")
     : resultQuery.isPending || syncQuery.isPending
-      ? "Please wait while we verify and sync the payment response."
+      ? translate(language, "Vui lòng chờ trong khi hệ thống xác minh và đồng bộ kết quả.", "Please wait while we verify and sync the payment response.")
       : isSuccess && isSynced
-        ? "Payment was verified and the booking has been confirmed."
-        : isSuccess
-          ? "VNPay returned a successful payment, but local sync could not be completed. Open the booking detail and use Query VNPay if needed."
+        ? translate(language, "Thanh toán đã được xác minh và lịch đặt đã được xác nhận.", "Payment was verified and the booking has been confirmed.")
+        : hasSyncFailure
+          ? failureMessage
+          : isSuccess
+            ? translate(language, "VNPay trả kết quả thanh toán thành công, nhưng hệ thống chưa đồng bộ xong. Mở chi tiết lịch đặt và dùng Query VNPay nếu cần.", "VNPay returned a successful payment, but local sync could not be completed. Open the booking detail and use Query VNPay if needed.")
         : isInvalidSignature
-          ? "The returned data could not be verified."
-          : "The transaction was cancelled or failed.";
-  const Icon = resultQuery.isPending || syncQuery.isPending ? Loader2 : isSuccess ? CheckCircle2 : isInvalidSignature ? ShieldAlert : XCircle;
+          ? translate(language, "Dữ liệu trả về không thể xác minh.", "The returned data could not be verified.")
+          : failureMessage;
+  const Icon =
+    resultQuery.isPending || syncQuery.isPending
+      ? Loader2
+      : isInvalidSignature
+        ? ShieldAlert
+        : isSuccess && !hasSyncFailure
+          ? CheckCircle2
+          : XCircle;
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-950">
@@ -74,7 +90,7 @@ export function VnpayReturnPage() {
             <div
               className={cn(
                 "mb-5 flex h-12 w-12 items-center justify-center rounded-full",
-                isSuccess
+                isSuccess && !hasSyncFailure
                   ? "bg-emerald-100 text-emerald-700"
                     : resultQuery.isPending || syncQuery.isPending
                     ? "bg-cyan-100 text-cyan-700"
@@ -88,16 +104,24 @@ export function VnpayReturnPage() {
             <p className="mt-2 text-sm text-slate-600">{description}</p>
 
             <div className="mt-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4 text-sm">
-              <ResultRow label="Booking" value={result?.bookingId ?? params.vnp_TxnRef ?? "-"} />
-              <ResultRow label="Response code" value={result?.responseCode ?? params.vnp_ResponseCode ?? "-"} />
+              <ResultRow label={translate(language, "Lịch đặt", "Booking")} value={result?.bookingId ?? params.vnp_TxnRef ?? "-"} />
+              <ResultRow label={translate(language, "Mã phản hồi", "Response code")} value={result?.responseCode ?? params.vnp_ResponseCode ?? "-"} />
               <ResultRow
-                label="Transaction status"
+                label={translate(language, "Trạng thái giao dịch", "Transaction status")}
                 value={result?.transactionStatus ?? params.vnp_TransactionStatus ?? "-"}
               />
-              <ResultRow label="Transaction ref" value={result?.transactionRef ?? params.vnp_TransactionNo ?? "-"} />
+              <ResultRow label={translate(language, "Mã giao dịch", "Transaction ref")} value={result?.transactionRef ?? params.vnp_TransactionNo ?? "-"} />
               <ResultRow
-                label="Local sync"
-                value={syncQuery.isPending ? "Syncing" : isSynced ? "Confirmed" : syncQuery.isError ? "Needs manual query" : "-"}
+                label={translate(language, "Đồng bộ hệ thống", "Local sync")}
+                value={
+                  syncQuery.isPending
+                    ? translate(language, "Đang đồng bộ", "Syncing")
+                    : isSynced
+                      ? translate(language, "Đã xác nhận", "Confirmed")
+                      : syncQuery.isError || hasSyncFailure
+                        ? translate(language, "Cần kiểm tra lại", "Needs manual query")
+                        : "-"
+                }
               />
             </div>
 
@@ -106,12 +130,12 @@ export function VnpayReturnPage() {
                 <Button asChild className="flex-1">
                   <Link href={`/customer/bookings/${result.bookingId}`}>
                     <ReceiptText className="h-4 w-4" />
-                    View booking
+                    {translate(language, "Xem lịch đặt", "View booking")}
                   </Link>
                 </Button>
               ) : null}
               <Button asChild variant="outline" className="flex-1">
-                <Link href="/customer/bookings">Back to bookings</Link>
+                <Link href="/customer/bookings">{translate(language, "Về danh sách", "Back to bookings")}</Link>
               </Button>
             </div>
           </CardContent>
@@ -119,6 +143,70 @@ export function VnpayReturnPage() {
       </div>
     </main>
   );
+}
+
+function buildVnpayFailureMessage(
+  result: VnpayPaymentResultResponse | undefined,
+  params: Record<string, string>,
+  language: Language,
+) {
+  if (result && !result.validSignature) {
+    return translate(language, "Dữ liệu trả về từ VNPay không hợp lệ.", "The returned VNPay data is invalid.");
+  }
+
+  const responseCode = result?.responseCode ?? params.vnp_ResponseCode;
+  const transactionStatus = result?.transactionStatus ?? params.vnp_TransactionStatus;
+  const baseMessage = vnpayResponseMessage(responseCode, language, result?.message);
+  if (!transactionStatus || transactionStatus === responseCode || transactionStatus === "00") {
+    return baseMessage;
+  }
+  return `${baseMessage} ${translate(language, "Trạng thái giao dịch:", "Transaction status:")} ${vnpayTransactionStatusMessage(transactionStatus, language)}.`;
+}
+
+function vnpayResponseMessage(code: string | null | undefined, language: Language, fallback?: string) {
+  const messages: Record<string, { vi: string; en: string }> = {
+    "00": { vi: "VNPay đã chấp nhận thanh toán.", en: "VNPay approved the payment." },
+    "01": { vi: "Giao dịch VNPay chưa hoàn tất.", en: "VNPay transaction has not been completed." },
+    "02": { vi: "Giao dịch VNPay thất bại.", en: "VNPay transaction failed." },
+    "04": { vi: "Giao dịch VNPay đã bị đảo.", en: "VNPay transaction was reversed." },
+    "05": { vi: "VNPay đang xử lý giao dịch.", en: "VNPay is processing the transaction." },
+    "06": { vi: "VNPay đã gửi yêu cầu hoàn tiền.", en: "VNPay sent a refund request." },
+    "07": { vi: "Giao dịch bị nghi ngờ gian lận.", en: "VNPay flagged the transaction as suspicious." },
+    "09": { vi: "Thẻ hoặc tài khoản chưa đăng ký Internet Banking.", en: "The card or account is not registered for Internet Banking." },
+    "10": { vi: "Xác thực thẻ hoặc tài khoản sai quá số lần quy định.", en: "Card or account authentication failed too many times." },
+    "11": { vi: "Phiên thanh toán đã hết hạn.", en: "The payment session expired." },
+    "12": { vi: "Thẻ hoặc tài khoản bị khóa hoặc chưa kích hoạt.", en: "The card or account is locked or not active." },
+    "13": { vi: "Mã OTP không đúng.", en: "The OTP was incorrect." },
+    "24": { vi: "Bạn đã hủy giao dịch.", en: "The payment was cancelled." },
+    "51": { vi: "Thẻ hoặc tài khoản không đủ số dư.", en: "The card or account has insufficient funds." },
+    "65": { vi: "Giao dịch vượt hạn mức cho phép.", en: "The transaction exceeded the allowed limit." },
+    "75": { vi: "Ngân hàng đang bảo trì.", en: "The bank is temporarily under maintenance." },
+    "79": { vi: "Sai mật khẩu thanh toán quá số lần quy định.", en: "The payment password was entered incorrectly too many times." },
+    "99": { vi: "VNPay trả về lỗi thanh toán không xác định.", en: "VNPay returned an unknown payment error." },
+  };
+  if (code && messages[code]) {
+    return messages[code][language];
+  }
+  if (fallback) {
+    return fallback;
+  }
+  return code
+    ? translate(language, `VNPay từ chối giao dịch với mã ${code}.`, `VNPay rejected the transaction with response code ${code}.`)
+    : translate(language, "VNPay không trả về mã phản hồi.", "VNPay did not return a response code.");
+}
+
+function vnpayTransactionStatusMessage(status: string, language: Language) {
+  const messages: Record<string, { vi: string; en: string }> = {
+    "00": { vi: "thành công", en: "successful" },
+    "01": { vi: "chưa hoàn tất", en: "not completed" },
+    "02": { vi: "thất bại", en: "failed" },
+    "04": { vi: "bị đảo", en: "reversed" },
+    "05": { vi: "đang xử lý", en: "processing" },
+    "06": { vi: "đã gửi yêu cầu hoàn tiền", en: "refund request sent" },
+    "07": { vi: "nghi ngờ gian lận", en: "suspected fraud" },
+    "09": { vi: "hoàn tiền bị từ chối", en: "refund rejected" },
+  };
+  return messages[status]?.[language] ?? translate(language, `mã ${status}`, `code ${status}`);
 }
 
 function ResultRow({ label, value }: { label: string; value: string }) {

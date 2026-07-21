@@ -278,7 +278,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
                 params.get("vnp_ResponseCode"),
                 params.get("vnp_TransactionStatus"),
                 resolveTransactionRef(params),
-                success ? "Payment successful. Waiting for IPN confirmation." : "Payment was not completed."
+                success ? "Payment successful. Waiting for IPN confirmation." : describeVnpayFailure(params)
         );
     }
 
@@ -333,7 +333,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         } else {
             payment.markFailed();
         }
-        return new VnpayPaymentResultResponse(true, false, booking.getId().toString(), response.get("vnp_ResponseCode"), response.get("vnp_TransactionStatus"), response.get("vnp_TransactionNo"), "VNPay transaction is not successful");
+        return new VnpayPaymentResultResponse(true, false, booking.getId().toString(), response.get("vnp_ResponseCode"), response.get("vnp_TransactionStatus"), response.get("vnp_TransactionNo"), describeVnpayFailure(response));
     }
 
     private Booking requireVisibleBooking(UUID bookingId) {
@@ -441,6 +441,60 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
     private boolean isSuccess(Map<String, String> params) {
         return SUCCESS_CODE.equals(params.get("vnp_ResponseCode"))
                 && SUCCESS_CODE.equals(params.getOrDefault("vnp_TransactionStatus", params.get("vnp_ResponseCode")));
+    }
+
+    private String describeVnpayFailure(Map<String, String> params) {
+        String responseCode = params.get("vnp_ResponseCode");
+        String transactionStatus = params.get("vnp_TransactionStatus");
+        String responseMessage = responseCodeMessage(responseCode);
+        if (transactionStatus == null || transactionStatus.isBlank() || transactionStatus.equals(responseCode)) {
+            return responseMessage;
+        }
+        return responseMessage + " Transaction status: " + transactionStatusMessage(transactionStatus) + ".";
+    }
+
+    private String responseCodeMessage(String code) {
+        if (code == null || code.isBlank()) {
+            return "VNPay did not return a response code.";
+        }
+        return switch (code) {
+            case "00" -> "VNPay approved the payment.";
+            case "01" -> "VNPay transaction has not been completed.";
+            case "02" -> "VNPay transaction failed.";
+            case "04" -> "VNPay transaction was reversed.";
+            case "05" -> "VNPay is processing the transaction.";
+            case "06" -> "VNPay sent a refund request.";
+            case "07" -> "VNPay flagged the transaction as suspicious.";
+            case "09" -> "The card or account is not registered for Internet Banking.";
+            case "10" -> "Card or account authentication failed too many times.";
+            case "11" -> "The payment session expired.";
+            case "12" -> "The card or account is locked or not active.";
+            case "13" -> "The OTP was incorrect.";
+            case "24" -> "The payment was cancelled.";
+            case "51" -> "The card or account has insufficient funds.";
+            case "65" -> "The transaction exceeded the allowed limit.";
+            case "75" -> "The bank is temporarily under maintenance.";
+            case "79" -> "The payment password was entered incorrectly too many times.";
+            case "99" -> "VNPay returned an unknown payment error.";
+            default -> "VNPay rejected the transaction with response code " + code + ".";
+        };
+    }
+
+    private String transactionStatusMessage(String status) {
+        if (status == null || status.isBlank()) {
+            return "missing";
+        }
+        return switch (status) {
+            case "00" -> "successful";
+            case "01" -> "not completed";
+            case "02" -> "failed";
+            case "04" -> "reversed";
+            case "05" -> "processing";
+            case "06" -> "refund request sent";
+            case "07" -> "suspected fraud";
+            case "09" -> "refund rejected";
+            default -> "code " + status;
+        };
     }
 
     private String resolveTransactionRef(Map<String, String> params) {
