@@ -88,7 +88,7 @@ public class Payment {
         if (this.status == PaymentStatus.PAID) {
             return;
         }
-        this.status = PaymentStatus.CANCELLED;
+        this.status = PaymentStatus.FAILED;
     }
 
     public void markRefundPending() {
