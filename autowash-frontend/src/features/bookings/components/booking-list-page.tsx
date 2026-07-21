@@ -172,6 +172,7 @@ function StatusBadge({ status, language }: { status: string; language: "vi" | "e
 
 function ActiveBookingCard({ booking, language }: { booking: BookingListItem; language: "vi" | "en" }) {
   const t = (vi: string, en: string) => translate(language, vi, en);
+  const canShowAppointmentCountdown = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS"].includes(booking.status);
 
   return (
     <Link href={`/customer/bookings/${booking.bookingId}`}>
@@ -181,11 +182,13 @@ function ActiveBookingCard({ booking, language }: { booking: BookingListItem; la
             <div className="min-w-0 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge status={booking.status} language={language} />
-                <CountdownBadge
-                  bookingDate={booking.bookingDate}
-                  bookingTime={booking.bookingTime}
-                  language={language}
-                />
+                {canShowAppointmentCountdown ? (
+                  <CountdownBadge
+                    bookingDate={booking.bookingDate}
+                    bookingTime={booking.bookingTime}
+                    language={language}
+                  />
+                ) : null}
               </div>
               <p className="mt-1 truncate text-sm font-black text-slate-900">
                 {booking.primaryItemName ?? t("Combo", "Combo")}
