@@ -115,8 +115,8 @@ export type AdminBusinessHealthReport = {
   };
 };
 
-export type AdminAccountRole = "CUSTOMER" | "STAFF" | "ADMIN" | "GUEST";
-export type AdminEditableAccountRole = "CUSTOMER" | "STAFF" | "ADMIN";
+export type AdminAccountRole = "CUSTOMER" | "STAFF" | "MANAGER" | "ADMIN" | "GUEST";
+export type AdminEditableAccountRole = "CUSTOMER" | "STAFF" | "MANAGER" | "ADMIN";
 
 export type AdminAccountStatus = "PENDING" | "ACTIVE" | "BLOCKED" | "SUSPENDED" | "DELETED";
 

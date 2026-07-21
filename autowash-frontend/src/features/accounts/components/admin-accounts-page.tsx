@@ -35,8 +35,8 @@ import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { DynamicTierBadge } from "@/shared/ui/workspace/dynamic-tier-badge";
 
 const PAGE_LIMIT = 20;
-const ROLE_OPTIONS: AdminAccountRole[] = ["CUSTOMER", "STAFF", "ADMIN", "GUEST"];
-const STAFF_ROLE_OPTIONS: AdminAccountRole[] = ["STAFF", "ADMIN"];
+const ROLE_OPTIONS: AdminAccountRole[] = ["CUSTOMER", "STAFF", "MANAGER", "ADMIN", "GUEST"];
+const STAFF_ROLE_OPTIONS: AdminAccountRole[] = ["STAFF", "MANAGER", "ADMIN"];
 const STATUS_OPTIONS: AdminAccountStatus[] = ["PENDING", "ACTIVE", "BLOCKED", "SUSPENDED", "DELETED"];
 const EMPTY_STAFF_FORM: CreateAdminStaffPayload = {
   fullName: "",
@@ -49,7 +49,8 @@ const EMPTY_STAFF_FORM: CreateAdminStaffPayload = {
 function translateRole(role: string, lang: "vi" | "en") {
   const map: Record<string, { vi: string; en: string }> = {
     CUSTOMER: { vi: "Khách hàng", en: "Customer" },
-    STAFF: { vi: "Nhân viên", en: "Staff" },
+    STAFF: { vi: "Nhân viên kỹ thuật", en: "Staff" },
+    MANAGER: { vi: "Quản lý cửa hàng", en: "Manager" },
     ADMIN: { vi: "Quản trị viên", en: "Admin" },
     GUEST: { vi: "Khách vãng lai", en: "Guest" },
   };
@@ -217,7 +218,7 @@ export function AdminAccountsPageContent() {
               }`}
               onClick={() => handleTabChange("staff_admin")}
             >
-              {translate(language, "Nhân viên & Admin", "Staff & Admin")}
+              {translate(language, "Danh bạ Nhân sự", "Employee Directory")}
             </button>
           </div>
           <div className="flex flex-wrap items-center gap-2 pb-2 sm:pb-0">
@@ -275,7 +276,7 @@ export function AdminAccountsPageContent() {
                     value={draftFilters.role}
                     onChange={(event) => setDraftFilters((previous) => ({ ...previous, role: event.target.value }))}
                   >
-                    <option value="">{translate(language, "Tất cả Nhân viên & Admin", "All Staff & Admin")}</option>
+                    <option value="">{translate(language, "Tất cả Nhân sự", "All Employees")}</option>
                     {STAFF_ROLE_OPTIONS.map((role) => (
                       <option key={role} value={role}>
                         {translateRole(role, language as "vi" | "en")}
@@ -314,7 +315,7 @@ export function AdminAccountsPageContent() {
                 <h2 className="text-sm font-semibold text-slate-950">
                   {activeTab === "customers" 
                     ? translate(language, "Danh sách khách hàng", "Customer list") 
-                    : translate(language, "Danh sách Nhân viên & Admin", "Staff & Admin list")}
+                    : translate(language, "Danh sách Nhân sự", "Employee list")}
                 </h2>
                 <p className="text-xs text-slate-500">
                   {isStaffClientFiltering
@@ -481,6 +482,7 @@ export function AdminAccountsPageContent() {
                   onChange={(e) => setCreateForm(prev => ({ ...prev, role: e.target.value as any }))}
                 >
                   <option value="STAFF">{translateRole("STAFF", language as "vi" | "en")}</option>
+                  <option value="MANAGER">{translateRole("MANAGER", language as "vi" | "en")}</option>
                   <option value="ADMIN">{translateRole("ADMIN", language as "vi" | "en")}</option>
                 </select>
               </label>
@@ -640,6 +642,7 @@ function FormField({
 const ROLE_TONE: Record<AdminAccount["role"], string> = {
   CUSTOMER: "border-sky-300 bg-sky-100 text-sky-800",
   STAFF: "border-violet-300 bg-violet-100 text-violet-800",
+  MANAGER: "border-emerald-300 bg-emerald-100 text-emerald-800",
   ADMIN: "border-orange-300 bg-orange-100 text-orange-800",
   GUEST: "border-slate-300 bg-slate-100 text-slate-700",
 };
