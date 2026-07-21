@@ -445,6 +445,11 @@ export function BookingConfirmPage() {
     }
   };
 
+  const handleViewSepayBooking = () => {
+    if (!sepayPaymentBooking) return;
+    router.push(`/customer/bookings/${sepayPaymentBooking.bookingId}`);
+  };
+
   const selectedVehicle = vehicles.find((v) => v.vehicleId === draft.vehicleId);
   const isLoading =
     vehiclesQuery.isPending || packagesQuery.isPending ||
@@ -468,6 +473,18 @@ export function BookingConfirmPage() {
             Pick a new slot
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  if (sepayPaymentBooking) {
+    return (
+      <div className="min-h-[calc(100vh-72px)] bg-background px-4 py-6 sm:px-6 lg:px-8">
+        <SepayPaymentDialog
+          booking={sepayPaymentBooking}
+          onCopy={handleCopyPaymentText}
+          onViewBooking={handleViewSepayBooking}
+        />
       </div>
     );
   }
@@ -828,88 +845,6 @@ export function BookingConfirmPage() {
         </div>
 
       </div>
-      <Dialog
-        open={Boolean(sepayPaymentBooking)}
-        onOpenChange={(open) => {
-          if (!open && sepayPaymentBooking) {
-            router.push(`/customer/bookings/${sepayPaymentBooking.bookingId}`);
-          }
-        }}
-      >
-        <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-xl">
-          <DialogHeader>
-            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700">
-              <QrCode className="h-6 w-6" />
-            </div>
-            <DialogTitle>Pay with SePay</DialogTitle>
-            <DialogDescription>
-              Scan the QR code or transfer with the exact details below. Your booking will confirm automatically after payment is received.
-            </DialogDescription>
-          </DialogHeader>
-
-          {sepayPaymentBooking ? (
-            <div className="space-y-4">
-              {sepayPaymentBooking.payment.qrUrl ? (
-                <div className="flex justify-center rounded-xl border bg-slate-50 p-3">
-                  <img
-                    src={sepayPaymentBooking.payment.qrUrl}
-                    alt="SePay payment QR code"
-                    className="h-auto w-full max-w-[300px] rounded-lg"
-                  />
-                </div>
-              ) : (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                  QR is not configured yet. Use the transfer details below.
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <SepayPaymentInfoRow label="Bank" value={sepayPaymentBooking.payment.bankCode ?? "TPBank"} />
-                <SepayPaymentInfoRow
-                  label="Account"
-                  value={sepayPaymentBooking.payment.accountNumber ?? "--"}
-                  onCopy={() => handleCopyPaymentText(sepayPaymentBooking.payment.accountNumber, "Account number copied.")}
-                />
-                <SepayPaymentInfoRow label="Account name" value={sepayPaymentBooking.payment.accountName ?? "--"} />
-                <SepayPaymentInfoRow
-                  label="Amount"
-                  value={formatBookingCurrency(sepayPaymentBooking.pricing.finalAmount)}
-                  onCopy={() => handleCopyPaymentText(String(sepayPaymentBooking.pricing.finalAmount), "Amount copied.")}
-                />
-                <SepayPaymentInfoRow
-                  label="Description"
-                  value={sepayPaymentBooking.payment.transferDescription ?? sepayPaymentBooking.payment.transactionId ?? "--"}
-                  monospace
-                  onCopy={() =>
-                    handleCopyPaymentText(
-                      sepayPaymentBooking.payment.transferDescription ?? sepayPaymentBooking.payment.transactionId,
-                      "Transfer description copied.",
-                    )
-                  }
-                />
-              </div>
-
-              <div className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs font-semibold text-sky-800">
-                Waiting for SePay webhook. This window refreshes automatically every few seconds.
-              </div>
-            </div>
-          ) : null}
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                if (sepayPaymentBooking) {
-                  router.push(`/customer/bookings/${sepayPaymentBooking.bookingId}`);
-                }
-              }}
-            >
-              View booking
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -933,6 +868,88 @@ function SummaryRow({
       </div>
       <span className="text-right text-xs font-semibold text-foreground max-w-[55%] truncate">{value}</span>
     </div>
+  );
+}
+
+function SepayPaymentDialog({
+  booking,
+  onCopy,
+  onViewBooking,
+}: {
+  booking: BookingDetail;
+  onCopy: (value: string | null | undefined, message: string) => void;
+  onViewBooking: () => void;
+}) {
+  return (
+    <Dialog open onOpenChange={(open) => {
+      if (!open) {
+        onViewBooking();
+      }
+    }}>
+      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700">
+            <QrCode className="h-6 w-6" />
+          </div>
+          <DialogTitle>Pay with SePay</DialogTitle>
+          <DialogDescription>
+            Scan the QR code or transfer with the exact details below. Your booking will confirm automatically after payment is received.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {booking.payment.qrUrl ? (
+            <div className="flex justify-center rounded-xl border bg-slate-50 p-3">
+              <img
+                src={booking.payment.qrUrl}
+                alt="SePay payment QR code"
+                className="h-auto w-full max-w-[300px] rounded-lg"
+              />
+            </div>
+          ) : (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              QR is not configured yet. Use the transfer details below.
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <SepayPaymentInfoRow label="Bank" value={booking.payment.bankCode ?? "TPBank"} />
+            <SepayPaymentInfoRow
+              label="Account"
+              value={booking.payment.accountNumber ?? "--"}
+              onCopy={() => onCopy(booking.payment.accountNumber, "Account number copied.")}
+            />
+            <SepayPaymentInfoRow label="Account name" value={booking.payment.accountName ?? "--"} />
+            <SepayPaymentInfoRow
+              label="Amount"
+              value={formatBookingCurrency(booking.pricing.finalAmount)}
+              onCopy={() => onCopy(String(booking.pricing.finalAmount), "Amount copied.")}
+            />
+            <SepayPaymentInfoRow
+              label="Description"
+              value={booking.payment.transferDescription ?? booking.payment.transactionId ?? "--"}
+              monospace
+              onCopy={() =>
+                onCopy(
+                  booking.payment.transferDescription ?? booking.payment.transactionId,
+                  "Transfer description copied.",
+                )
+              }
+            />
+          </div>
+
+          <div className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs font-semibold text-sky-800">
+            Waiting for SePay webhook. This window refreshes automatically every few seconds.
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onViewBooking}>
+            View booking
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
