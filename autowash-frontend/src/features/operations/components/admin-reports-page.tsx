@@ -144,7 +144,7 @@ export function AdminReportsPage() {
   return (
     <WorkspacePage compact className="max-w-none space-y-3 bg-[#fbfdff] px-4 pb-5 pt-3 lg:px-5">
       <Card className="rounded-2xl border-slate-200 bg-white px-3 py-3 shadow-sm">
-        <div className="grid items-end gap-3 xl:grid-cols-[330px_160px_160px_130px_minmax(145px,1fr)_minmax(145px,1fr)_minmax(145px,1fr)]">
+        <div className="grid items-end gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-[2fr_1.2fr_1.2fr_1fr_1.2fr_1.2fr_1.2fr]">
           <FilterBlock label={t("Khoảng thời gian", "Period")}>
             <div className="flex flex-wrap gap-2">
               {periodOptions(language).map((option) => (
