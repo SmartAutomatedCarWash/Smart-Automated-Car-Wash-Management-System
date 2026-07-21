@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Banknote,
@@ -119,6 +119,26 @@ function getStepIndex(status: string) {
 }
 
 // ── Countdown to appointment ─────────────────────────────────────────────────
+const HOLD_DURATION_MS = 15 * 60 * 1000;
+
+function useCountdownUntil(expiresAtMs: number | null) {
+  const [diff, setDiff] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!expiresAtMs) {
+      setDiff(null);
+      return;
+    }
+
+    const tick = () => setDiff(Math.max(0, expiresAtMs - Date.now()));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [expiresAtMs]);
+
+  return diff;
+}
+
 function useCountdown(bookingDate: string, bookingTime: string) {
   const [diff, setDiff] = useState<number | null>(null);
 
@@ -134,6 +154,44 @@ function useCountdown(bookingDate: string, bookingTime: string) {
   }, [bookingDate, bookingTime]);
 
   return diff;
+}
+
+function PaymentHoldBadge({ expiresAtMs, language }: { expiresAtMs: number; language: "vi" | "en" }) {
+  const diff = useCountdownUntil(expiresAtMs);
+  if (diff === null) return null;
+  if (diff <= 0) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-700">
+        <AlertCircle className="h-3.5 w-3.5" />
+        {translate(language, "Đã hết hạn giữ slot", "Hold expired")}
+      </span>
+    );
+  }
+
+  const totalSec = Math.floor(diff / 1000);
+  const mins = Math.floor(totalSec / 60);
+  const secs = totalSec % 60;
+  const progress = Math.max(0, Math.min(100, (diff / HOLD_DURATION_MS) * 100));
+  const urgent = diff <= 2 * 60 * 1000;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold",
+        urgent ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-800",
+      )}
+      title={translate(language, "Slot sẽ được giải phóng khi hết thời gian thanh toán.", "The slot will be released when the payment window expires.")}
+    >
+      <Clock3 className="h-3.5 w-3.5" />
+      {translate(language, "Giữ slot", "Hold")} {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
+      <span className="ml-0.5 h-1.5 w-8 overflow-hidden rounded-full bg-white/70">
+        <span
+          className={cn("block h-full rounded-full", urgent ? "bg-rose-500" : "bg-amber-500")}
+          style={{ width: `${progress}%` }}
+        />
+      </span>
+    </span>
+  );
 }
 
 function CountdownBadge({ bookingDate, bookingTime, language }: { bookingDate: string; bookingTime: string; language: "vi" | "en" }) {
@@ -195,6 +253,34 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     }
   }, [isCompleted, autoReviewShown, reviewCheckQuery.data]);
 
+  const paymentHoldExpiresAtMs = useMemo(() => {
+    const booking = bookingQuery.data;
+    if (!booking?.confirmationExpiresAt) {
+      return null;
+    }
+    const paymentMethod = booking.payment.method?.toUpperCase() ?? "";
+    const paymentStatus = booking.payment.status?.toUpperCase() ?? "";
+    if (booking.status !== "PENDING" || paymentMethod !== "E_WALLET" || paymentStatus === "PAID") {
+      return null;
+    }
+    const expiresAtMs = new Date(booking.confirmationExpiresAt).getTime();
+    return Number.isFinite(expiresAtMs) ? expiresAtMs : null;
+  }, [bookingQuery.data]);
+
+  const [paymentHoldExpired, setPaymentHoldExpired] = useState(false);
+
+  useEffect(() => {
+    if (!paymentHoldExpiresAtMs) {
+      setPaymentHoldExpired(false);
+      return;
+    }
+
+    const tick = () => setPaymentHoldExpired(paymentHoldExpiresAtMs <= Date.now());
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [paymentHoldExpiresAtMs]);
+
   if (bookingQuery.isPending) {
     return (
       <div className="px-4 py-6 sm:px-6 lg:px-8">
@@ -236,10 +322,12 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const paymentStatus = booking.payment.status?.toUpperCase() ?? "";
   const paymentMethod = booking.payment.method?.toUpperCase() ?? "";
   const isPaymentPaid = paymentStatus === "PAID";
-  const canChoosePendingPaymentAction = booking.status === "PENDING" && !isPaymentPaid;
+  const isPendingOnlinePayment = booking.status === "PENDING" && paymentMethod === "E_WALLET" && !isPaymentPaid;
+  const canChoosePendingPaymentAction = booking.status === "PENDING" && !isPaymentPaid && !paymentHoldExpired;
   const canPayAgainWithVnpay = canChoosePendingPaymentAction && booking.pricing.finalAmount > 0;
   const canQueryVnpayPayment = canChoosePendingPaymentAction && paymentMethod === "E_WALLET";
   const canChangeToCash = canChoosePendingPaymentAction && paymentMethod !== "CASH_AT_COUNTER";
+  const canShowAppointmentCountdown = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS"].includes(booking.status);
   const showCashConfirmationNote = booking.status === "PENDING" && paymentMethod === "CASH_AT_COUNTER";
   const isPaymentActionPending = changePaymentMethodMutation.isPending || createVnpayCheckoutMutation.isPending || queryVnpayTransactionMutation.isPending;
   const refundStatusLabel = getRefundStatusLabel(booking, language);
@@ -370,13 +458,15 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                     <CardTitle>{translate(language, "Tiến trình đặt lịch", "Booking progress")}</CardTitle>
                     <CardDescription>{translate(language, "Theo dõi trạng thái từng bước của lịch đặt.", "Track each step of your booking session.")}</CardDescription>
                   </div>
-                  {booking.status !== "COMPLETED" && (
+                  {paymentHoldExpiresAtMs ? (
+                    <PaymentHoldBadge expiresAtMs={paymentHoldExpiresAtMs} language={language} />
+                  ) : canShowAppointmentCountdown ? (
                     <CountdownBadge
                       bookingDate={booking.scheduling.bookingDate}
                       bookingTime={booking.scheduling.bookingTime}
                       language={language}
                     />
-                  )}
+                  ) : null}
                 </div>
               </CardHeader>
               <CardContent>
@@ -538,6 +628,18 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
               <Button asChild variant="outline" className="w-full">
                 <Link href="/customer/bookings/new">{translate(language, "Đặt dịch vụ khác", "Book another service")}</Link>
               </Button>
+
+              {isPendingOnlinePayment && paymentHoldExpired ? (
+                <div className="space-y-2 rounded-2xl border border-rose-100 bg-rose-50 p-3">
+                  <p className="text-xs font-semibold text-rose-800">
+                    {translate(
+                      language,
+                      "Thời gian giữ slot thanh toán đã hết. Slot này sẽ được giải phóng tự động, vui lòng tạo lịch đặt mới nếu vẫn muốn rửa xe.",
+                      "The payment hold window has expired. This slot will be released automatically; please create a new booking if you still want this service.",
+                    )}
+                  </p>
+                </div>
+              ) : null}
 
               {canChoosePendingPaymentAction ? (
                 <div className="space-y-2 rounded-2xl border border-sky-100 bg-sky-50 p-3">

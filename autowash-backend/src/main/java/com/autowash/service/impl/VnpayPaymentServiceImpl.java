@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -42,6 +43,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
     private static final ZoneId VNPAY_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final String SUCCESS_CODE = "00";
     private static final String CANCELLED_CODE = "24";
+    private static final Duration PENDING_ONLINE_PAYMENT_HOLD_DURATION = Duration.ofMinutes(15);
 
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
@@ -100,6 +102,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         if (booking.getStatus().name().equals("CANCELLED")) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Cancelled booking cannot be paid", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
+        ensurePaymentHoldOpen(booking, payment);
 
         long amount = booking.getPricing().getFinalAmount();
         String txnRef = booking.getId().toString();
@@ -344,6 +347,20 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
             throw new ApiException(HttpStatus.FORBIDDEN, "Booking does not belong to current customer", ErrorCode.FORBIDDEN);
         }
         return booking;
+    }
+
+    private void ensurePaymentHoldOpen(Booking booking, Payment payment) {
+        if (!booking.getStatus().name().equals("PENDING") || payment.getStatus() == PaymentStatus.PAID) {
+            return;
+        }
+        Instant expiresAt = booking.getCreatedAt().plus(PENDING_ONLINE_PAYMENT_HOLD_DURATION);
+        if (!expiresAt.isAfter(Instant.now())) {
+            throw new ApiException(
+                    HttpStatus.GONE,
+                    "Online payment window expired. Please create a new booking.",
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
     }
 
     @SuppressWarnings("unchecked")
