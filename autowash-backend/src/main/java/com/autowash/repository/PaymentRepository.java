@@ -3,7 +3,6 @@ package com.autowash.repository;
 import com.autowash.entity.Booking;
 import com.autowash.entity.Payment;
 import com.autowash.entity.enums.BookingStatus;
-import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
 import java.time.Instant;
 import java.util.Collection;
@@ -25,13 +24,11 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
             join fetch payment.booking booking
             where booking.status = :bookingStatus
               and booking.createdAt <= :createdBefore
-              and payment.method = :paymentMethod
               and payment.status in :paymentStatuses
             """)
-    List<Payment> findExpiredPendingOnlinePayments(
+    List<Payment> findExpiredPendingBookingPayments(
             @Param("bookingStatus") BookingStatus bookingStatus,
             @Param("createdBefore") Instant createdBefore,
-            @Param("paymentMethod") PaymentMethod paymentMethod,
             @Param("paymentStatuses") Collection<PaymentStatus> paymentStatuses
     );
 

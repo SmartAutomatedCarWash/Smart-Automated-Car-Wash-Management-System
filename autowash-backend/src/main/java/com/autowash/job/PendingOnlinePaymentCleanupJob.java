@@ -2,7 +2,6 @@ package com.autowash.job;
 
 import com.autowash.entity.Payment;
 import com.autowash.entity.enums.BookingStatus;
-import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.repository.PaymentRepository;
 import java.time.Duration;
@@ -18,8 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class PendingOnlinePaymentCleanupJob {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PendingOnlinePaymentCleanupJob.class);
-    private static final Duration PENDING_ONLINE_PAYMENT_HOLD_DURATION = Duration.ofMinutes(15);
+    private static final Duration PENDING_BOOKING_HOLD_DURATION = Duration.ofMinutes(15);
     private static final List<PaymentStatus> EXPIRABLE_PAYMENT_STATUSES = List.of(
+            PaymentStatus.UNPAID,
             PaymentStatus.PENDING,
             PaymentStatus.PENDING_PAYMENT,
             PaymentStatus.FAILED,
@@ -34,12 +34,11 @@ public class PendingOnlinePaymentCleanupJob {
 
     @Scheduled(fixedRate = 60000)
     @Transactional
-    public void cancelExpiredPendingOnlinePayments() {
-        Instant cutoff = Instant.now().minus(PENDING_ONLINE_PAYMENT_HOLD_DURATION);
-        List<Payment> expiredPayments = paymentRepository.findExpiredPendingOnlinePayments(
+    public void cancelExpiredPendingBookingHolds() {
+        Instant cutoff = Instant.now().minus(PENDING_BOOKING_HOLD_DURATION);
+        List<Payment> expiredPayments = paymentRepository.findExpiredPendingBookingPayments(
                 BookingStatus.PENDING,
                 cutoff,
-                PaymentMethod.E_WALLET,
                 EXPIRABLE_PAYMENT_STATUSES
         );
 
@@ -49,7 +48,7 @@ public class PendingOnlinePaymentCleanupJob {
         });
 
         if (!expiredPayments.isEmpty()) {
-            LOGGER.info("Cancelled {} expired pending online booking payments", expiredPayments.size());
+            LOGGER.info("Cancelled {} expired pending booking holds", expiredPayments.size());
         }
     }
 }

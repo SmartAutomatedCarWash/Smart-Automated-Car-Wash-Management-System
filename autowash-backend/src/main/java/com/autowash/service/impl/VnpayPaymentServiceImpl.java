@@ -44,7 +44,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
     private static final ZoneId VNPAY_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final String SUCCESS_CODE = "00";
     private static final String CANCELLED_CODE = "24";
-    private static final Duration PENDING_ONLINE_PAYMENT_HOLD_DURATION = Duration.ofMinutes(15);
+    private static final Duration PENDING_BOOKING_HOLD_DURATION = Duration.ofMinutes(15);
 
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
@@ -354,7 +354,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         if (!booking.getStatus().name().equals("PENDING") || payment.getStatus() == PaymentStatus.PAID) {
             return;
         }
-        Instant expiresAt = booking.getCreatedAt().plus(PENDING_ONLINE_PAYMENT_HOLD_DURATION);
+        Instant expiresAt = booking.getCreatedAt().plus(PENDING_BOOKING_HOLD_DURATION);
         if (!expiresAt.isAfter(Instant.now())) {
             throw new ApiException(
                     HttpStatus.GONE,

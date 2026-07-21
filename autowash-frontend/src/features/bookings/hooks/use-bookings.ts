@@ -65,6 +65,7 @@ import type {
 } from "@/entities/bookings";
 
 const LIVE_BOOKING_REFETCH_MS = 3_000;
+const PENDING_BOOKING_HOLD_MS = 15 * 60 * 1000;
 const TERMINAL_BOOKING_STATUSES = new Set(["COMPLETED", "CANCELLED", "NO_SHOW"]);
 
 function isLiveBookingStatus(status: string | null | undefined) {
@@ -237,6 +238,7 @@ export function useCreateCustomerBooking() {
         status: createdBooking.status,
         washStatus: null,
         createdAt: createdBooking.createdAt,
+        confirmationExpiresAt: new Date(new Date(createdBooking.createdAt).getTime() + PENDING_BOOKING_HOLD_MS).toISOString(),
         completedAt: null,
       };
 

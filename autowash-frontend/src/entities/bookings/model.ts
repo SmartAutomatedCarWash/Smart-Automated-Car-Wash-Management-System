@@ -239,6 +239,7 @@ export type BookingListItem = {
   status: BookingStatus;
   washStatus: string | null;
   createdAt: string;
+  confirmationExpiresAt: string | null;
   completedAt: string | null;
 };
 
