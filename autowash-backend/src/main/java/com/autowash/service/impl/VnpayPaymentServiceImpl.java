@@ -481,11 +481,14 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
     private String describeVnpayFailure(Map<String, String> params) {
         String responseCode = params.get("vnp_ResponseCode");
         String transactionStatus = params.get("vnp_TransactionStatus");
-        String responseMessage = responseCodeMessage(responseCode);
-        if (transactionStatus == null || transactionStatus.isBlank() || transactionStatus.equals(responseCode)) {
-            return responseMessage;
+        if (transactionStatus != null && !transactionStatus.isBlank() && !SUCCESS_CODE.equals(transactionStatus)) {
+            String statusMessage = responseCodeMessage(transactionStatus);
+            if (transactionStatus.equals(responseCode)) {
+                return statusMessage;
+            }
+            return statusMessage + " VNPay response code: " + safeVnpayCode(responseCode) + ". Transaction status: " + transactionStatus + ".";
         }
-        return responseMessage + " Transaction status: " + transactionStatusMessage(transactionStatus) + ".";
+        return responseCodeMessage(responseCode);
     }
 
     private String responseCodeMessage(String code) {
@@ -528,8 +531,22 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
             case "06" -> "refund request sent";
             case "07" -> "suspected fraud";
             case "09" -> "refund rejected";
+            case "10" -> "authentication failed too many times";
+            case "11" -> "payment session expired";
+            case "12" -> "card or account locked or inactive";
+            case "13" -> "incorrect OTP";
+            case "24" -> "cancelled";
+            case "51" -> "insufficient funds";
+            case "65" -> "limit exceeded";
+            case "75" -> "bank maintenance";
+            case "79" -> "payment password failed too many times";
+            case "99" -> "unknown payment error";
             default -> "code " + status;
         };
+    }
+
+    private String safeVnpayCode(String code) {
+        return code == null || code.isBlank() ? "missing" : code;
     }
 
     private String resolveTransactionRef(Map<String, String> params) {

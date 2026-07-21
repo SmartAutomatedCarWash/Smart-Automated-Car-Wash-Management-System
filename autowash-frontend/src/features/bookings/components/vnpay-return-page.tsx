@@ -159,6 +159,18 @@ function buildVnpayFailureMessage(
 
   const responseCode = result?.responseCode ?? params.vnp_ResponseCode;
   const transactionStatus = result?.transactionStatus ?? params.vnp_TransactionStatus;
+  if (transactionStatus && transactionStatus !== "00") {
+    const statusMessage = vnpayResponseMessage(transactionStatus, language);
+    if (responseCode && responseCode !== transactionStatus) {
+      return `${statusMessage} ${translate(
+        language,
+        `Mã phản hồi VNPay: ${responseCode}. Trạng thái giao dịch: ${transactionStatus}.`,
+        `VNPay response code: ${responseCode}. Transaction status: ${transactionStatus}.`,
+      )}`;
+    }
+    return statusMessage;
+  }
+
   const baseMessage = vnpayResponseMessage(responseCode, language, result?.message);
   if (!transactionStatus || transactionStatus === responseCode || transactionStatus === "00") {
     return baseMessage;
@@ -208,6 +220,16 @@ function vnpayTransactionStatusMessage(status: string, language: Language) {
     "06": { vi: "đã gửi yêu cầu hoàn tiền", en: "refund request sent" },
     "07": { vi: "nghi ngờ gian lận", en: "suspected fraud" },
     "09": { vi: "hoàn tiền bị từ chối", en: "refund rejected" },
+    "10": { vi: "xác thực sai quá số lần quy định", en: "authentication failed too many times" },
+    "11": { vi: "phiên thanh toán đã hết hạn", en: "payment session expired" },
+    "12": { vi: "thẻ hoặc tài khoản bị khóa hoặc chưa kích hoạt", en: "card or account locked or inactive" },
+    "13": { vi: "sai mã OTP", en: "incorrect OTP" },
+    "24": { vi: "đã hủy", en: "cancelled" },
+    "51": { vi: "không đủ số dư", en: "insufficient funds" },
+    "65": { vi: "vượt hạn mức", en: "limit exceeded" },
+    "75": { vi: "ngân hàng đang bảo trì", en: "bank maintenance" },
+    "79": { vi: "sai mật khẩu thanh toán quá số lần quy định", en: "payment password failed too many times" },
+    "99": { vi: "lỗi thanh toán không xác định", en: "unknown payment error" },
   };
   return messages[status]?.[language] ?? translate(language, `mã ${status}`, `code ${status}`);
 }
