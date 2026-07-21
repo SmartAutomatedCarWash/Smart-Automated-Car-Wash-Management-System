@@ -311,6 +311,11 @@ export function BookingConfirmPage() {
           resetDraft();
           setLastCreatedBooking(booking);
           toast.success("Booking created. Redirecting to VNPay.");
+          window.history.replaceState(
+            { bookingId: booking.bookingId, vnpayRedirect: true },
+            "",
+            `/customer/bookings/${booking.bookingId}`,
+          );
           window.location.href = checkout.paymentUrl;
           return;
         } catch (checkoutError) {
