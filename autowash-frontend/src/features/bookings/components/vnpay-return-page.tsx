@@ -29,6 +29,7 @@ export function VnpayReturnPage() {
   const result = resultQuery.data;
   const isSuccess = Boolean(result?.validSignature && result.success);
   const bookingId = result?.bookingId ?? params.vnp_TxnRef ?? "";
+  const shouldSyncPayment = isSuccess && bookingId.length > 0;
   const syncQuery = useQuery({
     queryKey: ["vnpay-return-sync", bookingId, result?.responseCode, result?.transactionStatus],
     queryFn: async () => {
@@ -39,17 +40,19 @@ export function VnpayReturnPage() {
       ]);
       return synced;
     },
-    enabled: isSuccess && bookingId.length > 0,
+    enabled: shouldSyncPayment,
     retry: 1,
   });
   const syncResult = syncQuery.data;
   const isSynced = Boolean(syncResult?.success);
   const hasSyncFailure = Boolean(syncResult && !syncResult.success);
   const isInvalidSignature = Boolean(result && !result.validSignature);
+  const isSyncing = shouldSyncPayment && syncQuery.isFetching;
+  const isCheckingPayment = resultQuery.isFetching || isSyncing;
   const failureMessage = buildVnpayFailureMessage(syncResult ?? result, params, language);
   const title = !hasParams
     ? translate(language, "Thiếu kết quả VNPay", "Missing VNPay result")
-    : resultQuery.isPending || syncQuery.isPending
+    : isCheckingPayment
       ? translate(language, "Đang kiểm tra thanh toán", "Checking payment")
       : isSuccess && isSynced
         ? translate(language, "Thanh toán thành công", "Payment successful")
@@ -62,7 +65,7 @@ export function VnpayReturnPage() {
           : translate(language, "Thanh toán không hoàn tất", "Payment not completed");
   const description = !hasParams
     ? translate(language, "VNPay không trả về thông tin thanh toán.", "No payment information was returned.")
-    : resultQuery.isPending || syncQuery.isPending
+    : isCheckingPayment
       ? translate(language, "Vui lòng chờ trong khi hệ thống xác minh và đồng bộ kết quả.", "Please wait while we verify and sync the payment response.")
       : isSuccess && isSynced
         ? translate(language, "Thanh toán đã được xác minh và lịch đặt đã được xác nhận.", "Payment was verified and the booking has been confirmed.")
@@ -74,7 +77,7 @@ export function VnpayReturnPage() {
           ? translate(language, "Dữ liệu trả về không thể xác minh.", "The returned data could not be verified.")
           : failureMessage;
   const Icon =
-    resultQuery.isPending || syncQuery.isPending
+    isCheckingPayment
       ? Loader2
       : isInvalidSignature
         ? ShieldAlert
@@ -92,12 +95,12 @@ export function VnpayReturnPage() {
                 "mb-5 flex h-12 w-12 items-center justify-center rounded-full",
                 isSuccess && !hasSyncFailure
                   ? "bg-emerald-100 text-emerald-700"
-                    : resultQuery.isPending || syncQuery.isPending
+                    : isCheckingPayment
                     ? "bg-cyan-100 text-cyan-700"
                     : "bg-rose-100 text-rose-700",
               )}
             >
-              <Icon className={cn("h-6 w-6", (resultQuery.isPending || syncQuery.isPending) && "animate-spin")} />
+              <Icon className={cn("h-6 w-6", isCheckingPayment && "animate-spin")} />
             </div>
 
             <h1 className="text-2xl font-bold">{title}</h1>
@@ -114,7 +117,7 @@ export function VnpayReturnPage() {
               <ResultRow
                 label={translate(language, "Đồng bộ hệ thống", "Local sync")}
                 value={
-                  syncQuery.isPending
+                  isSyncing
                     ? translate(language, "Đang đồng bộ", "Syncing")
                     : isSynced
                       ? translate(language, "Đã xác nhận", "Confirmed")
