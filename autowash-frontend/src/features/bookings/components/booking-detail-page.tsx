@@ -474,6 +474,52 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     }
   };
 
+  const handlePayAgainWithVnpay = async () => {
+    try {
+      if (paymentMethod !== "E_WALLET") {
+        await changePaymentMethodMutation.mutateAsync("E_WALLET");
+      }
+      const checkout = await createVnpayCheckoutMutation.mutateAsync(booking.bookingId);
+      toast.success(translate(language, "Đang chuyển sang VNPay.", "Redirecting to VNPay."));
+      window.location.href = checkout.paymentUrl;
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleChangeToCash = async () => {
+    try {
+      await changePaymentMethodMutation.mutateAsync("CASH_AT_COUNTER");
+      toast.success(translate(language, "Đã chuyển sang thanh toán tại quầy.", "Changed to cash at counter."));
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleSaveAssignedStaff = async () => {
+    try {
+      await updateBookingStaffMutation.mutateAsync({ staffIds: selectedStaffIds });
+      toast.success(translate(language, "Đã lưu nhân viên phụ trách.", "Assigned staff saved."));
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleCopySepayCode = async () => {
+    if (!sepayTransferDescription) return;
+    await handleCopyText(sepayTransferDescription, translate(language, "Đã copy nội dung chuyển khoản.", "Transfer description copied."));
+  };
+
+  const handleCopyText = async (value: string | null | undefined, successMessage: string) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(successMessage);
+    } catch {
+      toast.error(translate(language, "Không thể copy.", "Unable to copy."));
+    }
+  };
+
   const handleSubmitReview = async (
     stars: number,
     comment: string,
