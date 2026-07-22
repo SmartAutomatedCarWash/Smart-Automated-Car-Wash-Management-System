@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,7 +19,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import {
@@ -131,8 +131,8 @@ export function StaffMySessionsView() {
 
   const startMutation = useMutation({
     mutationFn: (sessionId: string) => startStaffSession(sessionId),
-    onSuccess: () => { invalidate(); toast.success("Wash session started."); },
-    onError: (error: ApiErrorResponse) => toast.error(getErrorMessage(error)),
+    onSuccess: () => { invalidate(); notify.success("Wash session started."); },
+    onError: (error: ApiErrorResponse) => notify.error(getErrorMessage(error)),
   });
 
   const completeMutation = useMutation({
@@ -140,11 +140,11 @@ export function StaffMySessionsView() {
       completeStaffSession(sessionId, note),
     onSuccess: () => {
       invalidate();
-      toast.success("Wash session completed.");
+      notify.success("Wash session completed.");
       setCompletingSession(null);
       setStaffNote("");
     },
-    onError: (error: ApiErrorResponse) => toast.error(getErrorMessage(error)),
+    onError: (error: ApiErrorResponse) => notify.error(getErrorMessage(error)),
   });
 
   const data = todayQuery.data;

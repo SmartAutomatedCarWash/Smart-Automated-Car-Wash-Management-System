@@ -93,14 +93,14 @@ public class NotificationCampaignProcessorImpl implements NotificationCampaignPr
                 if (campaign.getTargetDetails() == null || campaign.getTargetDetails().isBlank()) {
                     yield List.of();
                 }
-                String[] userIds = campaign.getTargetDetails().split(",");
-                List<UUID> uuids = new ArrayList<>();
-                for (String idStr : userIds) {
-                    try {
-                        uuids.add(UUID.fromString(idStr.trim()));
-                    } catch (IllegalArgumentException ignored) {}
+                String[] emails = campaign.getTargetDetails().split(",");
+                List<String> emailList = new ArrayList<>();
+                for (String email : emails) {
+                    if (!email.trim().isBlank()) {
+                        emailList.add(email.trim());
+                    }
                 }
-                yield userRepository.findAllById(uuids);
+                yield userRepository.findByEmailInIgnoreCase(emailList);
             }
         };
     }

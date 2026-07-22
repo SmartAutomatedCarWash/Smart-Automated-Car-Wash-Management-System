@@ -274,6 +274,8 @@ export type StaffSessionHistoryParams = {
   staffId?: string;
 };
 
+export type AdminSessionHistoryParams = StaffSessionHistoryParams;
+
 export type StartSessionRequest = {
   startedAt: string;
 };

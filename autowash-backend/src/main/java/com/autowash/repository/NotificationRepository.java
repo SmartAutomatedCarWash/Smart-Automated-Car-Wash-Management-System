@@ -16,5 +16,10 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 
     long countByUserAndReadFalse(User user);
 
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM Notification n WHERE n.campaign.id = :campaignId")
+    void deleteByCampaignId(@org.springframework.data.repository.query.Param("campaignId") UUID campaignId);
+
     List<Notification> findTop20ByOrderByCreatedAtDesc();
 }

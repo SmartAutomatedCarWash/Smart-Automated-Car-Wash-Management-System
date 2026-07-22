@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,7 +18,7 @@ import {
   Loader2,
   Copy,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { Badge } from "@/shared/ui/ui/badge";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
@@ -448,7 +448,7 @@ function CustomerProfilePanel({
       <button
         onClick={() => {
           navigator.clipboard.writeText(customerId);
-          toast.success(translate(language, "Đã sao chép ID!", "Copied ID!"));
+          notify.success(translate(language, "Đã sao chép ID!", "Copied ID!"));
         }}
         className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-sky-600 hover:bg-slate-100 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium"
         title={translate(language, "Sao chép ID người dùng", "Copy User ID")}
