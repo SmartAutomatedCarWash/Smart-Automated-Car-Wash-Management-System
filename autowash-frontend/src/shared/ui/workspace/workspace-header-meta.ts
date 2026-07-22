@@ -3,6 +3,8 @@ type WorkspaceRole = "CUSTOMER" | "STAFF" | "MANAGER" | "ADMIN";
 export type WorkspaceHeaderMeta = {
   title: string;
   subtitle: string;
+  titleVi?: string;
+  subtitleVi?: string;
   workspace: WorkspaceRole;
 };
 
@@ -137,6 +139,8 @@ const ROUTE_META: Array<{
     meta: {
       title: "Operations Queue",
       subtitle: "Check in vehicles and keep every wash session moving",
+      titleVi: "Điều phối vận hành",
+      subtitleVi: "Theo dõi và điều phối các session theo thời gian thực.",
       workspace: "MANAGER",
     },
   },
@@ -153,6 +157,8 @@ const ROUTE_META: Array<{
     meta: {
       title: "Operations Queue",
       subtitle: "Check in vehicles and keep every wash session moving",
+      titleVi: "Điều phối vận hành",
+      subtitleVi: "Theo dõi và điều phối các session theo thời gian thực.",
       workspace: "MANAGER",
     },
   },
@@ -161,14 +167,38 @@ const ROUTE_META: Array<{
     meta: {
       title: "Staff Management",
       subtitle: "Manage shifts, KPI, staff availability, and workload",
+      titleVi: "Quản lý nhân viên",
+      subtitleVi: "Quản lý tài khoản, hiệu suất, booking và trải nghiệm khách hàng.",
+      workspace: "MANAGER",
+    },
+  },
+  {
+    match: (pathname) => pathname.startsWith("/manager/history"),
+    meta: {
+      title: "Wash Session History",
+      subtitle: "Review completed wash sessions across staff and service quality",
+      titleVi: "Lịch sử phiên rửa",
+      subtitleVi: "Theo dõi các phiên đã hoàn thành theo staff, biển số, thời gian và đánh giá.",
+      workspace: "MANAGER",
+    },
+  },
+  {
+    match: (pathname) => pathname.startsWith("/manager/promotions"),
+    meta: {
+      title: "Promotion Management",
+      subtitle: "Review promotions, vouchers, and active customer offers",
+      titleVi: "Quản lý khuyến mãi",
+      subtitleVi: "Theo dõi promotions, voucher và ưu đãi đang áp dụng cho khách hàng.",
       workspace: "MANAGER",
     },
   },
   {
     match: (pathname) => pathname.startsWith("/manager/reports"),
     meta: {
-      title: "Dashboard",
+      title: "Reports",
       subtitle: "Track revenue, booking volume, and staff KPI performance",
+      titleVi: "Báo cáo vận hành",
+      subtitleVi: "Theo dõi doanh thu, hiệu suất staff, chất lượng dịch vụ và điểm nghẽn vận hành.",
       workspace: "MANAGER",
     },
   },
@@ -177,6 +207,8 @@ const ROUTE_META: Array<{
     meta: {
       title: "Settings",
       subtitle: "Configure shifts, staff notifications, and priority vehicle alerts",
+      titleVi: "Cài đặt",
+      subtitleVi: "Cấu hình ca làm, thông báo staff và quy tắc ưu tiên booking.",
       workspace: "MANAGER",
     },
   },
@@ -238,11 +270,12 @@ const ROUTE_META: Array<{
   {
     match: (pathname) =>
       pathname.startsWith("/admin/offers") ||
+      pathname.startsWith("/admin/promotions") ||
       pathname.startsWith("/admin/discounts") ||
       pathname.startsWith("/admin/tier-voucher-offers"),
     meta: {
-      title: "Discount Management",
-      subtitle: "Review discounts, tier voucher offers, and redemption oversight",
+      title: "Promotion Management",
+      subtitle: "Review promotions, discounts, tier voucher offers, and redemption oversight",
       workspace: "ADMIN",
     },
   },

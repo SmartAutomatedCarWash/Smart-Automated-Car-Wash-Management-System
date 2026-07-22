@@ -2,7 +2,6 @@ package com.autowash.service.impl;
 
 import com.autowash.entity.enums.BookingItemType;
 
-
 import com.autowash.dto.AdminDashboardFullResponse;
 import com.autowash.dto.AdminDashboardFullResponse.BookingTrend;
 import com.autowash.dto.AdminDashboardFullResponse.BookingStatusDist;
@@ -17,6 +16,7 @@ import com.autowash.dto.AdminDashboardFullResponse.ReviewSummary;
 import com.autowash.dto.AdminDashboardFullResponse.TopServices;
 import com.autowash.dto.AdminDashboardFullResponse.VoucherStats;
 import com.autowash.entity.Booking;
+import com.autowash.entity.BookingDetail;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -88,45 +89,47 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
 
     @Override
     public AdminDashboardFullResponse getDashboardFull() {
-        // Load bookings once and reuse across sections to reduce DB round-trips
-        List<Booking> allBookings = bookingRepository.findAll();
-        Map<UUID, String> serviceNameMap = buildServiceNameMap(allBookings);
+        // Tier map: only used for recentBookings, noShowAlerts, customerInsights (VIP calc via SQL now)
         Map<String, String> tierByCustomerId = buildTierByCustomerIdMap();
 
+        // Recent bookings: fetches only 10 rows with necessary joins
+        List<Booking> recentBookings = bookingRepository.findTop10ByOrderByCreatedAtDesc(PageRequest.of(0, 10));
+        Map<UUID, String> serviceNameMap = buildServiceNameMapFromBookings(recentBookings);
+
         return new AdminDashboardFullResponse(
-                buildKpis(allBookings),
-                buildBookingTrend(allBookings),
-                buildBookingStatusDist(allBookings),
-                buildPeakHours(allBookings),
+                buildKpis(),
+                buildBookingTrend(),
+                buildBookingStatusDist(),
+                buildPeakHours(),
                 buildRealTimeOps(),
                 buildLoyaltyTierDist(tierByCustomerId),
                 buildVoucherStats(),
-                buildTopServices(allBookings, serviceNameMap),
-                buildCustomerInsights(allBookings, tierByCustomerId),
-                buildNoShowAlerts(allBookings, tierByCustomerId),
-                buildRecentBookings(allBookings, serviceNameMap, tierByCustomerId),
+                buildTopServices(),
+                buildCustomerInsights(tierByCustomerId),
+                buildNoShowAlerts(tierByCustomerId),
+                buildRecentBookings(recentBookings, serviceNameMap, tierByCustomerId),
                 buildReviewSummary()
         );
     }
 
     // -------------------------------------------------------------------------
-    // Helper: build service name map from packageId / comboId
+    // Helper: build service name map from a small list of bookings
     // -------------------------------------------------------------------------
-    private Map<UUID, String> buildServiceNameMap(List<Booking> bookings) {
+    private Map<UUID, String> buildServiceNameMapFromBookings(List<Booking> bookings) {
         List<UUID> packageIds = bookings.stream()
-                .map(b -> b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null))
+                .map(b -> firstDetailRefId(b, BookingItemType.PACKAGE))
                 .filter(Objects::nonNull).distinct().toList();
         List<UUID> comboIds = bookings.stream()
-                .map(b -> b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null))
+                .map(b -> firstDetailRefId(b, BookingItemType.COMBO))
                 .filter(Objects::nonNull).distinct().toList();
         Map<UUID, String> names = new HashMap<>();
-        packageRepository.findAllById(packageIds).forEach(p -> names.put(p.getId(), p.getName()));
-        comboRepository.findAllById(comboIds).forEach(c -> names.put(c.getId(), c.getName()));
+        if (!packageIds.isEmpty()) packageRepository.findAllById(packageIds).forEach(p -> names.put(p.getId(), p.getName()));
+        if (!comboIds.isEmpty()) comboRepository.findAllById(comboIds).forEach(c -> names.put(c.getId(), c.getName()));
         return names;
     }
 
     // -------------------------------------------------------------------------
-    // Helper: tier map by customerId string
+    // Helper: tier map by customerId string (needed for noShowAlerts + recentBookings)
     // -------------------------------------------------------------------------
     private Map<String, String> buildTierByCustomerIdMap() {
         return loyaltyAccountRepository.findAll().stream()
@@ -141,46 +144,39 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
     // Helper: resolve service ID from booking
     // -------------------------------------------------------------------------
     private UUID serviceId(Booking b) {
-        UUID pkgId = b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null);
-        return pkgId != null ? pkgId : b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null);
+        UUID pkgId = firstDetailRefId(b, BookingItemType.PACKAGE);
+        return pkgId != null ? pkgId : firstDetailRefId(b, BookingItemType.COMBO);
+    }
+
+    private UUID firstDetailRefId(Booking booking, BookingItemType itemType) {
+        return booking.getDetails().stream()
+                .filter(detail -> detail.getItemType() == itemType)
+                .map(BookingDetail::getRefId)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 
     // -------------------------------------------------------------------------
-    // Section 1 — KPIs
+    // Section 1 — KPIs (all via SQL aggregates)
     // -------------------------------------------------------------------------
-    private Kpis buildKpis(List<Booking> allBookings) {
+    private Kpis buildKpis() {
         ZoneId zone = ZoneId.systemDefault();
         Instant todayStart = LocalDate.now(zone).atStartOfDay(zone).toInstant();
         Instant todayEnd = LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant();
         Instant yesterdayStart = LocalDate.now(zone).minusDays(1).atStartOfDay(zone).toInstant();
 
-        long todayBookings = allBookings.stream()
-                .filter(b -> !b.getStatus().equals(BookingStatus.CANCELLED)
-                        && !b.getStatus().equals(BookingStatus.NO_SHOW)
-                        && b.getScheduledAt().isAfter(todayStart)
-                        && b.getScheduledAt().isBefore(todayEnd))
-                .count();
-
-        long yesterdayBookings = allBookings.stream()
-                .filter(b -> !b.getStatus().equals(BookingStatus.CANCELLED)
-                        && !b.getStatus().equals(BookingStatus.NO_SHOW)
-                        && b.getScheduledAt().isAfter(yesterdayStart)
-                        && b.getScheduledAt().isBefore(todayStart))
-                .count();
-
+        List<BookingStatus> excluded = List.of(BookingStatus.CANCELLED, BookingStatus.NO_SHOW);
+        long todayBookings = bookingRepository.countByScheduledAtBetweenAndStatusNotIn(todayStart, todayEnd, excluded);
+        long yesterdayBookings = bookingRepository.countByScheduledAtBetweenAndStatusNotIn(yesterdayStart, todayStart, excluded);
         long delta = todayBookings - yesterdayBookings;
 
-        long completedToday = allBookings.stream()
-                .filter(b -> b.getStatus().equals(BookingStatus.COMPLETED)
-                        && b.getUpdatedAt().isAfter(todayStart))
-                .count();
+        long completedToday = bookingRepository.countByStatusAndUpdatedAtAfter(BookingStatus.COMPLETED, todayStart);
 
-        long activeCustomers = userRepository
-                .findByRoleAndStatusOrderByFullNameAsc(UserRole.CUSTOMER, UserStatus.ACTIVE).size();
+        long activeCustomers = userRepository.countByRoleAndStatus(UserRole.CUSTOMER, UserStatus.ACTIVE);
 
-        long totalBookings = allBookings.size();
-        long noShows = allBookings.stream()
-                .filter(b -> b.getStatus().equals(BookingStatus.NO_SHOW)).count();
+        long totalBookings = bookingRepository.count();
+        long noShows = bookingRepository.countByStatusEnum(BookingStatus.NO_SHOW);
         double noShowRate = totalBookings > 0 ? (double) noShows / totalBookings * 100.0 : 0.0;
 
         long loyaltyMembers = loyaltyAccountRepository.count();
@@ -190,18 +186,16 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
         double voucherRedemptionRate = totalVouchers > 0
                 ? (double) usedVouchers / totalVouchers * 100.0 : 0.0;
 
-        long totalRevenue = allBookings.stream()
-                .filter(b -> b.getStatus().equals(BookingStatus.COMPLETED))
-                .mapToLong(b -> b.getPricing() != null ? b.getPricing().getFinalAmount() : 0L).sum();
+        long totalRevenue = bookingRepository.sumTotalRevenue();
 
         return new Kpis(todayBookings, delta, completedToday, activeCustomers,
                 noShowRate, loyaltyMembers, voucherRedemptionRate, totalRevenue);
     }
 
     // -------------------------------------------------------------------------
-    // Section 2 — Booking trend (last 7 days)
+    // Section 2 — Booking trend (last 7 days, 7 count queries)
     // -------------------------------------------------------------------------
-    private BookingTrend buildBookingTrend(List<Booking> allBookings) {
+    private BookingTrend buildBookingTrend() {
         ZoneId zone = ZoneId.systemDefault();
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MM/dd").withZone(zone);
         List<BookingTrend.TrendPoint> points = new ArrayList<>();
@@ -210,20 +204,20 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
             LocalDate date = LocalDate.now(zone).minusDays(i);
             Instant start = date.atStartOfDay(zone).toInstant();
             Instant end = date.plusDays(1).atStartOfDay(zone).toInstant();
-            long count = allBookings.stream()
-                    .filter(b -> b.getScheduledAt().isAfter(start) && b.getScheduledAt().isBefore(end))
-                    .count();
+            long count = bookingRepository.countByScheduledAtBetween(start, end);
             points.add(new BookingTrend.TrendPoint(fmt.format(start), count));
         }
         return new BookingTrend(points);
     }
 
     // -------------------------------------------------------------------------
-    // Section 2 — Booking status distribution
+    // Section 2 — Booking status distribution (single GROUP BY query)
     // -------------------------------------------------------------------------
-    private BookingStatusDist buildBookingStatusDist(List<Booking> allBookings) {
-        Map<BookingStatus, Long> byStatus = allBookings.stream()
-                .collect(Collectors.groupingBy(Booking::getStatus, Collectors.counting()));
+    private BookingStatusDist buildBookingStatusDist() {
+        Map<BookingStatus, Long> byStatus = new HashMap<>();
+        for (Object[] row : bookingRepository.countGroupByStatus()) {
+            byStatus.put((BookingStatus) row[0], (Long) row[1]);
+        }
         return new BookingStatusDist(
                 byStatus.getOrDefault(BookingStatus.PENDING, 0L),
                 byStatus.getOrDefault(BookingStatus.CONFIRMED, 0L),
@@ -236,22 +230,25 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
     }
 
     // -------------------------------------------------------------------------
-    // Section 3 — Peak hours (last 30 days, 08–20)
+    // Section 3 — Peak hours (last 30 days — only fetches scheduledAt timestamps)
     // -------------------------------------------------------------------------
-    private PeakHourData buildPeakHours(List<Booking> allBookings) {
+    private PeakHourData buildPeakHours() {
         ZoneId zone = ZoneId.systemDefault();
         Instant from = LocalDate.now(zone).minusDays(30).atStartOfDay(zone).toInstant();
-        List<Booking> recent = allBookings.stream()
-                .filter(b -> b.getScheduledAt().isAfter(from))
-                .toList();
+
+        // Only fetch the scheduledAt timestamps — not full booking objects
+        List<Instant> scheduledAts = bookingRepository.findScheduledAtAfter(from);
+
+        // Count by hour in memory (minimal data: just Instant values)
+        Map<Integer, Long> countByHour = scheduledAts.stream()
+                .collect(Collectors.groupingBy(
+                        ts -> ts.atZone(zone).getHour(),
+                        Collectors.counting()
+                ));
 
         List<PeakHourData.HourSlot> slots = new ArrayList<>();
         for (int hour = 8; hour <= 20; hour++) {
-            final int h = hour;
-            long count = recent.stream()
-                    .filter(b -> b.getScheduledAt().atZone(zone).getHour() == h)
-                    .count();
-            slots.add(new PeakHourData.HourSlot(String.format("%02d:00", h), count));
+            slots.add(new PeakHourData.HourSlot(String.format("%02d:00", hour), countByHour.getOrDefault(hour, 0L)));
         }
         return new PeakHourData(slots);
     }
@@ -300,97 +297,90 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
     }
 
     // -------------------------------------------------------------------------
-    // Section 5 — Top services
+    // Section 5 — Top services (via GROUP BY on BookingDetail)
     // -------------------------------------------------------------------------
-    private TopServices buildTopServices(List<Booking> allBookings, Map<UUID, String> serviceNameMap) {
-        long total = allBookings.size();
-        Map<String, Long> countByName = allBookings.stream()
-                .collect(Collectors.groupingBy(
-                        b -> {
-                            UUID sid = serviceId(b);
-                            return sid != null ? serviceNameMap.getOrDefault(sid, "Unknown") : "Unknown";
-                        },
-                        Collectors.counting()
-                ));
+    private TopServices buildTopServices() {
+        List<Object[]> rows = bookingRepository.countGroupByRefIdAndItemType();
+        long totalBookings = bookingRepository.count();
+
+        // Collect package / combo IDs referenced
+        List<UUID> packageIds = new ArrayList<>();
+        List<UUID> comboIds = new ArrayList<>();
+        for (Object[] row : rows) {
+            UUID refId = (UUID) row[0];
+            BookingItemType type = (BookingItemType) row[1];
+            if (refId == null) continue;
+            if (type == BookingItemType.PACKAGE) packageIds.add(refId);
+            else if (type == BookingItemType.COMBO) comboIds.add(refId);
+        }
+
+        Map<UUID, String> names = new HashMap<>();
+        if (!packageIds.isEmpty()) packageRepository.findAllById(packageIds).forEach(p -> names.put(p.getId(), p.getName()));
+        if (!comboIds.isEmpty()) comboRepository.findAllById(comboIds).forEach(c -> names.put(c.getId(), c.getName()));
+
+        // Aggregate by service name (multiple details may map to same package)
+        Map<String, Long> countByName = new HashMap<>();
+        for (Object[] row : rows) {
+            UUID refId = (UUID) row[0];
+            Long cnt = (Long) row[2];
+            if (refId == null || cnt == null) continue;
+            String name = names.getOrDefault(refId, "Unknown");
+            countByName.merge(name, cnt, Long::sum);
+        }
 
         List<TopServices.ServiceItem> items = countByName.entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
                 .limit(5)
                 .map(e -> new TopServices.ServiceItem(
                         null, e.getKey(), e.getValue(),
-                        total > 0 ? (double) e.getValue() / total * 100.0 : 0.0))
+                        totalBookings > 0 ? (double) e.getValue() / totalBookings * 100.0 : 0.0))
                 .collect(Collectors.toList());
         return new TopServices(items);
     }
 
     // -------------------------------------------------------------------------
-    // Section 5 — Customer insights
+    // Section 5 — Customer insights (all SQL counts)
     // -------------------------------------------------------------------------
-    private CustomerInsights buildCustomerInsights(List<Booking> allBookings, Map<String, String> tierByCustomerId) {
+    private CustomerInsights buildCustomerInsights(Map<String, String> tierByCustomerId) {
         ZoneId zone = ZoneId.systemDefault();
         Instant monthStart = LocalDate.now(zone).withDayOfMonth(1).atStartOfDay(zone).toInstant();
 
-        long newThisMonth = userRepository.findByRoleOrderByFullNameAsc(UserRole.CUSTOMER).stream()
-                .filter(u -> u.getCreatedAt().isAfter(monthStart))
-                .count();
+        long newThisMonth = userRepository.countByRoleAndCreatedAtAfter(UserRole.CUSTOMER, monthStart);
+        long returning = bookingRepository.countReturningCustomers();
 
-        // Returning: customers with >1 completed booking
-        long returning = allBookings.stream()
-                .filter(b -> b.getStatus().equals(BookingStatus.COMPLETED))
-                .collect(Collectors.groupingBy(b -> b.getCustomer().getId(), Collectors.counting()))
-                .values().stream().filter(cnt -> cnt > 1).count();
-
-        // VIP: GOLD or higher
+        // VIP: count loyalty accounts with GOLD/PLATINUM/DIAMOND tier
         long vip = tierByCustomerId.values().stream()
                 .filter(t -> t.contains("GOLD") || t.contains("PLATINUM") || t.contains("DIAMOND"))
                 .count();
 
-        long inactive = userRepository
-                .findByRoleAndStatusOrderByFullNameAsc(UserRole.CUSTOMER, UserStatus.INACTIVE).size();
+        long inactive = userRepository.countByRoleAndStatus(UserRole.CUSTOMER, UserStatus.INACTIVE);
 
         return new CustomerInsights(newThisMonth, returning, vip, inactive);
     }
 
     // -------------------------------------------------------------------------
-    // Section 6 — No-show alerts
+    // Section 6 — No-show alerts (SQL GROUP BY, fetch only top 10)
     // -------------------------------------------------------------------------
-    private List<NoShowAlert> buildNoShowAlerts(List<Booking> allBookings, Map<String, String> tierByCustomerId) {
-        Map<UUID, Long> noShowCount = allBookings.stream()
-                .filter(b -> b.getStatus().equals(BookingStatus.NO_SHOW))
-                .collect(Collectors.groupingBy(b -> b.getCustomer().getId(), Collectors.counting()));
-
-        Map<UUID, Booking> lastNoShowByCustomer = new HashMap<>();
-        for (Booking b : allBookings) {
-            if (b.getStatus().equals(BookingStatus.NO_SHOW)) {
-                lastNoShowByCustomer.merge(b.getCustomer().getId(), b,
-                        (existing, newer) -> newer.getCreatedAt().isAfter(existing.getCreatedAt()) ? newer : existing);
-            }
-        }
-
-        return noShowCount.entrySet().stream()
-                .sorted(Map.Entry.<UUID, Long>comparingByValue().reversed())
-                .limit(10)
-                .map(e -> {
-                    Booking sample = lastNoShowByCustomer.get(e.getKey());
-                    return new NoShowAlert(
-                            e.getKey().toString(),
-                            sample.getCustomer().getFullName(),
-                            sample.getCustomer().getPhone(),
-                            e.getValue(),
-                            tierByCustomerId.getOrDefault(e.getKey().toString(), "BRONZE")
-                    );
+    private List<NoShowAlert> buildNoShowAlerts(Map<String, String> tierByCustomerId) {
+        List<Object[]> topRows = bookingRepository.findTopNoShowCustomers();
+        return topRows.stream()
+                .map(row -> {
+                    UUID customerId = (UUID) row[0];
+                    String fullName = (String) row[1];
+                    String phone = (String) row[2];
+                    Long count = (Long) row[3];
+                    String tier = tierByCustomerId.getOrDefault(customerId.toString(), "BRONZE");
+                    return new NoShowAlert(customerId.toString(), fullName, phone, count, tier);
                 })
                 .collect(Collectors.toList());
     }
 
     // -------------------------------------------------------------------------
-    // Section 6 — Recent bookings (latest 10)
+    // Section 6 — Recent bookings (latest 10 via indexed query)
     // -------------------------------------------------------------------------
     private List<RecentBooking> buildRecentBookings(
-            List<Booking> allBookings, Map<UUID, String> serviceNameMap, Map<String, String> tierByCustomerId) {
-        return allBookings.stream()
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .limit(10)
+            List<Booking> recentBookings, Map<UUID, String> serviceNameMap, Map<String, String> tierByCustomerId) {
+        return recentBookings.stream()
                 .map(b -> {
                     UUID sid = serviceId(b);
                     String serviceName = sid != null ? serviceNameMap.getOrDefault(sid, "Unknown") : "Unknown";

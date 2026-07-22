@@ -195,8 +195,9 @@ export function VerifyOtpForm({
               value={digit}
               onChange={(event) => handleDigitChange(index, event.target.value)}
               onKeyDown={(event) => handleKeyDown(index, event)}
+              onFocus={(event) => event.currentTarget.select()}
               inputMode="numeric"
-              maxLength={1}
+              pattern="[0-9]*"
               className={cn(
                 "h-12 w-10 rounded-xl border text-center text-xl font-semibold shadow-sm transition sm:h-14 sm:w-12 duration-300",
                 "focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-500/10",

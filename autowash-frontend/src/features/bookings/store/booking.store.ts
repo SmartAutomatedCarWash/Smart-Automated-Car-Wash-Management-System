@@ -33,6 +33,8 @@ export const EMPTY_BOOKING_DRAFT: BookingDraft = {
   discountCode: "",
   confirmationEmail: "",
   paymentMethod: null,
+  staffId: "",
+  staffIds: [],
 };
 
 const bookingStore = createStore<BookingStore>()(
@@ -62,6 +64,7 @@ const bookingStore = createStore<BookingStore>()(
           draft: EMPTY_BOOKING_DRAFT,
           expiresAt: null,
           validatedDiscount: null,
+          lastCreatedBooking: null,
         })),
       setLastCreatedBooking: (booking) =>
         set(() => ({
@@ -103,4 +106,9 @@ export function setBookingValidatedVoucher(voucher: DiscountValidationResult | n
 
 export function setLastCreatedBooking(booking: CreateBookingResponse | null) {
   bookingStore.getState().setLastCreatedBooking(booking);
+}
+
+export function getBookingDraftSnapshot() {
+  const { draft, expiresAt, lastCreatedBooking } = bookingStore.getState();
+  return { draft, expiresAt, lastCreatedBooking };
 }

@@ -1,14 +1,21 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
-import { useAdminBookingDetail } from "../hooks/use-admin-booking-detail";
-import { ArrowLeft, Calendar, Loader2, Clock, User, Car, CreditCard, CheckCircle, XCircle } from "lucide-react";
+import {
+  useAdminBookingDetail,
+  useRefundAdminVnpayPayment,
+  useUpdateAdminBookingStatus,
+} from "../hooks/use-admin-booking-detail";
+import { ArrowLeft, Calendar, Loader2, Clock, User, Car, CreditCard, CheckCircle, XCircle, Copy } from "lucide-react";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
 import { Badge } from "@/shared/ui/ui/badge";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
+import type { BookingStatus } from "@/entities/bookings";
 
 
 function translateStatus(st: string, lang: "vi" | "en") {
@@ -26,6 +33,9 @@ function translateStatus(st: string, lang: "vi" | "en") {
 
 function translatePaymentMethod(method: string, lang: "vi" | "en") {
   const map: Record<string, { vi: string; en: string }> = {
+    E_WALLET: { vi: "VNPay", en: "VNPay" },
+    CASH_AT_COUNTER: { vi: "Tiền mặt tại quầy", en: "Cash at counter" },
+    BANK_TRANSFER: { vi: "SePay", en: "SePay" },
     VNPAY: { vi: "Cổng thanh toán VNPAY", en: "VNPAY Gate" },
     CASH: { vi: "Tiền mặt", en: "Cash" },
     PAYMENT_LINK: { vi: "Link thanh toán", en: "Payment Link" },
@@ -36,8 +46,14 @@ function translatePaymentMethod(method: string, lang: "vi" | "en") {
 function translatePaymentStatus(status: string, lang: "vi" | "en") {
   const map: Record<string, { vi: string; en: string }> = {
     UNPAID: { vi: "Chưa thanh toán", en: "Unpaid" },
+    PENDING: { vi: "Chờ thanh toán", en: "Pending" },
+    PENDING_PAYMENT: { vi: "Chờ thanh toán", en: "Pending payment" },
     PAID: { vi: "Đã thanh toán", en: "Paid" },
     FAILED: { vi: "Thanh toán lỗi", en: "Failed" },
+    CANCELLED: { vi: "Đã hủy thanh toán", en: "Cancelled" },
+    REFUND_PENDING: { vi: "Chờ hoàn tiền", en: "Refund pending" },
+    PARTIALLY_REFUNDED: { vi: "Đã hoàn một phần", en: "Partially refunded" },
+    REFUND_FAILED: { vi: "Hoàn tiền lỗi", en: "Refund failed" },
     REFUNDED: { vi: "Đã hoàn tiền", en: "Refunded" },
   };
   return map[status]?.[lang] || status;
@@ -59,6 +75,15 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
   const router = useRouter();
   const { language } = useLanguageStore();
   const { data: booking, isPending, isError, error } = useAdminBookingDetail(bookingId);
+  const refundVnpayMutation = useRefundAdminVnpayPayment(bookingId);
+  const updateStatusMutation = useUpdateAdminBookingStatus(bookingId);
+  const [selectedStatus, setSelectedStatus] = useState<BookingStatus | "">("");
+
+  useEffect(() => {
+    if (booking?.status) {
+      setSelectedStatus("");
+    }
+  }, [booking?.status]);
 
   if (isPending) {
     return (
@@ -104,27 +129,58 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
     }
   };
 
-  const getAvailableStatuses = (currentStatus: string) => {
-    // Ràng buộc trạng thái: không cho lùi về các trạng thái đã qua
-    const flow = ["PENDING", "CONFIRMED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED"];
-    const currentIndex = flow.indexOf(currentStatus);
-    
-    // Nếu là trạng thái cuối (terminal state)
-    if (["COMPLETED", "CANCELLED", "NO_SHOW"].includes(currentStatus)) {
-      return [currentStatus];
-    }
-
-    let available = flow.slice(currentIndex); // Chỉ cho phép trạng thái hiện tại và tiếp theo
-    
-    // Luôn có thể hủy nếu chưa xong
-    if (!available.includes("CANCELLED")) available.push("CANCELLED");
-    if (!available.includes("NO_SHOW")) available.push("NO_SHOW");
-
-    return available;
+  const getAvailableStatuses = (): BookingStatus[] => {
+    return ["PENDING", "CONFIRMED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"];
   };
 
-  const availableStatuses = getAvailableStatuses(booking.status);
-  const isTerminalState = ["COMPLETED", "CANCELLED", "NO_SHOW"].includes(booking.status);
+  const availableStatuses = getAvailableStatuses().filter((status) => status !== booking.status);
+  const statusDirty = Boolean(selectedStatus && selectedStatus !== booking.status);
+  const isVnpayPayment = booking.payment.method === "E_WALLET";
+  const isSepayPayment = booking.payment.method === "BANK_TRANSFER";
+  const hasSepayTransferInfo = isSepayPayment && Boolean(
+    booking.payment.qrUrl
+      || booking.payment.bankCode
+      || booking.payment.accountNumber
+      || booking.payment.accountName
+      || booking.payment.transferDescription
+      || booking.payment.transactionId,
+  );
+  const canRefundVnpay = isVnpayPayment && booking.payment.status === "PAID";
+
+  const handleSaveStatus = async () => {
+    if (!selectedStatus || selectedStatus === booking.status) {
+      return;
+    }
+    try {
+      await updateStatusMutation.mutateAsync(selectedStatus);
+      toast.success(translate(language, "Đã lưu trạng thái lịch đặt.", "Booking status saved."));
+    } catch (statusError) {
+      toast.error(getErrorMessage(statusError));
+    }
+  };
+
+  const handleRefundVnpay = async () => {
+    try {
+      const confirmed = window.confirm(translate(language, "Hoàn tiền toàn bộ giao dịch VNPay này?", "Refund this VNPay payment in full?"));
+      if (!confirmed) return;
+      const result = await refundVnpayMutation.mutateAsync(undefined);
+      toast.success(result.message || translate(language, "Đã gửi yêu cầu hoàn tiền VNPay.", "VNPay refund requested."));
+    } catch (refundError) {
+      toast.error(getErrorMessage(refundError));
+    }
+  };
+
+  const handleCopyPaymentText = async (value: string | null | undefined, successMessage: string) => {
+    if (!value) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(successMessage);
+    } catch {
+      toast.error(translate(language, "Không thể copy nội dung.", "Could not copy text."));
+    }
+  };
 
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8 space-y-6 max-w-7xl mx-auto">
@@ -135,10 +191,14 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
           {translate(language, "Lịch đặt", "Booking")} #{booking.confirmationNumber}
         </h1>
-        <div className="ml-4">
-          <Select defaultValue={booking.status} disabled={isTerminalState}>
-            <SelectTrigger className={`h-8 font-semibold rounded-full px-4 ${statusColor(booking.status)}`}>
-              <SelectValue />
+        <div className="ml-4 flex items-center gap-2">
+          <Select
+            value={selectedStatus || undefined}
+            onValueChange={(value) => setSelectedStatus(value as BookingStatus)}
+            disabled={updateStatusMutation.isPending}
+          >
+            <SelectTrigger className={`h-8 font-semibold rounded-full px-4 ${statusColor(selectedStatus || booking.status)}`}>
+              <SelectValue placeholder={translateStatus(booking.status, language as "vi" | "en")} />
             </SelectTrigger>
             <SelectContent>
               {availableStatuses.map((st) => (
@@ -148,6 +208,16 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            type="button"
+            size="sm"
+            variant={statusDirty ? "default" : "outline"}
+            onClick={handleSaveStatus}
+            disabled={!statusDirty || updateStatusMutation.isPending}
+          >
+            {updateStatusMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {translate(language, "Lưu", "Save")}
+          </Button>
         </div>
       </div>
 
@@ -272,6 +342,27 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
             </CardContent>
           </Card>
 
+          {/* Staff Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{translate(language, "Nhân viên phụ trách", "Assigned Staff")}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {assignedStaffList(booking.assignedStaff, booking.staffName).length > 0 ? (
+                assignedStaffList(booking.assignedStaff, booking.staffName).map((staff, index) => (
+                  <div key={`${staff.staffName}-${index}`} className="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-black text-blue-700">
+                      {index + 1}
+                    </span>
+                    <span className="min-w-0 truncate text-sm font-semibold text-slate-700">{staff.staffName}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">{translate(language, "Chưa phân công", "Not assigned")}</p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Payment Info */}
           <Card>
             <CardHeader>
@@ -295,9 +386,86 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
                   {translatePaymentStatus(booking.payment.status, language as "vi" | "en")}
                 </Badge>
               </div>
+              {hasSepayTransferInfo ? (
+                <div className="space-y-3 rounded-lg border border-cyan-100 bg-cyan-50/60 p-3 text-sm">
+                  {booking.payment.qrUrl ? (
+                    <div className="rounded-lg border border-cyan-100 bg-white p-2">
+                      <img
+                        src={booking.payment.qrUrl}
+                        alt={translate(language, "Mã QR chuyển khoản SePay", "SePay transfer QR code")}
+                        className="mx-auto h-auto max-h-56 w-full max-w-56 object-contain"
+                      />
+                    </div>
+                  ) : null}
+                  <AdminSepayInfoRow label={translate(language, "Ngân hàng", "Bank")} value={booking.payment.bankCode ?? "--"} />
+                  <AdminSepayInfoRow
+                    label={translate(language, "Số tài khoản", "Account")}
+                    value={booking.payment.accountNumber ?? "--"}
+                    onCopy={() => handleCopyPaymentText(booking.payment.accountNumber, translate(language, "Đã copy số tài khoản.", "Account number copied."))}
+                  />
+                  <AdminSepayInfoRow label={translate(language, "Tên tài khoản", "Account name")} value={booking.payment.accountName ?? "--"} />
+                  <AdminSepayInfoRow label={translate(language, "Số tiền", "Amount")} value={formatCurrency(booking.pricing.finalAmount)} />
+                  <AdminSepayInfoRow
+                    label={translate(language, "Nội dung", "Description")}
+                    value={booking.payment.transferDescription ?? booking.payment.transactionId ?? "--"}
+                    onCopy={() => handleCopyPaymentText(
+                      booking.payment.transferDescription ?? booking.payment.transactionId,
+                      translate(language, "Đã copy nội dung chuyển khoản.", "Transfer description copied."),
+                    )}
+                  />
+                </div>
+              ) : null}
+              {canRefundVnpay ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-rose-200 text-rose-700 hover:bg-rose-50"
+                  onClick={handleRefundVnpay}
+                  disabled={refundVnpayMutation.isPending}
+                >
+                  {refundVnpayMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {translate(language, "Hoàn tiền VNPay", "Refund VNPay")}
+                </Button>
+              ) : null}
             </CardContent>
           </Card>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function assignedStaffList(
+  assignedStaff: Array<{ staffName: string; sortOrder: number }> | undefined,
+  fallback?: string | null,
+) {
+  const staff = (assignedStaff ?? [])
+    .slice()
+    .sort((left, right) => left.sortOrder - right.sortOrder)
+    .map((item) => ({ staffName: item.staffName }))
+    .filter((item) => Boolean(item.staffName));
+  return staff.length > 0 || !fallback ? staff : [{ staffName: fallback }];
+}
+
+function AdminSepayInfoRow({
+  label,
+  value,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  onCopy?: () => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <span className="shrink-0 text-slate-500">{label}</span>
+      <div className="flex min-w-0 items-start gap-1.5 text-right">
+        <span className="break-words font-semibold text-slate-900">{value}</span>
+        {onCopy ? (
+          <Button type="button" variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={onCopy}>
+            <Copy className="h-3.5 w-3.5" />
+          </Button>
+        ) : null}
       </div>
     </div>
   );

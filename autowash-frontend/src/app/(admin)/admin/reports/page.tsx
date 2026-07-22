@@ -1,5 +1,5 @@
-import { AdminBusinessHealthPage } from "@/features/reports/components/admin-business-health-page";
+import { AdminReportsPage as AdminReportsView } from "@/features/operations/components/admin-reports-page";
 
 export default function AdminReportsPage() {
-  return <AdminBusinessHealthPage />;
+  return <AdminReportsView />;
 }

@@ -4,13 +4,14 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Star, Award, Sparkles, MessageSquare, CheckCircle2, Loader2, ImageUp } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/ui/ui/dialog";
 import { Button } from "@/shared/ui/ui/button";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { uploadReviewImage } from "@/features/bookings/lib/review-service";
 
 interface BookingCompletionPopupProps {
   bookingId: string;
+  vehiclePlate?: string;
   pointsEarned: number;
   newTier?: string | null;
   oldTier?: string | null;
@@ -21,6 +22,7 @@ interface BookingCompletionPopupProps {
 
 export function BookingCompletionPopup({
   bookingId,
+  vehiclePlate,
   pointsEarned,
   newTier,
   oldTier,
@@ -37,6 +39,7 @@ export function BookingCompletionPopup({
   const [afterImageUrl, setAfterImageUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const displayCode = vehiclePlate ?? bookingId;
 
   // Confetti Particle Class
   useEffect(() => {
@@ -129,10 +132,10 @@ export function BookingCompletionPopup({
         beforeImageUrl: beforeImageUrl || null,
         afterImageUrl: afterImageUrl || null,
       });
-      toast.success(translate(language, "Cảm ơn bạn đã gửi đánh giá!", "Thank you for your feedback!"));
+      notify.success(translate(language, "Cảm ơn bạn đã gửi đánh giá!", "Thank you for your feedback!"));
       onClose();
     } catch (err) {
-      toast.error(translate(language, "Không thể gửi đánh giá.", "Failed to submit review."));
+      notify.error(translate(language, "Không thể gửi đánh giá.", "Failed to submit review."));
     } finally {
       setSubmitting(false);
     }
@@ -181,8 +184,8 @@ export function BookingCompletionPopup({
               </DialogTitle>
               <DialogDescription className="text-sm font-medium text-muted-foreground mt-2">
                 {language === "vi"
-                  ? `Mã đặt lịch #${bookingId} đã hoàn thành xuất sắc.`
-                  : `Booking #${bookingId} has been successfully completed.`}
+                  ? `Xe #${displayCode} đã hoàn thành xuất sắc.`
+                  : `Vehicle #${displayCode} has been successfully completed.`}
               </DialogDescription>
             </DialogHeader>
 
@@ -296,9 +299,9 @@ function ReviewImageUploadField({ label, value, onChange }: { label: string; val
     try {
       const uploaded = await uploadReviewImage(file);
       onChange(uploaded.url);
-      toast.success("Image uploaded.");
+      notify.success("Image uploaded.");
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      notify.error(getErrorMessage(error));
     } finally {
       setUploading(false);
       event.target.value = "";

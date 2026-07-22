@@ -22,12 +22,19 @@ import org.springframework.data.repository.query.Param;
 
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
+    @Override
+    @EntityGraph(attributePaths = {"customer", "pricing", "details"})
+    List<Booking> findAll();
+
     @Query("SELECT bd.refId FROM BookingDetail bd JOIN bd.booking b WHERE bd.itemType = 'PACKAGE' AND b.status IN ('COMPLETED', 'CONFIRMED') GROUP BY bd.refId ORDER BY COUNT(bd.id) DESC LIMIT 1")
     Optional<UUID> findTopPackageId();
 
     long countByCustomerAndStatusIn(User customer, Collection<BookingStatus> statuses);
 
     long countByAssignedStaffAndStatusIn(User assignedStaff, Collection<BookingStatus> statuses);
+
+    @EntityGraph(attributePaths = {"details"})
+    List<Booking> findByAssignedStaffAndStatusIn(User assignedStaff, Collection<BookingStatus> statuses);
 
     long countByAssignedStaffAndStatus(User assignedStaff, BookingStatus status);
 
@@ -87,7 +94,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
         return findByCustomerAndScheduledAtBetweenOrderByCreatedAtDesc(customer, scheduledFrom, scheduledTo, pageable);
     }
 
-    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff", "details", "pricing"})
     @Query("""
             select booking from Booking booking
             where (:#{#statusFilter == false} = true or booking.status in :statuses)
@@ -203,6 +210,83 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("select coalesce(sum(b.pricing.finalAmount), 0) from Booking b where b.status = :status")
     long sumFinalAmountByStatus(@Param("status") BookingStatus status);
 
+    // ---- Dashboard aggregate queries (avoid findAll) ----
+
+    @Query("select count(b) from Booking b where b.status not in :excludedStatuses and b.scheduledAt >= :from and b.scheduledAt < :to")
+    long countByScheduledAtBetweenAndStatusNotIn(@Param("from") Instant from, @Param("to") Instant to, @Param("excludedStatuses") Collection<BookingStatus> excludedStatuses);
+
+    @Query("select count(b) from Booking b where b.status = :status and b.updatedAt >= :from")
+    long countByStatusAndUpdatedAtAfter(@Param("status") BookingStatus status, @Param("from") Instant from);
+
+    @Query("select count(b) from Booking b where b.status = :status")
+    long countByStatusEnum(@Param("status") BookingStatus status);
+
+    @Query("select coalesce(sum(b.pricing.finalAmount), 0) from Booking b where b.status = 'COMPLETED'")
+    long sumTotalRevenue();
+
+    // Booking trend: count per day
+    @Query("select count(b) from Booking b where b.scheduledAt >= :from and b.scheduledAt < :to")
+    long countByScheduledAtBetween(@Param("from") Instant from, @Param("to") Instant to);
+
+    // Status distribution in one shot
+    @Query("select b.status, count(b) from Booking b group by b.status")
+    List<Object[]> countGroupByStatus();
+
+    // Peak hour: count bookings per hour bucket
+    @Query("select count(b) from Booking b where b.scheduledAt >= :from")
+    long countByScheduledAtAfter(@Param("from") Instant from);
+
+    // No-show alerts: top customers by no-show count
+    @Query(value = """
+            select b.customer_id, u.full_name, u.phone, count(b.id)
+            from bookings b
+            join users u on u.id = b.customer_id
+            where b.status = 'NO_SHOW'
+            group by b.customer_id, u.full_name, u.phone
+            order by count(b.id) desc
+            limit 10
+            """, nativeQuery = true)
+    List<Object[]> findTopNoShowCustomers();
+
+    // Last no-show date per customer
+    @Query("""
+            select b.customer.id, max(b.createdAt)
+            from Booking b
+            where b.status = 'NO_SHOW'
+            group by b.customer.id
+            """)
+    List<Object[]> findLastNoShowDateByCustomer();
+
+    // Recent bookings: last 10
+    @EntityGraph(attributePaths = {"customer", "pricing", "details"})
+    @Query("select b from Booking b order by b.createdAt desc")
+    List<Booking> findTop10ByOrderByCreatedAtDesc(org.springframework.data.domain.Pageable pageable);
+
+    // Returning customers: customers with >1 completed booking
+    @Query(value = """
+            select count(*) from (
+              select customer_id
+              from bookings
+              where status = 'COMPLETED'
+              group by customer_id
+              having count(*) > 1
+            ) as sub
+            """, nativeQuery = true)
+    long countReturningCustomers();
+
+    // Top services: count by packageId or comboId
+    @Query("""
+            select bd.refId, bd.itemType, count(bd)
+            from BookingDetail bd
+            group by bd.refId, bd.itemType
+            order by count(bd) desc
+            """)
+    List<Object[]> countGroupByRefIdAndItemType();
+
+    // Peak hours data (bookings in last 30 days)
+    @Query("select b.scheduledAt from Booking b where b.scheduledAt >= :from")
+    List<Instant> findScheduledAtAfter(@Param("from") Instant from);
+
     List<Booking> findByScheduledAtBetweenAndStatusIn(Instant from, Instant to, Collection<BookingStatus> statuses);
 
     @Query("SELECT b FROM Booking b WHERE b.scheduledAt BETWEEN :from AND :to AND b.status IN :statuses AND b.reminderSent = false")
@@ -225,7 +309,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             @Param("checkedInStatuses") Collection<WashSessionStatus> checkedInStatuses
     );
 
-    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff", "details", "pricing"})
     @Query("""
             select booking from Booking booking
             left join LoyaltyAccount la on la.customer = booking.customer
@@ -244,7 +328,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             Pageable pageable
     );
 
-    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff", "details", "pricing"})
     @Query("""
             select booking from Booking booking
             left join LoyaltyAccount la on la.customer = booking.customer
@@ -294,4 +378,21 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     private static Instant endOfDay(LocalDate date) {
         return date == null ? null : date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusNanos(1).toInstant();
     }
+
+    long countByUpdatedAtAfterAndStatus(Instant after, BookingStatus status);
+
+    @Query("SELECT b.scheduledAt FROM Booking b WHERE b.scheduledAt >= :from")
+    List<Instant> findScheduledAtByScheduledAtAfter(@Param("from") Instant from);
+
+    @Query("SELECT bd.refId, COUNT(bd.id) FROM BookingDetail bd WHERE bd.booking.status != 'CANCELLED' GROUP BY bd.refId ORDER BY COUNT(bd.id) DESC")
+    List<Object[]> findTopServiceIds(Pageable pageable);
+
+    @Query("SELECT COUNT(b.id) FROM Booking b WHERE b.status = 'COMPLETED' GROUP BY b.customer.id HAVING COUNT(b.id) > 1")
+    List<Long> findReturningCustomerCounts();
+
+    @Query("SELECT b.customer.id, COUNT(b.id) FROM Booking b WHERE b.status = 'NO_SHOW' GROUP BY b.customer.id ORDER BY COUNT(b.id) DESC")
+    List<Object[]> findTopNoShowCustomers(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
+    List<Booking> findTop10ByOrderByCreatedAtDesc();
 }

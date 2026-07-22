@@ -21,6 +21,8 @@ export function LoginForm() {
   const getErrorMessage = useErrorMessage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [loginFieldsUnlocked, setLoginFieldsUnlocked] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const user = useAuthStore((state) => state.user);
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -36,16 +38,21 @@ export function LoginForm() {
   }, [accessToken, router, user]);
 
   const normalizedEmail = normalizeLoginIdentifier(email);
+  const isDemoEmail = ["admin@demo.com", "manager@demo.com", "staff@demo.com", "customer@demo.com"].includes(
+    normalizedEmail,
+  );
   const emailValidationMessage = getLoginIdentifierValidationMessage(normalizedEmail);
+  const visibleEmailValidationMessage = submitted || email.length > 0 ? emailValidationMessage : null;
   const passwordValidationMessage =
-    password.length > 0 && password.length < 8 ? "Mat khau phai co it nhat 8 ky tu." : null;
+    !isDemoEmail && (submitted || password.length > 0) && password.length > 0 && password.length < 8 ? "Mat khau phai co it nhat 8 ky tu." : null;
 
-  const canSubmit = emailValidationMessage === null && password.length >= 8 && !loginMutation.isPending;
+  const canSubmit = emailValidationMessage === null && (isDemoEmail ? password.length > 0 : password.length >= 8) && !loginMutation.isPending;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitted(true);
 
-    if (emailValidationMessage !== null || password.length < 8) {
+    if (emailValidationMessage !== null || (isDemoEmail ? password.length === 0 : password.length < 8)) {
       return;
     }
 
@@ -62,7 +69,7 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
       <div className="grid gap-2">
         <Label htmlFor="email" className="text-sm font-semibold text-foreground">
           Email
@@ -71,16 +78,18 @@ export function LoginForm() {
           <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             id="email"
-            autoComplete="username"
+            autoComplete="off"
             inputMode="email"
-            name="email"
+            name="loginEmailInput"
+            readOnly={!loginFieldsUnlocked}
+            onFocus={() => setLoginFieldsUnlocked(true)}
             value={email}
             onChange={(event) => setEmail(event.target.value.replace(/\s/g, ""))}
             placeholder="Enter email"
             className="h-12 rounded-xl border-slate-200 bg-slate-50/70 pl-10 text-base shadow-none transition focus:border-sky-400 focus:bg-white focus:ring-sky-200"
           />
         </div>
-        {emailValidationMessage ? <p className="text-sm text-rose-600">{emailValidationMessage}</p> : null}
+        {visibleEmailValidationMessage ? <p className="text-sm text-rose-600">{visibleEmailValidationMessage}</p> : null}
       </div>
 
       <div className="grid gap-2">
@@ -96,8 +105,10 @@ export function LoginForm() {
           <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             id="password"
-            autoComplete="current-password"
-            name="password"
+            autoComplete="new-password"
+            name="loginPasswordInput"
+            readOnly={!loginFieldsUnlocked}
+            onFocus={() => setLoginFieldsUnlocked(true)}
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -123,7 +134,10 @@ export function LoginForm() {
           <Sparkles className="h-4 w-4 text-sky-600" />
           Dang nhap bang email
         </div>
-        <div>Sau khi dang nhap, he thong tu chuyen den khu vuc khach hang.</div>
+        <div>Sau khi dang nhap, he thong tu chuyen den dung khu vuc theo vai tro.</div>
+        <div className="mt-2 text-xs font-semibold text-sky-800">
+          Demo local: manager@demo.com, staff@demo.com, admin@demo.com, customer@demo.com. Mat khau bat ky.
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

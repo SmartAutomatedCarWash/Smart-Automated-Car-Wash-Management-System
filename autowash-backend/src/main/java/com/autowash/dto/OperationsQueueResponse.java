@@ -43,6 +43,7 @@ public record OperationsQueueResponse(
             String servicePackage,
             UUID assignedStaffId,
             String assignedStaffName,
+            List<BookingDetailResponse.StaffAssignment> assignedStaff,
             String status,
             LocalDate bookingDate,
             LocalTime bookingTime,

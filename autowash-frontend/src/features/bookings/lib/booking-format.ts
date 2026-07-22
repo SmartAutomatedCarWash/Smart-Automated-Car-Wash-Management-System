@@ -49,6 +49,20 @@ export function buildCreateBookingPayload(draft: BookingDraft): CreateBookingReq
     payload.comboId = draft.comboId;
   }
 
+  const staffIds = (draft.staffIds ?? [])
+    .map((staffId) => normalizeOptionalText(staffId))
+    .filter((staffId): staffId is string => Boolean(staffId));
+  if (staffIds.length > 0) {
+    payload.staffIds = staffIds;
+    payload.staffId = staffIds[0];
+  } else {
+    const staffId = normalizeOptionalText(draft.staffId ?? "");
+    if (staffId) {
+      payload.staffId = staffId;
+      payload.staffIds = [staffId];
+    }
+  }
+
   const discountCode = normalizeOptionalText(sanitizeVoucherCodeInput(draft.discountCode));
   if (discountCode) {
     payload.discountCode = discountCode;
@@ -107,7 +121,7 @@ export function buildBookingSummary(
     return null;
   }
 
-  const subtotal = input.ownedComboApplied ? 0 : selectedCombo.basePrice;
+  const subtotal = (input.ownedComboApplied ? 0 : selectedCombo.basePrice) + addonsTotal;
   const totalDiscountAmount = Math.min(input.voucher?.discountAmount ?? 0, subtotal);
   
   const finalAmount = Math.max(subtotal - totalDiscountAmount, 0);
@@ -117,12 +131,12 @@ export function buildBookingSummary(
     itemId: selectedCombo.comboId,
     itemName: selectedCombo.name,
     baseAmount: selectedCombo.basePrice,
-    addonsTotal: 0,
+    addonsTotal,
     subtotal,
     discountAmount: totalDiscountAmount,
     finalAmount,
     estimatedDurationLabel: `${selectedCombo.durationDays} day combo`,
-    selectedAddons: [],
+    selectedAddons,
     selectedDiscountCode: input.voucher?.discountCode ?? null,
     paymentMethod: draft.paymentMethod,
   };
@@ -147,9 +161,13 @@ export function validateBookingDraft(
   }
   if (!draft.bookingDate) {
     errors.bookingDate = "Please choose a booking date.";
+  } else if (draft.bookingDate < formatLocalDateInput(0)) {
+    errors.bookingDate = "Please choose today or a future date.";
   }
   if (!draft.bookingTime) {
     errors.bookingTime = "Please choose a booking time.";
+  } else if (draft.bookingDate === formatLocalDateInput(0) && isPastOrCurrentTime(draft.bookingTime)) {
+    errors.bookingTime = "Please choose a future time slot.";
   }
   if (draft.confirmationEmail?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.confirmationEmail.trim())) {
     errors.confirmationEmail = "Please enter a valid confirmation email.";
@@ -185,9 +203,9 @@ export function getBookingStatusLabel(status: BookingStatus) {
 export function getPaymentMethodLabel(method: PaymentMethod | string) {
   switch (method) {
     case "BANK_TRANSFER":
-      return "Bank transfer";
+      return "SePay";
     case "E_WALLET":
-      return "E-wallet";
+      return "VNPay";
     case "CASH_AT_COUNTER":
       return "Cash at counter";
     default:
@@ -220,6 +238,15 @@ export function formatLocalDateInput(offsetDays = 0) {
   const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function isPastOrCurrentTime(time: string) {
+  const [hours, minutes] = time.split(":").map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return false;
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  return hours * 60 + minutes <= currentMinutes;
 }
 
 export function getAvailableBookingTimeSlots(

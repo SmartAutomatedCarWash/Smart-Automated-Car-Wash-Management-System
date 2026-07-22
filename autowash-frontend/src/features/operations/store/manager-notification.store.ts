@@ -22,6 +22,7 @@ type ManagerNotificationState = {
   push: (notification: PushNotificationInput) => ManagerNotification;
   openPopup: (notificationId: string) => void;
   closePopup: () => void;
+  markRead: (notificationId: string) => void;
   markAllRead: () => void;
   clear: () => void;
 };
@@ -31,11 +32,11 @@ export const useManagerNotificationStore = create<ManagerNotificationState>((set
     {
       id: "manager-welcome-note",
       kind: "info",
-      title: "Manager notification center đã sẵn sàng",
-      message: "Các thao tác như thêm staff, cập nhật ca, gửi note hoặc đánh dấu xe ưu tiên sẽ hiện tại đây.",
+      title: "Manager notification center is ready",
+      message: "Staff changes, session updates, notes, and priority vehicle actions will appear here.",
       target: "Manager",
       href: "/manager/settings",
-      createdAt: "09:00",
+      createdAt: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
       read: false,
     },
   ],
@@ -44,7 +45,7 @@ export const useManagerNotificationStore = create<ManagerNotificationState>((set
     const nextNotification: ManagerNotification = {
       ...notification,
       id: `manager-notification-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      createdAt: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+      createdAt: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
       read: false,
     };
 
@@ -65,6 +66,12 @@ export const useManagerNotificationStore = create<ManagerNotificationState>((set
     }));
   },
   closePopup: () => set({ activePopup: null }),
+  markRead: (notificationId) =>
+    set((state) => ({
+      notifications: state.notifications.map((item) =>
+        item.id === notificationId ? { ...item, read: true } : item,
+      ),
+    })),
   markAllRead: () =>
     set((state) => ({
       notifications: state.notifications.map((item) => ({ ...item, read: true })),

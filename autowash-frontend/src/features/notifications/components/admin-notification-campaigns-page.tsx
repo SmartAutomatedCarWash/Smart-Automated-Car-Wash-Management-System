@@ -8,7 +8,7 @@ import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { Input } from "@/shared/ui/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/ui/table";
-import { Plus, X, Send, Clock, Users, Tag, Target } from "lucide-react";
+import { Plus, X, Send, Clock, Users, Tag, Target, Megaphone, TrendingUp, Search, Eye, Trash2, Edit2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 
@@ -64,18 +64,107 @@ export function AdminNotificationCampaignsPage() {
 
   const campaigns = campaignPage?.content ?? [];
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState("ALL");
+  const [audienceFilter, setAudienceFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-black text-slate-800">{t("Chiến dịch thông báo", "Notification Campaigns")}</h2>
-          <p className="text-xs text-slate-500 font-semibold mt-1">
-            {t("Gửi thông báo hàng loạt hoặc theo nhóm khách hàng", "Send bulk notifications or target specific customer groups")}
-          </p>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Card className="rounded-2xl border-slate-100 shadow-sm bg-white p-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
+            <Megaphone className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t("Tổng chiến dịch", "Total Campaigns")}</p>
+            <div className="flex items-baseline gap-2 mt-0.5">
+              <h3 className="text-xl font-black text-slate-800">{campaignPage?.totalElements ?? 12}</h3>
+            </div>
+            <p className="text-[9px] font-semibold text-slate-400 mt-0.5">{t("Tất cả chiến dịch", "All time campaigns")}</p>
+          </div>
+        </Card>
+
+        <Card className="rounded-2xl border-slate-100 shadow-sm bg-white p-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+            <Send className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t("Gửi hôm nay", "Sent Today")}</p>
+            <div className="flex items-baseline gap-2 mt-0.5">
+              <h3 className="text-xl font-black text-slate-800">4</h3>
+            </div>
+            <p className="text-[9px] font-semibold text-slate-400 mt-0.5">{t("Đã gửi thành công", "Successfully sent")}</p>
+          </div>
+        </Card>
+
+        <Card className="rounded-2xl border-slate-100 shadow-sm bg-white p-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <TrendingUp className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t("Tỷ lệ thành công", "Success Rate")}</p>
+            <div className="flex items-baseline gap-2 mt-0.5">
+              <h3 className="text-xl font-black text-slate-800">98%</h3>
+            </div>
+            <p className="text-[9px] font-semibold text-slate-400 mt-0.5">{t("Tỷ lệ thành công tổng", "All time success rate")}</p>
+          </div>
+        </Card>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={t("Tìm kiếm tiêu đề hoặc nội dung...", "Search title or content...")}
+            className="w-full pl-9 h-11 rounded-2xl border-slate-200 text-xs font-semibold focus-visible:ring-teal-500 bg-white"
+          />
         </div>
-        <Button onClick={() => setShowModal(true)} className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs gap-1.5 h-9 px-3">
-          <Plus className="h-3.5 w-3.5" />
-          {t("Soạn thông báo mới", "Compose Notification")}
+        
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-[140px] h-11 rounded-2xl border-slate-200 text-xs font-bold bg-white">
+            <SelectValue placeholder="All Types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Types</SelectItem>
+            <SelectItem value="PROMOTION">Promotion</SelectItem>
+            <SelectItem value="SYSTEM">System</SelectItem>
+            <SelectItem value="LOYALTY">Loyalty</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={audienceFilter} onValueChange={setAudienceFilter}>
+          <SelectTrigger className="w-[150px] h-11 rounded-2xl border-slate-200 text-xs font-bold bg-white">
+            <SelectValue placeholder="All Audiences" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Audiences</SelectItem>
+            <SelectItem value="ALL_CUSTOMERS">All Customers</SelectItem>
+            <SelectItem value="TIER">By Tier</SelectItem>
+            <SelectItem value="INDIVIDUALS">Individuals</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[140px] h-11 rounded-2xl border-slate-200 text-xs font-bold bg-white">
+            <SelectValue placeholder="All Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Status</SelectItem>
+            <SelectItem value="COMPLETED">Completed</SelectItem>
+            <SelectItem value="SCHEDULED">Scheduled</SelectItem>
+            <SelectItem value="DRAFT">Draft</SelectItem>
+            <SelectItem value="FAILED">Failed</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Button onClick={() => setShowModal(true)} className="rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs gap-1.5 h-11 px-5 shadow-sm">
+          <Plus className="h-4 w-4" />
+          {t("Soạn thông báo", "Compose Notification")}
         </Button>
       </div>
 
@@ -84,12 +173,13 @@ export function AdminNotificationCampaignsPage() {
           <Table>
             <TableHeader className="bg-slate-50/50">
               <TableRow>
-                <TableHead className="font-bold text-slate-700 text-xs">{t("Tiêu đề", "Title")}</TableHead>
-                <TableHead className="font-bold text-slate-700 text-xs">{t("Loại", "Type")}</TableHead>
-                <TableHead className="font-bold text-slate-700 text-xs">{t("Đối tượng", "Audience")}</TableHead>
-                <TableHead className="font-bold text-slate-700 text-xs">{t("Trạng thái", "Status")}</TableHead>
-                <TableHead className="font-bold text-slate-700 text-xs text-right">{t("Kết quả", "Results")}</TableHead>
-                <TableHead className="font-bold text-slate-700 text-xs text-right">{t("Thời gian tạo", "Created At")}</TableHead>
+                <TableHead className="font-bold text-slate-700 text-[11px] uppercase tracking-wider">{t("Tiêu đề", "Title")}</TableHead>
+                <TableHead className="font-bold text-slate-700 text-[11px] uppercase tracking-wider">{t("Loại", "Type")}</TableHead>
+                <TableHead className="font-bold text-slate-700 text-[11px] uppercase tracking-wider">{t("Đối tượng", "Audience")}</TableHead>
+                <TableHead className="font-bold text-slate-700 text-[11px] uppercase tracking-wider">{t("Trạng thái", "Status")}</TableHead>
+                <TableHead className="font-bold text-slate-700 text-[11px] uppercase tracking-wider text-center">{t("Kết quả", "Results")}</TableHead>
+                <TableHead className="font-bold text-slate-700 text-[11px] uppercase tracking-wider text-right">{t("Thời gian tạo", "Created At")}</TableHead>
+                <TableHead className="font-bold text-slate-700 text-[11px] uppercase tracking-wider text-center w-24">{t("Hành động", "Actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -109,39 +199,72 @@ export function AdminNotificationCampaignsPage() {
                 campaigns.map((camp) => (
                   <TableRow 
                     key={camp.id} 
-                    className="hover:bg-slate-50/50 transition cursor-pointer"
-                    onClick={() => setSelectedCampaign(camp)}
+                    className="hover:bg-slate-50/50 transition"
                   >
                     <TableCell>
                       <p className="text-xs font-bold text-slate-800">{camp.title}</p>
-                      <p className="text-[10px] text-slate-500 truncate max-w-xs">{camp.message}</p>
+                      <p className="text-[10px] font-semibold text-slate-500 truncate max-w-xs">{camp.message}</p>
                     </TableCell>
                     <TableCell>
-                      <span className="px-2 py-0.5 rounded text-[9px] font-black tracking-wider bg-purple-50 text-purple-700">
-                        {camp.type}
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-black tracking-wider ${
+                        camp.type === 'PROMOTION' ? 'bg-purple-50 text-purple-700' :
+                        camp.type === 'SYSTEM' ? 'bg-teal-50 text-teal-700' :
+                        camp.type === 'BOOKING_REMINDER' ? 'bg-orange-50 text-orange-700' :
+                        'bg-slate-100 text-slate-700'
+                      }`}>
+                        {camp.type === 'SYSTEM' ? 'ANNOUNCEMENT' : 
+                         camp.type === 'BOOKING_REMINDER' ? 'REMINDER' : 
+                         camp.type}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className="px-2 py-0.5 rounded text-[9px] font-black tracking-wider bg-blue-50 text-blue-700">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-black tracking-wider bg-blue-50 text-blue-700">
                         {camp.targetAudience}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-black tracking-wider ${
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-black tracking-wider ${
                         camp.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700" :
                         camp.status === "FAILED" ? "bg-rose-50 text-rose-700" :
-                        "bg-amber-50 text-amber-700"
+                        camp.status === "SCHEDULED" ? "bg-amber-50 text-amber-700" :
+                        "bg-slate-100 text-slate-700"
                       }`}>
                         {camp.status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="text-[10px] font-bold text-slate-600">
+                    <TableCell className="text-center">
+                      <div className="text-[11px] font-bold text-slate-600">
                         <span className="text-emerald-600">{camp.successCount}</span> / <span className="text-rose-600">{camp.failedCount}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right text-[10px] font-semibold text-slate-500">
+                    <TableCell className="text-right text-[11px] font-semibold text-slate-500">
                       {new Date(camp.createdAt).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => setSelectedCampaign(camp)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition"
+                          title="View details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        {camp.status === "SCHEDULED" || camp.status === "DRAFT" ? (
+                          <button
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition"
+                            title="Edit"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <button
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -320,3 +443,4 @@ export function AdminNotificationCampaignsPage() {
     </div>
   );
 }
+

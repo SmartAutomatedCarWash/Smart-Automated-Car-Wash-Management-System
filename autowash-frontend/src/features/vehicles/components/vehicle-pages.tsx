@@ -34,6 +34,7 @@ import {
   getVehicleDisplayField,
   getVehicleDisplayName,
 } from "@/features/vehicles/lib/vehicle-display";
+import { getVehicleToastErrorMessage, VEHICLE_TOAST_OPTIONS } from "@/features/vehicles/lib/vehicle-toast";
 import {
   useCreateCustomerVehicle,
   useCustomerVehicleDetail,
@@ -151,10 +152,17 @@ export function CustomerVehicleCreateClientPage() {
 
     try {
       const createdVehicle = await createVehicleMutation.mutateAsync(buildCreateCustomerVehicleRequest(form));
-      toast.success(translate(language, "Xe da duoc tao thanh cong.", "Vehicle created successfully."));
+      toast.success(translate(language, "Xe da duoc tao thanh cong.", "Vehicle created successfully."), VEHICLE_TOAST_OPTIONS);
       router.push(`/customer/vehicles/${createdVehicle.vehicleId}`);
-    } catch {
-      toast.error(translate(language, "Khong the tao xe.", "Unable to create vehicle."));
+    } catch (error) {
+      toast.error(
+        getVehicleToastErrorMessage(
+          error,
+          translate(language, "Khong the tao xe.", "Unable to create vehicle."),
+          getErrorMessage,
+        ),
+        VEHICLE_TOAST_OPTIONS,
+      );
     }
   };
 
@@ -255,36 +263,57 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
     }
 
     if (!hasChanges) {
-      toast.info(translate(language, "Chua co thay doi nao de luu.", "No changes to save."));
+      toast.info(translate(language, "Chua co thay doi nao de luu.", "No changes to save."), VEHICLE_TOAST_OPTIONS);
       router.push("/customer/vehicles");
       return;
     }
 
     try {
       await updateMutation.mutateAsync(buildUpdateCustomerVehicleRequest(form));
-      toast.success(translate(language, "Xe da duoc cap nhat thanh cong.", "Vehicle updated successfully."));
+      toast.success(translate(language, "Xe da duoc cap nhat thanh cong.", "Vehicle updated successfully."), VEHICLE_TOAST_OPTIONS);
       router.push("/customer/vehicles");
-    } catch {
-      toast.error(translate(language, "Khong the cap nhat xe.", "Unable to update vehicle."));
+    } catch (error) {
+      toast.error(
+        getVehicleToastErrorMessage(
+          error,
+          translate(language, "Khong the cap nhat xe.", "Unable to update vehicle."),
+          getErrorMessage,
+        ),
+        VEHICLE_TOAST_OPTIONS,
+      );
     }
   };
 
   const handleSetPrimary = async () => {
     try {
       await setPrimaryMutation.mutateAsync();
-      toast.success(translate(language, "Xe chinh da duoc cap nhat.", "Primary vehicle updated."));
-    } catch {
-      toast.error(translate(language, "Khong the dat xe chinh.", "Unable to set primary vehicle."));
+      toast.success(translate(language, "Xe chinh da duoc cap nhat.", "Primary vehicle updated."), VEHICLE_TOAST_OPTIONS);
+    } catch (error) {
+      toast.error(
+        getVehicleToastErrorMessage(
+          error,
+          translate(language, "Khong the dat xe chinh.", "Unable to set primary vehicle."),
+          getErrorMessage,
+        ),
+        VEHICLE_TOAST_OPTIONS,
+      );
     }
   };
 
   const handleDelete = async () => {
     try {
       await deleteMutation.mutateAsync();
-      toast.success(translate(language, "Xe da duoc xoa.", "Vehicle removed."));
+      toast.success(translate(language, "Xe da duoc xoa.", "Vehicle removed."), VEHICLE_TOAST_OPTIONS);
       router.push("/customer/vehicles");
-    } catch {
-      toast.error(translate(language, "Khong the xoa xe.", "Unable to delete vehicle."));
+    } catch (error) {
+      toast.error(
+        getVehicleToastErrorMessage(
+          error,
+          translate(language, "Khong the xoa xe.", "Unable to delete vehicle."),
+          getErrorMessage,
+        ),
+        VEHICLE_TOAST_OPTIONS,
+      );
     }
   };
 
@@ -604,6 +633,7 @@ function VehicleListCard({
   language: "vi" | "en";
 }) {
   const router = useRouter();
+  const getErrorMessage = useErrorMessage();
   const setPrimaryMutation = useSetPrimaryCustomerVehicle(vehicle.vehicleId);
   const deleteMutation = useDeleteCustomerVehicle(vehicle.vehicleId);
   const vehicleDisplayName = getVehicleDisplayName(vehicle, language);
@@ -611,19 +641,33 @@ function VehicleListCard({
   const handleSetPrimary = async () => {
     try {
       await setPrimaryMutation.mutateAsync();
-      toast.success(translate(language, "Xe chinh da duoc cap nhat.", "Primary vehicle updated."));
-    } catch {
-      toast.error(translate(language, "Khong the cap nhat xe chinh.", "Unable to update primary vehicle."));
+      toast.success(translate(language, "Xe chinh da duoc cap nhat.", "Primary vehicle updated."), VEHICLE_TOAST_OPTIONS);
+    } catch (error) {
+      toast.error(
+        getVehicleToastErrorMessage(
+          error,
+          translate(language, "Khong the cap nhat xe chinh.", "Unable to update primary vehicle."),
+          getErrorMessage,
+        ),
+        VEHICLE_TOAST_OPTIONS,
+      );
     }
   };
 
   const handleDelete = async () => {
     try {
       await deleteMutation.mutateAsync();
-      toast.success(translate(language, "Xe da duoc xoa.", "Vehicle removed."));
+      toast.success(translate(language, "Xe da duoc xoa.", "Vehicle removed."), VEHICLE_TOAST_OPTIONS);
       onDeleteChange(null);
-    } catch {
-      toast.error(translate(language, "Khong the xoa xe.", "Unable to delete vehicle."));
+    } catch (error) {
+      toast.error(
+        getVehicleToastErrorMessage(
+          error,
+          translate(language, "Khong the xoa xe.", "Unable to delete vehicle."),
+          getErrorMessage,
+        ),
+        VEHICLE_TOAST_OPTIONS,
+      );
     }
   };
 

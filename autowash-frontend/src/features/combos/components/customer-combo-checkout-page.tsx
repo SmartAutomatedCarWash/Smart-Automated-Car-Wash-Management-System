@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,7 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { Badge } from "@/shared/ui/ui/badge";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
@@ -238,8 +238,8 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
   ];
   const paymentMethods = [
     {
-      label: "Chuyển khoản ngân hàng",
-      note: "Xác nhận tự động sau khi nối cổng thanh toán",
+      label: "SePay",
+      note: "Xác nhận tự động bằng mã thanh toán AU",
     },
     {
       label: "Ví điện tử",
@@ -269,7 +269,7 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
     setShowValidation(true);
 
     if (!ownedCombo && fieldErrors.paymentMethod) {
-      toast.error("Thiếu thông tin thanh toán combo.");
+      notify.error("Thiếu thông tin thanh toán combo.");
       return;
     }
 
@@ -277,7 +277,7 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
       ownedCombo &&
       (fieldErrors.vehicleId || fieldErrors.bookingDate || fieldErrors.bookingTime || fieldErrors.paymentMethod)
     ) {
-      toast.error("Thiếu thông tin đặt lịch cho combo.");
+      notify.error("Thiếu thông tin đặt lịch cho combo.");
       return;
     }
 
@@ -295,7 +295,7 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
           paymentMethod,
         });
 
-        toast.success("Đã dùng combo sẵn có và tạo lịch thành công.");
+        notify.success("Đã dùng combo sẵn có và tạo lịch thành công.");
         router.push(`/customer/bookings/${booking.bookingId}`);
         return;
       }
@@ -305,10 +305,10 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
         paymentMethod,
       });
 
-      toast.success("Đã mua combo thành công. Bạn có thể dùng gói này để đặt lịch ngay bây giờ.");
+      notify.success("Đã mua combo thành công. Bạn có thể dùng gói này để đặt lịch ngay bây giờ.");
       router.push("/customer/home");
     } catch (submitError) {
-      toast.error(getErrorMessage(submitError));
+      notify.error(getErrorMessage(submitError));
     }
   };
 

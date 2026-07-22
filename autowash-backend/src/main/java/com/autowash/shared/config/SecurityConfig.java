@@ -51,6 +51,9 @@ public class SecurityConfig {
                                 "/api/v1/notifications/ticker",
                                 "/api/v1/blog/**",
                                 "/api/v1/reviews/featured",
+                                "/api/v1/payments/vnpay/return",
+                                "/api/v1/payments/vnpay/ipn",
+                                "/api/v1/payments/sepay/webhook",
                                 "/api/v1/packages/*",
                                 "/api/v1/combos/*",
                                 "/api/v1/settings/public",
@@ -67,13 +70,33 @@ public class SecurityConfig {
                 .build();
     }
 
-    @Value("${AUTOWASH_FRONTEND_BASE_URL:http://localhost:3000}")
+    @Value("${autowash.auth.google.frontend-base-url:http://localhost:3000}")
     private String frontendBaseUrl;
+
+    @Value("${autowash.cors.extra-origins:}")
+    private String extraOrigins;
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*", frontendBaseUrl, frontendBaseUrl + "/*"));
+
+        List<String> origins = new java.util.ArrayList<>(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                frontendBaseUrl,
+                frontendBaseUrl + "/*"
+        ));
+        if (extraOrigins != null && !extraOrigins.isBlank()) {
+            for (String origin : extraOrigins.split(",")) {
+                String trimmed = origin.trim();
+                if (!trimmed.isEmpty()) {
+                    origins.add(trimmed);
+                    origins.add(trimmed + "/*");
+                }
+            }
+        }
+
+        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { TierBadge } from "@/shared/ui/customer/customer-experience";
+import { CartDrawer } from "@/features/cart/components/cart-drawer";
 import {
   ArrowRightFromLine,
   Bell,
@@ -63,6 +64,7 @@ import {
 import { useCustomerNotifications, useMarkCustomerNotificationAsRead } from "@/features/notifications/hooks/use-customer-notifications";
 import { useTierStore } from "@/shared/store/tier.store";
 import { useTierStyle } from "@/shared/lib/tier-styles";
+import { WorkspaceHeaderProvider, type WorkspaceHeaderConfig } from "@/shared/ui/workspace/workspace-header-context";
 
 type RoleWorkspaceShellProps = {
   requiredRole: UserRole;
@@ -94,6 +96,8 @@ const PAGE_TITLE_VI: Record<string, string> = {
   "Operations Health": "Sức khỏe vận hành",
   "Reports & Analytics": "Báo cáo & Phân tích",
   "Manager Profile": "Hồ sơ Manager",
+  "Operations Queue": "Điều phối vận hành",
+  Reports: "Báo cáo vận hành",
   "Staff Management": "Quản lý nhân viên",
   "Service Management": "Quản lý dịch vụ",
   "Offers Management": "Quản lý ưu đãi",
@@ -120,6 +124,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const [isMounted, setIsMounted] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [headerConfig, setHeaderConfig] = useState<WorkspaceHeaderConfig | null>(null);
 
   const { language, setLanguage, hydrateLanguage } = useLanguageStore();
   const { theme, setTheme } = useTheme();
@@ -166,6 +171,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   }, [isCustomer, customerNotificationsQuery.data]);
 
   const [prevUnreadCount, setPrevUnreadCount] = useState<number | null>(null);
+  const [selectedManagerNotificationId, setSelectedManagerNotificationId] = useState<string | null>(null);
 
   // Monitor customer notifications for toast alerts
   useEffect(() => {
@@ -204,12 +210,18 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const navItems = navForRole(requiredRole);
   const mobileItems = mobileNavForRole(requiredRole);
   const headerMeta = getWorkspaceHeaderMeta(pathname);
+  const headerTitle = language === "vi" ? (headerMeta.titleVi ?? getPageTitle(headerMeta.title, language)) : headerMeta.title;
+  const headerSubtitle = language === "vi" ? (headerMeta.subtitleVi ?? headerMeta.subtitle) : headerMeta.subtitle;
   const managerNotifications = useManagerNotificationStore((state) => state.notifications);
   const activeManagerPopup = useManagerNotificationStore((state) => state.activePopup);
-  const openManagerNotificationPopup = useManagerNotificationStore((state) => state.openPopup);
   const closeManagerNotificationPopup = useManagerNotificationStore((state) => state.closePopup);
+  const markManagerNotificationRead = useManagerNotificationStore((state) => state.markRead);
   const markAllManagerNotificationsRead = useManagerNotificationStore((state) => state.markAllRead);
   const unreadManagerNotifications = managerNotifications.filter((notification) => !notification.read).length;
+  const selectedManagerNotification = useMemo(() => {
+    if (!selectedManagerNotificationId) return null;
+    return managerNotifications.find((notification) => notification.id === selectedManagerNotificationId) ?? null;
+  }, [managerNotifications, selectedManagerNotificationId]);
 
   const { fetchTiers } = useTierStore();
   
@@ -217,6 +229,12 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   useEffect(() => {
     hydrateLanguage();
   }, [hydrateLanguage]);
+
+  useEffect(() => {
+    if (requiredRole === "MANAGER" && language !== "en") {
+      setLanguage("en");
+    }
+  }, [language, requiredRole, setLanguage]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -305,7 +323,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     requiredRole === "CUSTOMER" ? "/customer/profile"
     : requiredRole === "STAFF" ? "/staff/profile"
     : requiredRole === "MANAGER" ? "/manager/profile"
-    : "/admin/dashboard";
+    : "/admin/profile";
 
   const quickActions = getProfileQuickActions(requiredRole);
 
@@ -402,7 +420,8 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-y-auto">
         {/* Header */}
         <header className="relative z-30 border-b border-cyan-900/10 bg-white/84 px-4 py-4 shadow-[0_12px_40px_rgba(6,17,26,0.04)] backdrop-blur-xl lg:px-8">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start justify-between gap-3">
             {/* Left: title */}
             <div className="flex min-w-0 items-start gap-3">
               <button
@@ -414,17 +433,26 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 <Menu className="h-5 w-5" />
               </button>
 
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className={cn("mb-1 inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider", workspaceTheme.accentSoft)}>
                   {language === "vi" ? (workspaceTheme.labelVi ?? workspaceTheme.label) : workspaceTheme.label}
                 </p>
                 <h1 className="truncate text-xl font-bold tracking-tight lg:text-2xl">
-                  {getPageTitle(headerMeta.title, language)}
+                  {headerTitle}
                 </h1>
-                {headerMeta.subtitle ? (
-                  <p className="mt-1 max-w-2xl truncate text-sm font-semibold text-muted-foreground">
-                    {headerMeta.subtitle}
-                  </p>
+                {headerSubtitle || headerConfig?.toolbar ? (
+                  <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+                    {headerSubtitle ? (
+                      <p className="min-w-0 flex-1 text-sm font-semibold text-muted-foreground">
+                        {headerSubtitle}
+                      </p>
+                    ) : <div />}
+                    {headerConfig?.toolbar ? (
+                      <div className="shrink-0">
+                        {headerConfig.toolbar}
+                      </div>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             </div>
@@ -472,6 +500,9 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <Moon className="h-4 w-4 text-muted-foreground" />
                 )}
               </button>
+
+              {/* Customer cart drawer */}
+              {isCustomer && <CartDrawer />}
 
               {/* Staff notification bell */}
               {isStaff && (
@@ -709,7 +740,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               )}
 
               {isManager && (
-                <Popover>
+                <Popover onOpenChange={(open) => { if (!open) setSelectedManagerNotificationId(null); }}>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
@@ -717,68 +748,132 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                       aria-label={t("Thông báo Manager", "Manager notifications")}
                     >
                       <Bell className={cn("h-4 w-4", unreadManagerNotifications > 0 ? "text-cyan-700" : "text-muted-foreground")} />
-                      {unreadManagerNotifications > 0 ? (
-                        <span className="absolute -right-0.5 -top-0.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-black text-white shadow-sm">
-                          {unreadManagerNotifications}
+                      {unreadManagerNotifications > 0 && (
+                        <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" />
                         </span>
-                      ) : null}
+                      )}
                     </button>
                   </PopoverTrigger>
                   <PopoverContent
                     align="end"
                     sideOffset={10}
-                    className="w-80 rounded-md border-cyan-100 bg-white/96 p-2 shadow-[0_22px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl"
+                    className="w-80 rounded-md border-cyan-900/10 bg-white/95 p-3 shadow-[0_22px_60px_rgba(6,17,26,0.12)] backdrop-blur-xl"
                   >
-                    <div className="flex items-center justify-between px-2 py-2">
-                      <div>
-                        <p className="text-sm font-black text-slate-950">{t("Thông báo vận hành", "Operations alerts")}</p>
-                        <p className="text-[11px] font-semibold text-muted-foreground">
-                          {unreadManagerNotifications > 0
-                            ? t(`${unreadManagerNotifications} thông báo chưa đọc`, `${unreadManagerNotifications} unread alerts`)
-                            : t("Tất cả đã đọc", "All caught up")}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        className="rounded-full bg-cyan-50 px-2.5 py-1 text-[11px] font-black text-cyan-800 hover:bg-cyan-100"
-                        onClick={markAllManagerNotificationsRead}
-                      >
-                        {t("Đã đọc", "Read")}
-                      </button>
-                    </div>
-                    <div className="max-h-80 space-y-1 overflow-y-auto pr-1">
-                      {managerNotifications.length === 0 ? (
-                        <p className="rounded-sm border border-dashed border-slate-200 px-3 py-6 text-center text-xs font-semibold text-slate-400">
-                          {t("Chưa có thông báo.", "No notifications yet.")}
-                        </p>
-                      ) : (
-                        managerNotifications.map((notification) => (
+                    {selectedManagerNotification ? (
+                      <div className="flex h-full flex-col animate-in slide-in-from-right-4 duration-200">
+                        <div className="mb-2 flex items-center gap-2 border-b border-border/50 pb-2">
                           <button
-                            key={notification.id}
                             type="button"
-                            className={cn(
-                              "w-full rounded-sm px-3 py-2.5 text-left transition hover:bg-cyan-50",
-                              notification.read ? "bg-white" : "bg-cyan-50/70",
-                            )}
-                            onClick={() => openManagerNotificationPopup(notification.id)}
+                            onClick={() => setSelectedManagerNotificationId(null)}
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition hover:bg-cyan-50"
+                            aria-label="Back"
                           >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <p className="truncate text-xs font-black text-slate-950">{notification.title}</p>
-                                <p className="mt-1 line-clamp-2 text-[11px] font-semibold text-slate-500">{notification.message}</p>
-                              </div>
-                              <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black", managerNotificationTone(notification.kind))}>
-                                {managerNotificationKindLabel(notification.kind)}
-                              </span>
-                            </div>
-                            <div className="mt-2 flex justify-between text-[10px] font-bold text-slate-400">
-                              <span>{notification.target ?? "Manager"}</span>
-                              <span>{notification.createdAt}</span>
-                            </div>
+                            <ChevronLeft className="h-4 w-4" />
                           </button>
-                        ))
-                      )}
-                    </div>
+                          <h3 className="flex-1 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                            Notification Detail
+                          </h3>
+                          <span className={cn("rounded-full px-2 py-0.5 text-[9px] font-black", managerNotificationTone(selectedManagerNotification.kind))}>
+                            {managerNotificationKindLabel(selectedManagerNotification.kind)}
+                          </span>
+                        </div>
+                        <div className="max-h-64 overflow-y-auto p-1">
+                          <div className="text-sm font-bold text-cyan-950">{selectedManagerNotification.title}</div>
+                          <div className="mt-1 text-[10px] font-semibold text-muted-foreground">
+                            {selectedManagerNotification.createdAt}
+                            {selectedManagerNotification.target ? ` · ${selectedManagerNotification.target}` : ""}
+                          </div>
+                          {selectedManagerNotification.plate ? (
+                            <div className="mt-3 inline-flex rounded-sm bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-800">
+                              Priority vehicle: {selectedManagerNotification.plate}
+                            </div>
+                          ) : null}
+                          <div className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-foreground">
+                            {selectedManagerNotification.message}
+                          </div>
+                          {selectedManagerNotification.href ? (
+                            <Link
+                              href={selectedManagerNotification.href}
+                              className="mt-4 flex w-full items-center justify-center rounded-sm bg-muted py-2 text-center text-[11px] font-bold text-foreground transition hover:bg-accent"
+                            >
+                              View details
+                            </Link>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex h-full flex-col animate-in slide-in-from-left-4 duration-200">
+                        <div className="mb-2 flex items-center justify-between border-b border-border/50 pb-2">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                              Notifications
+                            </h3>
+                            {unreadManagerNotifications > 0 && (
+                              <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[9px] font-black text-cyan-800">
+                                {unreadManagerNotifications}
+                              </span>
+                            )}
+                          </div>
+                          {unreadManagerNotifications > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                markAllManagerNotificationsRead();
+                                toast.success("All notifications marked as read");
+                              }}
+                              className="text-[10px] font-bold text-[#0566D9] hover:underline"
+                            >
+                              Mark all read
+                            </button>
+                          )}
+                        </div>
+
+                        {managerNotifications.length === 0 ? (
+                          <div className="py-6 text-center text-xs font-semibold text-muted-foreground">
+                            No notifications
+                          </div>
+                        ) : (
+                          <div className="max-h-64 space-y-2 overflow-y-auto">
+                            {managerNotifications.slice(0, 5).map((notification) => (
+                              <button
+                                key={notification.id}
+                                type="button"
+                                onClick={() => {
+                                  if (!notification.read) {
+                                    markManagerNotificationRead(notification.id);
+                                  }
+                                  setSelectedManagerNotificationId(notification.id);
+                                }}
+                                className={cn(
+                                  "flex w-full flex-col gap-1 rounded-sm p-2 text-left text-xs transition",
+                                  notification.read
+                                    ? "bg-muted/30 hover:bg-muted/50"
+                                    : "bg-cyan-50/70 hover:bg-cyan-50",
+                                )}
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className={cn("truncate font-bold", notification.read ? "text-muted-foreground" : "text-cyan-955")}>
+                                    {notification.title}
+                                  </span>
+                                  {!notification.read && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400" />}
+                                </div>
+                                <div className={cn("line-clamp-2 text-[11px]", notification.read ? "text-muted-foreground" : "text-foreground")}>
+                                  {notification.message}
+                                </div>
+                                <div className="mt-1 flex items-center justify-between text-[10px] font-bold text-muted-foreground">
+                                  <span className={cn("rounded-full px-2 py-0.5", managerNotificationTone(notification.kind))}>
+                                    {managerNotificationKindLabel(notification.kind)}
+                                  </span>
+                                  <span>{notification.createdAt}</span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </PopoverContent>
                 </Popover>
               )}
@@ -908,9 +1003,12 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               </button>
             </div>
           </div>
+          </div>
         </header>
 
-        <main className="min-w-0 flex-1 pb-20 lg:pb-0">{children}</main>
+        <WorkspaceHeaderProvider onConfigChange={setHeaderConfig}>
+          <main className="min-w-0 flex-1 pb-20 lg:pb-0">{children}</main>
+        </WorkspaceHeaderProvider>
         {requiredRole === "STAFF" && <StaffNotificationListener />}
 
         {/* Mobile bottom nav */}
@@ -1055,7 +1153,7 @@ function ManagerNotificationPopup({
         type="button"
         onClick={onClose}
         className="absolute right-3 top-3 rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900"
-        aria-label="Đóng thông báo"
+        aria-label="Dismiss notification"
       >
         <X className="h-4 w-4" />
       </button>
@@ -1074,7 +1172,7 @@ function ManagerNotificationPopup({
           <h4 className="mt-2 text-sm font-black text-slate-950">{notification.title}</h4>
           {notification.plate ? (
             <div className="mt-2 inline-flex rounded-sm bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-800">
-              Xe ưu tiên: {notification.plate}
+              Priority vehicle: {notification.plate}
             </div>
           ) : null}
           <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">{notification.message}</p>
@@ -1086,7 +1184,7 @@ function ManagerNotificationPopup({
                 onClick={onClose}
                 className="rounded-sm bg-[#06111a] px-3 py-2 text-[11px] font-black text-white transition hover:bg-slate-900"
               >
-                Mở chi tiết
+                View details
               </Link>
             ) : null}
           </div>
@@ -1122,12 +1220,12 @@ function managerNotificationIconTone(kind: ManagerNotificationKind) {
 
 function managerNotificationKindLabel(kind: ManagerNotificationKind) {
   const labels: Record<ManagerNotificationKind, string> = {
-    success: "Thành công",
-    error: "Lỗi",
-    warning: "Cảnh báo",
-    info: "Thông tin",
-    priority: "Ưu tiên",
-    shift: "Ca làm",
+    success: "Success",
+    error: "Error",
+    warning: "Warning",
+    info: "Info",
+    priority: "Priority",
+    shift: "Shift",
   };
   return labels[kind];
 }

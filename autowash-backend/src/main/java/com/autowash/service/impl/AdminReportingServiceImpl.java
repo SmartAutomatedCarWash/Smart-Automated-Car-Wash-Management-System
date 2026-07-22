@@ -1,6 +1,9 @@
 package com.autowash.service.impl;
 
+import com.autowash.assembler.BookingResponseAssembler;
 import com.autowash.entity.WashSession;
+import com.autowash.entity.BookingStaffAssignment;
+import com.autowash.entity.WashSessionStaffAssignment;
 
 import com.autowash.service.LoyaltyService;
 
@@ -70,6 +73,7 @@ import com.autowash.entity.Booking;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.repository.BookingRepository;
+import com.autowash.repository.BookingStaffAssignmentRepository;
 import com.autowash.repository.ComboRepository;
 import com.autowash.repository.PackageRepository;
 import com.autowash.repository.PaymentRepository;
@@ -80,6 +84,7 @@ import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PointTransactionRepository;
 import com.autowash.service.AdminReportingService;
 import com.autowash.entity.enums.WashSessionStatus;
+import com.autowash.repository.WashSessionStaffAssignmentRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.entity.Vehicle;
@@ -123,6 +128,9 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     private final PasswordEncoder passwordEncoder;
     private final PaymentRepository paymentRepository;
     private final LoyaltyAccountRepository loyaltyAccountRepository;
+    private final BookingStaffAssignmentRepository bookingStaffAssignmentRepository;
+    private final WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository;
+    private final BookingResponseAssembler bookingResponseAssembler;
 
     public AdminReportingServiceImpl(
             BookingRepository bookingRepository,
@@ -135,7 +143,10 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             VehicleRepository VehicleRepository,
             PasswordEncoder passwordEncoder,
             PaymentRepository paymentRepository,
-            LoyaltyAccountRepository loyaltyAccountRepository
+            LoyaltyAccountRepository loyaltyAccountRepository,
+            BookingStaffAssignmentRepository bookingStaffAssignmentRepository,
+            WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository,
+            BookingResponseAssembler bookingResponseAssembler
     ) {
         this.bookingRepository = bookingRepository;
         this.washSessionRepository = washSessionRepository;
@@ -148,6 +159,9 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         this.passwordEncoder = passwordEncoder;
         this.paymentRepository = paymentRepository;
         this.loyaltyAccountRepository = loyaltyAccountRepository;
+        this.bookingStaffAssignmentRepository = bookingStaffAssignmentRepository;
+        this.washSessionStaffAssignmentRepository = washSessionStaffAssignmentRepository;
+        this.bookingResponseAssembler = bookingResponseAssembler;
     }
 
     @Transactional
@@ -498,7 +512,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending())
         );
 
-        Map<UUID, WashSession> sessionsByBookingId = sessionsByBookingId(bookings.getContent());
+        Map<UUID, WashSessionRepository.SessionSummary> sessionsByBookingId = sessionSummariesByBookingId(bookings.getContent());
         Map<UUID, String> serviceNames = serviceNames(bookings.getContent());
         List<AdminBookingResponse> items = bookings.getContent().stream()
                 .map(booking -> toBookingResponse(booking, sessionsByBookingId.get(booking.getId()), serviceNames))
@@ -511,16 +525,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         Booking booking = bookingRepository.findById(UUID.fromString(bookingId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", ErrorCode.RESOURCE_NOT_FOUND));
         
-        String packageName = null;
-        if ((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null)) != null) {
-            packageName = PackageRepository.findById((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null)))
-                    .map(com.autowash.entity.Package::getName)
-                    .orElse((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null)).toString());
-        } else if ((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null)) != null) {
-            packageName = ComboRepository.findById((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null)))
-                    .map(com.autowash.entity.Combo::getName)
-                    .orElse((booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null)).toString());
-        }
+        String packageName = primaryServiceName(booking);
 
         var washSession = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
                 .orElse(null);
@@ -528,6 +533,9 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         List<BookingDetailDto> mappedDetails = booking.getDetails().stream().map(d -> new BookingDetailDto(d.getId(), d.getItemType().name(), d.getRefId(), d.getSnapshotName(), d.getSnapshotPrice(), d.getQuantity(), d.getSubtotal(), d.getDurationMinutes())).toList();
 
         PaymentInfo payment = resolvePaymentInfo(booking);
+        List<BookingDetailResponse.StaffAssignment> assignedStaff = assignedStaffForBookingDetail(booking, washSession);
+        String staffName = firstStaffName(assignedStaff, booking.getAssignedStaff());
+
         return new BookingDetailResponse(
                 booking.getId().toString(),
                 booking.getId().toString(),
@@ -554,17 +562,21 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                         booking.getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum(),
                         booking.getBookingTime().plusMinutes(booking.getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum()).format(DateTimeFormatter.ofPattern("HH:mm"))
                 ),
-                new BookingDetailResponse.Payment(
-                        payment.method().name(),
-                        payment.status().name(),
-                        payment.transactionRef(),
-                        payment.paidAt()
+                bookingResponseAssembler.toPaymentResponse(
+                        booking,
+                        new BookingResponseAssembler.PaymentInfo(
+                                PaymentMethod.valueOf(payment.method()),
+                                PaymentStatus.valueOf(payment.status()),
+                                payment.transactionRef(),
+                                payment.paidAt()
+                        )
                 ),
                 booking.getStatus().name(),
                 booking.getConfirmationStatus().name(),
                 booking.getConfirmationExpiresAt(),
                 washSession == null ? null : washSession.getId().toString(),
-                null,
+                staffName,
+                assignedStaff,
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
                 booking.getCreatedAt(),
@@ -781,23 +793,23 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         return searchQuery == null || searchQuery.isBlank() ? null : searchQuery.trim();
     }
 
-    private Map<UUID, WashSession> sessionsByBookingId(List<Booking> bookings) {
+    private Map<UUID, WashSessionRepository.SessionSummary> sessionSummariesByBookingId(List<Booking> bookings) {
         List<UUID> bookingIds = bookings.stream().map(Booking::getId).toList();
         if (bookingIds.isEmpty()) {
             return Map.of();
         }
-        return washSessionRepository.findByBooking_IdIn(bookingIds).stream()
-                .collect(Collectors.toMap(session -> session.getBooking().getId(), Function.identity(), (first, second) -> first));
+        return washSessionRepository.findLatestSummariesByBookingIds(bookingIds).stream()
+                .collect(Collectors.toMap(WashSessionRepository.SessionSummary::getBookingId, Function.identity(), (first, second) -> first));
     }
 
     private Map<UUID, String> serviceNames(Collection<Booking> bookings) {
         List<UUID> packageIds = bookings.stream()
-                .map(b -> b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null))
+                .map(b -> firstDetailRefId(b, BookingItemType.PACKAGE))
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
         List<UUID> comboIds = bookings.stream()
-                .map(b -> b.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null))
+                .map(b -> firstDetailRefId(b, BookingItemType.COMBO))
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
@@ -810,8 +822,13 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         return names;
     }
 
-    private AdminBookingResponse toBookingResponse(Booking booking, WashSession session, Map<UUID, String> serviceNames) {
-        String staffName = booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getFullName();
+    private AdminBookingResponse toBookingResponse(
+            Booking booking,
+            WashSessionRepository.SessionSummary session,
+            Map<UUID, String> serviceNames
+    ) {
+        List<BookingDetailResponse.StaffAssignment> assignedStaff = bookingStaffAssignments(booking);
+        String staffName = firstStaffName(assignedStaff, booking.getAssignedStaff());
         PaymentInfo payment = resolvePaymentInfo(booking);
         return new AdminBookingResponse(
                 booking.getId().toString(),
@@ -824,14 +841,72 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 booking.getBookingDate(),
                 booking.getBookingTime(),
                 (booking.getPricing() != null ? booking.getPricing().getFinalAmount() : 0L),
-                payment.method().name(),
-                payment.status().name(),
+                payment.method(),
+                payment.status(),
                 booking.getStatus().name(),
                 session == null ? null : session.getId(),
-                session == null ? null : session.getStatus().name(),
+                session == null ? null : session.getStatus(),
                 booking.getCreatedAt(),
-                staffName
+                staffName,
+                assignedStaff
         );
+    }
+
+    private List<BookingDetailResponse.StaffAssignment> assignedStaffForBookingDetail(Booking booking, WashSession washSession) {
+        if (washSession != null) {
+            List<BookingDetailResponse.StaffAssignment> sessionAssignments = sessionStaffAssignments(washSession);
+            if (!sessionAssignments.isEmpty()) {
+                return sessionAssignments;
+            }
+        }
+        return bookingStaffAssignments(booking);
+    }
+
+    private List<BookingDetailResponse.StaffAssignment> bookingStaffAssignments(Booking booking) {
+        List<BookingDetailResponse.StaffAssignment> assignments = bookingStaffAssignmentRepository
+                .findByBookingOrderBySortOrderAsc(booking)
+                .stream()
+                .map(this::toStaffAssignment)
+                .toList();
+        if (!assignments.isEmpty() || booking.getAssignedStaff() == null) {
+            return assignments;
+        }
+        return List.of(toStaffAssignment(booking.getAssignedStaff(), 1));
+    }
+
+    private List<BookingDetailResponse.StaffAssignment> sessionStaffAssignments(WashSession session) {
+        List<BookingDetailResponse.StaffAssignment> assignments = washSessionStaffAssignmentRepository
+                .findBySessionOrderBySortOrderAsc(session)
+                .stream()
+                .map(this::toStaffAssignment)
+                .toList();
+        if (!assignments.isEmpty() || session.getAssignedStaff() == null) {
+            return assignments;
+        }
+        return List.of(toStaffAssignment(session.getAssignedStaff(), 1));
+    }
+
+    private BookingDetailResponse.StaffAssignment toStaffAssignment(BookingStaffAssignment assignment) {
+        return toStaffAssignment(assignment.getStaff(), assignment.getSortOrder());
+    }
+
+    private BookingDetailResponse.StaffAssignment toStaffAssignment(WashSessionStaffAssignment assignment) {
+        return toStaffAssignment(assignment.getStaff(), assignment.getSortOrder());
+    }
+
+    private BookingDetailResponse.StaffAssignment toStaffAssignment(User staff, int sortOrder) {
+        return new BookingDetailResponse.StaffAssignment(
+                staff.getId().toString(),
+                staff.getFullName(),
+                sortOrder
+        );
+    }
+
+    private String firstStaffName(List<BookingDetailResponse.StaffAssignment> assignments, User fallback) {
+        if (!assignments.isEmpty()) {
+            return assignments.get(0).staffName();
+        }
+        return fallback == null ? null : fallback.getFullName();
     }
 
     private AdminAccountResponse toAccountResponse(User user) {
@@ -916,7 +991,33 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     }
 
     private UUID serviceId(Booking booking) {
-        return (booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null)) == null ? (booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.COMBO).map(d -> d.getRefId()).findFirst().orElse(null)) : (booking.getDetails().stream().filter(d -> d.getItemType() == BookingItemType.PACKAGE).map(d -> d.getRefId()).findFirst().orElse(null));
+        UUID packageId = firstDetailRefId(booking, BookingItemType.PACKAGE);
+        return packageId != null ? packageId : firstDetailRefId(booking, BookingItemType.COMBO);
+    }
+
+    private String primaryServiceName(Booking booking) {
+        UUID packageId = firstDetailRefId(booking, BookingItemType.PACKAGE);
+        if (packageId != null) {
+            return PackageRepository.findById(packageId)
+                    .map(com.autowash.entity.Package::getName)
+                    .orElse(packageId.toString());
+        }
+        UUID comboId = firstDetailRefId(booking, BookingItemType.COMBO);
+        if (comboId != null) {
+            return ComboRepository.findById(comboId)
+                    .map(com.autowash.entity.Combo::getName)
+                    .orElse(comboId.toString());
+        }
+        return null;
+    }
+
+    private UUID firstDetailRefId(Booking booking, BookingItemType itemType) {
+        return booking.getDetails().stream()
+                .filter(detail -> detail.getItemType() == itemType)
+                .map(BookingDetail::getRefId)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 
     private long sumPoints(User customer, PointTransactionType type) {
@@ -1224,22 +1325,26 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     }
 
     private PaymentInfo resolvePaymentInfo(Booking booking) {
-        return paymentRepository.findByBooking(booking)
+        return paymentRepository.findLatestSummaryByBookingId(booking.getId())
                 .map(payment -> new PaymentInfo(
-                        payment.getMethod(),
-                        payment.getStatus(),
+                        defaultString(payment.getMethod(), PaymentMethod.CASH_AT_COUNTER.name()),
+                        defaultString(payment.getStatus(), PaymentStatus.UNPAID.name()),
                         payment.getTransactionRef(),
                         payment.getPaidAt()
                 ))
-                .orElseGet(() -> new PaymentInfo(PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, null, null));
+                .orElseGet(() -> new PaymentInfo(PaymentMethod.CASH_AT_COUNTER.name(), PaymentStatus.UNPAID.name(), null, null));
+    }
+
+    private String defaultString(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
     }
 
     private record TierChange(String fromTier, String toTier) {
     }
 
     private record PaymentInfo(
-            PaymentMethod method,
-            PaymentStatus status,
+            String method,
+            String status,
             String transactionRef,
             Instant paidAt
     ) {

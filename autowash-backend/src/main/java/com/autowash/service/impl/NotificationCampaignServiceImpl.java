@@ -16,12 +16,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.autowash.repository.NotificationRepository;
+
 @Service
 @RequiredArgsConstructor
 public class NotificationCampaignServiceImpl implements NotificationCampaignService {
 
     private final NotificationCampaignRepository campaignRepository;
     private final NotificationCampaignProcessor campaignProcessor;
+    private final NotificationRepository notificationRepository;
 
     @Override
     @Transactional
@@ -57,9 +60,53 @@ public class NotificationCampaignServiceImpl implements NotificationCampaignServ
     }
 
     @Override
+    @Transactional
+    public NotificationCampaignResponse updateCampaign(UUID id, NotificationCampaignRequest request) {
+        NotificationCampaign campaign = campaignRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+
+        if (campaign.getStatus() != CampaignStatus.DRAFT && campaign.getStatus() != CampaignStatus.SCHEDULED) {
+            throw new RuntimeException("Only DRAFT or SCHEDULED campaigns can be updated");
+        }
+
+        Instant now = Instant.now();
+        CampaignStatus newStatus = request.scheduledAt() != null && request.scheduledAt().isAfter(now)
+                ? CampaignStatus.SCHEDULED
+                : CampaignStatus.DRAFT;
+
+        campaign.setTitle(request.title());
+        campaign.setMessage(request.message());
+        campaign.setType(request.type());
+        campaign.setTargetAudience(request.targetAudience());
+        campaign.setTargetDetails(request.targetDetails());
+        campaign.setStatus(newStatus);
+        campaign.setScheduledAt(request.scheduledAt());
+        campaign.setUpdatedAt(now);
+
+        campaign = campaignRepository.save(campaign);
+
+        if (newStatus == CampaignStatus.DRAFT) {
+            campaignProcessor.processCampaign(campaign);
+        }
+
+        return mapToResponse(campaign);
+    }
+
+    @Override
+    @Transactional
+    public void deleteCampaign(UUID id) {
+        NotificationCampaign campaign = campaignRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+                
+        // For deleting, we just remove the associated notifications as well
+        notificationRepository.deleteByCampaignId(campaign.getId());
+        campaignRepository.delete(campaign);
+    }
+
+    @Override
     @Transactional(readOnly = true)
-    public CampaignPage getCampaigns(int page, int limit) {
-        Page<NotificationCampaign> campaignsPage = campaignRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(page - 1, limit));
+    public CampaignPage getCampaigns(int page, int limit, com.autowash.entity.enums.NotificationType type, com.autowash.entity.enums.CampaignTargetAudience audience, com.autowash.entity.enums.CampaignStatus status) {
+        Page<NotificationCampaign> campaignsPage = campaignRepository.searchCampaigns(type, audience, status, PageRequest.of(page - 1, limit));
         List<NotificationCampaignResponse> responses = campaignsPage.getContent().stream()
                 .map(this::mapToResponse)
                 .toList();

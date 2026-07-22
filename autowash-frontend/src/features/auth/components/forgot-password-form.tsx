@@ -244,10 +244,11 @@ export function ForgotPasswordForm() {
                   }}
                   aria-label={`OTP digit ${index + 1}`}
                   inputMode="numeric"
-                  maxLength={1}
+                  pattern="[0-9]*"
                   value={digit}
                   onChange={(event) => updateOtpDigit(index, event.target.value)}
                   onKeyDown={(event) => handleOtpKeyDown(event, index)}
+                  onFocus={(event) => event.currentTarget.select()}
                   onPaste={(event) => {
                     event.preventDefault();
                     handleOtpPaste(event.clipboardData.getData("text"));

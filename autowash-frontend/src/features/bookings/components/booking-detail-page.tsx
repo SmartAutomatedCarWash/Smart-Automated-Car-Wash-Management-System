@@ -1,27 +1,32 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  Banknote,
   Calendar,
   Car,
   CheckCircle2,
   Clock3,
+  CreditCard,
   FileText,
   Loader2,
   Mail,
   Phone,
   Star,
   User,
+  UserCheck,
+  Users,
   XCircle,
   ClipboardCheck,
   Droplets,
   PartyPopper,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
   formatBookingCurrency,
@@ -30,13 +35,17 @@ import {
   humanizeCode,
 } from "@/features/bookings/lib/booking-format";
 import {
+  useChangeBookingPaymentMethod,
   useCancelCustomerBooking,
+  useCreateVnpayCheckout,
+  useBookingStaffOptions,
   useCustomerBookingDetail,
+  useUpdateCustomerBookingStaff,
 } from "@/features/bookings/hooks/use-bookings";
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
 import { BookingCompletionPopup } from "@/features/bookings/components/booking-completion-popup";
 import { useBookingReviewCheck, useSubmitBookingReview } from "@/features/bookings/hooks/use-reviews";
-import type { BookingAddonSelection, BookingDetail } from "@/entities/bookings";
+import type { BookingAddonSelection, BookingDetail, BookingStaffOption, BookingStaffOptionsRequest } from "@/entities/bookings";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
 
@@ -58,6 +67,36 @@ function getBookingOptions(booking: BookingDetail): BookingAddonSelection[] {
       addonName: detail.snapshotName,
       addonPrice: detail.snapshotPrice,
     }));
+}
+
+function getRefundStatusLabel(booking: BookingDetail, language: "vi" | "en") {
+  if (booking.status !== "CANCELLED") {
+    return null;
+  }
+
+  const paymentMethod = booking.payment.method?.toUpperCase() ?? "";
+  const paymentStatus = booking.payment.status?.toUpperCase() ?? "";
+
+  if (paymentStatus === "REFUND_PENDING") {
+    return translate(language, "Đang chờ hoàn tiền", "Refund pending");
+  }
+  if (paymentStatus === "REFUNDED") {
+    return translate(language, "Đã hoàn tiền toàn bộ", "Fully refunded");
+  }
+  if (paymentStatus === "PARTIALLY_REFUNDED") {
+    return translate(language, "Đã hoàn tiền một phần", "Partially refunded");
+  }
+  if (paymentStatus === "REFUND_FAILED") {
+    return translate(language, "Hoàn tiền thất bại", "Refund failed");
+  }
+  if (paymentStatus === "PAID" && paymentMethod === "E_WALLET") {
+    return translate(language, "Không hoàn tiền theo chính sách hủy", "No refund by cancellation policy");
+  }
+  if (["UNPAID", "FAILED", "CANCELLED"].includes(paymentStatus)) {
+    return translate(language, "Không phát sinh hoàn tiền", "No refund needed");
+  }
+
+  return humanizeCode(paymentStatus);
 }
 
 // ── Status timeline config ───────────────────────────────────────────────────
@@ -83,6 +122,26 @@ function getStepIndex(status: string) {
 }
 
 // ── Countdown to appointment ─────────────────────────────────────────────────
+const HOLD_DURATION_MS = 15 * 60 * 1000;
+
+function useCountdownUntil(expiresAtMs: number | null) {
+  const [diff, setDiff] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!expiresAtMs) {
+      setDiff(null);
+      return;
+    }
+
+    const tick = () => setDiff(Math.max(0, expiresAtMs - Date.now()));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [expiresAtMs]);
+
+  return diff;
+}
+
 function useCountdown(bookingDate: string, bookingTime: string) {
   const [diff, setDiff] = useState<number | null>(null);
 
@@ -98,6 +157,44 @@ function useCountdown(bookingDate: string, bookingTime: string) {
   }, [bookingDate, bookingTime]);
 
   return diff;
+}
+
+function PendingHoldBadge({ expiresAtMs, language }: { expiresAtMs: number; language: "vi" | "en" }) {
+  const diff = useCountdownUntil(expiresAtMs);
+  if (diff === null) return null;
+  if (diff <= 0) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-700">
+        <AlertCircle className="h-3.5 w-3.5" />
+        {translate(language, "Đã hết hạn giữ slot", "Hold expired")}
+      </span>
+    );
+  }
+
+  const totalSec = Math.floor(diff / 1000);
+  const mins = Math.floor(totalSec / 60);
+  const secs = totalSec % 60;
+  const progress = Math.max(0, Math.min(100, (diff / HOLD_DURATION_MS) * 100));
+  const urgent = diff <= 2 * 60 * 1000;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold",
+        urgent ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-800",
+      )}
+      title={translate(language, "Slot sẽ được giải phóng nếu booking chưa được xác nhận trước khi hết giờ.", "The slot will be released if the booking is not confirmed before the hold expires.")}
+    >
+      <Clock3 className="h-3.5 w-3.5" />
+      {translate(language, "Giữ slot", "Hold")} {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
+      <span className="ml-0.5 h-1.5 w-8 overflow-hidden rounded-full bg-white/70">
+        <span
+          className={cn("block h-full rounded-full", urgent ? "bg-rose-500" : "bg-amber-500")}
+          style={{ width: `${progress}%` }}
+        />
+      </span>
+    </span>
+  );
 }
 
 function CountdownBadge({ bookingDate, bookingTime, language }: { bookingDate: string; bookingTime: string; language: "vi" | "en" }) {
@@ -134,10 +231,14 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const bookingQuery = useCustomerBookingDetail(bookingId);
   const profileQuery = useCustomerProfile();
   const cancelBookingMutation = useCancelCustomerBooking(bookingId);
+  const changePaymentMethodMutation = useChangeBookingPaymentMethod(bookingId);
+  const createVnpayCheckoutMutation = useCreateVnpayCheckout();
+  const updateBookingStaffMutation = useUpdateCustomerBookingStaff(bookingId);
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showReviewPopup, setShowReviewPopup] = useState(false);
   const [autoReviewShown, setAutoReviewShown] = useState(false);
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 
   const submitReviewMutation = useSubmitBookingReview();
   const isCompleted = bookingQuery.data?.status === "COMPLETED" || bookingQuery.data?.washStatus === "COMPLETED";
@@ -155,6 +256,70 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
       setShowReviewPopup(true);
     }
   }, [isCompleted, autoReviewShown, reviewCheckQuery.data]);
+
+  const pendingHoldExpiresAtMs = useMemo(() => {
+    const booking = bookingQuery.data;
+    if (!booking?.confirmationExpiresAt) {
+      return null;
+    }
+    const paymentStatus = booking.payment.status?.toUpperCase() ?? "";
+    if (booking.status !== "PENDING" || paymentStatus === "PAID") {
+      return null;
+    }
+    const expiresAtMs = new Date(booking.confirmationExpiresAt).getTime();
+    return Number.isFinite(expiresAtMs) ? expiresAtMs : null;
+  }, [bookingQuery.data]);
+
+  const [pendingHoldExpired, setPendingHoldExpired] = useState(false);
+
+  useEffect(() => {
+    if (!pendingHoldExpiresAtMs) {
+      setPendingHoldExpired(false);
+      return;
+    }
+
+    const tick = () => setPendingHoldExpired(pendingHoldExpiresAtMs <= Date.now());
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [pendingHoldExpiresAtMs]);
+
+  const staffOptionsPayload = useMemo<BookingStaffOptionsRequest | null>(() => {
+    const booking = bookingQuery.data;
+    if (!booking) return null;
+    const packageDetail = booking.details.find((detail) => detail.itemType === "PACKAGE");
+    const comboDetail = booking.details.find((detail) => detail.itemType === "COMBO");
+    return {
+      packageId: packageDetail?.refId,
+      comboId: comboDetail?.refId,
+      options: booking.details
+        .filter((detail) => detail.itemType === "ADDON" || detail.itemType === "OPTION")
+        .map((detail) => detail.refId),
+      bookingDate: booking.scheduling.bookingDate,
+      bookingTime: booking.scheduling.bookingTime,
+    };
+  }, [bookingQuery.data]);
+  const staffOptionsQuery = useBookingStaffOptions(staffOptionsPayload);
+  const staffOptions = staffOptionsQuery.data ?? [];
+
+  useEffect(() => {
+    const booking = bookingQuery.data;
+    if (!booking) return;
+    const assignedIds = assignedStaffList(booking)
+      .map((staff) => staff.staffId)
+      .filter(Boolean);
+    if (assignedIds.length > 0) {
+      setSelectedStaffIds(assignedIds.slice(0, 3));
+      return;
+    }
+    const autoIds = (staffOptionsQuery.data ?? [])
+      .filter((staff) => staff.available !== false)
+      .slice(0, 3)
+      .map((staff) => staff.staffId);
+    if (autoIds.length > 0) {
+      setSelectedStaffIds(autoIds);
+    }
+  }, [bookingQuery.data, staffOptionsQuery.data]);
 
   if (bookingQuery.isPending) {
     return (
@@ -194,6 +359,25 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const booking = bookingQuery.data;
   const bookingOptions = getBookingOptions(booking);
   const canCancelBooking = booking.status === "PENDING" || booking.status === "CONFIRMED";
+  const paymentStatus = booking.payment.status?.toUpperCase() ?? "";
+  const paymentMethod = booking.payment.method?.toUpperCase() ?? "";
+  const isPaymentPaid = paymentStatus === "PAID";
+  const isPendingBookingHold = booking.status === "PENDING" && !isPaymentPaid;
+  const canChoosePendingPaymentAction = isPendingBookingHold && !pendingHoldExpired;
+  const canPayAgainWithVnpay = canChoosePendingPaymentAction && booking.pricing.finalAmount > 0;
+  const canChangeToCash = canChoosePendingPaymentAction && paymentMethod !== "CASH_AT_COUNTER";
+  const canShowSepayInstructions = canChoosePendingPaymentAction && paymentMethod === "BANK_TRANSFER";
+  const sepayPaymentCode = canShowSepayInstructions ? booking.payment.transactionId : null;
+  const sepayTransferDescription = canShowSepayInstructions
+    ? (booking.payment.transferDescription || sepayPaymentCode)
+    : null;
+  const canShowAppointmentCountdown = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS"].includes(booking.status);
+  const showCashConfirmationNote = booking.status === "PENDING" && paymentMethod === "CASH_AT_COUNTER";
+  const isPaymentActionPending = changePaymentMethodMutation.isPending || createVnpayCheckoutMutation.isPending;
+  const canEditAssignedStaff = ["PENDING", "CONFIRMED"].includes(booking.status) && !booking.washSessionId;
+  const assignedStaffDirty = selectedStaffIds.join("|") !== assignedStaffList(booking).map((staff) => staff.staffId).join("|");
+  const canSaveAssignedStaff = canEditAssignedStaff && selectedStaffIds.length === 3 && assignedStaffDirty;
+  const refundStatusLabel = getRefundStatusLabel(booking, language);
   const customerName = booking.customerName || profileQuery.data?.fullName || translate(language, "Khách hàng", "Customer");
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || translate(language, "Chưa có số điện thoại", "No phone number");
   const customerEmail = booking.confirmationEmail || profileQuery.data?.email || translate(language, "email của bạn", "your email");
@@ -236,11 +420,57 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const handleCancelBooking = async () => {
     try {
       await cancelBookingMutation.mutateAsync(cancelReason.trim() || undefined);
-      toast.success(translate(language, "Đã huỷ lịch đặt thành công.", "Booking cancelled successfully."));
+      notify.success(translate(language, "Đã huỷ lịch đặt thành công.", "Booking cancelled successfully."));
       setShowCancelForm(false);
       setCancelReason("");
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      notify.error(getErrorMessage(error));
+    }
+  };
+
+  const handlePayAgainWithVnpay = async () => {
+    try {
+      if (paymentMethod !== "E_WALLET") {
+        await changePaymentMethodMutation.mutateAsync("E_WALLET");
+      }
+      const checkout = await createVnpayCheckoutMutation.mutateAsync(booking.bookingId);
+      notify.success(translate(language, "Đang chuyển sang VNPay.", "Redirecting to VNPay."));
+      window.location.href = checkout.paymentUrl;
+    } catch (error) {
+      notify.error(getErrorMessage(error));
+    }
+  };
+
+  const handleChangeToCash = async () => {
+    try {
+      await changePaymentMethodMutation.mutateAsync("CASH_AT_COUNTER");
+      notify.success(translate(language, "Đã chuyển sang thanh toán tại quầy.", "Changed to cash at counter."));
+    } catch (error) {
+      notify.error(getErrorMessage(error));
+    }
+  };
+
+  const handleSaveAssignedStaff = async () => {
+    try {
+      await updateBookingStaffMutation.mutateAsync({ staffIds: selectedStaffIds });
+      notify.success(translate(language, "Đã lưu nhân viên phụ trách.", "Assigned staff saved."));
+    } catch (error) {
+      notify.error(getErrorMessage(error));
+    }
+  };
+
+  const handleCopySepayCode = async () => {
+    if (!sepayTransferDescription) return;
+    await handleCopyText(sepayTransferDescription, translate(language, "Đã copy nội dung chuyển khoản.", "Transfer description copied."));
+  };
+
+  const handleCopyText = async (value: string | null | undefined, successMessage: string) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      notify.success(successMessage);
+    } catch {
+      notify.error(translate(language, "Không thể copy.", "Unable to copy."));
     }
   };
 
@@ -255,7 +485,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
       comment,
       ...images,
     });
-    toast.success(translate(language, "Đánh giá đã được gửi thành công!", "Review submitted successfully!"));
+    notify.success(translate(language, "Đánh giá đã được gửi thành công!", "Review submitted successfully!"));
   };
 
   return (
@@ -286,13 +516,15 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                     <CardTitle>{translate(language, "Tiến trình đặt lịch", "Booking progress")}</CardTitle>
                     <CardDescription>{translate(language, "Theo dõi trạng thái từng bước của lịch đặt.", "Track each step of your booking session.")}</CardDescription>
                   </div>
-                  {booking.status !== "COMPLETED" && (
+                  {pendingHoldExpiresAtMs ? (
+                    <PendingHoldBadge expiresAtMs={pendingHoldExpiresAtMs} language={language} />
+                  ) : canShowAppointmentCountdown ? (
                     <CountdownBadge
                       bookingDate={booking.scheduling.bookingDate}
                       bookingTime={booking.scheduling.bookingTime}
                       language={language}
                     />
-                  )}
+                  ) : null}
                 </div>
               </CardHeader>
               <CardContent>
@@ -336,17 +568,97 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
           <Card className="border-emerald-200 bg-emerald-50 shadow-md">
             <CardHeader>
               <div className="flex items-center gap-3 text-emerald-800">
-                <Mail className="h-5 w-5" />
-                <CardTitle>{translate(language, "Email xác nhận lịch đặt", "Booking confirmation email")}</CardTitle>
+                <Users className="h-5 w-5" />
+                <CardTitle>{translate(language, "Nhân viên đã được phân công", "Assigned staff")}</CardTitle>
               </div>
               <CardDescription>
-                {translate(language, "Email xác nhận có tóm tắt lịch đặt và lịch hẹn.", "The confirmation email contains the booking summary and schedule.")}
+                {canEditAssignedStaff
+                  ? translate(language, "Bạn có thể đổi 3 nhân viên rảnh, sau đó bấm Confirm để lưu.", "You can choose 3 available staff, then press Confirm to save.")
+                  : translate(language, "Danh sách nhân viên phụ trách lịch đặt này.", "Staff assigned to this booking.")}
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-wrap gap-3">
-              <Button type="button" variant="outline" onClick={() => void bookingQuery.refetch()}>
-                {translate(language, "Tải lại từ máy chủ", "Refresh from server")}
-              </Button>
+            <CardContent className="space-y-4">
+              {staffOptionsQuery.isPending ? (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[1, 2, 3].map((item) => (
+                    <div key={item} className="h-20 animate-pulse rounded-2xl bg-white/70" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[0, 1, 2].map((index) => {
+                    const currentStaffId = selectedStaffIds[index] ?? "";
+                    const selectedStaff = staffOptionById(staffOptions, booking, currentStaffId);
+                    return (
+                      <div key={index} className="rounded-2xl border border-emerald-100 bg-white/80 p-3">
+                        <span className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-700">
+                          <UserCheck className="h-3.5 w-3.5" />
+                          {translate(language, "Nhân viên", "Staff")} {index + 1}
+                        </span>
+                        {canEditAssignedStaff ? (
+                          <Select
+                            value={currentStaffId || undefined}
+                            onValueChange={(staffId) => {
+                              const nextStaffIds = [...selectedStaffIds];
+                              nextStaffIds[index] = staffId;
+                              setSelectedStaffIds(nextStaffIds.filter((id, staffIndex) => id && nextStaffIds.indexOf(id) === staffIndex).slice(0, 3));
+                            }}
+                          >
+                            <SelectTrigger className="h-auto min-h-12 rounded-xl bg-white px-3 py-2 text-left [&>span]:line-clamp-none">
+                              <SelectValue placeholder={translate(language, "Chọn nhân viên", "Select staff")}>
+                                {selectedStaff ? (
+                                  <StaffSelectLabel staff={selectedStaff} />
+                                ) : null}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent
+                              position="item-aligned"
+                              className="min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)]"
+                            >
+                              {staffOptions
+                                .filter((staff) => staff.staffId === currentStaffId || !selectedStaffIds.includes(staff.staffId))
+                                .map((staff) => (
+                                  <SelectItem
+                                    key={staff.staffId}
+                                    value={staff.staffId}
+                                    disabled={staff.available === false}
+                                    className="py-2 pr-8 [&>span:last-child]:w-full"
+                                  >
+                                    <StaffSelectLabel staff={staff} />
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        ) : selectedStaff ? (
+                          <StaffSelectLabel staff={selectedStaff} />
+                        ) : (
+                          <p className="text-sm font-semibold text-slate-500">
+                            {translate(language, "Sẽ được phân công sau khi xác nhận.", "Will be assigned after confirmation.")}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {staffOptionsQuery.isError ? (
+                <p className="text-xs font-semibold text-rose-600">{getErrorMessage(staffOptionsQuery.error)}</p>
+              ) : null}
+              {canEditAssignedStaff ? (
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    type="button"
+                    onClick={() => void handleSaveAssignedStaff()}
+                    disabled={!canSaveAssignedStaff || updateBookingStaffMutation.isPending}
+                  >
+                    {updateBookingStaffMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {translate(language, "Confirm", "Confirm")}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => void bookingQuery.refetch()}>
+                    {translate(language, "Tải lại từ máy chủ", "Refresh from server")}
+                  </Button>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 
@@ -383,6 +695,9 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 [translate(language, "Dự kiến kết thúc", "Estimated end"), booking.scheduling.estimatedEndTime],
                 [translate(language, "Phương thức TT", "Payment method"), getPaymentMethodLabel(booking.payment.method)],
                 [translate(language, "Trạng thái TT", "Payment status"), getPaymentStatusLabel(booking.payment.status)],
+                ...(refundStatusLabel
+                  ? [[translate(language, "Trạng thái hoàn tiền", "Refund status"), refundStatusLabel] as [string, string]]
+                  : []),
                 [translate(language, "Mã giao dịch", "Transaction"), booking.payment.transactionId || "--"],
               ]}
             />
@@ -452,6 +767,112 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 <Link href="/customer/bookings/new">{translate(language, "Đặt dịch vụ khác", "Book another service")}</Link>
               </Button>
 
+              {isPendingBookingHold && pendingHoldExpired ? (
+                <div className="space-y-2 rounded-2xl border border-rose-100 bg-rose-50 p-3">
+                  <p className="text-xs font-semibold text-rose-800">
+                    {translate(
+                      language,
+                      "Thời gian giữ slot đã hết. Slot này sẽ được giải phóng tự động, vui lòng tạo lịch đặt mới nếu vẫn muốn rửa xe.",
+                      "The booking hold window has expired. This slot will be released automatically; please create a new booking if you still want this service.",
+                    )}
+                  </p>
+                </div>
+              ) : null}
+
+              {canChoosePendingPaymentAction ? (
+                <div className="space-y-2 rounded-2xl border border-sky-100 bg-sky-50 p-3">
+                  <p className="text-xs font-semibold text-sky-900">
+                    {translate(
+                      language,
+                      "Lịch đặt đang chờ xác nhận. Bạn có thể thanh toán lại, đổi sang tiền mặt hoặc huỷ lịch.",
+                      "This booking is pending. You can pay again, switch to cash, or cancel it.",
+                    )}
+                  </p>
+                  {canShowSepayInstructions ? (
+                    <div className="rounded-xl border border-cyan-100 bg-white p-3 text-xs text-slate-700">
+                      <p className="font-bold text-slate-900">
+                        {translate(language, "Thanh toán SePay", "SePay payment")}
+                      </p>
+                      <p className="mt-1">
+                        {translate(
+                          language,
+                          "Quét mã QR hoặc chuyển khoản đúng thông tin bên dưới để hệ thống tự xác nhận.",
+                          "Scan the QR or transfer with the exact details below so the system can confirm automatically.",
+                        )}
+                      </p>
+                      {booking.payment.qrUrl ? (
+                        <div className="mt-3 flex justify-center rounded-xl border border-slate-100 bg-slate-50 p-3">
+                          <img
+                            src={booking.payment.qrUrl}
+                            alt={translate(language, "Mã QR thanh toán SePay", "SePay payment QR code")}
+                            className="h-auto w-full max-w-[280px] rounded-lg"
+                          />
+                        </div>
+                      ) : null}
+                      <div className="mt-3 space-y-2">
+                        <SepayInfoRow
+                          label={translate(language, "Ngân hàng", "Bank")}
+                          value={booking.payment.bankCode ?? "TPBank"}
+                        />
+                        <SepayInfoRow
+                          label={translate(language, "Số tài khoản", "Account number")}
+                          value={booking.payment.accountNumber ?? "--"}
+                          onCopy={() => handleCopyText(booking.payment.accountNumber, translate(language, "Đã copy số tài khoản.", "Account number copied."))}
+                        />
+                        <SepayInfoRow
+                          label={translate(language, "Chủ tài khoản", "Account holder")}
+                          value={booking.payment.accountName ?? "--"}
+                        />
+                        <SepayInfoRow
+                          label={translate(language, "Số tiền", "Amount")}
+                          value={formatBookingCurrency(booking.pricing.finalAmount)}
+                          onCopy={() => handleCopyText(String(booking.pricing.finalAmount), translate(language, "Đã copy số tiền.", "Amount copied."))}
+                        />
+                        <SepayInfoRow
+                          label={translate(language, "Nội dung", "Description")}
+                          value={sepayTransferDescription ?? "--"}
+                          monospace
+                          onCopy={handleCopySepayCode}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                  {canPayAgainWithVnpay ? (
+                    <Button
+                      type="button"
+                      className="w-full"
+                      onClick={handlePayAgainWithVnpay}
+                      disabled={isPaymentActionPending}
+                    >
+                      {createVnpayCheckoutMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+                      {translate(language, "Thanh toán VNPay", "Pay with VNPay")}
+                    </Button>
+                  ) : null}
+                  {canChangeToCash ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full bg-white"
+                      onClick={handleChangeToCash}
+                      disabled={isPaymentActionPending}
+                    >
+                      {changePaymentMethodMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Banknote className="mr-2 h-4 w-4" />}
+                      {translate(language, "Đổi sang trả tại quầy", "Change to cash at counter")}
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {showCashConfirmationNote ? (
+                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+                  {translate(
+                    language,
+                    "Đơn trả tại quầy đang chờ Manager/Admin xác nhận.",
+                    "Cash booking is waiting for Manager/Admin confirmation.",
+                  )}
+                </div>
+              ) : null}
+
               {/* Review section — chỉ hiện khi COMPLETED */}
               {(booking.status === "COMPLETED" || booking.washStatus === "COMPLETED") && (
                 <>
@@ -505,7 +926,8 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                     <div className="space-y-3 rounded-2xl border border-rose-100 bg-rose-50 p-3">
                       <textarea
                         value={cancelReason}
-                        onChange={(event) => setCancelReason(event.target.value)}
+                        onChange={(event) => setCancelReason(event.target.value.slice(0, 500))}
+                        maxLength={500}
                         placeholder={translate(language, "Lý do huỷ", "Cancel reason")}
                         className="min-h-24 w-full rounded-xl border border-rose-100 bg-white p-3 text-sm outline-none"
                       />
@@ -529,6 +951,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
           {showReviewPopup && (
             <BookingCompletionPopup
               bookingId={bookingId}
+              vehiclePlate={booking.vehiclePlate}
               pointsEarned={10}
               isOpen={showReviewPopup}
               onClose={() => setShowReviewPopup(false)}
@@ -553,6 +976,49 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   );
 }
 
+type StaffDisplay = {
+  staffId: string;
+  staffName: string;
+  sortOrder?: number;
+  available?: boolean;
+  busyUntil?: string | null;
+};
+
+function assignedStaffList(booking: BookingDetail): StaffDisplay[] {
+  return (booking.assignedStaff ?? [])
+    .slice()
+    .sort((left, right) => left.sortOrder - right.sortOrder)
+    .filter((item) => Boolean(item.staffId && item.staffName));
+}
+
+function staffOptionById(staffOptions: BookingStaffOption[], booking: BookingDetail, staffId: string): StaffDisplay | null {
+  if (!staffId) return null;
+  return staffOptions.find((staff) => staff.staffId === staffId)
+    ?? assignedStaffList(booking).find((staff) => staff.staffId === staffId)
+    ?? null;
+}
+
+function staffAvailabilityLabel(staff: StaffDisplay) {
+  if (staff.available === false) {
+    return staff.busyUntil ? `Busy until ${staff.busyUntil}` : "Busy";
+  }
+  return "Available";
+}
+
+function StaffSelectLabel({ staff }: { staff: StaffDisplay }) {
+  const busy = staff.available === false;
+  return (
+    <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 pr-2 leading-snug">
+      <span className="block max-w-full truncate text-sm font-semibold text-slate-900">
+        {staff.staffName}
+      </span>
+      <span className={cn("text-[11px] font-bold", busy ? "text-amber-600" : "text-emerald-700")}>
+        {staffAvailabilityLabel(staff)}
+      </span>
+    </span>
+  );
+}
+
 function DetailSection({ title, rows }: { title: string; rows: Array<[string, string]> }) {
   return (
     <Card className="border-slate-200 bg-white shadow-md">
@@ -565,6 +1031,34 @@ function DetailSection({ title, rows }: { title: string; rows: Array<[string, st
         ))}
       </CardContent>
     </Card>
+  );
+}
+
+function SepayInfoRow({
+  label,
+  value,
+  monospace = false,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  monospace?: boolean;
+  onCopy?: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2">
+      <span className="shrink-0 text-slate-500">{label}</span>
+      <div className="flex min-w-0 items-center gap-2">
+        <span className={cn("truncate text-right font-bold text-slate-950", monospace ? "font-mono tracking-wide" : "")}>
+          {value}
+        </span>
+        {onCopy ? (
+          <Button type="button" size="sm" variant="outline" className="h-7 shrink-0 bg-white px-2 text-[11px]" onClick={onCopy}>
+            Copy
+          </Button>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

@@ -2,7 +2,7 @@
 $ErrorActionPreference = "Stop"
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $envFile = Join-Path $here ".env"
-$jdk21 = "C:\Program Files\Java\jdk-21.0.11"
+$jdk21 = "C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot"
 
 if (Test-Path $jdk21) {
   $env:JAVA_HOME = $jdk21
@@ -34,4 +34,4 @@ Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue |
 Start-Sleep -Seconds 2
 
 Write-Host "Starting backend on http://localhost:8080 ..."
-cmd /c "mvnw.cmd spring-boot:run"
+cmd /c "mvnw.cmd -Dmaven.test.skip=true clean spring-boot:run"

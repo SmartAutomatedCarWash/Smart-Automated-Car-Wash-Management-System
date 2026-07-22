@@ -1,6 +1,7 @@
 package com.autowash.service.impl;
 
 import com.autowash.entity.WashSession;
+import com.autowash.entity.BookingPricing;
 
 import com.autowash.service.LoyaltyService;
 
@@ -21,17 +22,22 @@ import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.BookingNoShowService;
 import com.autowash.service.DiscountRedemptionService;
 import com.autowash.service.WashSessionLifecycle;
+import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BookingNoShowServiceImpl implements BookingNoShowService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BookingNoShowServiceImpl.class);
 
     private static final Set<WashSessionStatus> CHECKED_IN_OR_BETTER = Set.of(
             WashSessionStatus.CHECKED_IN,
@@ -78,39 +84,50 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
         Instant now = Instant.now();
         Instant cutoff = now.minusSeconds(noShowGraceMinutes * 60);
         List<Booking> bookings = bookingRepository.findNoShowCandidates(
-                List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING),
+                List.of(BookingStatus.CONFIRMED),
                 cutoff,
                 CHECKED_IN_OR_BETTER
         );
 
+        int markedCount = 0;
         for (Booking booking : bookings) {
-            BookingStatus oldStatus = booking.getStatus();
-            booking.markNoShow();
-            cancelNotCheckedInSessions(booking, now);
-            int deductedPoints = applyNoShowPenalty(booking, now);
-            if (booking.getPricing().getDiscountType() != null) {
-                DiscountRedemptionService.revertRedemption(booking);
+            try {
+                BookingStatus oldStatus = booking.getStatus();
+                booking.markNoShow();
+                cancelNotCheckedInSessions(booking, now);
+                int deductedPoints = applyNoShowPenalty(booking, now);
+                if (hasDiscountPricing(booking)) {
+                    DiscountRedemptionService.revertRedemption(booking);
+                }
+                notificationRepository.save(Notification.builder()
+                        .id(UUID.randomUUID())
+                        .user(booking.getCustomer())
+                        .title("Booking marked no-show")
+                        .message("Your booking at " + booking.getBookingTime()
+                                + " was marked no-show because you did not check in within the grace period. "
+                                + deductedPoints + " loyalty points were deducted.")
+                        .type(NotificationType.NO_SHOW)
+                        .read(false)
+                        .createdAt(now)
+                        .build());
+                bookingStatusHistoryRepository.save(new BookingStatusHistory(
+                        booking,
+                        oldStatus.name(),
+                        BookingStatus.NO_SHOW.name(),
+                        null,
+                        "Customer did not check in within " + noShowGraceMinutes + " minutes"
+                ));
+                markedCount++;
+            } catch (EntityNotFoundException exception) {
+                LOGGER.warn("Skipped no-show booking with missing related data: bookingId={}", booking.getId(), exception);
             }
-            notificationRepository.save(Notification.builder()
-                    .id(UUID.randomUUID())
-                    .user(booking.getCustomer())
-                    .title("Booking marked no-show")
-                    .message("Your booking at " + booking.getBookingTime()
-                            + " was marked no-show because you did not check in within the grace period. "
-                            + deductedPoints + " loyalty points were deducted.")
-                    .type(NotificationType.NO_SHOW)
-                    .read(false)
-                    .createdAt(now)
-                    .build());
-            bookingStatusHistoryRepository.save(new BookingStatusHistory(
-                    booking,
-                    oldStatus.name(),
-                    BookingStatus.NO_SHOW.name(),
-                    null,
-                    "Customer did not check in within " + noShowGraceMinutes + " minutes"
-            ));
         }
-        return bookings.size();
+        return markedCount;
+    }
+
+    private boolean hasDiscountPricing(Booking booking) {
+        BookingPricing pricing = booking.getPricing();
+        return pricing != null && pricing.getDiscountType() != null;
     }
 
     private int applyNoShowPenalty(Booking booking, Instant now) {

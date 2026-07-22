@@ -25,6 +25,7 @@ public record BookingDetailResponse(
         Instant confirmationExpiresAt,
         String washSessionId,
         String staffName,
+        List<StaffAssignment> assignedStaff,
         String washStatus,
         String notes,
         Instant createdAt,
@@ -50,6 +51,17 @@ public record BookingDetailResponse(
             String method,
             String status,
             String transactionId,
-            Instant paidAt
+            Instant paidAt,
+            String qrUrl,
+            String bankCode,
+            String accountNumber,
+            String accountName,
+            String transferDescription
+    ) {}
+
+    public record StaffAssignment(
+            String staffId,
+            String staffName,
+            int sortOrder
     ) {}
 }

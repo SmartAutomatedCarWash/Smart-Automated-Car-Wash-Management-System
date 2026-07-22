@@ -13,10 +13,11 @@ function useCustomerNotificationsContext() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
   const userId = user?.userId ?? null;
+  const isCustomer = user?.role === "CUSTOMER";
 
   return {
     userId,
-    enabled: Boolean(accessToken && userId),
+    enabled: Boolean(accessToken && userId && isCustomer),
   };
 }
 

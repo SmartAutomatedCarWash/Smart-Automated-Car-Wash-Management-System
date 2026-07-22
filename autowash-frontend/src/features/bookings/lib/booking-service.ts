@@ -3,6 +3,8 @@ import type { ApiPaginatedResponse } from "@/shared/types/api.types";
 import type {
   BookingAddon,
   BookingCombo,
+  BookingStaffOption,
+  BookingStaffOptionsRequest,
   BookingDetail,
   BookingDraft,
   BookingListFilters,
@@ -13,6 +15,10 @@ import type {
   ApplyBookingPointsRequest,
   ApplyBookingPointsResponse,
   CreateBookingResponse,
+  VnpayCheckoutResponse,
+  VnpayPaymentResultResponse,
+  PayBookingResponse,
+  PaymentMethod,
   CancelBookingResponse,
   PurchaseCustomerComboRequest,
   PurchaseCustomerComboResponse,
@@ -21,6 +27,9 @@ import type {
   WashTrackingSession,
   HoldSlotRequest,
   HoldSlotResponse,
+  SlotAvailability,
+  ExtraServiceRecommendation,
+  UpdateBookingStaffRequest,
 } from "@/entities/bookings";
 import { buildCreateBookingPayload } from "@/features/bookings/lib/booking-format";
 import type { ApiSuccessResponse } from "@/shared/types/api.types";
@@ -85,6 +94,80 @@ export async function holdBookingSlot(payload: HoldSlotRequest): Promise<HoldSlo
 
 export function releaseBookingSlot(payload: HoldSlotRequest) {
   return apiClient.delete("/slots/hold", { data: payload });
+}
+
+export function createVnpayCheckout(bookingId: string) {
+  return apiRequest<VnpayCheckoutResponse>({
+    method: "POST",
+    url: `/payments/bookings/${bookingId}/vnpay/checkout`,
+  });
+}
+
+export function changeBookingPaymentMethod(bookingId: string, paymentMethod: PaymentMethod) {
+  return apiRequest<PayBookingResponse, { paymentMethod: PaymentMethod }>({
+    method: "POST",
+    url: `/customers/bookings/${bookingId}/payment-method`,
+    data: { paymentMethod },
+  });
+}
+
+export function verifyVnpayReturn(params: Record<string, string>) {
+  return apiRequest<VnpayPaymentResultResponse>({
+    method: "GET",
+    url: "/payments/vnpay/return",
+    params,
+  });
+}
+
+export function queryVnpayTransaction(bookingId: string) {
+  return apiRequest<VnpayPaymentResultResponse>({
+    method: "POST",
+    url: `/payments/bookings/${bookingId}/vnpay/query`,
+  });
+}
+
+export async function listSlotAvailability(bookingDate: string, times: string[]): Promise<SlotAvailability[]> {
+  if (!bookingDate || times.length === 0) {
+    return [];
+  }
+
+  const params = new URLSearchParams({ date: bookingDate });
+  times.forEach((time) => params.append("times", time));
+
+  const response = await apiClient.get<ApiSuccessResponse<SlotAvailability[]>>("/slots/availability", {
+    params,
+  });
+
+  return response.data.data;
+}
+
+export async function listExtraServiceRecommendations(comboId: string): Promise<ExtraServiceRecommendation[]> {
+  if (!comboId) {
+    return [];
+  }
+
+  const response = await apiClient.get<ApiSuccessResponse<ExtraServiceRecommendation[]>>(
+    "/recommendations/extra-services",
+    { params: { comboId } },
+  );
+
+  return response.data.data;
+}
+
+export function listBookingStaffOptions(payload: BookingStaffOptionsRequest) {
+  return apiRequest<BookingStaffOption[], BookingStaffOptionsRequest>({
+    method: "POST",
+    url: "/customers/bookings/staff-options",
+    data: payload,
+  });
+}
+
+export function updateCustomerBookingStaff(bookingId: string, payload: UpdateBookingStaffRequest) {
+  return apiRequest<BookingDetail, UpdateBookingStaffRequest>({
+    method: "POST",
+    url: `/customers/bookings/${bookingId}/staff`,
+    data: payload,
+  });
 }
 
 export async function purchaseCustomerCombo(payload: PurchaseCustomerComboRequest) {

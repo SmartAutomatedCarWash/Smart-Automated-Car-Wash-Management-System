@@ -4,11 +4,18 @@ import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.BookingListItemResponse;
 import com.autowash.dto.CancelBookingRequest;
 import com.autowash.dto.CancelBookingResponse;
+import com.autowash.dto.ChangeBookingPaymentMethodRequest;
+import com.autowash.dto.BookingStaffOptionResponse;
+import com.autowash.dto.BookingStaffOptionsRequest;
 import com.autowash.dto.CreateBookingRequest;
 import com.autowash.dto.CreateBookingResponse;
+import com.autowash.dto.DiscountValidationRequest;
+import com.autowash.dto.DiscountValidationResponse;
 import com.autowash.dto.PayBookingRequest;
 import com.autowash.dto.PayBookingResponse;
+import com.autowash.dto.UpdateBookingStaffRequest;
 import com.autowash.service.BookingService;
+import com.autowash.service.BookingStaffRecommendationService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -41,9 +48,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final BookingStaffRecommendationService bookingStaffRecommendationService;
 
-    public BookingController(BookingService bookingService) {
+    public BookingController(
+            BookingService bookingService,
+            BookingStaffRecommendationService bookingStaffRecommendationService
+    ) {
         this.bookingService = bookingService;
+        this.bookingStaffRecommendationService = bookingStaffRecommendationService;
     }
 
     @PostMapping
@@ -53,6 +65,25 @@ public class BookingController {
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created("Booking created.", bookingService.createBooking(request, null)));
+    }
+
+    @PostMapping("/staff-options")
+    @Operation(summary = "Recommend staff for a booking draft")
+    public ApiResponse<List<BookingStaffOptionResponse>> recommendStaffOptions(
+            @Valid @RequestBody BookingStaffOptionsRequest request
+    ) {
+        return ApiResponse.ok(
+                "Booking staff options retrieved",
+                bookingStaffRecommendationService.recommendStaffOptions(request)
+        );
+    }
+
+    @PostMapping("/validate-voucher")
+    @Operation(summary = "Validate booking voucher before checkout")
+    public ApiResponse<DiscountValidationResponse> validateVoucher(
+            @Valid @RequestBody DiscountValidationRequest request
+    ) {
+        return ApiResponse.ok("Voucher validated", bookingService.validateDiscount(request));
     }
 
     @GetMapping
@@ -98,6 +129,30 @@ public class BookingController {
         return ApiResponse.ok(
                 "Booking payment completed",
                 bookingService.payBooking(bookingId, request == null ? null : request.transactionRef())
+        );
+    }
+
+    @PostMapping("/{bookingId}/payment-method")
+    @Operation(summary = "Change payment method for a pending booking")
+    public ApiResponse<PayBookingResponse> changePaymentMethod(
+            @PathVariable String bookingId,
+            @Valid @RequestBody ChangeBookingPaymentMethodRequest request
+    ) {
+        return ApiResponse.ok(
+                "Booking payment method updated",
+                bookingService.changeBookingPaymentMethod(bookingId, request.paymentMethod())
+        );
+    }
+
+    @PostMapping("/{bookingId}/staff")
+    @Operation(summary = "Update assigned staff for a booking")
+    public ApiResponse<BookingDetailResponse> updateBookingStaff(
+            @PathVariable String bookingId,
+            @Valid @RequestBody UpdateBookingStaffRequest request
+    ) {
+        return ApiResponse.ok(
+                "Booking staff updated",
+                bookingService.updateBookingStaff(bookingId, request.staffIds())
         );
     }
 

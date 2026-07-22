@@ -14,6 +14,12 @@ export type OperationsQueueSummary = {
   completed: number;
 };
 
+export type OperationStaffAssignment = {
+  staffId: string;
+  staffName: string;
+  sortOrder: number;
+};
+
 export type OperationsQueueSession = {
   sessionId: string;
   bookingId: string;
@@ -24,6 +30,7 @@ export type OperationsQueueSession = {
   servicePackage?: string | null;
   assignedStaffId?: string | null;
   assignedStaffName?: string | null;
+  assignedStaff?: OperationStaffAssignment[];
   status: WashSessionStatus;
   bookingDate: string;
   bookingTime: string;
@@ -81,6 +88,7 @@ export type EligibleSessionBooking = {
   estimatedDurationMinutes: number;
   assignedStaffId: string | null;
   assignedStaffName: string | null;
+  assignedStaff?: OperationStaffAssignment[];
   customerTier: string | null;
   customerPriorityScore: number;
 };
@@ -89,6 +97,9 @@ export type CreateWashSessionResponse = {
   sessionId: string;
   status: WashSessionStatus;
   bookingId: string;
+  assignedStaffId?: string | null;
+  assignedStaffName?: string | null;
+  assignedStaff?: OperationStaffAssignment[];
   createdAt: string;
 };
 
@@ -122,18 +133,6 @@ export type CompleteWashSessionResponse = {
   awardedLoyaltyPoints: number;
 };
 
-export type TransferWashSessionResponse = {
-  auditId: string;
-  sessionId: string;
-  bookingId: string;
-  fromStaffId: string | null;
-  fromStaffName: string | null;
-  toStaffId: string;
-  toStaffName: string;
-  reason: string | null;
-  transferredAt: string;
-};
-
 export type CancelFaultType = "CUSTOMER_FAULT" | "CARWASH_FAULT";
 
 export type CancelWashSessionResponse = {
@@ -144,6 +143,18 @@ export type CancelWashSessionResponse = {
   reason: string;
   faultType: CancelFaultType | null;
   cancelledAt: string;
+};
+
+export type TransferWashSessionResponse = {
+  auditId?: string;
+  sessionId: string;
+  bookingId: string;
+  fromStaffId?: string | null;
+  fromStaffName?: string | null;
+  toStaffId: string;
+  toStaffName?: string | null;
+  reason?: string | null;
+  transferredAt?: string;
 };
 
 // ─── Staff Today (My Sessions) ────────────────────────────────────────────────
@@ -216,6 +227,7 @@ export type StaffSessionHistoryItem = {
   servicePackage?: string | null;
   assignedStaffId?: string | null;
   assignedStaffName?: string | null;
+  assignedStaff?: OperationStaffAssignment[];
   status: string;
   bookingDate: string;
   bookingTime: string;
@@ -259,7 +271,10 @@ export type StaffSessionHistoryParams = {
   rating?: "ALL" | "5" | "4" | "LOW" | "NONE";
   search?: string;
   sort?: "COMPLETED_DESC" | "COMPLETED_ASC" | "DURATION_DESC" | "RATING_ASC";
+  staffId?: string;
 };
+
+export type AdminSessionHistoryParams = StaffSessionHistoryParams;
 
 export type StartSessionRequest = {
   startedAt: string;

@@ -20,12 +20,14 @@ import type {
   CreateAdminStaffPayload,
   ReportAnalysisGroup,
   ReportRangeKey,
+  StaffKpiItem,
+  UpdateAdminStaffPayload,
   UpdateAdminCustomerRolePayload,
   UpdateAdminCustomerRoleResult,
   UpdateAdminCustomerStatusPayload,
   UpdateAdminCustomerStatusResult,
 } from "@/entities/reports";
-import type { BookingDetail } from "@/entities/bookings";
+import type { BookingDetail, BookingStatus, VnpayPaymentResultResponse } from "@/entities/bookings";
 
 export async function listAdminAccounts(
   filters: AdminAccountsFilters,
@@ -44,6 +46,18 @@ export async function listAdminAccounts(
     items: response.data.data,
     pagination: response.data.pagination,
   };
+}
+
+export async function listAdminStaff(): Promise<AdminAccount[]> {
+  const response = await apiClient.get<ApiSuccessResponse<AdminAccount[]>>("/admin/staff");
+  return response.data.data;
+}
+
+export async function listAdminStaffKpi(range = "WEEK"): Promise<StaffKpiItem[]> {
+  const response = await apiClient.get<ApiSuccessResponse<StaffKpiItem[]>>("/admin/staff/kpi", {
+    params: { range },
+  });
+  return response.data.data;
 }
 
 export async function listAdminBookings(
@@ -68,6 +82,29 @@ export async function listAdminBookings(
 export async function getAdminBookingDetail(id: string): Promise<BookingDetail> {
   const response = await apiClient.get<ApiSuccessResponse<BookingDetail>>(`/admin/bookings/${id}`);
   return response.data.data;
+}
+
+export async function confirmAdminBooking(id: string): Promise<BookingDetail> {
+  return apiRequest<BookingDetail>({
+    method: "POST",
+    url: `/admin/bookings/${id}/confirm`,
+  });
+}
+
+export async function updateAdminBookingStatus(id: string, status: BookingStatus): Promise<BookingDetail> {
+  return apiRequest<BookingDetail, { status: BookingStatus }>({
+    method: "PATCH",
+    url: `/admin/bookings/${id}/status`,
+    data: { status },
+  });
+}
+
+export async function refundAdminVnpayPayment(id: string, amount?: number): Promise<VnpayPaymentResultResponse> {
+  return apiRequest<VnpayPaymentResultResponse, { amount?: number }>({
+    method: "POST",
+    url: `/payments/bookings/${id}/vnpay/refund`,
+    data: amount ? { amount } : undefined,
+  });
 }
 
 export async function getAdminBusinessHealthReport(params: {
@@ -225,6 +262,21 @@ export function createAdminStaff(payload: CreateAdminStaffPayload) {
     method: "POST",
     url: "/admin/staff",
     data: payload,
+  });
+}
+
+export function updateAdminStaff(staffId: string, payload: UpdateAdminStaffPayload) {
+  return apiRequest<AdminAccount, UpdateAdminStaffPayload>({
+    method: "PUT",
+    url: `/admin/staff/${staffId}`,
+    data: payload,
+  });
+}
+
+export function deleteAdminStaff(staffId: string) {
+  return apiRequest<AdminAccount, undefined>({
+    method: "DELETE",
+    url: `/admin/staff/${staffId}`,
   });
 }
 

@@ -31,6 +31,7 @@ export type BookingPackage = {
   duration: number;
   category: string;
   features: string[];
+  serviceIds?: string[] | null;
   image: string | null;
   imageUrls?: string[] | null;
   status: string;
@@ -58,6 +59,16 @@ export type BookingCombo = {
   basePrice: number;
   durationDays: number;
   maxServices: number;
+  services?: {
+    serviceId: string;
+    name: string;
+    description?: string | null;
+    price: number;
+    duration?: number;
+    durationMinutes?: number;
+    quantity: number;
+    sortOrder: number;
+  }[];
   benefits: string[];
   image: string | null;
   imageUrls?: string[] | null;
@@ -104,6 +115,31 @@ export type CreateBookingRequest = {
   discountCode?: string;
   confirmationEmail?: string;
   paymentMethod: PaymentMethod;
+  staffId?: string;
+  staffIds?: string[];
+};
+
+export type BookingStaffOptionsRequest = {
+  packageId?: string;
+  comboId?: string;
+  options: string[];
+  bookingDate: string;
+  bookingTime: string;
+};
+
+export type UpdateBookingStaffRequest = {
+  staffIds: string[];
+};
+
+export type BookingStaffOption = {
+  staffId: string;
+  staffName: string;
+  serviceName: string;
+  recommended: boolean;
+  reason: string;
+  available?: boolean;
+  availabilityStatus?: "AVAILABLE" | "BUSY" | string;
+  busyUntil?: string | null;
 };
 
 export type HoldSlotRequest = {
@@ -114,6 +150,27 @@ export type HoldSlotRequest = {
 export type HoldSlotResponse = {
   slotTime: string;
   expiresAt: string;
+};
+
+export type SlotAvailability = {
+  bookingDate: string;
+  bookingTime: string;
+  slotTime: string;
+  capacity: number;
+  bookedCount: number;
+  heldCount: number;
+  remaining: number;
+  available: boolean;
+};
+
+export type ExtraServiceRecommendation = {
+  serviceId: string;
+  name: string;
+  description: string | null;
+  price: number;
+  duration: number;
+  reason: string;
+  source: "RULE" | string;
 };
 
 export type BookingAddonSelection = {
@@ -146,6 +203,45 @@ export type CreateBookingResponse = {
   confirmationNumber: string;
   confirmationEmail: string | null;
   comboPurchased: boolean;
+  assignedStaffId: string | null;
+  assignedStaffName: string | null;
+};
+
+export type VnpayCheckoutResponse = {
+  bookingId: string;
+  txnRef: string;
+  amount: number;
+  paymentUrl: string;
+};
+
+export type VnpayPaymentResultResponse = {
+  validSignature: boolean;
+  success: boolean;
+  bookingId: string | null;
+  responseCode: string | null;
+  transactionStatus: string | null;
+  transactionRef: string | null;
+  message: string;
+};
+
+export type PayBookingResponse = {
+  bookingId: string;
+  paymentId: string;
+  paymentMethod: PaymentMethod;
+  paymentStatus: string;
+  amount: number;
+  transactionRef: string | null;
+  paidAt: string | null;
+  bookingStatus: BookingStatus;
+  assignedStaffId: string | null;
+  assignedStaffName: string | null;
+  assignedStaff?: BookingStaffAssignment[];
+};
+
+export type BookingStaffAssignment = {
+  staffId: string;
+  staffName: string;
+  sortOrder: number;
 };
 
 export type BookingListItem = {
@@ -158,6 +254,7 @@ export type BookingListItem = {
   status: BookingStatus;
   washStatus: string | null;
   createdAt: string;
+  confirmationExpiresAt: string | null;
   completedAt: string | null;
 };
 
@@ -209,14 +306,20 @@ export type BookingDetail = {
   payment: {
     method: string;
     status: string;
-    transactionId: string;
+    transactionId: string | null;
     paidAt: string | null;
+    qrUrl?: string | null;
+    bankCode?: string | null;
+    accountNumber?: string | null;
+    accountName?: string | null;
+    transferDescription?: string | null;
   };
   status: BookingStatus;
   confirmationStatus: BookingConfirmationStatus;
   confirmationExpiresAt: string | null;
   washSessionId: string | null;
   staffName: string | null;
+  assignedStaff?: BookingStaffAssignment[];
   washStatus: string | null;
   notes: string | null;
   createdAt: string;
@@ -315,6 +418,8 @@ export type BookingDraft = {
   discountCode: string;
   confirmationEmail?: string;
   paymentMethod: PaymentMethod | null;
+  staffId?: string;
+  staffIds?: string[];
 };
 
 export type BookingDraftErrors = Partial<Record<keyof BookingDraft, string>>;

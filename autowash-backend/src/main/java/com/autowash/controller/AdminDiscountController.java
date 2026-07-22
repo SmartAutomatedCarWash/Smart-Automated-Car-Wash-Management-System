@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/admin/discounts")
+@RequestMapping("/api/v1/admin/discounts")
 @RequiredArgsConstructor
 public class AdminDiscountController {
 

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/customer/discounts")
+@RequestMapping("/api/v1/customer/discounts")
 @RequiredArgsConstructor
 public class CustomerDiscountController {
 

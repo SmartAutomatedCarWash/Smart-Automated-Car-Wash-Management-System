@@ -159,23 +159,24 @@ public class CatalogServiceImpl implements CatalogService {
         }
 
         assertActiveServices(parsedOptionIds);
-        Map<UUID, ComboService> optionsById = comboServiceRepository
-                .findByComboIdAndOptionIdIn(combo.getId(), parsedOptionIds)
+        Set<UUID> includedServiceIds = comboServiceRepository.findByComboIdOrderBySortOrderAsc(combo.getId())
                 .stream()
-                .collect(Collectors.toMap(ComboService::getOptionId, Function.identity()));
+                .map(ComboService::getOptionId)
+                .collect(Collectors.toSet());
 
         return parsedOptionIds.stream()
                 .map(optionId -> {
-                    ComboService option = optionsById.get(optionId);
-                    if (option == null) {
+                    if (includedServiceIds.contains(optionId)) {
                         throw optionUnavailable();
                     }
-                    return new CatalogService.CatalogOption(
-                            option.getOptionId(),
-                            option.getOptionName(),
-                            option.getOptionPrice(),
-                            option.getOptionDurationMinutes()
-                    );
+                    return serviceRepository.findByIdAndStatus(optionId, ActiveStatus.ACTIVE)
+                            .map(service -> new CatalogService.CatalogOption(
+                                    service.getId(),
+                                    service.getName(),
+                                    service.getPrice(),
+                                    service.getDurationMinutes()
+                            ))
+                            .orElseThrow(this::optionUnavailable);
                 })
                 .toList();
     }
@@ -193,8 +194,13 @@ public ComboResponse getComboById(String comboId) {
 }
 
     private PackageResponse toPackageResponse(Package pkg) {
-        List<String> features = packageServiceRepository.findByPackageIdOrderBySortOrderAsc(pkg.getId()).stream()
+        List<PackageService> packageServices = packageServiceRepository.findByPackageIdOrderBySortOrderAsc(pkg.getId());
+        List<String> features = packageServices.stream()
                 .map(PackageService::getOptionName)
+                .toList();
+        List<String> serviceIds = packageServices.stream()
+                .map(PackageService::getOptionId)
+                .map(UUID::toString)
                 .toList();
 
         Double avgRating = reviewRepository.getAverageRatingByPackageId(pkg.getId());
@@ -209,7 +215,7 @@ public ComboResponse getComboById(String comboId) {
         return catalogMapper.toPackageResponse(
                 pkg,
                 features,
-                null,
+                serviceIds,
                 split(pkg.getImageUrl()),
                 popularity,
                 avgRating != null ? avgRating : 0.0,

@@ -4,9 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Loader2, PlayCircle, RefreshCcw, Activity, Clock,
   Droplets, CheckCircle2, Car, Users, AlertTriangle,
-  Timer, User, Wrench,
+  Timer, User, Wrench, X, Ban, ArrowLeftRight, Check,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useState, useMemo } from "react";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
@@ -14,9 +15,21 @@ import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/ui/ui/dialog";
+import { Label } from "@/shared/ui/ui/label";
+import {
   createWashSession,
   getEligibleSessionBookings,
   getOperationsQueue,
+  cancelWashSession,
+  transferWashSession,
+  getActiveStaffOptions,
 } from "@/features/operations/lib/operations-service";
 import type {
   ApiErrorResponse,
@@ -27,6 +40,7 @@ import type {
   OperationsQueue,
   OperationsQueueSession,
   WashSessionStatus,
+  StaffOption,
 } from "@/entities/operations";
 
 // ── Status config ─────────────────────────────────────────────────────────────
@@ -45,6 +59,15 @@ export default function AdminOperationsPage() {
   const t = (vi: string, en: string) => translate(language, vi, en);
   const queryClient = useQueryClient();
 
+  // Dialog State
+  const [cancellingSession, setCancellingSession] = useState<OperationsQueueSession | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelFaultType, setCancelFaultType] = useState<"CUSTOMER_FAULT" | "STAFF_FAULT" | "SYSTEM_FAULT">("SYSTEM_FAULT");
+
+  const [transferringSession, setTransferringSession] = useState<OperationsQueueSession | null>(null);
+  const [transferStaffId, setTransferStaffId] = useState("");
+  const [transferReason, setTransferReason] = useState("");
+
   const queueQuery = useQuery<OperationsQueue, ApiErrorResponse>({
     queryKey: ["admin-operations", "queue"],
     queryFn: getOperationsQueue,
@@ -57,6 +80,12 @@ export default function AdminOperationsPage() {
     refetchInterval: 30_000,
   });
 
+  const staffQuery = useQuery<StaffOption[], ApiErrorResponse>({
+    queryKey: ["admin-operations", "active-staff"],
+    queryFn: getActiveStaffOptions,
+    enabled: !!transferringSession,
+  });
+
   const createMutation = useMutation<CreateWashSessionResponse, ApiErrorResponse, string>({
     mutationFn: (bookingId) => createWashSession(bookingId),
     onSuccess: async () => {
@@ -67,6 +96,37 @@ export default function AdminOperationsPage() {
       toast.success(t("Đã tạo phiên rửa xe thành công!", "Wash session created."));
     },
     onError: (err) => toast.error(getErrorMessage(err)),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: ({ sessionId, reason, faultType }: { sessionId: string; reason: string; faultType: string }) =>
+      cancelWashSession(sessionId, reason, faultType),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-operations"] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-operations"] }),
+      ]);
+      toast.success(t("Đã hủy phiên rửa xe thành công!", "Wash session cancelled."));
+      setCancellingSession(null);
+      setCancelReason("");
+    },
+    onError: (err: any) => toast.error(getErrorMessage(err)),
+  });
+
+  const transferMutation = useMutation({
+    mutationFn: ({ sessionId, toStaffId, reason }: { sessionId: string; toStaffId: string; reason: string }) =>
+      transferWashSession(sessionId, toStaffId, reason),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-operations"] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-operations"] }),
+      ]);
+      toast.success(t("Đã điều chuyển nhân sự phụ trách thành công!", "Staff assigned successfully."));
+      setTransferringSession(null);
+      setTransferStaffId("");
+      setTransferReason("");
+    },
+    onError: (err: any) => toast.error(getErrorMessage(err)),
   });
 
   const summary = queueQuery.data?.summary;
@@ -143,7 +203,7 @@ export default function AdminOperationsPage() {
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
                 {queueQuery.isLoading ? (
-                  <div className="mt-1 h-7 w-12 animate-pulse rounded bg-slate-100" />
+                   <div className="mt-1 h-7 w-12 animate-pulse rounded bg-slate-100" />
                 ) : (
                   <p className="mt-0.5 text-3xl font-black text-slate-900 leading-none">{value}</p>
                 )}
@@ -204,7 +264,13 @@ export default function AdminOperationsPage() {
                         </div>
                       ) : (
                         col.sessions.map((session) => (
-                          <SessionCard key={session.sessionId} session={session} language={language} />
+                          <SessionCard
+                            key={session.sessionId}
+                            session={session}
+                            language={language}
+                            onCancel={() => setCancellingSession(session)}
+                            onTransfer={() => setTransferringSession(session)}
+                          />
                         ))
                       )}
                     </div>
@@ -290,13 +356,166 @@ export default function AdminOperationsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Cancel Dialog ────────────────────────────────────────────── */}
+      <Dialog open={!!cancellingSession} onOpenChange={(open) => !open && setCancellingSession(null)}>
+        <DialogContent className="rounded-3xl border-slate-200 bg-white p-6 shadow-xl sm:max-w-md animate-in fade-in-50 zoom-in-95 duration-150">
+          <DialogHeader className="text-left space-y-1.5">
+            <DialogTitle className="text-lg font-black text-slate-900">
+              {t("Hủy phiên rửa xe", "Cancel Wash Session")}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-400 font-semibold">
+              {t("Vui lòng cung cấp lý do và quy trách nhiệm lỗi hủy bỏ phiên rửa này.", "Provide reason and cancellation details below.")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-slate-500">{t("Lý do hủy", "Reason")}</Label>
+              <textarea
+                className="w-full min-h-[80px] rounded-xl border border-slate-200 p-3 text-xs bg-slate-50/50 focus:bg-white transition"
+                placeholder={t("Nhập lý do cụ thể...", "Enter reason detail...")}
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-slate-500">{t("Trách nhiệm lỗi", "Responsible Party")}</Label>
+              <select
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold"
+                value={cancelFaultType}
+                onChange={(e: any) => setCancelFaultType(e.target.value)}
+              >
+                <option value="SYSTEM_FAULT">{t("Lỗi do hệ thống / Tiệm", "System/Shop Fault")}</option>
+                <option value="CUSTOMER_FAULT">{t("Lỗi phía khách hàng (No-Show/Hủy trễ)", "Customer Fault")}</option>
+                <option value="STAFF_FAULT">{t("Lỗi phía nhân viên", "Staff Fault")}</option>
+              </select>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:justify-end border-t border-slate-100 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-xl"
+              onClick={() => setCancellingSession(null)}
+            >
+              {t("Hủy bỏ", "Cancel")}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              className="rounded-xl font-bold bg-rose-600 hover:bg-rose-700"
+              disabled={!cancelReason.trim() || cancelMutation.isPending}
+              onClick={() =>
+                cancelMutation.mutate({
+                  sessionId: cancellingSession?.sessionId ?? "",
+                  reason: cancelReason,
+                  faultType: cancelFaultType,
+                })
+              }
+            >
+              {cancelMutation.isPending && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+              {t("Xác nhận hủy", "Confirm Cancel")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Transfer / Assign Staff Dialog ───────────────────────────── */}
+      <Dialog open={!!transferringSession} onOpenChange={(open) => !open && setTransferringSession(null)}>
+        <DialogContent className="rounded-3xl border-slate-200 bg-white p-6 shadow-xl sm:max-w-md animate-in fade-in-50 zoom-in-95 duration-150">
+          <DialogHeader className="text-left space-y-1.5">
+            <DialogTitle className="text-lg font-black text-slate-900">
+              {t("Điều phối / Bàn giao ca nhân sự", "Assign/Transfer Staff")}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-400 font-semibold">
+              {t("Chọn nhân viên phụ trách mới cho xe của khách hàng.", "Assign or transfer this wash session to another team member.")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-slate-500">{t("Chọn nhân sự", "Select Staff Member")}</Label>
+              {staffQuery.isLoading ? (
+                <div className="h-10 w-full animate-pulse rounded-xl bg-slate-100" />
+              ) : (
+                <select
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold"
+                  value={transferStaffId}
+                  onChange={(e) => setTransferStaffId(e.target.value)}
+                >
+                  <option value="">{t("-- Chọn nhân viên --", "-- Choose staff member --")}</option>
+                  {staffQuery.data?.map((staff) => (
+                    <option key={staff.staffId} value={staff.staffId}>
+                      {staff.staffName}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-slate-500">{t("Ghi chú / Lý do điều chuyển", "Notes / Handover Reason")}</Label>
+              <textarea
+                className="w-full min-h-[60px] rounded-xl border border-slate-200 p-3 text-xs bg-slate-50/50 focus:bg-white transition"
+                placeholder={t("Nhập ghi chú điều phối...", "Enter coordination notes...")}
+                value={transferReason}
+                onChange={(e) => setTransferReason(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:justify-end border-t border-slate-100 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-xl"
+              onClick={() => setTransferringSession(null)}
+            >
+              {t("Đóng", "Close")}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="rounded-xl font-bold bg-cyan-600 hover:bg-cyan-700 text-white"
+              disabled={!transferStaffId || transferMutation.isPending}
+              onClick={() =>
+                transferMutation.mutate({
+                  sessionId: transferringSession?.sessionId ?? "",
+                  toStaffId: transferStaffId,
+                  reason: transferReason,
+                })
+              }
+            >
+              {transferMutation.isPending && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+              {t("Cập nhật phụ trách", "Update Assignment")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </WorkspacePage>
   );
 }
 
 // ── Session Card component ─────────────────────────────────────────────────────
-function SessionCard({ session, language }: { session: OperationsQueueSession; language: string }) {
+function SessionCard({
+  session,
+  language,
+  onCancel,
+  onTransfer,
+}: {
+  session: OperationsQueueSession;
+  language: string;
+  onCancel: () => void;
+  onTransfer: () => void;
+}) {
   const cfg = STATUS_CONFIG[session.status] ?? STATUS_CONFIG.PENDING;
+  const t = (vi: string, en: string) => translate(language, vi, en);
 
   function formatTime(iso?: string | null) {
     if (!iso) return null;
@@ -306,9 +525,10 @@ function SessionCard({ session, language }: { session: OperationsQueueSession; l
   }
 
   const activeTime = formatTime(session.startedAt) ?? formatTime(session.checkedInAt) ?? formatTime(session.queuedAt);
+  const showControls = session.status !== "COMPLETED" && session.status !== "CANCELLED";
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm space-y-2.5">
+    <div className="group relative rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm space-y-2.5 hover:shadow-md transition duration-200">
       {/* Top row: name + status */}
       <div className="flex items-start justify-between gap-2">
         <span className="text-xs font-black text-slate-800 leading-tight">{session.customerName}</span>
@@ -325,7 +545,7 @@ function SessionCard({ session, language }: { session: OperationsQueueSession; l
           {session.vehiclePlate}
         </span>
         {session.servicePackage && (
-          <span className="text-[10px] font-semibold text-slate-400 truncate">{session.servicePackage}</span>
+          <span className="text-[10px] font-semibold text-slate-400 truncate max-w-[120px]">{session.servicePackage}</span>
         )}
       </div>
 
@@ -347,6 +567,39 @@ function SessionCard({ session, language }: { session: OperationsQueueSession; l
           {language === "vi" ? "Kể từ" : "Since"} {activeTime}
         </div>
       )}
+
+      {/* Hover action overlay controls for Managers/Admins */}
+      {showControls && (
+        <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-xl bg-slate-950/70 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+          <Button
+            type="button"
+            size="sm"
+            onClick={onTransfer}
+            className="h-8 rounded-lg bg-white/95 text-slate-950 hover:bg-slate-100 text-[10px] font-bold gap-1 shadow-sm active:scale-95"
+          >
+            <ArrowLeftRight className="h-3 w-3" />
+            {t("Chuyển giao", "Transfer")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="destructive"
+            onClick={onCancel}
+            className="h-8 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold gap-1 shadow-sm active:scale-95"
+          >
+            <Ban className="h-3 w-3" />
+            {t("Hủy bỏ", "Cancel")}
+          </Button>
+        </div>
+      )}
     </div>
   );
+}
+
+function getTodayInputValue() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }

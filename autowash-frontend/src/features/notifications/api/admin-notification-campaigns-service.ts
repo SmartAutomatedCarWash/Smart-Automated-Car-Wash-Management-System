@@ -35,11 +35,11 @@ export interface CampaignPage {
 }
 
 export const adminNotificationCampaignsService = {
-  getCampaigns: async (page = 1, limit = 10) => {
+  getCampaigns: async (page = 1, limit = 10, filters?: { type?: string; audience?: string; status?: string }) => {
     return apiRequest<CampaignPage>({
       url: `/admin/notification-campaigns`,
       method: "GET",
-      params: { page, limit },
+      params: { page, limit, ...filters },
     });
   },
   createCampaign: async (data: NotificationCampaignRequest) => {
@@ -47,6 +47,19 @@ export const adminNotificationCampaignsService = {
       url: `/admin/notification-campaigns`,
       method: "POST",
       data,
+    });
+  },
+  updateCampaign: async (id: string, data: NotificationCampaignRequest) => {
+    return apiRequest<NotificationCampaignResponse>({
+      url: `/admin/notification-campaigns/${id}`,
+      method: "PUT",
+      data,
+    });
+  },
+  deleteCampaign: async (id: string) => {
+    return apiRequest<void>({
+      url: `/admin/notification-campaigns/${id}`,
+      method: "DELETE",
     });
   },
 };

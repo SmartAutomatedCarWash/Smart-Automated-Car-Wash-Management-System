@@ -3,6 +3,7 @@ package com.autowash.dto;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 public record AdminBookingResponse(
@@ -22,6 +23,7 @@ public record AdminBookingResponse(
         UUID sessionId,
         String washStatus,
         Instant createdAt,
-        String staffName
+        String staffName,
+        List<BookingDetailResponse.StaffAssignment> assignedStaff
 ) {
 }

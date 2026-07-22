@@ -1114,7 +1114,7 @@ export function AdminDashboardView() {
             { href: "/admin/bookings", label: t("Đặt lịch", "Bookings"), icon: CalendarDays, color: "text-cyan-700 bg-cyan-50 border-cyan-200" },
             { href: "/admin/customers", label: t("Khách hàng", "Customers"), icon: Users, color: "text-slate-700 bg-slate-50 border-slate-200" },
             { href: "/admin/services", label: t("Dịch vụ", "Services"), icon: Zap, color: "text-violet-700 bg-violet-50 border-violet-200" },
-            { href: "/admin/discounts", label: t("Ưu đãi", "Discounts"), icon: BadgePercent, color: "text-amber-700 bg-amber-50 border-amber-200" },
+            { href: "/admin/promotions", label: t("Khuyến mãi", "Promotions"), icon: BadgePercent, color: "text-amber-700 bg-amber-50 border-amber-200" },
             { href: "/admin/tier-voucher-offers", label: t("Đổi voucher", "Voucher Offers"), icon: Ticket, color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
             { href: "/admin/reviews", label: t("Đánh giá", "Reviews"), icon: Star, color: "text-rose-700 bg-rose-50 border-rose-200" },
             { href: "/admin/reports", label: t("Báo cáo", "Reports"), icon: BarChart3, color: "text-blue-700 bg-blue-50 border-blue-200" },

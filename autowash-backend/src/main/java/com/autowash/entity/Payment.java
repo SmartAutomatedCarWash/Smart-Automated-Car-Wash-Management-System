@@ -62,6 +62,59 @@ public class Payment {
         this.amount = amount;
     }
 
+    public void prepareOnlinePayment(long amount, String transactionRef) {
+        this.method = PaymentMethod.E_WALLET;
+        this.status = PaymentStatus.PENDING_PAYMENT;
+        this.amount = amount;
+        this.transactionRef = transactionRef;
+        this.paidAt = null;
+    }
+
+    public void changeToCashAtCounter() {
+        this.method = PaymentMethod.CASH_AT_COUNTER;
+        this.status = PaymentStatus.UNPAID;
+        this.transactionRef = null;
+        this.paidAt = null;
+    }
+
+    public void prepareSepayPayment(long amount, String transferCode) {
+        this.method = PaymentMethod.BANK_TRANSFER;
+        this.status = PaymentStatus.PENDING_PAYMENT;
+        this.amount = amount;
+        this.transactionRef = transferCode;
+        this.paidAt = null;
+    }
+
+    public void markFailed() {
+        if (this.status == PaymentStatus.PAID) {
+            return;
+        }
+        this.status = PaymentStatus.FAILED;
+    }
+
+    public void markCancelled() {
+        if (this.status == PaymentStatus.PAID) {
+            return;
+        }
+        this.status = PaymentStatus.FAILED;
+    }
+
+    public void markRefundPending() {
+        if (this.status == PaymentStatus.PAID || this.status == PaymentStatus.REFUND_FAILED) {
+            this.status = PaymentStatus.REFUND_PENDING;
+        }
+    }
+
+    public void markRefunded(boolean partial) {
+        this.status = partial ? PaymentStatus.PARTIALLY_REFUNDED : PaymentStatus.REFUNDED;
+    }
+
+    public void markRefundFailed() {
+        if (this.status == PaymentStatus.REFUND_PENDING || this.status == PaymentStatus.PAID) {
+            this.status = PaymentStatus.REFUND_FAILED;
+        }
+    }
+
     public void markPaid(String transactionRef) {
         if (this.status == PaymentStatus.PAID) {
             return;

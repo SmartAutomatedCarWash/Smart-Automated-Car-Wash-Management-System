@@ -10,9 +10,9 @@ import {
   getDemoOperationsQueue,
   isManagerDemoToken,
   startDemoWashSession,
-  transferDemoWashSession,
 } from "@/features/operations/lib/operations-demo-data";
 import type {
+  AdminSessionHistoryParams,
   CheckInWashSessionResponse,
   CompleteSessionRequest,
   CompleteSessionResponse,
@@ -29,8 +29,8 @@ import type {
   StartSessionRequest,
   StartSessionResponse,
   StartWashSessionResponse,
-  TransferWashSessionResponse,
   CancelWashSessionResponse,
+  TransferWashSessionResponse,
 } from "@/entities/operations";
 
 const SESSION_BASE_URL = "/operations/sessions";
@@ -128,18 +128,6 @@ export function completeWashSession(sessionId: string) {
   });
 }
 
-export function transferWashSession(sessionId: string, toStaffId: string, reason?: string) {
-  if (isManagerDemoToken(getAccessToken())) {
-    return transferDemoWashSession(sessionId, toStaffId, reason);
-  }
-
-  return apiRequest<TransferWashSessionResponse, { toStaffId: string; reason?: string }>({
-    method: "POST",
-    url: `${SESSION_BASE_URL}/${sessionId}/transfer`,
-    data: { toStaffId, reason },
-  });
-}
-
 export function cancelWashSession(sessionId: string, reason: string, faultType?: string) {
   if (isManagerDemoToken(getAccessToken())) {
     return cancelDemoWashSession(sessionId, reason);
@@ -149,6 +137,14 @@ export function cancelWashSession(sessionId: string, reason: string, faultType?:
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/cancel`,
     data: { reason, faultType },
+  });
+}
+
+export function transferWashSession(sessionId: string, toStaffId: string, reason?: string) {
+  return apiRequest<TransferWashSessionResponse, { toStaffId: string; reason?: string }>({
+    method: "POST",
+    url: `/manager/operations/sessions/${sessionId}/transfer`,
+    data: { toStaffId, reason },
   });
 }
 
@@ -167,6 +163,24 @@ export function getStaffSessionHistory(params: StaffSessionHistoryParams = {}) {
       rating: params.rating ?? "ALL",
       ...(params.search && { search: params.search }),
       sort: params.sort ?? "COMPLETED_DESC",
+    },
+  });
+}
+
+export function getManagerSessionHistory(params: StaffSessionHistoryParams = {}) {
+  return apiRequest<StaffSessionHistoryResponse>({
+    method: "GET",
+    url: "/operations/manager/sessions/history",
+    params: {
+      page: params.page ?? 1,
+      limit: params.limit ?? 5,
+      period: params.period ?? "ALL",
+      ...(params.date && { date: params.date }),
+      ...(params.servicePackage && { servicePackage: params.servicePackage }),
+      rating: params.rating ?? "ALL",
+      ...(params.search && { search: params.search }),
+      sort: params.sort ?? "COMPLETED_DESC",
+      ...(params.staffId && { staffId: params.staffId }),
     },
   });
 }
@@ -198,5 +212,21 @@ export function completeStaffSession(sessionId: string, staffNote?: string) {
     method: "POST",
     url: `/operations/sessions/${sessionId}/complete`,
     data: payload,
+  });
+}
+
+export function getAdminSessionHistory(params: AdminSessionHistoryParams = {}) {
+  return apiRequest<StaffSessionHistoryResponse>({
+    method: "GET",
+    url: "/operations/admin/session-history",
+    params: {
+      page: params.page ?? 1,
+      limit: params.limit ?? 10,
+      period: params.period ?? "ALL",
+      ...(params.staffId && params.staffId !== "ALL" && { staffId: params.staffId }),
+      rating: params.rating ?? "ALL",
+      ...(params.search && { search: params.search }),
+      sort: params.sort ?? "COMPLETED_DESC",
+    },
   });
 }

@@ -34,6 +34,7 @@ const TIMELINE_STEPS = [
 
 const STATUS_ORDER = ["PENDING", "CONFIRMED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED"];
 const ACTIVE_STATUSES = new Set(["PENDING", "CONFIRMED", "CHECKED_IN", "IN_PROGRESS"]);
+const HOLD_DURATION_MS = 15 * 60 * 1000;
 
 function getStepIndex(status: string) {
   return STATUS_ORDER.indexOf(status.toUpperCase());
@@ -51,6 +52,63 @@ function useCountdown(bookingDate: string, bookingTime: string) {
   }, [bookingDate, bookingTime]);
 
   return diff;
+}
+
+function useCountdownUntil(expiresAtMs: number | null) {
+  const [diff, setDiff] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!expiresAtMs) {
+      setDiff(null);
+      return;
+    }
+
+    const tick = () => setDiff(Math.max(0, expiresAtMs - Date.now()));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [expiresAtMs]);
+
+  return diff;
+}
+
+function PendingHoldBadge({ expiresAt, language }: { expiresAt: string | null; language: "vi" | "en" }) {
+  const expiresAtMs = expiresAt ? new Date(expiresAt).getTime() : Number.NaN;
+  const diff = useCountdownUntil(Number.isFinite(expiresAtMs) ? expiresAtMs : null);
+  if (diff === null) return null;
+
+  if (diff <= 0) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-bold text-rose-700">
+        <Clock3 className="h-3 w-3" />
+        {translate(language, "Het hold", "Hold expired")}
+      </span>
+    );
+  }
+
+  const totalSec = Math.floor(diff / 1000);
+  const mins = Math.floor(totalSec / 60);
+  const secs = totalSec % 60;
+  const urgent = diff <= 2 * 60 * 1000;
+  const progress = Math.max(0, Math.min(100, (diff / HOLD_DURATION_MS) * 100));
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold",
+        urgent ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-800",
+      )}
+    >
+      <Clock3 className="h-3 w-3" />
+      {translate(language, "Hold", "Hold")} {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
+      <span className="ml-0.5 h-1 w-6 overflow-hidden rounded-full bg-white/70">
+        <span
+          className={cn("block h-full rounded-full", urgent ? "bg-rose-500" : "bg-amber-500")}
+          style={{ width: `${progress}%` }}
+        />
+      </span>
+    </span>
+  );
 }
 
 function CountdownBadge({
@@ -172,6 +230,8 @@ function StatusBadge({ status, language }: { status: string; language: "vi" | "e
 
 function ActiveBookingCard({ booking, language }: { booking: BookingListItem; language: "vi" | "en" }) {
   const t = (vi: string, en: string) => translate(language, vi, en);
+  const canShowPendingHoldCountdown = booking.status === "PENDING";
+  const canShowAppointmentCountdown = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS"].includes(booking.status);
 
   return (
     <Link href={`/customer/bookings/${booking.bookingId}`}>
@@ -181,11 +241,15 @@ function ActiveBookingCard({ booking, language }: { booking: BookingListItem; la
             <div className="min-w-0 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge status={booking.status} language={language} />
-                <CountdownBadge
-                  bookingDate={booking.bookingDate}
-                  bookingTime={booking.bookingTime}
-                  language={language}
-                />
+                {canShowPendingHoldCountdown ? (
+                  <PendingHoldBadge expiresAt={booking.confirmationExpiresAt} language={language} />
+                ) : canShowAppointmentCountdown ? (
+                  <CountdownBadge
+                    bookingDate={booking.bookingDate}
+                    bookingTime={booking.bookingTime}
+                    language={language}
+                  />
+                ) : null}
               </div>
               <p className="mt-1 truncate text-sm font-black text-slate-900">
                 {booking.primaryItemName ?? t("Combo", "Combo")}

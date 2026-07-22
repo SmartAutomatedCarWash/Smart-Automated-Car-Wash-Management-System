@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,7 +18,7 @@ import {
   Loader2,
   Copy,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { Badge } from "@/shared/ui/ui/badge";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
@@ -448,7 +448,7 @@ function CustomerProfilePanel({
       <button
         onClick={() => {
           navigator.clipboard.writeText(customerId);
-          toast.success(translate(language, "Đã sao chép ID!", "Copied ID!"));
+          notify.success(translate(language, "Đã sao chép ID!", "Copied ID!"));
         }}
         className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-sky-600 hover:bg-slate-100 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium"
         title={translate(language, "Sao chép ID người dùng", "Copy User ID")}
@@ -955,7 +955,7 @@ function WashHistoryTab({
               <TableHeader className="bg-slate-50">
                 <TableRow>
                   <TableHead>{translate(language, "Trạng thái", "Tracking")}</TableHead>
-                  <TableHead>{translate(language, "Mã đặt lịch", "Booking")}</TableHead>
+                  <TableHead>{translate(language, "Biển số", "Plate")}</TableHead>
                   <TableHead>{translate(language, "Xe", "Vehicle")}</TableHead>
                   <TableHead>{translate(language, "Dịch vụ", "Service")}</TableHead>
                   <TableHead>{translate(language, "Lịch rửa", "Schedule")}</TableHead>
@@ -979,7 +979,7 @@ function WashHistoryTab({
                     </TableCell>
                     <TableCell>
                       <Button asChild variant="link" className="h-auto p-0 text-sky-700">
-                        <Link href={`/admin/bookings/${item.bookingId}`}>{shortId(item.bookingId)}</Link>
+                        <Link href={`/admin/bookings/${item.bookingId}`}>{item.vehiclePlate}</Link>
                       </Button>
                     </TableCell>
                     <TableCell className="font-mono text-xs">{item.vehiclePlate}</TableCell>

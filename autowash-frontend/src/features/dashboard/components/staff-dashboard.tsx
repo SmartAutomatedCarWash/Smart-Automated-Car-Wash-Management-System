@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Car, CheckCircle2, Eye, Search, UserPlus } from "lucide-react";
 import {
@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/shared/ui/ui/select";
 import { useCarwashStore } from "@/shared/store/carwash-store";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import {
   Dialog,
   DialogContent,
@@ -60,27 +60,27 @@ export function StaffDashboard() {
   const submitWalkIn = () => {
     if (submittingWalkIn) return;
     if (noAvailableStaff) {
-      toast.warning(NO_AVAILABLE_STAFF_MESSAGE);
+      notify.warning(NO_AVAILABLE_STAFF_MESSAGE);
       return;
     }
     if (!plate.trim()) {
-      toast.error("License plate required");
+      notify.error("License plate required");
       return;
     }
     if (serviceIds.length === 0) {
-      toast.error("Select at least one service");
+      notify.error("Select at least one service");
       return;
     }
 
     try {
       setSubmittingWalkIn(true);
       const { id, staffName } = createWalkInBooking({ plate, vehicleType: vType, serviceIds });
-      toast.success(`Walk-in ${id} checked in! Assigned to ${staffName}.`);
+      notify.success(`Walk-in ${id} checked in! Assigned to ${staffName}.`);
       setPlate("");
       setServiceIds(servicesCatalog[0] ? [servicesCatalog[0].id] : []);
       router.push("/staff/operations");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to create walk-in booking.");
+      notify.error(error instanceof Error ? error.message : "Unable to create walk-in booking.");
     } finally {
       setSubmittingWalkIn(false);
     }
@@ -214,12 +214,12 @@ export function StaffDashboard() {
                               try {
                                 setProcessingBookingId(booking.id);
                                 const staffName = prepareSessionForBooking(booking.id);
-                                toast.success(
+                                notify.success(
                                   `${booking.id} checked in! Assigned to ${staffName}.`,
                                 );
                                 router.push("/staff/operations");
                               } catch (error) {
-                                toast.error(
+                                notify.error(
                                   error instanceof Error
                                     ? error.message
                                     : "Unable to check in booking.",
@@ -363,7 +363,7 @@ export function StaffDashboard() {
           {detailBooking && (
             <>
               <DialogHeader>
-                <DialogTitle>Booking #{detailBooking.id}</DialogTitle>
+                <DialogTitle>Xe #{detailBooking.vehiclePlate}</DialogTitle>
                 <DialogDescription>
                   Full booking and vehicle information for staff check-in.
                 </DialogDescription>

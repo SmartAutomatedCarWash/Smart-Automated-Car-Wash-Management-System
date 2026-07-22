@@ -58,6 +58,9 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "booking.details", "assignedStaff"})
     List<WashSession> findByAssignedStaffAndStatusOrderByCompletedAtDesc(User assignedStaff, WashSessionStatus status);
 
+    @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "booking.details", "assignedStaff"})
+    List<WashSession> findByStatusOrderByCompletedAtDesc(WashSessionStatus status);
+
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
     @Query("""
             select session from WashSession session
@@ -97,6 +100,23 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
 
     @EntityGraph(attributePaths = {"booking"})
     List<WashSession> findByBooking_IdIn(Collection<UUID> bookingIds);
+
+    @Query(value = """
+            select distinct on (booking_id)
+                id as "id",
+                booking_id as "bookingId",
+                status as "status"
+            from wash_sessions
+            where booking_id in (:bookingIds)
+            order by booking_id, coalesce(completed_at, created_at) desc, created_at desc, id desc
+            """, nativeQuery = true)
+    List<SessionSummary> findLatestSummariesByBookingIds(@Param("bookingIds") Collection<UUID> bookingIds);
+
+    interface SessionSummary {
+        UUID getId();
+        UUID getBookingId();
+        String getStatus();
+    }
 
     @EntityGraph(attributePaths = {"booking"})
     List<WashSession> findByBooking_IdAndStatusIn(UUID bookingId, Collection<WashSessionStatus> statuses);

@@ -7,6 +7,7 @@ import { Button } from "@/shared/ui/ui/button";
 import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
 import { useBookingCombos } from "@/features/bookings/hooks/use-bookings";
 import type { BookingCombo } from "@/entities/bookings";
+import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
 
 function ComboCard({ combo }: { combo: BookingCombo }) {
   return (
@@ -27,7 +28,7 @@ function ComboCard({ combo }: { combo: BookingCombo }) {
       <p className="mt-3 text-sm leading-6 text-slate-600">{combo.description}</p>
 
       <div className="mt-5 flex flex-wrap gap-2">
-        {combo.benefits.slice(0, 4).map((benefit) => (
+        {combo.benefits?.slice(0, 4).map((benefit) => (
           <span
             key={benefit}
             className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 shadow-sm"
@@ -68,10 +69,18 @@ function ComboCard({ combo }: { combo: BookingCombo }) {
           </div>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 flex items-center gap-2">
+          <AddToCartButton
+            itemId={combo.comboId}
+            type="COMBO"
+            name={combo.name}
+            price={combo.basePrice}
+            description={combo.description}
+            className="h-11 flex-1 rounded-full text-xs font-bold"
+          />
           <Button
             asChild
-            className="h-11 w-full rounded-full bg-slate-900 text-white hover:bg-slate-800"
+            className="h-11 flex-1 rounded-full bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold"
           >
             <Link href={`/customer/combos/${combo.comboId}/checkout`}>Đặt combo</Link>
           </Button>

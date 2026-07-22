@@ -55,6 +55,13 @@ const ModernAuthPopupModal = dynamic(
   { ssr: false },
 );
 
+const heroMiniSlides = [
+  { src: "/images/soap-tail-detail.png", alt: "Soap detail on car tail light" },
+  { src: "/images/gallery1.jpg", alt: "Yellow sports car being washed" },
+  { src: "/images/wash-bay-foam-front.png", alt: "Foam wash bay front view" },
+  { src: "/images/detailer-side-wash.png", alt: "Detailer washing SUV side" },
+];
+
 const HOME_COPY = {
   vi: {
     navServices: "Dịch vụ",
@@ -489,6 +496,16 @@ function PublicHeader({
 }
 
 function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "register") => void; copy: Record<string, string> }) {
+  const [miniSlideIndex, setMiniSlideIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setMiniSlideIndex((current) => (current + 1) % heroMiniSlides.length);
+    }, 2600);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <section className="relative overflow-hidden bg-[#05080d] px-4 pb-20 pt-8 sm:px-6 sm:pt-12 lg:px-8">
       <div className="absolute inset-0">
@@ -570,12 +587,26 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">Aura Care</p>
                 <p className="mt-1 text-sm font-semibold text-white/80">{copy.featurePromiseTitle}</p>
               </div>
-              <div className="absolute right-3 top-8 z-20 hidden overflow-hidden rounded-[1.3rem] border border-cyan-300/18 bg-white/8 shadow-[0_18px_48px_rgba(0,0,0,0.36)] backdrop-blur md:block">
-                <Image src="/images/soap-tail-detail.png" alt="Detailed foam wash" width={176} height={112} sizes="11rem" className="h-28 w-44 object-cover opacity-90" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-cyan-300 text-slate-950 shadow-[0_0_26px_rgba(45,255,238,0.44)]">
-                    <ArrowRight className="h-5 w-5" />
-                  </span>
+              <div className="absolute right-3 top-8 z-20 hidden h-28 w-44 overflow-hidden rounded-[1.3rem] border border-cyan-300/18 bg-white/8 shadow-[0_18px_48px_rgba(0,0,0,0.36)] backdrop-blur md:block">
+                <Image
+                  key={heroMiniSlides[miniSlideIndex].src}
+                  src={heroMiniSlides[miniSlideIndex].src}
+                  alt={heroMiniSlides[miniSlideIndex].alt}
+                  fill
+                  sizes="11rem"
+                  className="hero-mini-slide object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/5 via-transparent to-black/20" />
+                <div className="absolute inset-x-0 bottom-2 flex items-center justify-center gap-1.5">
+                  {heroMiniSlides.map((slide, index) => (
+                    <span
+                      key={slide.src}
+                      className={cn(
+                        "h-1.5 rounded-full bg-white/60 transition-all duration-300",
+                        index === miniSlideIndex ? "w-5 bg-cyan-300 shadow-[0_0_12px_rgba(45,255,238,0.65)]" : "w-1.5",
+                      )}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
@@ -1300,6 +1331,21 @@ function ComboCard({
 function MotionStyles() {
   return (
     <style jsx global>{`
+      .hero-mini-slide {
+        animation: heroMiniSlideIn 420ms ease-out both;
+      }
+
+      @keyframes heroMiniSlideIn {
+        0% {
+          opacity: 0.35;
+          transform: scale(1);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1.03);
+        }
+      }
+
       @keyframes floatSoft {
         0%,
         100% {
@@ -1307,6 +1353,13 @@ function MotionStyles() {
         }
         50% {
           transform: translate3d(0, -15px, 0);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .hero-mini-slide {
+          animation: none;
+          opacity: 1;
         }
       }
     `}</style>

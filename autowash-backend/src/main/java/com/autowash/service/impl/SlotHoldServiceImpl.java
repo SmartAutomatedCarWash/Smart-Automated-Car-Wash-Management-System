@@ -1,5 +1,6 @@
 package com.autowash.service.impl;
 
+import com.autowash.dto.SlotAvailabilityResponse;
 import com.autowash.entity.SlotHold;
 import com.autowash.entity.SystemSettings;
 import com.autowash.entity.User;
@@ -12,9 +13,12 @@ import com.autowash.service.SlotHoldService;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.shared.exception.ErrorCode;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -72,6 +76,26 @@ public class SlotHoldServiceImpl implements SlotHoldService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<SlotAvailabilityResponse> listAvailability(UUID customerId, LocalDate bookingDate, List<String> bookingTimes) {
+        User customer = userRepository.findById(customerId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Customer not found", ErrorCode.RESOURCE_NOT_FOUND));
+
+        SystemSettings settings = systemSettingsRepository.findById(1)
+                .orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "System settings not found", ErrorCode.SYSTEM_ERROR));
+
+        int capacity = settings.getMaxBookingsPerTimeSlot();
+        LocalTime operatingStart = LocalTime.parse(settings.getOperatingStartTime());
+        LocalTime operatingEnd = LocalTime.parse(settings.getOperatingEndTime());
+        Instant now = Instant.now();
+
+        return bookingTimes.stream()
+                .distinct()
+                .map(time -> toAvailability(bookingDate, time, customer, capacity, operatingStart, operatingEnd, now))
+                .toList();
+    }
+
     private void validateSlotCapacity(Instant scheduledAt, int maxBookingsPerTimeSlot) {
         LocalDateTime localTime = scheduledAt.atZone(ZoneId.systemDefault()).toLocalDateTime();
         LocalDateTime slotStartLocal = localTime.withMinute(0).withSecond(0).withNano(0);
@@ -91,5 +115,44 @@ public class SlotHoldServiceImpl implements SlotHoldService {
         if (existingBookings + activeHolds >= maxBookingsPerTimeSlot) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking slot is full", ErrorCode.BOOKING_SLOT_FULL);
         }
+    }
+
+    private SlotAvailabilityResponse toAvailability(
+            LocalDate bookingDate,
+            String bookingTime,
+            User customer,
+            int capacity,
+            LocalTime operatingStart,
+            LocalTime operatingEnd,
+            Instant now
+    ) {
+        LocalTime localTime = LocalTime.parse(bookingTime);
+        LocalDateTime scheduledLocal = bookingDate.atTime(localTime);
+        LocalDateTime slotStartLocal = scheduledLocal.withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime slotEndLocal = slotStartLocal.plusHours(1);
+        Instant slotStart = slotStartLocal.atZone(ZoneId.systemDefault()).toInstant();
+        Instant slotEnd = slotEndLocal.atZone(ZoneId.systemDefault()).toInstant();
+
+        long existingBookings = bookingRepository.countByScheduledAtSlot(
+                slotStart,
+                slotEnd,
+                Set.of(BookingStatus.CANCELLED, BookingStatus.NO_SHOW)
+        );
+        long activeHolds = slotHoldRepository.countActiveHoldsForSlotExcludingCustomer(slotStart, slotEnd, now, customer);
+        long remaining = Math.max(capacity - existingBookings - activeHolds, 0);
+        boolean withinOperatingHours = !localTime.isBefore(operatingStart) && localTime.isBefore(operatingEnd);
+        boolean isFuture = scheduledLocal.atZone(ZoneId.systemDefault()).toInstant().isAfter(now);
+        boolean available = withinOperatingHours && isFuture && remaining > 0;
+
+        return new SlotAvailabilityResponse(
+                bookingDate,
+                bookingTime,
+                scheduledLocal.atZone(ZoneId.systemDefault()).toInstant(),
+                capacity,
+                existingBookings,
+                activeHolds,
+                remaining,
+                available
+        );
     }
 }

@@ -8,7 +8,6 @@ import type {
   OperationsQueueSession,
   StaffOption,
   StartWashSessionResponse,
-  TransferWashSessionResponse,
   WashSessionStatus,
 } from "@/entities/operations";
 
@@ -447,37 +446,6 @@ export async function completeDemoWashSession(sessionId: string): Promise<Comple
   );
 
   return { sessionId, status: "COMPLETED", completedAt: now, awardedLoyaltyPoints };
-}
-
-export async function transferDemoWashSession(sessionId: string, toStaffId: string, reason?: string): Promise<TransferWashSessionResponse> {
-  const now = new Date().toISOString();
-  const session = assertDemoSessionExists(sessionId);
-  const nextStaff = STAFF.find((staff) => staff.staffId === toStaffId);
-  if (!nextStaff) {
-    throw new Error("Demo staff not found.");
-  }
-
-  sessions = sessions.map((item) =>
-    item.sessionId === sessionId
-      ? {
-          ...item,
-          assignedStaffId: nextStaff.staffId,
-          assignedStaffName: nextStaff.staffName,
-        }
-      : item,
-  );
-
-  return {
-    auditId: `demo-transfer-${Date.now()}`,
-    sessionId,
-    bookingId: session.bookingId,
-    fromStaffId: session.assignedStaffId ?? null,
-    fromStaffName: session.assignedStaffName ?? null,
-    toStaffId: nextStaff.staffId,
-    toStaffName: nextStaff.staffName,
-    reason: reason ?? null,
-    transferredAt: now,
-  };
 }
 
 export async function cancelDemoWashSession(sessionId: string, reason: string): Promise<CancelWashSessionResponse> {

@@ -17,6 +17,13 @@ export type AdminBooking = {
   washStatus: string | null;
   createdAt: string;
   staffName: string | null;
+  assignedStaff?: AdminBookingStaffAssignment[];
+};
+
+export type AdminBookingStaffAssignment = {
+  staffId: string;
+  staffName: string;
+  sortOrder: number;
 };
 
 export type AdminBookingResponse = AdminBooking;
@@ -115,8 +122,8 @@ export type AdminBusinessHealthReport = {
   };
 };
 
-export type AdminAccountRole = "CUSTOMER" | "STAFF" | "ADMIN" | "GUEST";
-export type AdminEditableAccountRole = "CUSTOMER" | "STAFF" | "ADMIN";
+export type AdminAccountRole = "CUSTOMER" | "STAFF" | "MANAGER" | "ADMIN" | "GUEST";
+export type AdminEditableAccountRole = "CUSTOMER" | "STAFF" | "MANAGER" | "ADMIN";
 
 export type AdminAccountStatus = "PENDING" | "ACTIVE" | "BLOCKED" | "SUSPENDED" | "DELETED";
 
@@ -149,6 +156,26 @@ export type CreateAdminStaffPayload = {
   email: string;
   password: string;
   role: AdminEditableAccountRole;
+};
+
+export type UpdateAdminStaffPayload = {
+  fullName?: string;
+  phone?: string;
+  email?: string;
+  password?: string;
+};
+
+export type StaffKpiItem = {
+  staffId: string;
+  staffName: string;
+  status: string;
+  completedBookings: number;
+  completedRevenue: number;
+  activeSessions: number;
+  totalAssignedBookings: number;
+  kpiProgressPercent: number;
+  kpiTargetRevenue: number;
+  isOnline: boolean;
 };
 
 export type AdminCustomerDetail = {
