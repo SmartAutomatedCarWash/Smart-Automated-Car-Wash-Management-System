@@ -17,14 +17,11 @@ import {
   Sparkles,
   Tag,
   Timer,
-  UserCheck,
-  Users,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { CountdownTimer } from "@/features/bookings/components/countdown-timer";
 import {
@@ -47,7 +44,7 @@ import { useSlotHold } from "@/features/bookings/hooks/use-slot-hold";
 import { useCustomerVehicles } from "@/features/vehicles/hooks/use-customer-vehicles";
 import { getBookingDraftSnapshot, useBookingStore } from "@/features/bookings/store/booking.store";
 import { clearCustomerCart } from "@/features/cart/store/cart.store";
-import type { BookingDetail, BookingStaffOption, PaymentMethod } from "@/entities/bookings";
+import type { BookingDetail, PaymentMethod } from "@/entities/bookings";
 import {
   Dialog,
   DialogContent,
@@ -88,13 +85,6 @@ const PAYMENT_OPTIONS: {
   },
 ];
 
-function getStaffAvailabilityLabel(staff?: BookingStaffOption | null) {
-  if (!staff) return "Select staff";
-  if (staff.available === false) {
-    return staff.busyUntil ? `Busy until ${staff.busyUntil}` : "Busy";
-  }
-  return "Available";
-}
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export function BookingConfirmPage() {
@@ -210,13 +200,6 @@ export function BookingConfirmPage() {
   const selectedStaffIds = useMemo(
     () => (draft.staffIds && draft.staffIds.length > 0 ? draft.staffIds : draft.staffId ? [draft.staffId] : []).slice(0, 3),
     [draft.staffId, draft.staffIds],
-  );
-  const selectedStaff = useMemo(
-    () =>
-      selectedStaffIds
-        .map((staffId) => staffOptions.find((staff) => staff.staffId === staffId))
-        .filter((staff): staff is NonNullable<typeof staff> => Boolean(staff)),
-    [selectedStaffIds, staffOptions],
   );
   const staffUnavailable = staffOptionsQuery.isSuccess && availableStaffOptions.length < 3;
 
@@ -527,115 +510,6 @@ export function BookingConfirmPage() {
             </div>
           </div>
 
-          {/* Staff selection */}
-          <Card className="border-slate-200/80 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <CardHeader className="pb-3 pt-5">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm font-bold">Assigned staff</CardTitle>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Three available staff will be assigned after the booking is confirmed.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-3 pb-5">
-              {staffOptionsQuery.isPending ? (
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {[1, 2, 3].map((item) => (
-                    <div key={item} className="h-28 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
-                  ))}
-                </div>
-              ) : staffUnavailable ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  Fewer than 3 staff are available for this service window. Please choose another time.
-                </div>
-              ) : (
-                <div>
-                  <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))]">
-                    {[0, 1, 2].map((index) => {
-                      const currentStaffId = selectedStaffIds[index] ?? "";
-                      const selectedStaffOption = staffOptions.find((staff) => staff.staffId === currentStaffId);
-                      const selectedAvailabilityLabel = getStaffAvailabilityLabel(selectedStaffOption);
-                      return (
-                        <div key={index} className="rounded-2xl border border-border bg-card p-4">
-                          <span className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                            <UserCheck className="h-3.5 w-3.5" />
-                            Staff {index + 1}
-                          </span>
-                          <Select
-                            value={currentStaffId || undefined}
-                            onValueChange={(staffId) => {
-                              const nextStaffIds = [...selectedStaffIds];
-                              nextStaffIds[index] = staffId;
-                              const uniqueStaffIds = nextStaffIds.filter((staffId, staffIndex) => staffId && nextStaffIds.indexOf(staffId) === staffIndex);
-                              updateDraft({ staffId: uniqueStaffIds[0] ?? "", staffIds: uniqueStaffIds });
-                            }}
-                          >
-                            <SelectTrigger className="h-auto min-h-12 rounded-xl border-input bg-background px-3 py-2 text-left [&>span]:line-clamp-none">
-                              <SelectValue placeholder="Select staff">
-                                {selectedStaffOption ? (
-                                  <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 pr-2 leading-snug">
-                                    <span className="block max-w-full truncate text-sm font-semibold text-foreground">
-                                      {selectedStaffOption.staffName}
-                                    </span>
-                                    <span
-                                      className={`text-[11px] font-bold ${
-                                        selectedStaffOption.available === false
-                                          ? "text-amber-600 dark:text-amber-400"
-                                          : "text-emerald-700 dark:text-emerald-400"
-                                      }`}
-                                    >
-                                      {selectedAvailabilityLabel}
-                                    </span>
-                                  </span>
-                                ) : null}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent
-                              position="item-aligned"
-                              className="min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)]"
-                            >
-                              {staffOptions
-                                .filter((staff) => staff.staffId === currentStaffId || !selectedStaffIds.includes(staff.staffId))
-                                .map((staff) => {
-                                const disabled = staff.available === false;
-                                const statusLabel = getStaffAvailabilityLabel(staff);
-                                return (
-                                  <SelectItem
-                                    key={staff.staffId}
-                                    value={staff.staffId}
-                                    disabled={disabled}
-                                    className="py-2 pr-8 [&>span:last-child]:w-full"
-                                  >
-                                    <span className="flex min-w-0 items-center gap-3">
-                                      <span className="min-w-0 flex-1 truncate font-medium">{staff.staffName}</span>
-                                      <span
-                                        className={`shrink-0 text-[11px] font-bold ${
-                                          staff.available === false
-                                            ? "text-amber-600 dark:text-amber-400"
-                                            : "text-emerald-700 dark:text-emerald-400"
-                                        }`}
-                                      >
-                                        {statusLabel}
-                                      </span>
-                                    </span>
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              {staffOptionsQuery.isError && (
-                <p className="text-xs text-rose-600">{getErrorMessage(staffOptionsQuery.error)}</p>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Payment method — hidden when using an owned (pre-paid) combo */}
           {isComboBooking ? (
             <Card className="border-emerald-200/80 bg-emerald-50/60 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20">
@@ -776,13 +650,6 @@ export function BookingConfirmPage() {
                 icon={Clock}
                 label="Duration"
                 value={summary.estimatedDurationLabel}
-              />
-
-              {/* Staff */}
-              <SummaryRow
-                icon={UserCheck}
-                label="Staff"
-                value={selectedStaff.length > 0 ? selectedStaff.map((staff) => staff.staffName).join(", ") : "Auto assign"}
               />
 
               {/* Service */}

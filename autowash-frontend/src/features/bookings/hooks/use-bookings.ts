@@ -19,6 +19,7 @@ import {
   listCustomerBookings,
   listSlotAvailability,
   purchaseCustomerCombo,
+  updateCustomerBookingStaff,
   validateBookingDiscount,
 } from "@/features/bookings/lib/booking-service";
 import {
@@ -60,6 +61,7 @@ import type {
   CustomerCombo,
   ExtraServiceRecommendation,
   SlotAvailability,
+  UpdateBookingStaffRequest,
 } from "@/entities/bookings";
 
 const LIVE_BOOKING_REFETCH_MS = 3_000;
@@ -331,6 +333,18 @@ export function useApplyBookingPoints(bookingId: string) {
         queryClient.invalidateQueries({ queryKey: bookingDetailQueryKey(userId, bookingId) }),
         queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId) }),
       ]);
+    },
+  });
+}
+
+export function useUpdateCustomerBookingStaff(bookingId: string) {
+  const queryClient = useQueryClient();
+  const { userId } = useBookingQueryContext();
+
+  return useMutation<BookingDetail, ApiErrorResponse, UpdateBookingStaffRequest>({
+    mutationFn: (payload) => updateCustomerBookingStaff(bookingId, payload),
+    onSuccess: async () => {
+      await invalidateBookingViews(queryClient, userId, bookingId);
     },
   });
 }

@@ -30,6 +30,7 @@ public interface BookingService {
     PayBookingResponse payBooking(String bookingId, String transactionRef);
     PayBookingResponse markBookingPaidForOperations(String bookingId, String transactionRef);
     PayBookingResponse changeBookingPaymentMethod(String bookingId, PaymentMethod paymentMethod);
+    BookingDetailResponse updateBookingStaff(String bookingId, List<String> staffIds);
     BookingDetailResponse confirmPendingBooking(String bookingId);
     BookingDetailResponse updateBookingStatus(String bookingId, BookingStatus status);
     Booking requireBookingForOperations(String bookingId);
