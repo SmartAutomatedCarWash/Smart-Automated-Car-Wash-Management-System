@@ -4,7 +4,7 @@ import type { ChangeEvent, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Loader2, Plus, RefreshCcw, Search, Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { Badge } from "@/shared/ui/ui/badge";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
@@ -183,13 +183,13 @@ export function AdminAccountsPageContent() {
 
     try {
       await createStaffMutation.mutateAsync(createForm);
-      toast.success(translate(language, "Tạo tài khoản nhân viên thành công.", "Staff account created successfully."));
+      notify.success(translate(language, "Tạo tài khoản nhân viên thành công.", "Staff account created successfully."));
       setIsCreateDialogOpen(false);
       resetCreateDialog();
       setPage(1);
       void accountsQuery.refetch();
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      notify.error(getErrorMessage(error));
     }
   };
 

@@ -12,6 +12,7 @@ import {
   startDemoWashSession,
 } from "@/features/operations/lib/operations-demo-data";
 import type {
+  AdminSessionHistoryParams,
   CheckInWashSessionResponse,
   CompleteSessionRequest,
   CompleteSessionResponse,
@@ -211,5 +212,21 @@ export function completeStaffSession(sessionId: string, staffNote?: string) {
     method: "POST",
     url: `/operations/sessions/${sessionId}/complete`,
     data: payload,
+  });
+}
+
+export function getAdminSessionHistory(params: AdminSessionHistoryParams = {}) {
+  return apiRequest<StaffSessionHistoryResponse>({
+    method: "GET",
+    url: "/operations/admin/session-history",
+    params: {
+      page: params.page ?? 1,
+      limit: params.limit ?? 10,
+      period: params.period ?? "ALL",
+      ...(params.staffId && params.staffId !== "ALL" && { staffId: params.staffId }),
+      rating: params.rating ?? "ALL",
+      ...(params.search && { search: params.search }),
+      sort: params.sort ?? "COMPLETED_DESC",
+    },
   });
 }

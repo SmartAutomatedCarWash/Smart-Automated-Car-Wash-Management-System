@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { Settings2, Loader2, Save, Clock, Calendar, Coins, Trophy, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Button } from "@/shared/ui/ui/button";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
@@ -156,9 +156,9 @@ export function AdminSettingsPage() {
     if (!form) return;
     try {
       await updateMutation.mutateAsync(form);
-      toast.success(copy.successMsg);
+      notify.success(copy.successMsg);
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      notify.error(getErrorMessage(error));
     }
   }
 
@@ -476,18 +476,18 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
         tier: initialConfig.tier,
         request: { name, minPoints: threshold, pointMultiplier: multiplier, priorityScore, rankOrder, imageUrl: imageUrl || null, active },
       });
-      toast.success(copy.successMsg);
+      notify.success(copy.successMsg);
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      notify.error(getErrorMessage(error));
     }
   }
 
   async function handleDelete() {
     try {
       await deleteMutation.mutateAsync(initialConfig.tier);
-      toast.success(copy.successMsg);
+      notify.success(copy.successMsg);
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      notify.error(getErrorMessage(error));
     }
   }
 

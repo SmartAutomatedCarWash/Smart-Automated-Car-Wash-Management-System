@@ -17,18 +17,18 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByPhoneAndIdNot(String phone, UUID id);
     Optional<User> findByPhone(String phone);
     Optional<User> findByEmailIgnoreCase(String email);
+    List<User> findByEmailInIgnoreCase(List<String> emails);
 
     boolean existsByEmailIgnoreCase(String email);
     boolean existsByEmailIgnoreCaseAndIdNot(String email, UUID id);
     long countByRole(UserRole role);
+    long countByRoleAndStatus(UserRole role, UserStatus status);
+    long countByRoleAndCreatedAtAfter(UserRole role, java.time.Instant createdAt);
 
     List<User> findByRoleAndStatusOrderByFullNameAsc(UserRole role, UserStatus status);
     List<User> findByRoleOrderByFullNameAsc(UserRole role);
 
-    long countByRoleAndStatus(UserRole role, UserStatus status);
 
-    @Query("select count(u) from User u where u.role = :role and u.createdAt >= :from")
-    long countByRoleAndCreatedAtAfter(@Param("role") UserRole role, @Param("from") java.time.Instant from);
 
 
     @Query("SELECT u FROM User u JOIN LoyaltyAccount la ON u.id = la.customer.id WHERE u.role = 'CUSTOMER' AND u.status = 'ACTIVE' AND la.tier = :tier")

@@ -23,7 +23,7 @@ import {
   Droplets,
   PartyPopper,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
@@ -420,11 +420,11 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const handleCancelBooking = async () => {
     try {
       await cancelBookingMutation.mutateAsync(cancelReason.trim() || undefined);
-      toast.success(translate(language, "Đã huỷ lịch đặt thành công.", "Booking cancelled successfully."));
+      notify.success(translate(language, "Đã huỷ lịch đặt thành công.", "Booking cancelled successfully."));
       setShowCancelForm(false);
       setCancelReason("");
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      notify.error(getErrorMessage(error));
     }
   };
 
@@ -434,28 +434,28 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
         await changePaymentMethodMutation.mutateAsync("E_WALLET");
       }
       const checkout = await createVnpayCheckoutMutation.mutateAsync(booking.bookingId);
-      toast.success(translate(language, "Đang chuyển sang VNPay.", "Redirecting to VNPay."));
+      notify.success(translate(language, "Đang chuyển sang VNPay.", "Redirecting to VNPay."));
       window.location.href = checkout.paymentUrl;
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      notify.error(getErrorMessage(error));
     }
   };
 
   const handleChangeToCash = async () => {
     try {
       await changePaymentMethodMutation.mutateAsync("CASH_AT_COUNTER");
-      toast.success(translate(language, "Đã chuyển sang thanh toán tại quầy.", "Changed to cash at counter."));
+      notify.success(translate(language, "Đã chuyển sang thanh toán tại quầy.", "Changed to cash at counter."));
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      notify.error(getErrorMessage(error));
     }
   };
 
   const handleSaveAssignedStaff = async () => {
     try {
       await updateBookingStaffMutation.mutateAsync({ staffIds: selectedStaffIds });
-      toast.success(translate(language, "Đã lưu nhân viên phụ trách.", "Assigned staff saved."));
+      notify.success(translate(language, "Đã lưu nhân viên phụ trách.", "Assigned staff saved."));
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      notify.error(getErrorMessage(error));
     }
   };
 
@@ -468,11 +468,12 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     if (!value) return;
     try {
       await navigator.clipboard.writeText(value);
-      toast.success(successMessage);
+      notify.success(successMessage);
     } catch {
-      toast.error(translate(language, "Không thể copy.", "Unable to copy."));
+      notify.error(translate(language, "Không thể copy.", "Unable to copy."));
     }
   };
+
 
   const handleSubmitReview = async (
     stars: number,
@@ -485,7 +486,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
       comment,
       ...images,
     });
-    toast.success(translate(language, "Đánh giá đã được gửi thành công!", "Review submitted successfully!"));
+    notify.success(translate(language, "Đánh giá đã được gửi thành công!", "Review submitted successfully!"));
   };
 
   return (

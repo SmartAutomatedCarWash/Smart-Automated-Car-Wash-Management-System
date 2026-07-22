@@ -1,5 +1,5 @@
-import * as React from "react";
-import { toast } from "sonner";
+﻿import * as React from "react";
+import { notify } from "@/shared/lib/notify";
 import { useCarwashStore } from "@/shared/store/carwash-store";
 
 const FIRED_REMINDERS_KEY = "aura-fired-booking-reminders";
@@ -43,7 +43,7 @@ export function CustomerReminderWatcher() {
 
         const title = `Booking ${booking.id} starts soon`;
         const message = `${booking.vehiclePlate} check-in is at ${booking.timeSlot}.`;
-        toast.info(title, { description: message });
+        notify.info(title);
 
         if ("Notification" in window && Notification.permission === "granted") {
           new Notification(title, { body: message });

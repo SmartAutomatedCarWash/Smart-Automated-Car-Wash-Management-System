@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, Droplets, Loader2, Play } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
@@ -20,8 +20,8 @@ export function StaffSessionDetailView({ sessionId }: { sessionId: string }) {
   const queueQuery = useQuery({ queryKey: ["staff-my-sessions", "queue"], queryFn: getOperationsQueue, refetchInterval: 15_000 });
   const session = queueQuery.data?.columns.flatMap((column) => column.sessions).find((item) => item.sessionId === sessionId && item.assignedStaffId === userId);
   const invalidate = () => { void queryClient.invalidateQueries({ queryKey: ["staff-my-sessions"] }); void queryClient.invalidateQueries({ queryKey: ["staff-dashboard"] }); };
-  const startMutation = useMutation({ mutationFn: startWashSession, onSuccess: () => { invalidate(); toast.success("Đã bắt đầu rửa xe."); }, onError: (error: ApiErrorResponse) => toast.error(getErrorMessage(error)) });
-  const completeMutation = useMutation({ mutationFn: completeWashSession, onSuccess: () => { invalidate(); toast.success("Đã hoàn tất phiên rửa."); }, onError: (error: ApiErrorResponse) => toast.error(getErrorMessage(error)) });
+  const startMutation = useMutation({ mutationFn: startWashSession, onSuccess: () => { invalidate(); notify.success("Đã bắt đầu rửa xe."); }, onError: (error: ApiErrorResponse) => notify.error(getErrorMessage(error)) });
+  const completeMutation = useMutation({ mutationFn: completeWashSession, onSuccess: () => { invalidate(); notify.success("Đã hoàn tất phiên rửa."); }, onError: (error: ApiErrorResponse) => notify.error(getErrorMessage(error)) });
 
   if (queueQuery.isPending) return <WorkspacePage><div className="h-64 animate-pulse rounded-3xl bg-slate-100" /></WorkspacePage>;
   if (queueQuery.isError) return <WorkspacePage><WorkspaceEmptyState title="Không thể tải session" description={getErrorMessage(queueQuery.error as unknown as ApiErrorResponse)} /></WorkspacePage>;

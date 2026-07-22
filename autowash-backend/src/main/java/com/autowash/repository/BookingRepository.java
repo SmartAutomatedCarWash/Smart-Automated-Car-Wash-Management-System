@@ -378,4 +378,21 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     private static Instant endOfDay(LocalDate date) {
         return date == null ? null : date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusNanos(1).toInstant();
     }
+
+    long countByUpdatedAtAfterAndStatus(Instant after, BookingStatus status);
+
+    @Query("SELECT b.scheduledAt FROM Booking b WHERE b.scheduledAt >= :from")
+    List<Instant> findScheduledAtByScheduledAtAfter(@Param("from") Instant from);
+
+    @Query("SELECT bd.refId, COUNT(bd.id) FROM BookingDetail bd WHERE bd.booking.status != 'CANCELLED' GROUP BY bd.refId ORDER BY COUNT(bd.id) DESC")
+    List<Object[]> findTopServiceIds(Pageable pageable);
+
+    @Query("SELECT COUNT(b.id) FROM Booking b WHERE b.status = 'COMPLETED' GROUP BY b.customer.id HAVING COUNT(b.id) > 1")
+    List<Long> findReturningCustomerCounts();
+
+    @Query("SELECT b.customer.id, COUNT(b.id) FROM Booking b WHERE b.status = 'NO_SHOW' GROUP BY b.customer.id ORDER BY COUNT(b.id) DESC")
+    List<Object[]> findTopNoShowCustomers(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
+    List<Booking> findTop10ByOrderByCreatedAtDesc();
 }

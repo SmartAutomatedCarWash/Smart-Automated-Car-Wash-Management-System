@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Coins, Loader2, Sparkles } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Input } from "@/shared/ui/ui/input";
@@ -72,16 +72,14 @@ export function ApplyPointsPanel({
 
   async function handleApply() {
     if (!Number.isInteger(points) || points < MIN_POINTS || points > MAX_POINTS) {
-      toast.error(copy.validation);
+      notify.error(copy.validation);
       return;
     }
     try {
       const result = await mutation.mutateAsync({ pointsToApply: points });
-      toast.success(copy.successTitle, {
-        description: copy.successDescription(formatBookingCurrency(result.discountAmount), result.loyaltyBalance),
-      });
+      notify.success(copy.successTitle);
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      notify.error(getErrorMessage(error));
     }
   }
 

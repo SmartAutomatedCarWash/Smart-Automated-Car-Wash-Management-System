@@ -219,3 +219,156 @@
   }
 }
 
+
+/* ── SweetAlert2 custom styles for admin blog page ── */
+.swal-blog-popup {
+  width: 460px !important;
+  border-radius: 16px !important;
+  padding: 36px 40px 28px !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+.swal-blog-title {
+  color: #374151 !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  margin-top: 8px !important;
+}
+
+.swal-blog-message {
+  color: #6b7280 !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  line-height: 1.6 !important;
+}
+
+.swal-blog-btn-success {
+  min-width: 96px;
+  padding: 10px 28px;
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  background: #10b981;
+  border: 2px solid white;
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px #a7f3d0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.swal-blog-btn-success:hover { background: #059669; }
+
+.swal-blog-btn-error {
+  min-width: 96px;
+  padding: 10px 28px;
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  background: #ef4444;
+  border: 2px solid white;
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px #fca5a5;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.swal-blog-btn-error:hover { background: #dc2626; }
+
+.swal-blog-btn-info {
+  min-width: 96px;
+  padding: 10px 28px;
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  background: #3b82f6;
+  border: 2px solid white;
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px #93c5fd;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.swal-blog-btn-info:hover { background: #2563eb; }
+
+/* ── SweetAlert2 shared notify styles (dùng chung toàn app) ── */
+.swal-notify-popup {
+  width: 460px !important;
+  border-radius: 16px !important;
+  padding: 36px 40px 28px !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+.swal-notify-title {
+  color: #374151 !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  margin-top: 8px !important;
+}
+
+.swal-notify-message {
+  color: #6b7280 !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  line-height: 1.6 !important;
+}
+
+/* Success button — green */
+.swal-notify-btn-success {
+  min-width: 96px;
+  padding: 10px 28px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  background: #10b981;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px #a7f3d0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.swal-notify-btn-success:hover { background: #059669; }
+
+/* Error button — red */
+.swal-notify-btn-error {
+  min-width: 96px;
+  padding: 10px 28px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  background: #ef4444;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px #fca5a5;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.swal-notify-btn-error:hover { background: #dc2626; }
+
+/* Info button — blue */
+.swal-notify-btn-info {
+  min-width: 96px;
+  padding: 10px 28px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  background: #3b82f6;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px #93c5fd;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.swal-notify-btn-info:hover { background: #2563eb; }
+
+/* Warning button — amber */
+.swal-notify-btn-warning {
+  min-width: 96px;
+  padding: 10px 28px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  background: #f59e0b;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px #fde68a;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.swal-notify-btn-warning:hover { background: #d97706; }

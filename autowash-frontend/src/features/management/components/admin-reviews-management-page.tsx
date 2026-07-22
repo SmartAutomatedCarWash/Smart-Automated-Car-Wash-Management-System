@@ -1,410 +1,282 @@
 "use client";
 
-import { useState } from "react";
-import { useLanguageStore, translate } from "@/shared/store/language.store";
 import {
-  useAdminReviews,
-  useReviewStats,
-  useUpdateReviewFeatured,
-} from "@/features/bookings/hooks/use-reviews";
-import {
-  Star,
-  Check,
-  X,
-  MessageSquare,
-  ThumbsUp,
-  Award,
-  AlertTriangle,
-  FileSpreadsheet,
+  Megaphone,
+  Ticket,
+  Plus,
+  RefreshCw,
+  Layers,
+  Flame,
+  CheckCircle2,
+  Clock,
+  Search,
+  ChevronDown,
   Calendar,
-  Filter,
-  ArrowUpDown,
-  Image,
-  Layers3,
+  X,
+  Edit2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
-import { Button } from "@/shared/ui/ui/button";
-import { Badge } from "@/shared/ui/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/ui/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/ui/table";
-import { toast } from "sonner";
-import { cn } from "@/shared/lib/utils";
-import { useErrorMessage } from "@/shared/hooks/use-error-message";
 
 export function AdminReviewManagementPage() {
-  const getErrorMessage = useErrorMessage();
-  const { language } = useLanguageStore();
-  const t = (vi: string, en: string) => translate(language, vi, en);
-
-  // States for query filters and pagination
-  const [ratingFilter, setRatingFilter] = useState<string>("all");
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10);
-  const [sortBy, setSortBy] = useState("createdAt");
-  const [direction, setDirection] = useState("desc");
-
-  // Call Hooks
-  const reviewsParams = {
-    rating: ratingFilter === "all" ? undefined : Number(ratingFilter),
-    page,
-    limit,
-    sortBy,
-    direction,
-  };
-
-  const { data: listData, isLoading: loadingReviews, refetch: refetchReviews } = useAdminReviews(reviewsParams);
-  const { data: stats, isLoading: loadingStats } = useReviewStats();
-  const toggleFeaturedMutation = useUpdateReviewFeatured();
-
-  const reviews = listData?.data ?? [];
-  const meta = listData?.pagination;
-
-  const handleToggleFeatured = async (reviewId: string, currentFeatured: boolean) => {
-    try {
-      await toggleFeaturedMutation.mutateAsync({ reviewId, featured: !currentFeatured });
-      toast.success(t("Cập nhật trạng thái nổi bật thành công!", "Featured status updated successfully!"));
-      refetchReviews();
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
-  };
-
-  const handleSort = (field: string) => {
-    if (sortBy === field) {
-      setDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortBy(field);
-      setDirection("desc");
-    }
-    setPage(1);
-  };
-
   return (
-    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">
-            {t("Quản lý Đánh giá & Phản hồi", "Reviews & Feedback Management")}
-          </h1>
-          <p className="text-sm font-semibold text-slate-500">
-            {t("Phân tích dữ liệu phản hồi, kiểm duyệt và đẩy các đánh giá nổi bật lên trang chủ.", "Analyze feedback ratings, moderate reviews, and feature top feedback on home page.")}
-          </p>
+    <div className="space-y-6 max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8 bg-[#f8fafc] min-h-screen font-sans">
+      {/* 1. Header */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-black text-[#0f172a] tracking-tight">
+          Promotion Management
+        </h1>
+        <p className="text-sm text-slate-500 mt-1 font-medium">
+          Review promotions, discounts, tier voucher offers, and redemption oversight
+        </p>
+      </div>
+
+      {/* 2. Control Console Banner */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col gap-4">
+        <div className="flex items-center">
+          <span className="text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-100 px-2.5 py-1 rounded-full uppercase tracking-widest">
+            Admin Growth Console
+          </span>
+        </div>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center shadow-sm shadow-orange-200">
+                <Megaphone className="text-white h-6 w-6" />
+              </div>
+              <span className="font-black text-xl text-[#0f172a] tracking-tight">
+                Promotions
+              </span>
+            </div>
+            
+            {/* Toggle */}
+            <div className="flex items-center p-1 bg-slate-50 border border-slate-200 rounded-lg hidden sm:flex">
+              <button className="flex items-center gap-2 px-3 py-1.5 bg-orange-500 text-white text-sm font-bold rounded-md shadow-sm">
+                <Megaphone className="h-4 w-4" /> Promotions
+              </button>
+              <button className="flex items-center gap-2 px-3 py-1.5 text-slate-500 text-sm font-bold rounded-md hover:bg-slate-100 transition">
+                <Ticket className="h-4 w-4" /> Vouchers
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 transition">
+              <Plus className="h-4 w-4" /> Create promotion
+            </button>
+            <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 transition">
+              <RefreshCw className="h-4 w-4" /> Refresh
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Analytics Cards */}
-      {loadingStats ? (
-        <div className="grid gap-4 md:grid-cols-4 animate-pulse">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-28 rounded-3xl bg-slate-100 border border-slate-200" />
-          ))}
+      {/* 3. 4 Cards Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1 */}
+        <div className="bg-white border border-blue-100 rounded-xl p-4 shadow-sm flex flex-col justify-between">
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center shrink-0">
+              <Layers className="h-5 w-5 text-blue-500" />
+            </div>
+            <div>
+              <div className="text-[10px] font-black text-blue-600 uppercase tracking-wider">
+                Total Campaigns
+              </div>
+              <div className="text-3xl font-black text-[#0f172a] mt-0.5 leading-none">
+                1
+              </div>
+            </div>
+          </div>
+          <div className="text-xs text-slate-500 mt-4 font-medium">
+            Visible in the current view
+          </div>
         </div>
-      ) : stats ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="rounded-3xl border-slate-200 shadow-sm bg-gradient-to-tr from-sky-50 to-white overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                {t("Tổng đánh giá", "Total Reviews")}
-              </CardTitle>
-              <MessageSquare className="h-5 w-5 text-sky-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-black text-slate-900">{stats.totalReviews}</div>
-              <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
-                {t("Đánh giá thực tế từ khách hàng", "Real verified reviews")}
-              </p>
-            </CardContent>
-          </Card>
 
-          <Card className="rounded-3xl border-slate-200 shadow-sm bg-gradient-to-tr from-amber-50 to-white overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                {t("Điểm trung bình", "Average Rating")}
-              </CardTitle>
-              <div className="flex items-center text-amber-500">
-                <Star className="h-5 w-5 fill-amber-500" />
+        {/* Card 2 */}
+        <div className="bg-white border border-orange-100 rounded-xl p-4 shadow-sm flex flex-col justify-between">
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 bg-orange-50 border border-orange-100 rounded-xl flex items-center justify-center shrink-0">
+              <Flame className="h-5 w-5 text-orange-500" />
+            </div>
+            <div>
+              <div className="text-[10px] font-black text-orange-600 uppercase tracking-wider">
+                Running Now
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-black text-slate-900">
-                {stats.averageRating ? stats.averageRating.toFixed(1) : "0.0"}/5.0
+              <div className="text-3xl font-black text-[#0f172a] mt-0.5 leading-none">
+                1
               </div>
-              <div className="flex gap-0.5 mt-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    className={cn(
-                      "h-3 w-3",
-                      star <= Math.round(stats.averageRating)
-                        ? "fill-amber-400 text-amber-400"
-                        : "text-slate-200"
-                    )}
-                  />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-3xl border-slate-200 shadow-sm bg-gradient-to-tr from-emerald-50 to-white overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                {t("Đánh giá tích cực (4-5★)", "Positive Reviews (4-5★)")}
-              </CardTitle>
-              <ThumbsUp className="h-5 w-5 text-emerald-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-black text-slate-900">
-                {((stats.ratingDistribution?.[5] ?? 0) + (stats.ratingDistribution?.[4] ?? 0))}
-              </div>
-              <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
-                {stats.totalReviews > 0
-                  ? `${(((stats.ratingDistribution?.[5] ?? 0) + (stats.ratingDistribution?.[4] ?? 0)) / stats.totalReviews * 100).toFixed(0)}% ${t("trên tổng số", "of total reviews")}`
-                  : `0% ${t("trên tổng số", "of total reviews")}`}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-3xl border-slate-200 shadow-sm bg-gradient-to-tr from-teal-50 to-white overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                {t("Đang hiển thị nổi bật", "Featured Reviews")}
-              </CardTitle>
-              <Award className="h-5 w-5 text-teal-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-black text-slate-900">{stats.featuredReviewsCount}</div>
-              <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
-                {t("Hiển thị trực tiếp ở trang chủ", "Displayed on the home landing page")}
-              </p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+          <div className="text-xs text-slate-500 mt-4 font-medium">
+            Active and currently in date range
+          </div>
         </div>
-      ) : null}
 
-      {/* Star distribution */}
-      {stats && stats.totalReviews > 0 && (
-        <Card className="rounded-3xl border-slate-200/60 shadow-sm bg-white">
-          <CardHeader>
-            <CardTitle className="text-sm font-black uppercase tracking-wider text-slate-800">
-              {t("Phân bố số sao", "Rating Distribution")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {[5, 4, 3, 2, 1].map((starsNum) => {
-              const count = stats.ratingDistribution?.[starsNum] ?? 0;
-              const percentage = stats.totalReviews > 0 ? (count / stats.totalReviews) * 100 : 0;
-              return (
-                <div key={starsNum} className="flex items-center gap-3 text-xs">
-                  <span className="w-8 font-bold text-slate-600 flex items-center gap-1">
-                    {starsNum} <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 shrink-0" />
+        {/* Card 3 */}
+        <div className="bg-white border border-emerald-100 rounded-xl p-4 shadow-sm flex flex-col justify-between">
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center shrink-0">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+            </div>
+            <div>
+              <div className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">
+                Active
+              </div>
+              <div className="text-3xl font-black text-[#0f172a] mt-0.5 leading-none">
+                1
+              </div>
+            </div>
+          </div>
+          <div className="text-xs text-slate-500 mt-4 font-medium">
+            Ready to be applied by customers
+          </div>
+        </div>
+
+        {/* Card 4 */}
+        <div className="bg-white border border-rose-100 rounded-xl p-4 shadow-sm flex flex-col justify-between">
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 bg-rose-50 border border-rose-100 rounded-xl flex items-center justify-center shrink-0">
+              <Clock className="h-5 w-5 text-rose-500" />
+            </div>
+            <div>
+              <div className="text-[10px] font-black text-rose-600 uppercase tracking-wider">
+                Ending Soon
+              </div>
+              <div className="text-3xl font-black text-[#0f172a] mt-0.5 leading-none">
+                0
+              </div>
+            </div>
+          </div>
+          <div className="text-xs text-rose-400 mt-4 font-medium">
+            Need a quick review this week
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Filter Row */}
+      <div className="bg-white rounded-xl border border-slate-200 p-2 shadow-sm flex flex-col md:flex-row items-center gap-3">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by promotion name..."
+            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:border-blue-500 transition"
+          />
+        </div>
+        <div className="relative w-full md:w-56 shrink-0">
+          <select className="w-full pl-3 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-700 appearance-none outline-none focus:border-blue-500 transition">
+            <option>All status</option>
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+        </div>
+        <div className="relative w-full md:w-56 shrink-0">
+          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Pick a date"
+            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:border-blue-500 transition"
+          />
+        </div>
+        <button className="flex items-center justify-center gap-2 px-4 py-2.5 text-slate-600 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold hover:bg-slate-100 shrink-0 w-full md:w-auto transition">
+          <X className="h-4 w-4" /> Reset
+        </button>
+      </div>
+
+      {/* 5. Table & Pagination */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 className="text-lg font-black text-[#0f172a]">Promotion list</h2>
+          <span className="px-3 py-1 bg-slate-50 text-slate-600 border border-slate-200 text-xs font-bold rounded-full">
+            1 active
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-white border-b border-slate-100">
+              <tr>
+                <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  Campaign
+                </th>
+                <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  Discount
+                </th>
+                <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  Audience
+                </th>
+                <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  Schedule
+                </th>
+                <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              <tr className="hover:bg-slate-50 transition">
+                <td className="px-4 py-4 font-bold text-[#0f172a]">Summer 10%</td>
+                <td className="px-4 py-4">
+                  <span className="px-2.5 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-md">
+                    % 10%
                   </span>
-                  <div className="h-2 flex-1 rounded-full bg-slate-100 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500"
-                      style={{ width: `${percentage}%` }}
-                    />
+                </td>
+                <td className="px-4 py-4">
+                  <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-md">
+                    All tiers
+                  </span>
+                </td>
+                <td className="px-4 py-4 text-slate-600 font-medium text-sm">
+                  07/13/2026 &rarr; 09/18/2026
+                </td>
+                <td className="px-4 py-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-wider rounded border border-emerald-100 w-fit">
+                      Active
+                    </span>
+                    <span className="text-xs font-medium text-slate-500">Running</span>
                   </div>
-                  <span className="w-12 text-right font-bold text-slate-500">
-                    {count} ({percentage.toFixed(0)}%)
-                  </span>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      )}
+                </td>
+                <td className="px-4 py-4 text-right">
+                  <button className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50 shadow-sm transition">
+                    <Edit2 className="h-3.5 w-3.5" /> Edit
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-      {/* Main Reviews Panel */}
-      <Card className="rounded-3xl border-slate-200 shadow-sm bg-white overflow-hidden">
-        <CardHeader className="border-b border-slate-100 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-slate-50/50">
-          <div>
-            <CardTitle className="text-base font-black text-slate-900">{t("Danh sách Đánh giá", "Reviews List")}</CardTitle>
-            <CardDescription className="text-xs font-semibold">{t("Quản lý trạng thái và duyệt đánh giá.", "Manage status and moderate reviews.")}</CardDescription>
+        {/* Pagination */}
+        <div className="px-4 py-3 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50">
+          <div className="text-sm font-medium text-slate-500">
+            Showing <span className="font-bold text-slate-900">1</span> to{" "}
+            <span className="font-bold text-slate-900">1</span> of{" "}
+            <span className="font-bold text-slate-900">1</span> results
           </div>
-
-          {/* Filtering */}
-          <div className="flex flex-wrap gap-2">
-            <Select value={ratingFilter} onValueChange={(val) => { setRatingFilter(val); setPage(1); }}>
-              <SelectTrigger className="w-[140px] rounded-xl bg-white text-xs font-bold border-slate-200">
-                <SelectValue placeholder={t("Lọc số sao", "Filter rating")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("Tất cả số sao", "All Ratings")}</SelectItem>
-                <SelectItem value="5">5 {t("Sao", "Stars")}</SelectItem>
-                <SelectItem value="4">4 {t("Sao", "Stars")}</SelectItem>
-                <SelectItem value="3">3 {t("Sao", "Stars")}</SelectItem>
-                <SelectItem value="2">2 {t("Sao", "Stars")}</SelectItem>
-                <SelectItem value="1">1 {t("Sao", "Stars")}</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-1">
+            <button className="p-1.5 border border-slate-200 bg-white text-slate-300 rounded-md shadow-sm cursor-not-allowed">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button className="min-w-[32px] h-8 bg-blue-600 text-white rounded-md shadow-sm font-bold text-sm flex items-center justify-center">
+              1
+            </button>
+            <button className="min-w-[32px] h-8 border border-slate-200 bg-white text-slate-600 rounded-md shadow-sm font-bold text-sm hover:bg-slate-50 flex items-center justify-center transition">
+              2
+            </button>
+            <button className="min-w-[32px] h-8 border border-slate-200 bg-white text-slate-600 rounded-md shadow-sm font-bold text-sm hover:bg-slate-50 flex items-center justify-center transition">
+              3
+            </button>
+            <span className="px-1 text-slate-400 font-bold">...</span>
+            <button className="p-1.5 border border-slate-200 bg-white text-slate-600 rounded-md shadow-sm hover:bg-slate-50 transition">
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          {loadingReviews ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-2">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-              <span className="text-xs font-bold text-slate-400">{t("Đang tải dữ liệu...", "Loading reviews...")}</span>
-            </div>
-          ) : reviews.length === 0 ? (
-            <div className="text-center py-20 space-y-4">
-              <Star className="mx-auto h-12 w-12 text-slate-350" />
-              <h3 className="text-base font-black text-slate-700">{t("Không tìm thấy đánh giá nào", "No reviews found")}</h3>
-              <p className="text-xs text-slate-400 font-semibold">{t("Hãy thử đổi bộ lọc sao khác.", "Try changing the rating filter.")}</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-slate-50/50">
-                  <TableRow>
-                    <TableHead className="font-bold text-slate-700 text-xs tracking-wider">
-                      {t("Khách hàng", "Customer")}
-                    </TableHead>
-                    <TableHead className="font-bold text-slate-700 text-xs tracking-wider">
-                      {t("Mã lịch đặt", "Booking ID")}
-                    </TableHead>
-                    <TableHead
-                      className="font-bold text-slate-700 text-xs tracking-wider cursor-pointer select-none"
-                      onClick={() => handleSort("rating")}
-                    >
-                      <div className="flex items-center gap-1">
-                        {t("Đánh giá", "Rating")}
-                        <ArrowUpDown className="h-3 w-3 text-slate-400" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="font-bold text-slate-700 text-xs tracking-wider">
-                      {t("Nhận xét", "Comment")}
-                    </TableHead>
-                    <TableHead className="font-bold text-slate-700 text-xs tracking-wider">
-                      {t("Ảnh đính kèm", "Images")}
-                    </TableHead>
-                    <TableHead
-                      className="font-bold text-slate-700 text-xs tracking-wider cursor-pointer select-none"
-                      onClick={() => handleSort("createdAt")}
-                    >
-                      <div className="flex items-center gap-1">
-                        {t("Thời gian", "Created At")}
-                        <ArrowUpDown className="h-3 w-3 text-slate-400" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="font-bold text-slate-700 text-xs tracking-wider text-right">
-                      {t("Nổi bật", "Featured")}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reviews.map((rev) => (
-                    <TableRow key={rev.id} className="hover:bg-slate-50/30">
-                      <TableCell className="font-bold text-slate-800 text-xs">
-                        {rev.customerName}
-                      </TableCell>
-                      <TableCell className="font-mono text-[10px] text-slate-400 font-bold">
-                        {rev.bookingId}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <span className="font-black text-slate-800 text-xs">{rev.rating}</span>
-                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 shrink-0" />
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-xs text-xs font-semibold text-slate-600 truncate" title={rev.comment}>
-                        {rev.comment || <em className="text-slate-350">{t("Không có nhận xét", "No comment")}</em>}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1.5">
-                          {rev.beforeImageUrl && (
-                            <a
-                              href={rev.beforeImageUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="relative h-10 w-10 overflow-hidden rounded-lg border border-slate-200 block shrink-0 hover:scale-105 transition-transform"
-                            >
-                              <img src={rev.beforeImageUrl} alt="before" className="h-full w-full object-cover" />
-                              <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] font-black text-white text-center py-0.5 uppercase tracking-wider">
-                                Before
-                              </span>
-                            </a>
-                          )}
-                          {rev.afterImageUrl && (
-                            <a
-                              href={rev.afterImageUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="relative h-10 w-10 overflow-hidden rounded-lg border border-slate-200 block shrink-0 hover:scale-105 transition-transform"
-                            >
-                              <img src={rev.afterImageUrl} alt="after" className="h-full w-full object-cover" />
-                              <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] font-black text-white text-center py-0.5 uppercase tracking-wider">
-                                After
-                              </span>
-                            </a>
-                          )}
-                          {!rev.beforeImageUrl && !rev.afterImageUrl && (
-                            <span className="text-[10px] font-bold text-slate-400">—</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-slate-500 font-semibold text-xs">
-                        {new Date(rev.createdAt).toLocaleString(language === "vi" ? "vi-VN" : "en-US")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleToggleFeatured(rev.id, rev.featured)}
-                          className={cn(
-                            "rounded-full p-1.5 h-8 w-8",
-                            rev.featured
-                              ? "bg-amber-100 text-amber-600 hover:bg-amber-200"
-                              : "bg-slate-100 text-slate-400 hover:bg-slate-250"
-                          )}
-                        >
-                          <Award className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-
-        {/* Pagination controls */}
-        {meta && meta.totalPages > 1 && (
-          <div className="border-t border-slate-100 px-6 py-4 flex items-center justify-between bg-slate-50/50">
-            <span className="text-xs font-semibold text-slate-500">
-              {t("Trang", "Page")} {meta.page} / {meta.totalPages} ({meta.total} {t("kết quả", "results")})
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-xl text-xs font-bold"
-                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                disabled={meta.page <= 1}
-              >
-                {t("Trước", "Previous")}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-xl text-xs font-bold"
-                onClick={() => setPage((prev) => Math.min(prev + 1, meta.totalPages))}
-                disabled={!meta.hasMore}
-              >
-                {t("Sau", "Next")}
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
+

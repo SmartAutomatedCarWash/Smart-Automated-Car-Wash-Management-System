@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import Link from "next/link";
 import { AlertTriangle, ChevronDown, Droplets, ImageUp, Layers3, Loader2, Package, Plus, RefreshCcw, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { AdminManagementTabs } from "@/features/management/components/admin-management-tabs";
@@ -192,17 +192,17 @@ function LiveServicesPanel() {
                 try {
                   if (editingServiceId) {
                     await updateServiceMutation.mutateAsync({ ...form, serviceId: editingServiceId });
-                    toast.success(translate(language, "Cập nhật dịch vụ thành công.", "Service updated successfully."));
+                    notify.success(translate(language, "Cập nhật dịch vụ thành công.", "Service updated successfully."));
                     handleCancelEdit();
                   } else {
                     await createServiceMutation.mutateAsync(form);
-                    toast.success(translate(language, "Tạo dịch vụ mới thành công.", "Service created successfully."));
+                    notify.success(translate(language, "Tạo dịch vụ mới thành công.", "Service created successfully."));
                     setForm(defaultForm);
                     setTouched({});
                     setSubmitted(false);
                   }
                 } catch (error) {
-                  toast.error(getErrorMessage(error));
+                  notify.error(getErrorMessage(error));
                 }
               }}
             >
@@ -277,9 +277,9 @@ function LiveServicesPanel() {
                             onClick={async () => {
                               try {
                                 await deleteServiceMutation.mutateAsync(service.serviceId);
-                                toast.success(translate(language, "Đã ngưng hoạt động dịch vụ.", "Service deactivated."));
+                                notify.success(translate(language, "Đã ngưng hoạt động dịch vụ.", "Service deactivated."));
                               } catch (error) {
-                                toast.error(getErrorMessage(error));
+                                notify.error(getErrorMessage(error));
                               }
                             }}
                           >
@@ -441,17 +441,17 @@ function LivePackagesPanel() {
                 try {
                   if (editingPackageId) {
                     await updatePackageMutation.mutateAsync({ ...form, packageId: editingPackageId });
-                    toast.success(translate(language, "Cập nhật gói dịch vụ thành công.", "Package updated successfully."));
+                    notify.success(translate(language, "Cập nhật gói dịch vụ thành công.", "Package updated successfully."));
                     handleCancelEdit();
                   } else {
                     await createPackageMutation.mutateAsync(form);
-                    toast.success(translate(language, "Tạo gói dịch vụ mới thành công.", "Package created successfully."));
+                    notify.success(translate(language, "Tạo gói dịch vụ mới thành công.", "Package created successfully."));
                     setForm(defaultForm);
                     setTouched({});
                     setSubmitted(false);
                   }
                 } catch (error) {
-                  toast.error(getErrorMessage(error));
+                  notify.error(getErrorMessage(error));
                 }
               }}
             >
@@ -537,9 +537,9 @@ function LivePackagesPanel() {
                           onClick={async () => {
                             try {
                               await deletePackageMutation.mutateAsync(pkg.packageId);
-                              toast.success(translate(language, "Đã ngưng hoạt động gói dịch vụ.", "Package deactivated."));
+                              notify.success(translate(language, "Đã ngưng hoạt động gói dịch vụ.", "Package deactivated."));
                             } catch (error) {
-                              toast.error(getErrorMessage(error));
+                              notify.error(getErrorMessage(error));
                             }
                           }}
                         >
@@ -687,17 +687,17 @@ function LiveCombosPanel() {
                 try {
                   if (editingComboId) {
                     await updateComboMutation.mutateAsync({ ...form, comboId: editingComboId });
-                    toast.success(translate(language, "Cập nhật Combo thành công.", "Combo updated successfully."));
+                    notify.success(translate(language, "Cập nhật Combo thành công.", "Combo updated successfully."));
                     handleCancelEdit();
                   } else {
                     await createComboMutation.mutateAsync(form);
-                    toast.success(translate(language, "Tạo Combo thành công.", "Combo created successfully."));
+                    notify.success(translate(language, "Tạo Combo thành công.", "Combo created successfully."));
                     setForm(EMPTY_COMBO_FORM);
                     setTouched({});
                     setSubmitted(false);
                   }
                 } catch (error) {
-                  toast.error(getErrorMessage(error));
+                  notify.error(getErrorMessage(error));
                 }
               }}
             >
@@ -773,9 +773,9 @@ function LiveCombosPanel() {
                           onClick={async () => {
                             try {
                               await deleteComboMutation.mutateAsync(combo.comboId);
-                              toast.success(translate(language, "Đã ngưng hoạt động Combo.", "Combo deactivated."));
+                              notify.success(translate(language, "Đã ngưng hoạt động Combo.", "Combo deactivated."));
                             } catch (error) {
-                              toast.error(getErrorMessage(error));
+                              notify.error(getErrorMessage(error));
                             }
                           }}
                         >
@@ -1219,9 +1219,9 @@ function ImageUploadField({
         newUrls.push(uploaded.url);
       }
       onChange(newUrls);
-      toast.success(translate(language, "Tải ảnh lên thành công.", "Images uploaded."));
+      notify.success(translate(language, "Tải ảnh lên thành công.", "Images uploaded."));
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      notify.error(getErrorMessage(error));
     } finally {
       setIsUploading(false);
       event.target.value = "";
