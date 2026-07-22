@@ -95,15 +95,8 @@ export function CustomerVehiclesListClientPage() {
               </div>
               <div>
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-                  {translate(language, "Tat ca xe da luu", "All saved vehicles")}
+                  {translate(language, "Tat ca xe", "All vehicles")}
                 </h1>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                  {translate(
-                    language,
-                    "Xem danh sach xe cua ban, chon Xem chi tiet tren tung xe de mo thong tin day du.",
-                    "Review your vehicle list, then use View details on any vehicle to open the full profile.",
-                  )}
-                </p>
               </div>
             </div>
 
