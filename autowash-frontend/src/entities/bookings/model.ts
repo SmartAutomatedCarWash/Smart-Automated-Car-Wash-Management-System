@@ -127,6 +127,10 @@ export type BookingStaffOptionsRequest = {
   bookingTime: string;
 };
 
+export type UpdateBookingStaffRequest = {
+  staffIds: string[];
+};
+
 export type BookingStaffOption = {
   staffId: string;
   staffName: string;

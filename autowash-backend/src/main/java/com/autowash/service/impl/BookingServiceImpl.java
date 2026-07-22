@@ -694,6 +694,36 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
+    public BookingDetailResponse updateBookingStaff(String bookingId, List<String> staffIds) {
+        Booking booking = findOwnedBooking(bookingId);
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking staff cannot be changed for this status", ErrorCode.BUSINESS_RULE_VIOLATION);
+        }
+        if (washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId()).isPresent()) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking staff cannot be changed after a wash session is created", ErrorCode.BUSINESS_RULE_VIOLATION);
+        }
+
+        List<UUID> selectedStaffIds = parseSelectedStaffIds(staffIds);
+        List<User> selectedStaff = selectedStaffIds.stream()
+                .map(staffAssignmentService::requireActiveStaff)
+                .toList();
+        for (User staff : selectedStaff) {
+            if (!staffAssignmentService.isStaffAvailableForBooking(staff, booking)) {
+                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Selected staff is not available for this booking time", ErrorCode.BUSINESS_RULE_VIOLATION);
+            }
+        }
+
+        bookingStaffAssignmentRepository.deleteByBooking(booking);
+        for (int index = 0; index < selectedStaff.size(); index++) {
+            bookingStaffAssignmentRepository.save(new BookingStaffAssignment(booking, selectedStaff.get(index), index + 1));
+        }
+        booking.assignStaff(selectedStaff.get(0));
+        booking.setPreferredStaffIds(selectedStaffIds.stream().map(UUID::toString).collect(Collectors.joining(",")));
+        return toDetailResponse(booking);
+    }
+
+    @Override
+    @Transactional
     public BookingDetailResponse confirmPendingBooking(String bookingId) {
         Booking booking = requireBookingForOperations(bookingId);
         if (booking.getStatus() != BookingStatus.PENDING) {
@@ -831,6 +861,27 @@ public class BookingServiceImpl implements BookingService {
                 .filter(value -> !value.isBlank())
                 .map(UUID::fromString)
                 .toList();
+    }
+
+    private List<UUID> parseSelectedStaffIds(List<String> staffIds) {
+        if (staffIds == null || staffIds.size() != 3) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Exactly 3 staff must be selected", ErrorCode.INVALID_INPUT);
+        }
+        Set<UUID> selected = new LinkedHashSet<>();
+        for (String rawId : staffIds) {
+            if (rawId == null || rawId.isBlank()) {
+                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid staff id", ErrorCode.INVALID_INPUT);
+            }
+            try {
+                selected.add(UUID.fromString(rawId.trim()));
+            } catch (IllegalArgumentException exception) {
+                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid staff id", ErrorCode.INVALID_INPUT);
+            }
+        }
+        if (selected.size() != 3) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Selected staff must be unique", ErrorCode.INVALID_INPUT);
+        }
+        return new ArrayList<>(selected);
     }
 
     private void assignStaffGroupOnConfirmation(Booking booking) {

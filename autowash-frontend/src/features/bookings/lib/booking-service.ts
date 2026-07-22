@@ -29,6 +29,7 @@ import type {
   HoldSlotResponse,
   SlotAvailability,
   ExtraServiceRecommendation,
+  UpdateBookingStaffRequest,
 } from "@/entities/bookings";
 import { buildCreateBookingPayload } from "@/features/bookings/lib/booking-format";
 import type { ApiSuccessResponse } from "@/shared/types/api.types";
@@ -157,6 +158,14 @@ export function listBookingStaffOptions(payload: BookingStaffOptionsRequest) {
   return apiRequest<BookingStaffOption[], BookingStaffOptionsRequest>({
     method: "POST",
     url: "/customers/bookings/staff-options",
+    data: payload,
+  });
+}
+
+export function updateCustomerBookingStaff(bookingId: string, payload: UpdateBookingStaffRequest) {
+  return apiRequest<BookingDetail, UpdateBookingStaffRequest>({
+    method: "POST",
+    url: `/customers/bookings/${bookingId}/staff`,
     data: payload,
   });
 }

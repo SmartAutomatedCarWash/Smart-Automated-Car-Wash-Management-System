@@ -13,6 +13,7 @@ import com.autowash.dto.DiscountValidationRequest;
 import com.autowash.dto.DiscountValidationResponse;
 import com.autowash.dto.PayBookingRequest;
 import com.autowash.dto.PayBookingResponse;
+import com.autowash.dto.UpdateBookingStaffRequest;
 import com.autowash.service.BookingService;
 import com.autowash.service.BookingStaffRecommendationService;
 import com.autowash.shared.dto.ApiResponse;
@@ -140,6 +141,18 @@ public class BookingController {
         return ApiResponse.ok(
                 "Booking payment method updated",
                 bookingService.changeBookingPaymentMethod(bookingId, request.paymentMethod())
+        );
+    }
+
+    @PostMapping("/{bookingId}/staff")
+    @Operation(summary = "Update assigned staff for a booking")
+    public ApiResponse<BookingDetailResponse> updateBookingStaff(
+            @PathVariable String bookingId,
+            @Valid @RequestBody UpdateBookingStaffRequest request
+    ) {
+        return ApiResponse.ok(
+                "Booking staff updated",
+                bookingService.updateBookingStaff(bookingId, request.staffIds())
         );
     }
 

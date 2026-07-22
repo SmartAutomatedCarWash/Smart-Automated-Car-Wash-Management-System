@@ -16,6 +16,8 @@ import {
   Phone,
   Star,
   User,
+  UserCheck,
+  Users,
   XCircle,
   ClipboardCheck,
   Droplets,
@@ -24,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
   formatBookingCurrency,
@@ -35,12 +38,14 @@ import {
   useChangeBookingPaymentMethod,
   useCancelCustomerBooking,
   useCreateVnpayCheckout,
+  useBookingStaffOptions,
   useCustomerBookingDetail,
+  useUpdateCustomerBookingStaff,
 } from "@/features/bookings/hooks/use-bookings";
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
 import { BookingCompletionPopup } from "@/features/bookings/components/booking-completion-popup";
 import { useBookingReviewCheck, useSubmitBookingReview } from "@/features/bookings/hooks/use-reviews";
-import type { BookingAddonSelection, BookingDetail } from "@/entities/bookings";
+import type { BookingAddonSelection, BookingDetail, BookingStaffOption, BookingStaffOptionsRequest } from "@/entities/bookings";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
 
@@ -228,10 +233,12 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const cancelBookingMutation = useCancelCustomerBooking(bookingId);
   const changePaymentMethodMutation = useChangeBookingPaymentMethod(bookingId);
   const createVnpayCheckoutMutation = useCreateVnpayCheckout();
+  const updateBookingStaffMutation = useUpdateCustomerBookingStaff(bookingId);
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showReviewPopup, setShowReviewPopup] = useState(false);
   const [autoReviewShown, setAutoReviewShown] = useState(false);
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 
   const submitReviewMutation = useSubmitBookingReview();
   const isCompleted = bookingQuery.data?.status === "COMPLETED" || bookingQuery.data?.washStatus === "COMPLETED";
@@ -276,6 +283,43 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [pendingHoldExpiresAtMs]);
+
+  const staffOptionsPayload = useMemo<BookingStaffOptionsRequest | null>(() => {
+    const booking = bookingQuery.data;
+    if (!booking) return null;
+    const packageDetail = booking.details.find((detail) => detail.itemType === "PACKAGE");
+    const comboDetail = booking.details.find((detail) => detail.itemType === "COMBO");
+    return {
+      packageId: packageDetail?.refId,
+      comboId: comboDetail?.refId,
+      options: booking.details
+        .filter((detail) => detail.itemType === "ADDON" || detail.itemType === "OPTION")
+        .map((detail) => detail.refId),
+      bookingDate: booking.scheduling.bookingDate,
+      bookingTime: booking.scheduling.bookingTime,
+    };
+  }, [bookingQuery.data]);
+  const staffOptionsQuery = useBookingStaffOptions(staffOptionsPayload);
+  const staffOptions = staffOptionsQuery.data ?? [];
+
+  useEffect(() => {
+    const booking = bookingQuery.data;
+    if (!booking) return;
+    const assignedIds = assignedStaffList(booking)
+      .map((staff) => staff.staffId)
+      .filter(Boolean);
+    if (assignedIds.length > 0) {
+      setSelectedStaffIds(assignedIds.slice(0, 3));
+      return;
+    }
+    const autoIds = (staffOptionsQuery.data ?? [])
+      .filter((staff) => staff.available !== false)
+      .slice(0, 3)
+      .map((staff) => staff.staffId);
+    if (autoIds.length > 0) {
+      setSelectedStaffIds(autoIds);
+    }
+  }, [bookingQuery.data, staffOptionsQuery.data]);
 
   if (bookingQuery.isPending) {
     return (
@@ -330,6 +374,9 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const canShowAppointmentCountdown = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS"].includes(booking.status);
   const showCashConfirmationNote = booking.status === "PENDING" && paymentMethod === "CASH_AT_COUNTER";
   const isPaymentActionPending = changePaymentMethodMutation.isPending || createVnpayCheckoutMutation.isPending;
+  const canEditAssignedStaff = ["PENDING", "CONFIRMED"].includes(booking.status) && !booking.washSessionId;
+  const assignedStaffDirty = selectedStaffIds.join("|") !== assignedStaffList(booking).map((staff) => staff.staffId).join("|");
+  const canSaveAssignedStaff = canEditAssignedStaff && selectedStaffIds.length === 3 && assignedStaffDirty;
   const refundStatusLabel = getRefundStatusLabel(booking, language);
   const customerName = booking.customerName || profileQuery.data?.fullName || translate(language, "Khách hàng", "Customer");
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || translate(language, "Chưa có số điện thoại", "No phone number");
@@ -398,6 +445,15 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     try {
       await changePaymentMethodMutation.mutateAsync("CASH_AT_COUNTER");
       toast.success(translate(language, "Đã chuyển sang thanh toán tại quầy.", "Changed to cash at counter."));
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleSaveAssignedStaff = async () => {
+    try {
+      await updateBookingStaffMutation.mutateAsync({ staffIds: selectedStaffIds });
+      toast.success(translate(language, "Đã lưu nhân viên phụ trách.", "Assigned staff saved."));
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -512,17 +568,97 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
           <Card className="border-emerald-200 bg-emerald-50 shadow-md">
             <CardHeader>
               <div className="flex items-center gap-3 text-emerald-800">
-                <Mail className="h-5 w-5" />
-                <CardTitle>{translate(language, "Email xác nhận lịch đặt", "Booking confirmation email")}</CardTitle>
+                <Users className="h-5 w-5" />
+                <CardTitle>{translate(language, "Nhân viên đã được phân công", "Assigned staff")}</CardTitle>
               </div>
               <CardDescription>
-                {translate(language, "Email xác nhận có tóm tắt lịch đặt và lịch hẹn.", "The confirmation email contains the booking summary and schedule.")}
+                {canEditAssignedStaff
+                  ? translate(language, "Bạn có thể đổi 3 nhân viên rảnh, sau đó bấm Confirm để lưu.", "You can choose 3 available staff, then press Confirm to save.")
+                  : translate(language, "Danh sách nhân viên phụ trách lịch đặt này.", "Staff assigned to this booking.")}
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-wrap gap-3">
-              <Button type="button" variant="outline" onClick={() => void bookingQuery.refetch()}>
-                {translate(language, "Tải lại từ máy chủ", "Refresh from server")}
-              </Button>
+            <CardContent className="space-y-4">
+              {staffOptionsQuery.isPending ? (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[1, 2, 3].map((item) => (
+                    <div key={item} className="h-20 animate-pulse rounded-2xl bg-white/70" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[0, 1, 2].map((index) => {
+                    const currentStaffId = selectedStaffIds[index] ?? "";
+                    const selectedStaff = staffOptionById(staffOptions, booking, currentStaffId);
+                    return (
+                      <div key={index} className="rounded-2xl border border-emerald-100 bg-white/80 p-3">
+                        <span className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-700">
+                          <UserCheck className="h-3.5 w-3.5" />
+                          {translate(language, "Nhân viên", "Staff")} {index + 1}
+                        </span>
+                        {canEditAssignedStaff ? (
+                          <Select
+                            value={currentStaffId || undefined}
+                            onValueChange={(staffId) => {
+                              const nextStaffIds = [...selectedStaffIds];
+                              nextStaffIds[index] = staffId;
+                              setSelectedStaffIds(nextStaffIds.filter((id, staffIndex) => id && nextStaffIds.indexOf(id) === staffIndex).slice(0, 3));
+                            }}
+                          >
+                            <SelectTrigger className="h-auto min-h-12 rounded-xl bg-white px-3 py-2 text-left [&>span]:line-clamp-none">
+                              <SelectValue placeholder={translate(language, "Chọn nhân viên", "Select staff")}>
+                                {selectedStaff ? (
+                                  <StaffSelectLabel staff={selectedStaff} />
+                                ) : null}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent
+                              position="item-aligned"
+                              className="min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)]"
+                            >
+                              {staffOptions
+                                .filter((staff) => staff.staffId === currentStaffId || !selectedStaffIds.includes(staff.staffId))
+                                .map((staff) => (
+                                  <SelectItem
+                                    key={staff.staffId}
+                                    value={staff.staffId}
+                                    disabled={staff.available === false}
+                                    className="py-2 pr-8 [&>span:last-child]:w-full"
+                                  >
+                                    <StaffSelectLabel staff={staff} />
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        ) : selectedStaff ? (
+                          <StaffSelectLabel staff={selectedStaff} />
+                        ) : (
+                          <p className="text-sm font-semibold text-slate-500">
+                            {translate(language, "Sẽ được phân công sau khi xác nhận.", "Will be assigned after confirmation.")}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {staffOptionsQuery.isError ? (
+                <p className="text-xs font-semibold text-rose-600">{getErrorMessage(staffOptionsQuery.error)}</p>
+              ) : null}
+              {canEditAssignedStaff ? (
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    type="button"
+                    onClick={() => void handleSaveAssignedStaff()}
+                    disabled={!canSaveAssignedStaff || updateBookingStaffMutation.isPending}
+                  >
+                    {updateBookingStaffMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {translate(language, "Confirm", "Confirm")}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => void bookingQuery.refetch()}>
+                    {translate(language, "Tải lại từ máy chủ", "Refresh from server")}
+                  </Button>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 
@@ -837,6 +973,49 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
         <div className="text-sm font-bold text-slate-900">{value}</div>
       </div>
     </div>
+  );
+}
+
+type StaffDisplay = {
+  staffId: string;
+  staffName: string;
+  sortOrder?: number;
+  available?: boolean;
+  busyUntil?: string | null;
+};
+
+function assignedStaffList(booking: BookingDetail): StaffDisplay[] {
+  return (booking.assignedStaff ?? [])
+    .slice()
+    .sort((left, right) => left.sortOrder - right.sortOrder)
+    .filter((item) => Boolean(item.staffId && item.staffName));
+}
+
+function staffOptionById(staffOptions: BookingStaffOption[], booking: BookingDetail, staffId: string): StaffDisplay | null {
+  if (!staffId) return null;
+  return staffOptions.find((staff) => staff.staffId === staffId)
+    ?? assignedStaffList(booking).find((staff) => staff.staffId === staffId)
+    ?? null;
+}
+
+function staffAvailabilityLabel(staff: StaffDisplay) {
+  if (staff.available === false) {
+    return staff.busyUntil ? `Busy until ${staff.busyUntil}` : "Busy";
+  }
+  return "Available";
+}
+
+function StaffSelectLabel({ staff }: { staff: StaffDisplay }) {
+  const busy = staff.available === false;
+  return (
+    <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 pr-2 leading-snug">
+      <span className="block max-w-full truncate text-sm font-semibold text-slate-900">
+        {staff.staffName}
+      </span>
+      <span className={cn("text-[11px] font-bold", busy ? "text-amber-600" : "text-emerald-700")}>
+        {staffAvailabilityLabel(staff)}
+      </span>
+    </span>
   );
 }
 
