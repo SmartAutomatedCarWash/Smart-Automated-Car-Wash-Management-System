@@ -9,6 +9,7 @@ import {
 } from "../../../entities/vehicles/index.ts";
 
 export const customerVehiclePlatePattern = /^[0-9]{2}[A-Z]-[0-9]{6}$/;
+export const CURRENT_VEHICLE_YEAR = new Date().getFullYear();
 
 export const EMPTY_CUSTOMER_VEHICLE_FORM: CustomerVehicleFormValues = {
   plate: "",
@@ -73,8 +74,8 @@ export function validateCustomerVehicleForm(
 
   if (yearValue.length === 0 || Number.isNaN(parsedYear)) {
     errors.year = "Year is required.";
-  } else if (parsedYear < 1900 || parsedYear > 2100) {
-    errors.year = "Year must be between 1900 and 2100.";
+  } else if (parsedYear < 1900 || parsedYear > CURRENT_VEHICLE_YEAR) {
+    errors.year = `Year must be between 1900 and ${CURRENT_VEHICLE_YEAR}.`;
   }
 
   if (values.color.trim().length > 30) {

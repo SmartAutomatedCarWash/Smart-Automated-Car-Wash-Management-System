@@ -10,6 +10,7 @@ import com.autowash.entity.enums.VehicleType;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import java.time.LocalDate;
+import java.time.Year;
 import java.util.Set;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -89,6 +90,22 @@ class BusinessRuleValidationTest {
                 .collect(java.util.stream.Collectors.toSet());
 
         assertThat(invalidProperties).contains("plate", "year");
+    }
+
+    @Test
+    void br032VehicleYearCannotBeInTheFuture() {
+        Set<String> invalidProperties = validator.validate(new CreateVehicleRequest(
+                        "30H-123456",
+                        VehicleType.CAR,
+                        "Toyota",
+                        "Camry",
+                        Year.now().getValue() + 1,
+                        null
+                )).stream()
+                .map(violation -> violation.getPropertyPath().toString())
+                .collect(java.util.stream.Collectors.toSet());
+
+        assertThat(invalidProperties).contains("yearNotInFuture");
     }
 
     @Test

@@ -4,6 +4,7 @@ import {
   buildCreateCustomerVehicleRequest,
   buildUpdateCustomerVehicleRequest,
   buildVehicleFormDefaults,
+  CURRENT_VEHICLE_YEAR,
   normalizeVehiclePlate,
   validateCustomerVehicleForm,
 } from "./vehicle-form.ts";
@@ -69,8 +70,27 @@ test("returns explicit validation errors for create vehicle form", () => {
       plate: "Plate must match formats like 30H-123456.",
       brand: "Brand is required.",
       model: "Model is required.",
-      year: "Year must be between 1900 and 2100.",
+      year: `Year must be between 1900 and ${CURRENT_VEHICLE_YEAR}.`,
       color: "Color must be at most 30 characters.",
+    },
+  );
+});
+
+test("rejects vehicle years after the current year", () => {
+  assert.deepEqual(
+    validateCustomerVehicleForm(
+      {
+        plate: "30H-123456",
+        type: "CAR",
+        brand: "Toyota",
+        model: "Camry",
+        year: String(CURRENT_VEHICLE_YEAR + 1),
+        color: "",
+      },
+      "create",
+    ),
+    {
+      year: `Year must be between 1900 and ${CURRENT_VEHICLE_YEAR}.`,
     },
   );
 });
