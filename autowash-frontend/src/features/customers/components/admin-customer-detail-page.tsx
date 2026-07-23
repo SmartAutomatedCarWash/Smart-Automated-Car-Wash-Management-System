@@ -844,7 +844,7 @@ function BookingsTab({
                     {shortId(booking.bookingId)}
                   </Link>
                 </TableCell>
-                <TableCell>{booking.servicePackageName ?? "N/A"}</TableCell>
+                <TableCell>{booking.primaryItemName ?? "N/A"}</TableCell>
                 <TableCell>
                   {booking.bookingDate} {booking.bookingTime}
                 </TableCell>

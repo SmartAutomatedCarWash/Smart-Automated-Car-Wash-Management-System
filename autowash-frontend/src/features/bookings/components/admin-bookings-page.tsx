@@ -121,7 +121,7 @@ export function AdminBookingsPageContent() {
     return bookingsQuery.data.items.filter(item => {
       const targetPackage = packagesQuery.data?.find(p => p.packageId === filters.packageId);
       if (!targetPackage) return true;
-      return item.servicePackageName === targetPackage.name;
+      return item.primaryItemName === targetPackage.name;
     });
   }, [bookingsQuery.data, filters.packageId, packagesQuery.data]);
 
@@ -421,7 +421,7 @@ export function AdminBookingsPageContent() {
                     {/* Package/Staff */}
                     <TableCell className="py-4">
                       <div className="text-sm font-semibold text-slate-700">
-                        {row.servicePackageName || translate(language, "Dịch vụ tùy chỉnh", "Custom Service")}
+                        {row.primaryItemName || translate(language, "Dịch vụ tùy chỉnh", "Custom Service")}
                       </div>
                       <div className="text-xs text-slate-400 font-semibold mt-0.5">
                         {formatAssignedStaff(row.assignedStaff, row.staffName) || translate(language, "Chưa phân công", "Not assigned")}
