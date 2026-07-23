@@ -6,6 +6,8 @@ import { AlertTriangle, ChevronDown, Droplets, ImageUp, Layers3, Loader2, Packag
 import { notify } from "@/shared/lib/notify";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/ui/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/ui/table";
 import { AdminManagementTabs } from "@/features/management/components/admin-management-tabs";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
@@ -46,14 +48,26 @@ export function AdminServiceManagementPage() {
   const { language } = useLanguageStore();
   return (
     <WorkspacePage className="space-y-6">
-      <Card className="border-border/70 bg-card/95 shadow-sm">
+      <Card className="overflow-hidden border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(244,251,255,0.98)_100%)] shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
         <CardHeader className="gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-600 text-white shadow-lg shadow-cyan-100">
               <Layers3 className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle>{translate(language, "Quản lý dịch vụ", "Service Management")}</CardTitle>
+              <div className="mb-2 inline-flex rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.28em] text-orange-500">
+                {translate(language, "Bảng điều phối danh mục", "Catalog control hub")}
+              </div>
+              <CardTitle className="text-2xl font-black tracking-tight text-slate-950">
+                {translate(language, "Quản lý dịch vụ", "Service Management")}
+              </CardTitle>
+              <CardDescription className="mt-1 text-sm text-slate-500">
+                {translate(
+                  language,
+                  "Đồng bộ dịch vụ, gói dịch vụ và combo trong cùng một giao diện quản trị.",
+                  "Manage services, packages, and combos from one consistent admin workspace.",
+                )}
+              </CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -91,6 +105,7 @@ function LiveServicesPanel() {
   const createServiceMutation = useCreateAdminService();
   const deleteServiceMutation = useDeleteAdminService();
   const updateServiceMutation = useUpdateAdminService();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   
   const defaultForm: AdminServiceForm = {
@@ -136,10 +151,11 @@ function LiveServicesPanel() {
     });
     setTouched({});
     setSubmitted(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setIsDialogOpen(true);
   }
 
   function handleCancelEdit() {
+    setIsDialogOpen(false);
     setEditingServiceId(null);
     setForm(defaultForm);
     setTouched({});
@@ -147,126 +163,86 @@ function LiveServicesPanel() {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
-      <Card className="border-slate-200 bg-white shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">
-            {editingServiceId ? translate(language, "Chỉnh sửa dịch vụ", "Edit service") : translate(language, "Tạo dịch vụ mới", "Create service")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <FormField label={translate(language, "Tên dịch vụ", "Name")} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
-          <div className="grid gap-4 md:grid-cols-2">
-            <FormField label={translate(language, "Giá dịch vụ (VND)", "Price")} value={form.price} onChange={(value) => setForm((current) => ({ ...current, price: value }))} onBlur={() => touchField("price")} error={visibleErrors.price} />
-            <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
+    <>
+      <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
+        <CardHeader className="flex flex-col gap-4 border-b border-slate-100 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] md:flex-row md:items-start md:justify-between">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <CardTitle className="text-lg font-bold text-slate-950">{translate(language, "Danh sách dịch vụ", "Services list")}</CardTitle>
+              <span className="rounded-full border border-sky-100 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
+                {(servicesQuery.data?.length ?? 0)} {translate(language, "dịch vụ", "services")}
+              </span>
+            </div>
+            <CardDescription className="max-w-xl text-sm leading-6 text-slate-500">
+              {translate(language, "Danh sách ở dạng bảng. Thêm hoặc chỉnh sửa dịch vụ bằng cửa sổ popup.", "List services in a table. Add or edit a service from the popup form.")}
+            </CardDescription>
           </div>
-          <RichDescriptionField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
-          <ImageUploadField label={translate(language, "Ảnh dịch vụ", "Service image")} value={form.imageUrls || []} onChange={(value) => setForm((current) => ({ ...current, imageUrls: value }))} language={language as "vi" | "en"} />
-          <label className="grid gap-2">
-            <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
-            <select
-              value={form.status}
-              onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as "ACTIVE" | "INACTIVE" }))}
-              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
-            >
-              <option value="ACTIVE">{translate(language, "Hoạt động", "Active")}</option>
-              <option value="INACTIVE">{translate(language, "Ngưng hoạt động", "Inactive")}</option>
-            </select>
-          </label>
-
-          {createServiceMutation.isError ? <ErrorPanel message={getErrorMessage(createServiceMutation.error)} /> : null}
-          {updateServiceMutation.isError ? <ErrorPanel message={getErrorMessage(updateServiceMutation.error)} /> : null}
-
-          <div className="flex justify-end gap-3">
-            {editingServiceId && (
-              <Button type="button" variant="outline" onClick={handleCancelEdit}>
-                {translate(language, "Hủy", "Cancel")}
-              </Button>
-            )}
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={() => servicesQuery.refetch()}>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              {translate(language, "Làm mới", "Refresh")}
+            </Button>
             <Button
               type="button"
-              disabled={createServiceMutation.isPending || updateServiceMutation.isPending}
-              onClick={async () => {
-                setSubmitted(true);
-                if (Object.keys(formErrors).length > 0) return;
-                try {
-                  if (editingServiceId) {
-                    await updateServiceMutation.mutateAsync({ ...form, serviceId: editingServiceId });
-                    notify.success(translate(language, "Cập nhật dịch vụ thành công.", "Service updated successfully."));
-                    handleCancelEdit();
-                  } else {
-                    await createServiceMutation.mutateAsync(form);
-                    notify.success(translate(language, "Tạo dịch vụ mới thành công.", "Service created successfully."));
-                    setForm(defaultForm);
-                    setTouched({});
-                    setSubmitted(false);
-                  }
-                } catch (error) {
-                  notify.error(getErrorMessage(error));
-                }
+              onClick={() => {
+                setEditingServiceId(null);
+                setForm(defaultForm);
+                setTouched({});
+                setSubmitted(false);
+                setIsDialogOpen(true);
               }}
             >
-              {(createServiceMutation.isPending || updateServiceMutation.isPending) ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : editingServiceId ? (
-                <Pencil className="mr-2 h-4 w-4" />
-              ) : (
-                <Plus className="mr-2 h-4 w-4" />
-              )}
-              {editingServiceId ? translate(language, "Cập nhật", "Update") : translate(language, "Tạo dịch vụ", "Create service")}
+              <Plus className="mr-2 h-4 w-4" />
+              {translate(language, "Thêm dịch vụ", "Add service")}
             </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-slate-200 bg-white shadow-sm">
-        <CardHeader className="flex flex-row items-start justify-between gap-4">
-          <div>
-            <CardTitle className="text-lg">{translate(language, "Danh mục dịch vụ", "Services catalog")}</CardTitle>
-          </div>
-          <Button type="button" variant="outline" onClick={() => servicesQuery.refetch()}>
-            <RefreshCcw className="mr-2 h-4 w-4" />
-            {translate(language, "Làm mới", "Refresh")}
-          </Button>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 p-0">
           {servicesQuery.isPending ? (
-            <LoadingPanel />
+            <div className="p-6">
+              <LoadingPanel />
+            </div>
           ) : servicesQuery.isError ? (
-            <ErrorPanel message={getErrorMessage(servicesQuery.error)} />
+            <div className="p-6">
+              <ErrorPanel message={getErrorMessage(servicesQuery.error)} />
+            </div>
           ) : (
-            <>
-              <div className="grid gap-4 md:grid-cols-1">
-                {servicesQuery.data?.map((service) => {
+            <Table className="border-0 rounded-none">
+              <TableHeader className="bg-slate-50/90">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="pl-6">{translate(language, "Dịch vụ", "Service")}</TableHead>
+                  <TableHead>{translate(language, "Giá", "Price")}</TableHead>
+                  <TableHead>{translate(language, "Thời lượng", "Duration")}</TableHead>
+                  <TableHead>{translate(language, "Trạng thái", "Status")}</TableHead>
+                  <TableHead className="pr-6 text-right">{translate(language, "Hành động", "Actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {servicesQuery.data?.length ? servicesQuery.data.map((service) => {
                   const isDeleting = deleteServiceMutation.isPending && deleteServiceMutation.variables === service.serviceId;
                   return (
-                    <Card key={service.serviceId} className="border-slate-200 bg-slate-50/50">
-                      <CardContent className="p-5 flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-4">
-                          {service.imageUrls && service.imageUrls.length > 0 && (
-                            <img
-                              src={service.imageUrls[0]}
-                              alt={service.name}
-                              className="h-14 w-14 rounded-lg object-cover border border-slate-200"
-                            />
+                    <TableRow key={service.serviceId} className="border-slate-100">
+                      <TableCell className="pl-6">
+                        <div className="flex items-center gap-3">
+                          {service.imageUrls?.[0] ? (
+                            <img src={service.imageUrls[0]} alt={service.name} className="h-12 w-12 rounded-xl border border-slate-200 object-cover" />
+                          ) : (
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-slate-300">
+                              <ImageUp className="h-4 w-4" />
+                            </div>
                           )}
-                          <div className="space-y-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <div className="font-bold text-slate-900">{service.name}</div>
-                              <StatusBadge active={service.status === "ACTIVE"} language={language as "vi" | "en"} />
-                            </div>
-                            <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                              <span className="rounded-full bg-white px-2.5 py-1">{service.duration} {translate(language, "phút", "min")}</span>
-                              <span className="rounded-full bg-white px-2.5 py-1">{formatCurrency(service.price)}</span>
-                            </div>
+                          <div>
+                            <div className="font-semibold text-slate-900">{service.name}</div>
+                            {service.description ? <div className="line-clamp-2 text-xs text-slate-500">{service.description}</div> : null}
                           </div>
                         </div>
-                        <div className="flex flex-col gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => handleEdit(service)}
-                          >
+                      </TableCell>
+                      <TableCell className="font-semibold text-slate-700">{formatCurrency(service.price)}</TableCell>
+                      <TableCell className="text-slate-600">{service.duration} {translate(language, "phút", "min")}</TableCell>
+                      <TableCell><StatusBadge active={service.status === "ACTIVE"} language={language as "vi" | "en"} /></TableCell>
+                      <TableCell className="pr-6">
+                        <div className="flex justify-end gap-2">
+                          <Button type="button" variant="outline" onClick={() => handleEdit(service)}>
                             <Pencil className="mr-2 h-4 w-4" />
                             {translate(language, "Sửa", "Edit")}
                           </Button>
@@ -284,19 +260,98 @@ function LiveServicesPanel() {
                             }}
                           >
                             {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                            {translate(language, "Ngưng hoạt động", "Deactivate")}
+                            {translate(language, "Ngưng", "Deactivate")}
                           </Button>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </TableCell>
+                    </TableRow>
                   );
-                })}
-              </div>
-            </>
+                }) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-10 text-center text-sm text-slate-500">
+                      {translate(language, "Chưa có dịch vụ nào.", "No services yet.")}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
-    </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={(open) => (open ? setIsDialogOpen(true) : handleCancelEdit())}>
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-[28px] border border-white/70 bg-white/95 shadow-[0_30px_90px_rgba(15,23,42,0.16)]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black tracking-tight text-slate-950">
+              {editingServiceId ? translate(language, "Chỉnh sửa dịch vụ", "Edit service") : translate(language, "Tạo dịch vụ mới", "Create service")}
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-6 text-slate-500">
+              {translate(language, "Nhập thông tin dịch vụ trong popup này. Các ràng buộc dữ liệu hiện tại vẫn được giữ nguyên.", "Enter service information in this popup. Current validation rules remain unchanged.")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <FormField label={translate(language, "Tên dịch vụ", "Name")} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField label={translate(language, "Giá dịch vụ (VND)", "Price")} value={form.price} onChange={(value) => setForm((current) => ({ ...current, price: value }))} onBlur={() => touchField("price")} error={visibleErrors.price} />
+              <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
+            </div>
+            <RichDescriptionField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
+            <ImageUploadField label={translate(language, "Ảnh dịch vụ", "Service image")} value={form.imageUrls || []} onChange={(value) => setForm((current) => ({ ...current, imageUrls: value }))} language={language as "vi" | "en"} />
+            <label className="grid gap-2">
+              <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
+              <select
+                value={form.status}
+                onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as "ACTIVE" | "INACTIVE" }))}
+                className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
+              >
+                <option value="ACTIVE">{translate(language, "Hoạt động", "Active")}</option>
+                <option value="INACTIVE">{translate(language, "Ngưng hoạt động", "Inactive")}</option>
+              </select>
+            </label>
+
+            {createServiceMutation.isError ? <ErrorPanel message={getErrorMessage(createServiceMutation.error)} /> : null}
+            {updateServiceMutation.isError ? <ErrorPanel message={getErrorMessage(updateServiceMutation.error)} /> : null}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={handleCancelEdit}>
+              {translate(language, "Hủy", "Cancel")}
+            </Button>
+            <Button
+              type="button"
+              disabled={createServiceMutation.isPending || updateServiceMutation.isPending}
+              onClick={async () => {
+                setSubmitted(true);
+                if (Object.keys(formErrors).length > 0) return;
+                try {
+                  if (editingServiceId) {
+                    await updateServiceMutation.mutateAsync({ ...form, serviceId: editingServiceId });
+                    notify.success(translate(language, "Cập nhật dịch vụ thành công.", "Service updated successfully."));
+                    handleCancelEdit();
+                  } else {
+                    await createServiceMutation.mutateAsync(form);
+                    notify.success(translate(language, "Tạo dịch vụ mới thành công.", "Service created successfully."));
+                    handleCancelEdit();
+                  }
+                } catch (error) {
+                  notify.error(getErrorMessage(error));
+                }
+              }}
+            >
+              {(createServiceMutation.isPending || updateServiceMutation.isPending) ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : editingServiceId ? (
+                <Pencil className="mr-2 h-4 w-4" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              {editingServiceId ? translate(language, "Cập nhật", "Update") : translate(language, "Tạo dịch vụ", "Create service")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -308,6 +363,7 @@ function LivePackagesPanel() {
   const createPackageMutation = useCreateAdminPackage();
   const deletePackageMutation = useDeleteAdminPackage();
   const updatePackageMutation = useUpdateAdminPackage();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPackageId, setEditingPackageId] = useState<string | null>(null);
 
   const defaultForm: AdminPackageForm = {
@@ -361,10 +417,11 @@ function LivePackagesPanel() {
     });
     setTouched({});
     setSubmitted(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setIsDialogOpen(true);
   }
 
   function handleCancelEdit() {
+    setIsDialogOpen(false);
     setEditingPackageId(null);
     setForm(defaultForm);
     setTouched({});
@@ -372,66 +429,183 @@ function LivePackagesPanel() {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
-      <Card className="border-slate-200 bg-white shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">
-            {editingPackageId ? translate(language, "Chỉnh sửa gói dịch vụ", "Edit package") : translate(language, "Tạo gói dịch vụ mới", "Create package")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <FormField label={translate(language, "Tên gói", "Name")} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
-          <div className="grid gap-4 md:grid-cols-2">
-            <FormField label={translate(language, "Giá gói (VND)", "Base price")} value={form.basePrice} onChange={(value) => setForm((current) => ({ ...current, basePrice: value }))} onBlur={() => touchField("basePrice")} error={visibleErrors.basePrice} />
-            <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
+    <>
+      <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
+        <CardHeader className="flex flex-col gap-4 border-b border-slate-100 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] md:flex-row md:items-start md:justify-between">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <CardTitle className="text-lg font-bold text-slate-950">{translate(language, "Danh sách gói dịch vụ", "Packages list")}</CardTitle>
+              <span className="rounded-full border border-sky-100 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
+                {(packagesQuery.data?.length ?? 0)} {translate(language, "gói", "packages")}
+              </span>
+            </div>
+            <CardDescription className="max-w-xl text-sm leading-6 text-slate-500">
+              {translate(language, "Danh sách gói ở dạng bảng. Nút thêm gói sẽ mở popup nhập thông tin gói.", "Packages are shown in a table. The add package button opens a popup form.")}
+            </CardDescription>
           </div>
-          <CategorySelectField
-            label={translate(language, "Danh mục", "Category")}
-            value={form.category}
-            existingCategories={Array.from(new Set(packagesQuery.data?.map(p => p.category).filter(Boolean) as string[]))}
-            onChange={(value) => setForm(current => ({ ...current, category: value }))}
-            onBlur={() => touchField("category")}
-            error={visibleErrors.category}
-            language={language as "vi" | "en"}
-          />
-          <FormField label={translate(language, "Tính năng nổi bật (cách nhau bởi dấu phẩy)", "Features (comma separated)")} value={form.features} onChange={(value) => setForm((current) => ({ ...current, features: value }))} placeholder={translate(language, "Hút bụi, Rửa tay, Làm bóng lốp", "Vacuuming, Hand wash, Tire shine")} />
-          <RichDescriptionField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
-          <ImageUploadField label={translate(language, "Ảnh gói dịch vụ", "Package image")} value={form.imageUrls || []} onChange={(value) => setForm((current) => ({ ...current, imageUrls: value }))} language={language as "vi" | "en"} />
-
-          {/* Services multi-select dropdown */}
-          <ServiceMultiSelect
-            label={translate(language, "Các dịch vụ đi kèm", "Services included")}
-            services={servicesQuery.data?.filter((s) => s.status === "ACTIVE") ?? []}
-            selectedIds={form.serviceIds}
-            onChange={(ids) => setForm((current) => ({ ...current, serviceIds: ids }))}
-            isLoading={servicesQuery.isPending}
-            isError={servicesQuery.isError}
-            errorMessage={servicesQuery.isError ? getErrorMessage(servicesQuery.error) : undefined}
-            validationError={visibleErrors.serviceIds}
-            language={language as "vi" | "en"}
-          />
-
-          <label className="grid gap-2">
-            <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
-            <select
-              value={form.status}
-              onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as "ACTIVE" | "INACTIVE" }))}
-              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={() => packagesQuery.refetch()}>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              {translate(language, "Làm mới", "Refresh")}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setEditingPackageId(null);
+                setForm(defaultForm);
+                setTouched({});
+                setSubmitted(false);
+                setIsDialogOpen(true);
+              }}
             >
-              <option value="ACTIVE">{translate(language, "Hoạt động", "Active")}</option>
-              <option value="INACTIVE">{translate(language, "Ngưng hoạt động", "Inactive")}</option>
-            </select>
-          </label>
+              <Plus className="mr-2 h-4 w-4" />
+              {translate(language, "Thêm gói", "Add package")}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {packagesQuery.isPending ? (
+            <div className="p-6">
+              <LoadingPanel />
+            </div>
+          ) : packagesQuery.isError ? (
+            <div className="p-6">
+              <ErrorPanel message={getErrorMessage(packagesQuery.error)} />
+            </div>
+          ) : (
+            <Table className="border-0 rounded-none">
+              <TableHeader className="bg-slate-50/90">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="pl-6">{translate(language, "Gói", "Package")}</TableHead>
+                  <TableHead>{translate(language, "Danh mục", "Category")}</TableHead>
+                  <TableHead>{translate(language, "Giá", "Price")}</TableHead>
+                  <TableHead>{translate(language, "Thời lượng", "Duration")}</TableHead>
+                  <TableHead>{translate(language, "Trạng thái", "Status")}</TableHead>
+                  <TableHead className="pr-6 text-right">{translate(language, "Hành động", "Actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {packagesQuery.data?.length ? packagesQuery.data.map((pkg) => {
+                  const isDeleting = deletePackageMutation.isPending && deletePackageMutation.variables === pkg.packageId;
+                  return (
+                    <TableRow key={pkg.packageId} className="border-slate-100">
+                      <TableCell className="pl-6">
+                        <div className="flex items-center gap-3">
+                          {pkg.imageUrls?.[0] ? (
+                            <img src={pkg.imageUrls[0]} alt={pkg.name} className="h-12 w-12 rounded-xl border border-slate-200 object-cover" />
+                          ) : (
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-slate-300">
+                              <ImageUp className="h-4 w-4" />
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-semibold text-slate-900">{pkg.name}</div>
+                            {pkg.features.length > 0 ? <div className="line-clamp-2 text-xs text-slate-500">{pkg.features.join(", ")}</div> : null}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-slate-600">{pkg.category}</TableCell>
+                      <TableCell className="font-semibold text-slate-700">{formatCurrency(pkg.basePrice)}</TableCell>
+                      <TableCell className="text-slate-600">{pkg.duration} {translate(language, "phút", "min")}</TableCell>
+                      <TableCell><StatusBadge active={pkg.status === "ACTIVE"} language={language as "vi" | "en"} /></TableCell>
+                      <TableCell className="pr-6">
+                        <div className="flex justify-end gap-2">
+                          <Button type="button" variant="outline" onClick={() => handleEdit(pkg)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            {translate(language, "Sửa", "Edit")}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={pkg.status !== "ACTIVE" || isDeleting}
+                            onClick={async () => {
+                              try {
+                                await deletePackageMutation.mutateAsync(pkg.packageId);
+                                notify.success(translate(language, "Đã ngưng hoạt động gói dịch vụ.", "Package deactivated."));
+                              } catch (error) {
+                                notify.error(getErrorMessage(error));
+                              }
+                            }}
+                          >
+                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                            {translate(language, "Ngưng", "Deactivate")}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                }) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-10 text-center text-sm text-slate-500">
+                      {translate(language, "Chưa có gói dịch vụ nào.", "No packages yet.")}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
-          {createPackageMutation.isError ? <ErrorPanel message={getErrorMessage(createPackageMutation.error)} /> : null}
-          {updatePackageMutation.isError ? <ErrorPanel message={getErrorMessage(updatePackageMutation.error)} /> : null}
+      <Dialog open={isDialogOpen} onOpenChange={(open) => (open ? setIsDialogOpen(true) : handleCancelEdit())}>
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-[28px] border border-white/70 bg-white/95 shadow-[0_30px_90px_rgba(15,23,42,0.16)]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black tracking-tight text-slate-950">
+              {editingPackageId ? translate(language, "Chỉnh sửa gói dịch vụ", "Edit package") : translate(language, "Tạo gói dịch vụ mới", "Create package")}
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-6 text-slate-500">
+              {translate(language, "Popup này giữ nguyên validation và ràng buộc chọn dịch vụ đi kèm cho gói.", "This popup preserves the current package validation and included-service constraints.")}
+            </DialogDescription>
+          </DialogHeader>
 
-          <div className="flex justify-end gap-3">
-            {editingPackageId && (
-              <Button type="button" variant="outline" onClick={handleCancelEdit}>
-                {translate(language, "Hủy", "Cancel")}
-              </Button>
-            )}
+          <div className="space-y-4">
+            <FormField label={translate(language, "Tên gói", "Name")} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField label={translate(language, "Giá gói (VND)", "Base price")} value={form.basePrice} onChange={(value) => setForm((current) => ({ ...current, basePrice: value }))} onBlur={() => touchField("basePrice")} error={visibleErrors.basePrice} />
+              <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
+            </div>
+            <CategorySelectField
+              label={translate(language, "Danh mục", "Category")}
+              value={form.category}
+              existingCategories={Array.from(new Set(packagesQuery.data?.map((p) => p.category).filter(Boolean) as string[]))}
+              onChange={(value) => setForm((current) => ({ ...current, category: value }))}
+              onBlur={() => touchField("category")}
+              error={visibleErrors.category}
+              language={language as "vi" | "en"}
+            />
+            <FormField label={translate(language, "Tính năng nổi bật (cách nhau bởi dấu phẩy)", "Features (comma separated)")} value={form.features} onChange={(value) => setForm((current) => ({ ...current, features: value }))} placeholder={translate(language, "Hút bụi, Rửa tay, Làm bóng lốp", "Vacuuming, Hand wash, Tire shine")} />
+            <RichDescriptionField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
+            <ImageUploadField label={translate(language, "Ảnh gói dịch vụ", "Package image")} value={form.imageUrls || []} onChange={(value) => setForm((current) => ({ ...current, imageUrls: value }))} language={language as "vi" | "en"} />
+            <ServiceMultiSelect
+              label={translate(language, "Các dịch vụ đi kèm", "Services included")}
+              services={servicesQuery.data?.filter((s) => s.status === "ACTIVE") ?? []}
+              selectedIds={form.serviceIds}
+              onChange={(ids) => setForm((current) => ({ ...current, serviceIds: ids }))}
+              isLoading={servicesQuery.isPending}
+              isError={servicesQuery.isError}
+              errorMessage={servicesQuery.isError ? getErrorMessage(servicesQuery.error) : undefined}
+              validationError={visibleErrors.serviceIds}
+              language={language as "vi" | "en"}
+            />
+            <label className="grid gap-2">
+              <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
+              <select
+                value={form.status}
+                onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as "ACTIVE" | "INACTIVE" }))}
+                className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
+              >
+                <option value="ACTIVE">{translate(language, "Hoạt động", "Active")}</option>
+                <option value="INACTIVE">{translate(language, "Ngưng hoạt động", "Inactive")}</option>
+              </select>
+            </label>
+            {createPackageMutation.isError ? <ErrorPanel message={getErrorMessage(createPackageMutation.error)} /> : null}
+            {updatePackageMutation.isError ? <ErrorPanel message={getErrorMessage(updatePackageMutation.error)} /> : null}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={handleCancelEdit}>
+              {translate(language, "Hủy", "Cancel")}
+            </Button>
             <Button
               type="button"
               disabled={createPackageMutation.isPending || updatePackageMutation.isPending}
@@ -446,9 +620,7 @@ function LivePackagesPanel() {
                   } else {
                     await createPackageMutation.mutateAsync(form);
                     notify.success(translate(language, "Tạo gói dịch vụ mới thành công.", "Package created successfully."));
-                    setForm(defaultForm);
-                    setTouched({});
-                    setSubmitted(false);
+                    handleCancelEdit();
                   }
                 } catch (error) {
                   notify.error(getErrorMessage(error));
@@ -464,99 +636,10 @@ function LivePackagesPanel() {
               )}
               {editingPackageId ? translate(language, "Cập nhật", "Update") : translate(language, "Tạo gói dịch vụ", "Create package")}
             </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-slate-200 bg-white shadow-sm">
-        <CardHeader className="flex flex-row items-start justify-between gap-4">
-          <div>
-            <CardTitle className="text-lg">{translate(language, "Danh mục các gói dịch vụ", "Packages catalog")}</CardTitle>
-          </div>
-          <Button type="button" variant="outline" onClick={() => packagesQuery.refetch()}>
-            <RefreshCcw className="mr-2 h-4 w-4" />
-            {translate(language, "Làm mới", "Refresh")}
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {packagesQuery.isPending ? (
-            <LoadingPanel />
-          ) : packagesQuery.isError ? (
-            <ErrorPanel message={getErrorMessage(packagesQuery.error)} />
-          ) : (
-            <>
-              <div className="grid gap-4 md:grid-cols-1">
-                {packagesQuery.data?.map((pkg) => {
-                  const isDeleting = deletePackageMutation.isPending && deletePackageMutation.variables === pkg.packageId;
-                  return (
-                    <Card key={pkg.packageId} className="border-slate-200 bg-slate-50/50">
-                      <CardContent className="p-5 flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-4">
-                          {pkg.imageUrls && pkg.imageUrls.length > 0 && (
-                            <img
-                              src={pkg.imageUrls[0]}
-                              alt={pkg.name}
-                              className="h-16 w-16 rounded-xl object-cover border border-slate-200"
-                            />
-                          )}
-                          <div className="space-y-3">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <div className="font-bold text-slate-900">{pkg.name}</div>
-                            <StatusBadge active={pkg.status === "ACTIVE"} language={language as "vi" | "en"} />
-                          </div>
-                          <div className="text-xs uppercase tracking-wide text-slate-500">{pkg.category}</div>
-                          <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                            <span className="rounded-full bg-white px-2.5 py-1">{pkg.duration} {translate(language, "phút", "min")}</span>
-                            <span className="rounded-full bg-white px-2.5 py-1">{formatCurrency(pkg.basePrice)}</span>
-                            {pkg.popularity ? <span className="rounded-full bg-white px-2.5 py-1">{pkg.popularity}</span> : null}
-                          </div>
-                          {pkg.features.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                              {pkg.features.map((feature) => (
-                                <span key={feature} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600">
-                                  {feature}
-                                </span>
-                              ))}
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => handleEdit(pkg)}
-                        >
-                          <Pencil className="mr-2 h-4 w-4" />
-                          {translate(language, "Sửa", "Edit")}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={pkg.status !== "ACTIVE" || isDeleting}
-                          onClick={async () => {
-                            try {
-                              await deletePackageMutation.mutateAsync(pkg.packageId);
-                              notify.success(translate(language, "Đã ngưng hoạt động gói dịch vụ.", "Package deactivated."));
-                            } catch (error) {
-                              notify.error(getErrorMessage(error));
-                            }
-                          }}
-                        >
-                          {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                          {translate(language, "Ngưng hoạt động", "Deactivate")}
-                        </Button>
-                      </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -568,6 +651,7 @@ function LiveCombosPanel() {
   const createComboMutation = useCreateAdminCombo();
   const deleteComboMutation = useDeleteAdminCombo();
   const updateComboMutation = useUpdateAdminCombo();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingComboId, setEditingComboId] = useState<string | null>(null);
 
   const [form, setForm] = useState<AdminComboForm>(EMPTY_COMBO_FORM);
@@ -612,10 +696,11 @@ function LiveCombosPanel() {
     });
     setTouched({});
     setSubmitted(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setIsDialogOpen(true);
   }
 
   function handleCancelEdit() {
+    setIsDialogOpen(false);
     setEditingComboId(null);
     setForm(EMPTY_COMBO_FORM);
     setTouched({});
@@ -623,61 +708,180 @@ function LiveCombosPanel() {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
-      <Card className="border-slate-200 bg-white shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">
-            {editingComboId ? translate(language, "Chỉnh sửa Combo", "Edit combo") : translate(language, "Tạo Combo mới", "Create combo")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <FormField label={translate(language, "Tên Combo", "Name")} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
-            <FormField label={translate(language, "Giá Combo (VND)", "Price")} value={form.price} onChange={(value) => setForm((current) => ({ ...current, price: value }))} onBlur={() => touchField("price")} error={visibleErrors.price} />
-            <FormField label={translate(language, "Giá gốc (VND)", "Original price")} value={form.originalPrice} onChange={(value) => setForm((current) => ({ ...current, originalPrice: value }))} />
-            <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.durationMinutes} onChange={(value) => setForm((current) => ({ ...current, durationMinutes: value }))} onBlur={() => touchField("durationMinutes")} error={visibleErrors.durationMinutes} />
-            <FormField label={translate(language, "Thời hạn áp dụng (ngày)", "Duration days")} value={form.durationDays} onChange={(value) => setForm((current) => ({ ...current, durationDays: value }))} onBlur={() => touchField("durationDays")} error={visibleErrors.durationDays} />
-            <FormField label={translate(language, "Số lần rửa tối đa", "Max usages")} value={form.maxUsages} onChange={(value) => setForm((current) => ({ ...current, maxUsages: value }))} onBlur={() => touchField("maxUsages")} error={visibleErrors.maxUsages} />
+    <>
+      <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
+        <CardHeader className="flex flex-col gap-4 border-b border-slate-100 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] md:flex-row md:items-start md:justify-between">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <CardTitle className="text-lg font-bold text-slate-950">{translate(language, "Danh sách combo", "Combos list")}</CardTitle>
+              <span className="rounded-full border border-sky-100 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
+                {(combosQuery.data?.length ?? 0)} {translate(language, "combo", "combos")}
+              </span>
+            </div>
+            <CardDescription className="max-w-xl text-sm leading-6 text-slate-500">
+              {translate(language, "Danh sách combo ở dạng bảng. Nút thêm combo sẽ mở popup nhập thông tin.", "Combos are shown in a table. The add combo button opens a popup form.")}
+            </CardDescription>
           </div>
-          <RichDescriptionField
-            label={translate(language, "Mô tả", "Description")}
-            value={form.description}
-            onChange={(value) => setForm((current) => ({ ...current, description: value }))}
-          />
-          <ImageUploadField label={translate(language, "Ảnh Combo", "Combo image")} value={form.imageUrls || []} onChange={(value) => setForm((current) => ({ ...current, imageUrls: value }))} language={language as "vi" | "en"} />
-          <label className="grid gap-2">
-            <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
-            <select
-              value={form.status}
-              onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as "ACTIVE" | "INACTIVE" }))}
-              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={() => combosQuery.refetch()}>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              {translate(language, "Làm mới", "Refresh")}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setEditingComboId(null);
+                setForm(EMPTY_COMBO_FORM);
+                setTouched({});
+                setSubmitted(false);
+                setIsDialogOpen(true);
+              }}
             >
-              <option value="ACTIVE">{translate(language, "Hoạt động", "Active")}</option>
-              <option value="INACTIVE">{translate(language, "Ngưng hoạt động", "Inactive")}</option>
-            </select>
-          </label>
+              <Plus className="mr-2 h-4 w-4" />
+              {translate(language, "Thêm combo", "Add combo")}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {combosQuery.isPending ? (
+            <div className="p-6">
+              <LoadingPanel />
+            </div>
+          ) : combosQuery.isError ? (
+            <div className="p-6">
+              <ErrorPanel message={getErrorMessage(combosQuery.error)} />
+            </div>
+          ) : (
+            <Table className="border-0 rounded-none">
+              <TableHeader className="bg-slate-50/90">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="pl-6">{translate(language, "Combo", "Combo")}</TableHead>
+                  <TableHead>{translate(language, "Giá", "Price")}</TableHead>
+                  <TableHead>{translate(language, "Hiệu lực", "Validity")}</TableHead>
+                  <TableHead>{translate(language, "Giới hạn", "Limit")}</TableHead>
+                  <TableHead>{translate(language, "Trạng thái", "Status")}</TableHead>
+                  <TableHead className="pr-6 text-right">{translate(language, "Hành động", "Actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {combosQuery.data?.length ? combosQuery.data.map((combo) => {
+                  const isDeleting = deleteComboMutation.isPending && deleteComboMutation.variables === combo.comboId;
+                  return (
+                    <TableRow key={combo.comboId} className="border-slate-100">
+                      <TableCell className="pl-6">
+                        <div className="flex items-center gap-3">
+                          {(combo.imageUrls?.[0] || (combo as any).imageUrl) ? (
+                            <img src={combo.imageUrls?.[0] || (combo as any).imageUrl} alt={combo.name} className="h-12 w-12 rounded-xl border border-slate-200 object-cover" />
+                          ) : (
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-slate-300">
+                              <ImageUp className="h-4 w-4" />
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-semibold text-slate-900">{combo.name}</div>
+                            {(combo.benefits ?? []).length > 0 ? <div className="line-clamp-2 text-xs text-slate-500">{(combo.benefits ?? []).join(", ")}</div> : null}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-semibold text-slate-700">{formatCurrency(combo.basePrice)}</TableCell>
+                      <TableCell className="text-slate-600">{combo.durationDays} {translate(language, "ngày", "days")}</TableCell>
+                      <TableCell className="text-slate-600">{combo.maxServices} {translate(language, "dịch vụ", "services")}</TableCell>
+                      <TableCell><StatusBadge active={combo.isActive} language={language as "vi" | "en"} /></TableCell>
+                      <TableCell className="pr-6">
+                        <div className="flex justify-end gap-2">
+                          <Button type="button" variant="outline" onClick={() => handleEdit(combo)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            {translate(language, "Sửa", "Edit")}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={!combo.isActive || isDeleting}
+                            onClick={async () => {
+                              try {
+                                await deleteComboMutation.mutateAsync(combo.comboId);
+                                notify.success(translate(language, "Đã ngưng hoạt động Combo.", "Combo deactivated."));
+                              } catch (error) {
+                                notify.error(getErrorMessage(error));
+                              }
+                            }}
+                          >
+                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                            {translate(language, "Ngưng", "Deactivate")}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                }) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-10 text-center text-sm text-slate-500">
+                      {translate(language, "Chưa có combo nào.", "No combos yet.")}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
-          <ServiceMultiSelect
-            label={translate(language, "Dịch vụ đi kèm trong Combo", "Services included")}
-            services={servicesQuery.data?.filter((s) => s.status === "ACTIVE") ?? []}
-            selectedIds={form.optionIds}
-            onChange={(ids) => setForm((current) => ({ ...current, optionIds: ids }))}
-            isLoading={servicesQuery.isPending}
-            isError={servicesQuery.isError}
-            errorMessage={servicesQuery.isError ? getErrorMessage(servicesQuery.error) : undefined}
-            validationError={visibleErrors.optionIds}
-            language={language as "vi" | "en"}
-          />
+      <Dialog open={isDialogOpen} onOpenChange={(open) => (open ? setIsDialogOpen(true) : handleCancelEdit())}>
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-[28px] border border-white/70 bg-white/95 shadow-[0_30px_90px_rgba(15,23,42,0.16)]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black tracking-tight text-slate-950">
+              {editingComboId ? translate(language, "Chỉnh sửa Combo", "Edit combo") : translate(language, "Tạo Combo mới", "Create combo")}
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-6 text-slate-500">
+              {translate(language, "Popup này giữ nguyên ràng buộc số ngày hiệu lực, số lượt dùng và danh sách dịch vụ của combo.", "This popup preserves combo constraints for duration, usage limits, and included services.")}
+            </DialogDescription>
+          </DialogHeader>
 
-          {createComboMutation.isError ? <ErrorPanel message={getErrorMessage(createComboMutation.error)} /> : null}
-          {updateComboMutation.isError ? <ErrorPanel message={getErrorMessage(updateComboMutation.error)} /> : null}
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField label={translate(language, "Tên Combo", "Name")} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
+              <FormField label={translate(language, "Giá Combo (VND)", "Price")} value={form.price} onChange={(value) => setForm((current) => ({ ...current, price: value }))} onBlur={() => touchField("price")} error={visibleErrors.price} />
+              <FormField label={translate(language, "Giá gốc (VND)", "Original price")} value={form.originalPrice} onChange={(value) => setForm((current) => ({ ...current, originalPrice: value }))} />
+              <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.durationMinutes} onChange={(value) => setForm((current) => ({ ...current, durationMinutes: value }))} onBlur={() => touchField("durationMinutes")} error={visibleErrors.durationMinutes} />
+              <FormField label={translate(language, "Thời hạn áp dụng (ngày)", "Duration days")} value={form.durationDays} onChange={(value) => setForm((current) => ({ ...current, durationDays: value }))} onBlur={() => touchField("durationDays")} error={visibleErrors.durationDays} />
+              <FormField label={translate(language, "Số lần rửa tối đa", "Max usages")} value={form.maxUsages} onChange={(value) => setForm((current) => ({ ...current, maxUsages: value }))} onBlur={() => touchField("maxUsages")} error={visibleErrors.maxUsages} />
+            </div>
+            <RichDescriptionField
+              label={translate(language, "Mô tả", "Description")}
+              value={form.description}
+              onChange={(value) => setForm((current) => ({ ...current, description: value }))}
+            />
+            <ImageUploadField label={translate(language, "Ảnh Combo", "Combo image")} value={form.imageUrls || []} onChange={(value) => setForm((current) => ({ ...current, imageUrls: value }))} language={language as "vi" | "en"} />
+            <label className="grid gap-2">
+              <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
+              <select
+                value={form.status}
+                onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as "ACTIVE" | "INACTIVE" }))}
+                className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
+              >
+                <option value="ACTIVE">{translate(language, "Hoạt động", "Active")}</option>
+                <option value="INACTIVE">{translate(language, "Ngưng hoạt động", "Inactive")}</option>
+              </select>
+            </label>
+            <ServiceMultiSelect
+              label={translate(language, "Dịch vụ đi kèm trong Combo", "Services included")}
+              services={servicesQuery.data?.filter((s) => s.status === "ACTIVE") ?? []}
+              selectedIds={form.optionIds}
+              onChange={(ids) => setForm((current) => ({ ...current, optionIds: ids }))}
+              isLoading={servicesQuery.isPending}
+              isError={servicesQuery.isError}
+              errorMessage={servicesQuery.isError ? getErrorMessage(servicesQuery.error) : undefined}
+              validationError={visibleErrors.optionIds}
+              language={language as "vi" | "en"}
+            />
+            {createComboMutation.isError ? <ErrorPanel message={getErrorMessage(createComboMutation.error)} /> : null}
+            {updateComboMutation.isError ? <ErrorPanel message={getErrorMessage(updateComboMutation.error)} /> : null}
+          </div>
 
-          <div className="flex justify-end gap-3">
-            {editingComboId && (
-              <Button type="button" variant="outline" onClick={handleCancelEdit}>
-                {translate(language, "Hủy", "Cancel")}
-              </Button>
-            )}
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={handleCancelEdit}>
+              {translate(language, "Hủy", "Cancel")}
+            </Button>
             <Button
               type="button"
               disabled={createComboMutation.isPending || updateComboMutation.isPending}
@@ -692,9 +896,7 @@ function LiveCombosPanel() {
                   } else {
                     await createComboMutation.mutateAsync(form);
                     notify.success(translate(language, "Tạo Combo thành công.", "Combo created successfully."));
-                    setForm(EMPTY_COMBO_FORM);
-                    setTouched({});
-                    setSubmitted(false);
+                    handleCancelEdit();
                   }
                 } catch (error) {
                   notify.error(getErrorMessage(error));
@@ -710,102 +912,10 @@ function LiveCombosPanel() {
               )}
               {editingComboId ? translate(language, "Cập nhật", "Update") : translate(language, "Tạo Combo", "Create combo")}
             </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-slate-200 bg-white shadow-sm">
-        <CardHeader className="flex flex-row items-start justify-between gap-4">
-          <div>
-            <CardTitle className="text-lg">{translate(language, "Danh mục các Combo", "Live combo catalog")}</CardTitle>
-          </div>
-          <Button type="button" variant="outline" onClick={() => combosQuery.refetch()}>
-            <RefreshCcw className="mr-2 h-4 w-4" />
-            {translate(language, "Làm mới", "Refresh")}
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {combosQuery.isPending ? (
-            <LoadingPanel />
-          ) : combosQuery.isError ? (
-            <ErrorPanel message={getErrorMessage(combosQuery.error)} />
-          ) : !combosQuery.data || combosQuery.data.length === 0 ? (
-            <Card className="border-slate-200 bg-slate-50/50">
-              <CardContent className="p-5 text-sm text-slate-500">{translate(language, "Không tìm thấy Combo nào.", "No combos found.")}</CardContent>
-            </Card>
-          ) : (
-            combosQuery.data.map((combo) => {
-              const isDeleting =
-                deleteComboMutation.isPending && deleteComboMutation.variables === combo.comboId;
-
-              return (
-                <Card key={combo.comboId} className="border-slate-200 bg-slate-50/50">
-                  <CardContent className="space-y-4 p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-4">
-                        {(combo.imageUrls?.[0] || (combo as any).imageUrl) && (
-                          <img
-                            src={combo.imageUrls?.[0] || (combo as any).imageUrl}
-                            alt={combo.name}
-                            className="h-16 w-16 rounded-xl object-cover border border-slate-200"
-                          />
-                        )}
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <div className="text-lg font-bold text-slate-900">{combo.name}</div>
-                            <StatusBadge active={combo.isActive} language={language as "vi" | "en"} />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => handleEdit(combo)}
-                        >
-                          <Pencil className="mr-2 h-4 w-4" />
-                          {translate(language, "Sửa", "Edit")}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={!combo.isActive || isDeleting}
-                          onClick={async () => {
-                            try {
-                              await deleteComboMutation.mutateAsync(combo.comboId);
-                              notify.success(translate(language, "Đã ngưng hoạt động Combo.", "Combo deactivated."));
-                            } catch (error) {
-                              notify.error(getErrorMessage(error));
-                            }
-                          }}
-                        >
-                          {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                          {translate(language, "Ngưng hoạt động", "Deactivate")}
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                      <span className="rounded-full bg-white px-2.5 py-1">{formatCurrency(combo.basePrice)}</span>
-                      <span className="rounded-full bg-white px-2.5 py-1">{combo.durationDays} {translate(language, "ngày", "days")}</span>
-                      <span className="rounded-full bg-white px-2.5 py-1">{combo.maxServices} {translate(language, "dịch vụ", "services")}</span>
-                    </div>
-                    {(combo.benefits ?? []).length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {(combo.benefits ?? []).map((benefit) => (
-                          <span key={`${combo.comboId}-${benefit}`} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600">
-                            {benefit}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
