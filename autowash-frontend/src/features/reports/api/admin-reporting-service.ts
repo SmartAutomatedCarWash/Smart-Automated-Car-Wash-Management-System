@@ -89,7 +89,7 @@ export interface AdminVehicleDetail {
   plate: string;
   brand: string;
   model: string;
-  color: string;
+  color: string | null;
   ownerName: string;
   ownerPhone: string;
   bookingHistory: {
