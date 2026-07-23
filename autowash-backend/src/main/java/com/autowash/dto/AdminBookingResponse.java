@@ -12,6 +12,7 @@ public record AdminBookingResponse(
         UUID customerId,
         String customerName,
         String customerPhone,
+        UUID vehicleId,
         String vehiclePlate,
         String primaryItemName,
         LocalDate bookingDate,

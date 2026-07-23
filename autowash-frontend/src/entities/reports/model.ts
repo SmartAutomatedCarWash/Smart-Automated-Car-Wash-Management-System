@@ -4,9 +4,9 @@ export type AdminBooking = {
   customerId: string;
   customerName: string;
   customerPhone: string;
+  vehicleId: string;
   vehiclePlate: string;
-  servicePackageId: string | null;
-  servicePackageName: string | null;
+  primaryItemName: string | null;
   bookingDate: string;
   bookingTime: string;
   finalAmount: number;

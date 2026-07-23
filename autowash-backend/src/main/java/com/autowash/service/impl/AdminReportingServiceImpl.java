@@ -907,6 +907,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 booking.getCustomer().getId(),
                 booking.getCustomer().getFullName(),
                 booking.getCustomer().getPhone(),
+                booking.getVehicle().getId(),
                 booking.getVehicle().getPlate(),
                 serviceNames.get(serviceId(booking)),
                 booking.getBookingDate(),
