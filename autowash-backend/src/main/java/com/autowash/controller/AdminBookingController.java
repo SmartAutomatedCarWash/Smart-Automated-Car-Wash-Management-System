@@ -65,6 +65,12 @@ public class AdminBookingController {
         return ApiResponse.ok("Bookings retrieved", bookingPage.items(), bookingPage.pagination());
     }
 
+    @GetMapping("/vehicles/{vehicleId}")
+    @Operation(summary = "Get vehicle details and history for admin")
+    public ApiResponse<com.autowash.dto.AdminVehicleDetailResponse> getVehicleDetail(@PathVariable String vehicleId) {
+        return ApiResponse.ok("Vehicle details retrieved", adminReportingService.getVehicleDetail(vehicleId));
+    }
+
     @GetMapping("/{bookingId}")
     @Operation(summary = "Get booking detail for admin")
     public ApiResponse<BookingDetailResponse> getBookingDetail(@PathVariable String bookingId) {
@@ -84,12 +90,6 @@ public class AdminBookingController {
             @Valid @RequestBody UpdateBookingStatusRequest request
     ) {
         return ApiResponse.ok("Booking status updated", bookingService.updateBookingStatus(bookingId, request.status()));
-    }
-
-    @GetMapping("/vehicles/{vehicleId}")
-    @Operation(summary = "Get vehicle details and history for admin")
-    public ApiResponse<com.autowash.dto.AdminVehicleDetailResponse> getVehicleDetail(@PathVariable String vehicleId) {
-        return ApiResponse.ok("Vehicle details retrieved", adminReportingService.getVehicleDetail(vehicleId));
     }
 
 }

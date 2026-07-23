@@ -1402,7 +1402,14 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     @Override
     @Transactional(readOnly = true)
     public com.autowash.dto.AdminVehicleDetailResponse getVehicleDetail(String vehicleId) {
-        var vehicle = VehicleRepository.findById(UUID.fromString(vehicleId))
+        UUID parsedVehicleId;
+        try {
+            parsedVehicleId = UUID.fromString(vehicleId);
+        } catch (IllegalArgumentException exception) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid vehicle id", ErrorCode.VALIDATION_ERROR);
+        }
+
+        var vehicle = VehicleRepository.findById(parsedVehicleId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Vehicle not found", ErrorCode.RESOURCE_NOT_FOUND));
 
         List<Booking> bookings = bookingRepository.findByVehicleIdOrderByScheduledAtDesc(vehicle.getId());
