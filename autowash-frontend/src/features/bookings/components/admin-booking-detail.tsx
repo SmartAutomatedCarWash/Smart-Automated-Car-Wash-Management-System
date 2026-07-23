@@ -38,7 +38,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
 import { Badge } from "@/shared/ui/ui/badge";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
-import type { BookingStatus } from "@/entities/bookings";
+import type { BookingDetail, BookingStatus } from "@/entities/bookings";
+
+type VehicleFallback = Pick<
+  BookingDetail,
+  "vehicleId" | "vehiclePlate" | "vehicleBrand" | "vehicleModel" | "customerName" | "customerPhone"
+>;
 
 function translateStatus(st: string, lang: "vi" | "en") {
   const map: Record<string, { vi: string; en: string }> = {
@@ -838,6 +843,7 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
       {isVehicleModalOpen && (
         <VehicleDetailModal
           vehicleId={booking.vehicleId}
+          fallbackVehicle={booking}
           onClose={() => setIsVehicleModalOpen(false)}
         />
       )}
@@ -845,10 +851,35 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
   );
 }
 
-function VehicleDetailModal({ vehicleId, onClose }: { vehicleId: string; onClose: () => void }) {
+function VehicleDetailModal({
+  vehicleId,
+  fallbackVehicle,
+  onClose,
+}: {
+  vehicleId: string;
+  fallbackVehicle: VehicleFallback;
+  onClose: () => void;
+}) {
   const { language } = useLanguageStore();
   const { data: vehicle, isPending, isError, error } = useAdminVehicleDetail(vehicleId, true);
   const getErrorMessage = useErrorMessage();
+  const displayVehicle = vehicle
+    ? {
+        plate: vehicle.plate,
+        brand: vehicle.brand,
+        model: vehicle.model,
+        color: vehicle.color,
+        ownerName: vehicle.ownerName,
+        ownerPhone: vehicle.ownerPhone,
+      }
+    : {
+        plate: fallbackVehicle.vehiclePlate,
+        brand: fallbackVehicle.vehicleBrand,
+        model: fallbackVehicle.vehicleModel,
+        color: null,
+        ownerName: fallbackVehicle.customerName,
+        ownerPhone: fallbackVehicle.customerPhone,
+      };
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -883,14 +914,6 @@ function VehicleDetailModal({ vehicleId, onClose }: { vehicleId: string; onClose
               <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-3" />
               <p className="text-xs font-semibold">{translate(language, "Đang tải dữ liệu...", "Loading details...")}</p>
             </div>
-          ) : isError ? (
-            <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl border border-rose-100 text-xs">
-              {getErrorMessage(error)}
-            </div>
-          ) : !vehicle ? (
-            <div className="text-center text-slate-400 py-6 text-xs">
-              {translate(language, "Không tìm thấy dữ liệu xe.", "No vehicle data found.")}
-            </div>
           ) : (
             <>
               {/* Vehicle Metadata */}
@@ -900,7 +923,7 @@ function VehicleDetailModal({ vehicleId, onClose }: { vehicleId: string; onClose
                     {translate(language, "Biển số xe", "License Plate")}
                   </span>
                   <span className="inline-block font-mono font-black text-slate-900 bg-white border border-slate-200 rounded-lg px-2 py-0.5 mt-1 text-sm">
-                    {vehicle.plate}
+                    {displayVehicle.plate}
                   </span>
                 </div>
                 <div>
@@ -908,7 +931,7 @@ function VehicleDetailModal({ vehicleId, onClose }: { vehicleId: string; onClose
                     {translate(language, "Hãng & Dòng xe", "Brand & Model")}
                   </span>
                   <span className="font-bold text-slate-800 block mt-1 text-sm">
-                    {vehicle.brand} {vehicle.model}
+                    {displayVehicle.brand} {displayVehicle.model}
                   </span>
                 </div>
                 <div>
@@ -916,7 +939,7 @@ function VehicleDetailModal({ vehicleId, onClose }: { vehicleId: string; onClose
                     {translate(language, "Màu sắc", "Color")}
                   </span>
                   <span className="font-medium text-slate-700 block mt-1 text-sm">
-                    {vehicle.color || translate(language, "Không có", "None")}
+                    {displayVehicle.color || translate(language, "Không có", "None")}
                   </span>
                 </div>
                 <div>
@@ -924,17 +947,38 @@ function VehicleDetailModal({ vehicleId, onClose }: { vehicleId: string; onClose
                     {translate(language, "Chủ sở hữu", "Owner")}
                   </span>
                   <span className="font-bold text-slate-800 block mt-1 text-sm">
-                    {vehicle.ownerName} ({vehicle.ownerPhone})
+                    {displayVehicle.ownerName} ({displayVehicle.ownerPhone})
                   </span>
                 </div>
               </div>
+
+              {isError && (
+                <div className="p-4 bg-amber-50 text-amber-700 rounded-2xl border border-amber-100 text-xs font-semibold">
+                  {translate(
+                    language,
+                    "Đã tải thông tin xe từ booking hiện tại, nhưng chưa lấy được lịch sử xe từ server:",
+                    "Loaded vehicle metadata from this booking, but could not load vehicle history from the server:"
+                  )}{" "}
+                  {getErrorMessage(error)}
+                </div>
+              )}
+
+              {!vehicle && !isError && (
+                <div className="p-4 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 text-xs font-semibold">
+                  {translate(
+                    language,
+                    "Chưa có dữ liệu lịch sử xe từ server.",
+                    "No vehicle history data was returned from the server."
+                  )}
+                </div>
+              )}
 
               {/* History list */}
               <div className="space-y-3">
                 <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">
                   {translate(language, "Lịch sử đặt lịch của xe", "Booking History")}
                 </h4>
-                {vehicle.bookingHistory.length === 0 ? (
+                {(vehicle?.bookingHistory ?? []).length === 0 ? (
                   <p className="text-xs text-slate-400 italic bg-slate-50 p-4 rounded-2xl text-center">
                     {translate(language, "Chưa có lịch sử đặt lịch nào.", "No booking history found.")}
                   </p>
@@ -950,7 +994,7 @@ function VehicleDetailModal({ vehicleId, onClose }: { vehicleId: string; onClose
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50 font-medium text-slate-700">
-                        {vehicle.bookingHistory.map((history) => (
+                        {vehicle!.bookingHistory.map((history) => (
                           <tr key={history.bookingId} className="hover:bg-slate-50/50">
                             <td className="p-3">
                               <div>{history.bookingDate}</div>

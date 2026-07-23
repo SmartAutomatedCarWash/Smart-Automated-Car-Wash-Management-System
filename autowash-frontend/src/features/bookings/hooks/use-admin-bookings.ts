@@ -17,6 +17,7 @@ export function useAdminBookings(
     queryKey: ["admin-bookings", page, limit, filters],
     queryFn: () => listAdminBookings(filters, page, limit),
     enabled,
+    staleTime: 30_000,
   });
 }
 
@@ -29,5 +30,6 @@ export function useAdminBookingSummary() {
     queryKey: ["admin-bookings-summary"],
     queryFn: () => getAdminBookingSummary(),
     enabled,
+    staleTime: 30_000,
   });
 }

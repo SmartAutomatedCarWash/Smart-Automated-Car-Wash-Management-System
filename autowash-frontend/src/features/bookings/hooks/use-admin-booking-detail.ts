@@ -11,6 +11,8 @@ import { useAuthStore } from "@/features/auth/store/auth.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { BookingDetail, BookingStatus, VnpayPaymentResultResponse } from "@/entities/bookings";
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export function useAdminBookingDetail(id: string) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
@@ -73,6 +75,7 @@ export function useAdminVehicleDetail(vehicleId: string, enabled: boolean) {
   return useQuery<AdminVehicleDetail, ApiErrorResponse>({
     queryKey: ["admin-vehicle-detail", vehicleId],
     queryFn: () => getAdminVehicleDetail(vehicleId),
-    enabled: isAuthorized && enabled && Boolean(vehicleId),
+    enabled: isAuthorized && enabled && UUID_PATTERN.test(vehicleId),
+    staleTime: 60_000,
   });
 }

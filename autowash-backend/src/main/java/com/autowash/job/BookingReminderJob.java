@@ -39,14 +39,20 @@ public class BookingReminderJob {
         this.bookingEmailDeliveryService = bookingEmailDeliveryService;
     }
 
-    @Scheduled(cron = "*/15 * * * * *") // Temporary: run every 15s for testing
+    @Scheduled(cron = "${autowash.jobs.booking-reminder.cron:0 0 * * * *}")
     @Transactional
     public void sendReminders() {
-        LOGGER.info("Starting booking reminder job...");
         Instant from = Instant.now().plus(23, ChronoUnit.HOURS);
         Instant to   = Instant.now().plus(24, ChronoUnit.HOURS);
         List<Booking> upcoming = bookingRepository
             .findByScheduledAtBetweenAndStatusInAndReminderSentFalse(from, to, List.of(BookingStatus.PENDING, BookingStatus.CONFIRMED));
+
+        if (upcoming.isEmpty()) {
+            LOGGER.debug("Booking reminder job found no upcoming bookings.");
+            return;
+        }
+
+        LOGGER.info("Booking reminder job found {} upcoming booking(s).", upcoming.size());
         
         for (Booking booking : upcoming) {
             // 1. In-app notification
