@@ -224,10 +224,10 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("select count(b) from Booking b where b.status = :status")
     long countByStatusEnum(@Param("status") BookingStatus status);
 
-    @Query("select coalesce(sum(b.pricing.finalAmount), 0) from Booking b where b.status = 'COMPLETED'")
+    @Query("select coalesce(sum(b.pricing.finalAmount), 0) from Booking b where b.status = com.autowash.entity.enums.BookingStatus.COMPLETED")
     long sumTotalRevenue();
 
-    @Query("select count(b) from Booking b join b.details d where b.status = 'COMPLETED' and d.itemType = 'COMBO'")
+    @Query("select count(b) from Booking b join b.details d where b.status = com.autowash.entity.enums.BookingStatus.COMPLETED and d.itemType = com.autowash.entity.enums.BookingItemType.COMBO")
     long countCompletedComboBookings();
 
     // Booking trend: count per day
@@ -258,7 +258,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("""
             select b.customer.id, max(b.createdAt)
             from Booking b
-            where b.status = 'NO_SHOW'
+            where b.status = com.autowash.entity.enums.BookingStatus.NO_SHOW
             group by b.customer.id
             """)
     List<Object[]> findLastNoShowDateByCustomer();
@@ -390,13 +390,13 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("SELECT b.scheduledAt FROM Booking b WHERE b.scheduledAt >= :from")
     List<Instant> findScheduledAtByScheduledAtAfter(@Param("from") Instant from);
 
-    @Query("SELECT bd.refId, COUNT(bd.id) FROM BookingDetail bd WHERE bd.booking.status != 'CANCELLED' GROUP BY bd.refId ORDER BY COUNT(bd.id) DESC")
+    @Query("SELECT bd.refId, COUNT(bd.id) FROM BookingDetail bd WHERE bd.booking.status != com.autowash.entity.enums.BookingStatus.CANCELLED GROUP BY bd.refId ORDER BY COUNT(bd.id) DESC")
     List<Object[]> findTopServiceIds(Pageable pageable);
 
-    @Query("SELECT COUNT(b.id) FROM Booking b WHERE b.status = 'COMPLETED' GROUP BY b.customer.id HAVING COUNT(b.id) > 1")
+    @Query("SELECT COUNT(b.id) FROM Booking b WHERE b.status = com.autowash.entity.enums.BookingStatus.COMPLETED GROUP BY b.customer.id HAVING COUNT(b.id) > 1")
     List<Long> findReturningCustomerCounts();
 
-    @Query("SELECT b.customer.id, COUNT(b.id) FROM Booking b WHERE b.status = 'NO_SHOW' GROUP BY b.customer.id ORDER BY COUNT(b.id) DESC")
+    @Query("SELECT b.customer.id, COUNT(b.id) FROM Booking b WHERE b.status = com.autowash.entity.enums.BookingStatus.NO_SHOW GROUP BY b.customer.id ORDER BY COUNT(b.id) DESC")
     List<Object[]> findTopNoShowCustomers(Pageable pageable);
 
     @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
