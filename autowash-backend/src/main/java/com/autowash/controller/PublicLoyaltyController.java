@@ -25,8 +25,9 @@ public class PublicLoyaltyController {
 
     @GetMapping
     @Operation(summary = "List all active tier voucher offers for public display")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ApiResponse<List<TierVoucherOfferResponse>> listOffers() {
-        List<TierVoucherOfferResponse> offers = tierVoucherOfferRepository.findAll()
+        List<TierVoucherOfferResponse> offers = tierVoucherOfferRepository.findAllWithDiscountAndMinTier()
                 .stream()
                 .filter(offer -> offer.getDiscount().getStatus() == ActiveStatus.ACTIVE)
                 .map(this::mapToOfferResponse)

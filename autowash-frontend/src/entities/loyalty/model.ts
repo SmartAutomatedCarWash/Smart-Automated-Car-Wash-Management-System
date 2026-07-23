@@ -8,6 +8,7 @@ export type LoyaltyAccount = {
   availablePoints: number;
   lifetimePoints: number;
   completedWashCount: number;
+  totalPaid?: number;
 };
 
 export type LoyaltyTransactionType =
@@ -49,7 +50,7 @@ export type TierVoucherOffer = {
   title: string;
   minTier: LoyaltyTier;
   pointsCost: number;
-  discountValue: number;
+  voucherValue: number;
   accent: "sky" | "violet" | "amber" | "rose" | "fuchsia";
   badge: string;
 };

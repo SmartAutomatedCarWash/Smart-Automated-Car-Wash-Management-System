@@ -18,6 +18,10 @@ export type CartItem = {
   categoryName?: string;
 };
 
+export type CartCheckoutSnapshotItem = Pick<CartItem, "type" | "itemId" | "name" | "price" | "quantity" | "durationMinutes" | "description" | "categoryName">;
+
+const CART_CHECKOUT_SNAPSHOT_KEY = "autowash-cart-checkout-snapshot";
+
 type CartState = {
   items: CartItem[];
 };
@@ -121,4 +125,27 @@ export function clearCustomerCart() {
 
 export function isItemInCart(itemId: string, type: CartItemType) {
   return cartStore.getState().hasItem(itemId, type);
+}
+
+export function setCartCheckoutSnapshot(items: CartCheckoutSnapshotItem[]) {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(CART_CHECKOUT_SNAPSHOT_KEY, JSON.stringify(items));
+}
+
+export function getCartCheckoutSnapshot(): CartCheckoutSnapshotItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = sessionStorage.getItem(CART_CHECKOUT_SNAPSHOT_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item) => item && item.type && item.itemId && item.name && typeof item.price === "number" && typeof item.quantity === "number");
+  } catch {
+    return [];
+  }
+}
+
+export function clearCartCheckoutSnapshot() {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(CART_CHECKOUT_SNAPSHOT_KEY);
 }

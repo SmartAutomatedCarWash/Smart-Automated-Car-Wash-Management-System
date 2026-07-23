@@ -334,7 +334,7 @@ let sessions: OperationsQueueSession[] = [
 ];
 
 export function isManagerDemoToken(token: string | null) {
-  return token === "mock-token-manager" || token === "mock-token-staff";
+  return token === "mock-token-manager" || token === "mock-token-staff" || token === "mock-token-admin";
 }
 
 export async function getDemoOperationsQueue(): Promise<OperationsQueue> {
@@ -531,3 +531,5 @@ function getStatusLabel(status: WashSessionStatus) {
   };
   return labels[status];
 }
+
+export async function transferDemoWashSession(sessionId: string, toStaffId: string, reason?: string): Promise<any> { return { message: 'Session transferred' }; }

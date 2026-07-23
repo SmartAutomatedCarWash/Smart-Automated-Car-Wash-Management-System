@@ -89,6 +89,15 @@ export type CustomerCombo = {
   lastUsedAt: string | null;
 };
 
+export type CustomerComboPaymentStatus = {
+  transactionRef: string;
+  paymentStatus: string;
+  comboStatus: string;
+  comboCount: number;
+  amount: number;
+  paidAt: string | null;
+};
+
 export type DiscountValidationRequest = {
   discountCode: string;
   packageId?: string;
@@ -364,6 +373,7 @@ export type CancelBookingResponse = {
 
 export type PurchaseCustomerComboRequest = {
   comboId: string;
+  comboIds?: string[];
   paymentMethod: PaymentMethod;
 };
 
@@ -374,6 +384,17 @@ export type PurchaseCustomerComboResponse = {
   amount: number;
   paymentMethod: PaymentMethod;
   paymentStatus: string;
+  payment?: {
+    method: string;
+    status: string;
+    transactionId: string | null;
+    paidAt: string | null;
+    qrUrl: string | null;
+    bankCode: string | null;
+    accountNumber: string | null;
+    accountName: string | null;
+    transferDescription: string | null;
+  } | null;
   totalUsages: number;
   remainingUsages: number;
   activatedAt: string;

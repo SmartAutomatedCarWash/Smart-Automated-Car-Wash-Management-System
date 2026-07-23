@@ -43,7 +43,7 @@ export function AdminSessionHistoryReviews() {
 
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [period, setPeriod] = useState<PeriodFilter>("7DAYS");
+  const [period, setPeriod] = useState<PeriodFilter>("ALL");
   const [staffId, setStaffId] = useState<string>("ALL");
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("ALL");
   const [sortMode, setSortMode] = useState<SortMode>("COMPLETED_DESC");

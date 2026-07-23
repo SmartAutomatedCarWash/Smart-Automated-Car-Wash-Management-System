@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -100,6 +100,12 @@ const FOCUS_FILTERS: Array<{ value: FocusFilter; label: string }> = [
   { value: "UNASSIGNED", label: "Unassigned" },
 ];
 
+const BAY_FILTERS: Array<{ value: string; label: string }> = [
+  { value: "ALL", label: "All bays" },
+  { value: "Assigned", label: "Assigned" },
+  { value: "Open", label: "Open" },
+];
+
 const BOARD_COLUMNS: Array<{ stage: BoardStage; title: string; tint: string; rail: string }> = [
   { stage: "WAITING_CUSTOMER", title: "Waiting customer", tint: "bg-blue-50/45", rail: "border-l-blue-500" },
   { stage: "CHECKED_IN", title: "Checked in", tint: "bg-emerald-50/45", rail: "border-l-emerald-500" },
@@ -118,7 +124,15 @@ export function ManagerOperationsPage() {
   const [bayFilter, setBayFilter] = useState("ALL");
   const [staffFilter, setStaffFilter] = useState("ALL");
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("ALL");
-  const [selectedRowId, setSelectedRowId] = useState<string | null>("AUTO");
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const handleSelectRow = (id: string | null) => {
+    setSelectedRowId(id);
+    if (id !== null) {
+      setIsSidebarOpen(true);
+    }
+  };
   const [checkInPage, setCheckInPage] = useState(1);
   const [interventionPage, setInterventionPage] = useState(1);
 
@@ -189,14 +203,21 @@ export function ManagerOperationsPage() {
 
   const headerToolbar = useMemo(
     () => (
-      <div className="flex items-center">
+      <div className="flex items-center gap-2">
         <span className="inline-flex h-9 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 text-xs font-black text-rose-600">
           <AlertTriangle className="h-4 w-4" />
           {alertCount} alerts need action
         </span>
+        <Button
+          variant="outline"
+          className="h-9 text-xs font-black shadow-sm"
+          onClick={() => setIsSidebarOpen((prev) => !prev)}
+        >
+          {isSidebarOpen ? "Collapse panel" : "Expand panel"}
+        </Button>
       </div>
     ),
-    [alertCount],
+    [alertCount, isSidebarOpen],
   );
 
   useWorkspaceHeader({ toolbar: headerToolbar });
@@ -286,10 +307,10 @@ export function ManagerOperationsPage() {
 
   return (
     <WorkspacePage compact className="max-w-none bg-[#fbfdff] px-4 pb-5 pt-4 lg:px-5">
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_390px]">
+      <div className={`grid gap-4 ${isSidebarOpen ? "xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_390px]" : "grid-cols-1"}`}>
         <main className="min-w-0 space-y-3">
           <section className="rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm">
-            <div className="grid gap-2 lg:grid-cols-[minmax(250px,1fr)_132px_168px_auto]">
+            <div className="grid items-start gap-2 lg:grid-cols-[minmax(250px,1fr)_132px_168px_auto]">
               <label className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
@@ -299,7 +320,12 @@ export function ManagerOperationsPage() {
                   className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-2 focus:ring-cyan-100"
                 />
               </label>
-              <SelectBox value={bayFilter} onChange={setBayFilter} options={["ALL"]} labels={{ ALL: "All bays" }} />
+              <SelectBox
+                value={bayFilter}
+                onChange={setBayFilter}
+                options={BAY_FILTERS.map((item) => item.value)}
+                labels={Object.fromEntries(BAY_FILTERS.map((item) => [item.value, item.label]))}
+              />
               <SelectBox value={staffFilter} onChange={setStaffFilter} options={["ALL", ...staffOptions.map((staff) => staff.staffId)]} labels={{ ALL: "All staff", ...Object.fromEntries(staffOptions.map((staff) => [staff.staffId, staff.staffName])) }} />
               <div className="flex flex-wrap gap-2">
                 {FOCUS_FILTERS.map((item) => (
@@ -333,7 +359,7 @@ export function ManagerOperationsPage() {
                     row={row}
                     index={(safeCheckInPage - 1) * TOP_PANEL_PAGE_SIZE + index}
                     loading={isActionLoading(row, createMutation.variables, checkInMutation.variables, createMutation.isPending, checkInMutation.isPending)}
-                    onSelect={() => setSelectedRowId(row.id)}
+                    onSelect={() => handleSelectRow(row.id)}
                     onAction={() => runPrimaryAction(row)}
                   />
                 ))}
@@ -363,7 +389,7 @@ export function ManagerOperationsPage() {
                   <InterventionRow
                     key={`${safeInterventionPage}-${intervention.id}`}
                     intervention={intervention}
-                    onSelect={() => setSelectedRowId(intervention.rowId)}
+                    onSelect={() => handleSelectRow(intervention.rowId)}
                     onAction={() => {
                       const target = rowsForSelectedDate.find((row) => row.id === intervention.rowId);
                       if (target) runPrimaryAction(target);
@@ -430,7 +456,7 @@ export function ManagerOperationsPage() {
                             selected={selectedRow?.id === row.id}
                             rail={column.rail}
                             loading={isMutatingRow(row, createMutation, checkInMutation, startMutation, completeMutation)}
-                            onSelect={() => setSelectedRowId(row.id)}
+                            onSelect={() => handleSelectRow(row.id)}
                             onAction={() => runPrimaryAction(row)}
                           />
                         ))}
@@ -446,16 +472,18 @@ export function ManagerOperationsPage() {
           </Card>
         </main>
 
-        <SessionDetailPanel
-          row={selectedRow}
-          staffOptions={staffOptions}
-          staffWorkload={staffWorkload}
-          transferLoading={transferMutation.isPending}
-          onClose={() => setSelectedRowId(null)}
-          onPrimary={() => selectedRow && runPrimaryAction(selectedRow)}
-          onTransfer={transferSelectedRow}
-          onCancel={() => selectedRow && requestCancel(selectedRow, cancelMutation.mutate)}
-        />
+        {isSidebarOpen ? (
+          <SessionDetailPanel
+            row={selectedRow}
+            staffOptions={staffOptions}
+            staffWorkload={staffWorkload}
+            transferLoading={transferMutation.isPending}
+            onClose={() => setIsSidebarOpen(false)}
+            onPrimary={() => selectedRow && runPrimaryAction(selectedRow)}
+            onTransfer={transferSelectedRow}
+            onCancel={() => selectedRow && requestCancel(selectedRow, cancelMutation.mutate)}
+          />
+        ) : null}
       </div>
     </WorkspacePage>
   );
@@ -626,7 +654,7 @@ function PanelPagination({
           onClick={onNext}
           disabled={page >= pageCount}
           className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label="Page sau"
+          aria-label="Next page"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -1196,7 +1224,12 @@ function getPrimaryAction(row: OperationRow) {
 }
 
 function getServiceName(packageId: string | null) {
-  return packageId ?? "Selected package";
+  const names: Record<string, string> = {
+    "premium-wash": "Premium Wash",
+    "interior-care": "Interior Care",
+    "quick-wash": "Quick Wash",
+  };
+  return packageId ? names[packageId] ?? "Selected package" : "Selected package";
 }
 
 function requestCancel(row: OperationRow, mutate: (variables: { sessionId: string; reason: string }) => void) {
@@ -1352,4 +1385,6 @@ function formatClockTime(value: string) {
     minute: "2-digit",
   });
 }
+
+
 

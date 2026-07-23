@@ -19,7 +19,7 @@ import { Card, CardContent } from "@/shared/ui/ui/card";
 import { Badge } from "@/shared/ui/ui/badge";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
-import { useCustomerBookings, useActiveCustomerCombos } from "@/features/bookings/hooks/use-bookings";
+import { useCustomerBookings } from "@/features/bookings/hooks/use-bookings";
 import { cn } from "@/shared/lib/utils";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import type { BookingListItem } from "@/entities/bookings";
@@ -283,14 +283,10 @@ export function CustomerBookingListPage() {
   const t = (vi: string, en: string) => translate(language, vi, en);
 
   const bookingsQuery = useCustomerBookings({ limit: 50 });
-  const combosQuery = useActiveCustomerCombos();
-
   const activeBookings = useMemo(() => {
     const items = bookingsQuery.data?.items ?? [];
     return items.filter((booking) => ACTIVE_STATUSES.has(booking.status));
   }, [bookingsQuery.data]);
-
-  const ownedCombos = combosQuery.data ?? [];
 
   return (
     <div className="min-h-[calc(100vh-72px)] bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_30%),linear-gradient(180deg,#f8fbff,#fff)] px-4 py-6 sm:px-6 lg:px-8">
@@ -329,47 +325,6 @@ export function CustomerBookingListPage() {
             </div>
           )}
         </section>
-
-        {ownedCombos.length > 0 ? (
-          <section className="space-y-3">
-            <div>
-              <h2 className="flex items-center gap-2 text-base font-black text-slate-900">
-                <Sparkles className="h-4 w-4 text-violet-500" />
-                {t("Combo dang so huu", "Active combos")}
-              </h2>
-              <p className="text-xs text-slate-500">{t("Cac goi combo ban da mua va con hieu luc", "Purchased combo packages still valid")}</p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {ownedCombos.map((combo) => (
-                <div key={combo.customerComboId} className="space-y-2 rounded-2xl border border-violet-200/80 bg-gradient-to-br from-violet-50/60 to-white p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-black text-slate-900">{combo.comboName}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        {t("Con lai", "Remaining")}:{" "}
-                        <span className="font-bold text-violet-700">{combo.remainingUsages}</span>/{combo.totalUsages}{" "}
-                        {t("luot", "uses")}
-                      </p>
-                    </div>
-                    <Badge variant="outline" className="rounded-full border-violet-200 bg-violet-50 text-[10px] text-violet-700">
-                      {t("Dang dung", "Active")}
-                    </Badge>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-violet-500 to-purple-400 transition-all"
-                      style={{ width: `${(combo.remainingUsages / combo.totalUsages) * 100}%` }}
-                    />
-                  </div>
-                  <p className="text-[10px] text-slate-400">
-                    {t("Het han", "Expires")}:{" "}
-                    {new Date(combo.expiresAt).toLocaleDateString(language === "vi" ? "vi-VN" : "en-GB")}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-        ) : null}
 
         <div className="flex justify-center">
           <Button asChild className="rounded-full px-8">

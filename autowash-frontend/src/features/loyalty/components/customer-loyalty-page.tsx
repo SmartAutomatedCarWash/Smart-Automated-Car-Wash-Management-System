@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -30,6 +30,7 @@ import {
 import { Input } from "@/shared/ui/ui/input";
 import { Label } from "@/shared/ui/ui/label";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 import {
   buildLoyaltySummary,
   formatLoyaltyPoints,
@@ -48,6 +49,7 @@ import { cn } from "@/shared/lib/utils";
 import type { RedeemPointsResponse, TierVoucherOffer } from "@/entities/loyalty";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { generateTierMetalStyle, generateTierBadgeStyle } from "@/shared/lib/tier-styles";
+import { canRedeemTierOffer } from "@/features/loyalty/lib/customer-loyalty";
 
 type VoucherOfferState = TierVoucherOffer & {
   eligible: boolean;
@@ -59,6 +61,7 @@ const TIER_ORDER: readonly string[] = ["BRONZE", "SILVER", "GOLD", "PLATINUM", "
 
 export function CustomerLoyaltyPageContent() {
   const { language } = useLanguageStore();
+  const currentUserTier = useAuthStore((state) => state.user?.tier ?? "MEMBER");
   const getErrorMessage = useErrorMessage();
   const accountQuery = useCustomerLoyaltyAccount();
   const tiersQuery = usePublicTierConfigs();
@@ -73,22 +76,29 @@ export function CustomerLoyaltyPageContent() {
   const [exchangeFilter, setExchangeFilter] = useState<"all" | "available" | "exclusive">("all");
 
   const summary = useMemo(
-    () =>
-      accountQuery.data && tiersQuery.data && offersQuery.data
-        ? buildLoyaltySummary(accountQuery.data, tiersQuery.data, offersQuery.data)
-        : null,
-    [accountQuery.data, tiersQuery.data, offersQuery.data],
+    () => (accountQuery.data && tiersQuery.data ? buildLoyaltySummary(accountQuery.data, tiersQuery.data) : null),
+    [accountQuery.data, tiersQuery.data],
   );
 
+  const voucherOffers = useMemo(() => {
+    if (!tiersQuery.data || !offersQuery.data) return [];
+    return offersQuery.data.map((offer) => ({
+      ...offer,
+      voucherValue: normalizeMoneyValue(offer.voucherValue),
+      eligible: canRedeemTierOffer((summary?.tier ?? currentUserTier) as any, offer, tiersQuery.data),
+      affordable: (summary?.availablePoints ?? 0) >= offer.pointsCost,
+    }));
+  }, [currentUserTier, offersQuery.data, summary?.availablePoints, summary?.tier, tiersQuery.data]);
+
   const currentTierConfig = useMemo(
-    () => tiersQuery.data?.find((t) => t.tier === summary?.tier),
-    [tiersQuery.data, summary?.tier]
+    () => tiersQuery.data?.find((t) => t.tier === (summary?.tier ?? currentUserTier)),
+    [currentUserTier, summary?.tier, tiersQuery.data]
   );
 
   const locale = language === "vi" ? "vi-VN" : "en-US";
 
   const handleRedeem = () => {
-    if (!selectedOffer || !summary) {
+    if (!selectedOffer) {
       return;
     }
 
@@ -106,7 +116,7 @@ export function CustomerLoyaltyPageContent() {
 
 
 
-  if (accountQuery.isLoading || tiersQuery.isLoading || offersQuery.isLoading) {
+  if (tiersQuery.isLoading || offersQuery.isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -114,21 +124,17 @@ export function CustomerLoyaltyPageContent() {
     );
   }
 
-  if (accountQuery.isError || tiersQuery.isError || offersQuery.isError) {
+  if (tiersQuery.isError || offersQuery.isError) {
     return (
       <div className="px-4 py-6 sm:px-6 lg:px-8">
         <Card className="mx-auto max-w-3xl rounded-lg border-rose-200 bg-white">
           <CardHeader>
-            <CardTitle>{translate(language, "Không thể tải tài khoản tích điểm", "Unable to load loyalty account")}</CardTitle>
-            <CardDescription>{getErrorMessage(accountQuery.error)}</CardDescription>
+            <CardTitle>{translate(language, "KhÃ´ng thá»ƒ táº£i tÃ i khoáº£n tÃ­ch Ä‘iá»ƒm", "Unable to load loyalty account")}</CardTitle>
+            <CardDescription>{getErrorMessage(tiersQuery.error || offersQuery.error)}</CardDescription>
           </CardHeader>
         </Card>
       </div>
     );
-  }
-
-  if (!summary) {
-    return null;
   }
   const fallbackHex: Record<string, string> = {
     BRONZE: "#B07D4B",
@@ -137,13 +143,20 @@ export function CustomerLoyaltyPageContent() {
     PLATINUM: "#64748B",
     DIAMOND: "#A855F7",
   };
-  const currentHex = currentTierConfig?.imageUrl || fallbackHex[summary.tier] || undefined;
+  const activeTier = summary?.tier ?? (currentUserTier as string);
+  const currentHex = currentTierConfig?.imageUrl || fallbackHex[activeTier] || undefined;
   const tierMetal = generateTierMetalStyle(currentHex);
 
-  const currentTierIndex = TIER_ORDER.indexOf(summary.tier);
-  const selectedRemainingPoints = selectedOffer
-    ? Math.max(summary.availablePoints - selectedOffer.pointsCost, 0)
-    : summary.availablePoints;
+  const currentTierIndex = TIER_ORDER.indexOf(activeTier);
+  const displayedPoints = summary?.availablePoints ?? 0;
+  const displayedLifetimePoints = summary?.lifetimePoints ?? 0;
+  const selectedRemainingPoints = selectedOffer ? Math.max(displayedPoints - selectedOffer.pointsCost, 0) : displayedPoints;
+  const hasAccountError = accountQuery.isError;
+  const displayedProgress = summary?.progress ?? {
+    nextTier: null,
+    pointsToNextTier: 0,
+    progressPercent: 0,
+  };
 
 
 
@@ -161,14 +174,24 @@ export function CustomerLoyaltyPageContent() {
             </div>
             <div>
               <div className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                {translate(language, "Điểm khả dụng", "Available points")}
+                {translate(language, "Äiá»ƒm kháº£ dá»¥ng", "Available points")}
               </div>
-              <div className="text-xl font-black text-slate-950">
-                {summary.availablePoints.toLocaleString(locale)} pts
+                <div className="text-xl font-black text-slate-950">
+                {displayedPoints.toLocaleString(locale)} pts
               </div>
             </div>
           </div>
         </div>
+
+        {hasAccountError ? (
+          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {translate(
+              language,
+              "KhÃ´ng táº£i Ä‘Æ°á»£c tÃ i khoáº£n tÃ­ch Ä‘iá»ƒm, nhÆ°ng váº«n cÃ³ thá»ƒ xem voucher theo tier hiá»‡n táº¡i.",
+              "Failed to load loyalty account, but vouchers are still available for the current tier.",
+            )}
+          </div>
+        ) : null}
 
         <section className="relative w-full max-w-5xl mx-auto mb-10 mt-2">
 
@@ -183,13 +206,13 @@ export function CustomerLoyaltyPageContent() {
             <div className="relative z-10 flex items-start justify-between">
               <div className="space-y-6">
                 <div className="text-xs font-black uppercase tracking-[0.2em]" style={{ color: tierMetal.softText }}>
-                  {translate(language, "Tiến trình nâng hạng", "Lifetime tier progress")}
+                  {translate(language, "Tiáº¿n trÃ¬nh nÃ¢ng háº¡ng", "Lifetime tier progress")}
                 </div>
                 <div className="text-3xl sm:text-4xl font-black tracking-tight" style={{ color: tierMetal.text }}>
-                  {summary.progress.nextTier ? (
-                    `${summary.lifetimePoints.toLocaleString(locale)} / ${(summary.lifetimePoints + summary.progress.pointsToNextTier).toLocaleString(locale)} lifetime pts`
+                  {displayedProgress.nextTier ? (
+                    `${displayedLifetimePoints.toLocaleString(locale)} / ${(displayedLifetimePoints + displayedProgress.pointsToNextTier).toLocaleString(locale)} lifetime pts`
                   ) : (
-                    `${summary.lifetimePoints.toLocaleString(locale)} lifetime pts`
+                    `${displayedLifetimePoints.toLocaleString(locale)} lifetime pts`
                   )}
                 </div>
 
@@ -200,7 +223,7 @@ export function CustomerLoyaltyPageContent() {
                       <Sparkles className="h-5 w-5" />
                       {translate(
                         language, 
-                        `Tích lũy ${currentTierConfig.pointMultiplier}x điểm thưởng`, 
+                        `TÃ­ch lÅ©y ${currentTierConfig.pointMultiplier}x Ä‘iá»ƒm thÆ°á»Ÿng`, 
                         `${currentTierConfig.pointMultiplier}x Points Multiplier`
                       )}
                     </div>
@@ -209,11 +232,11 @@ export function CustomerLoyaltyPageContent() {
                     <div className="flex items-center gap-1.5 rounded-full bg-[#007A78]/10 px-3 py-1">
                       <ShieldCheck className="h-3.5 w-3.5 text-[#007A78]" />
                       <span className="text-xs font-semibold text-[#007A78]">
-                        {translate(language, "Check-in Ưu tiên: ", "Priority Check-in: ")}
+                        {translate(language, "Check-in Æ¯u tiÃªn: ", "Priority Check-in: ")}
                         {currentTierConfig.priorityScore === 30 ? translate(language, "Cao", "High") : 
-                         currentTierConfig.priorityScore === 20 ? translate(language, "Trung bình", "Medium") : 
-                         currentTierConfig.priorityScore === 10 ? translate(language, "Bình thường", "Normal") : 
-                         translate(language, "Không", "None")}
+                         currentTierConfig.priorityScore === 20 ? translate(language, "Trung bÃ¬nh", "Medium") : 
+                         currentTierConfig.priorityScore === 10 ? translate(language, "BÃ¬nh thÆ°á»ng", "Normal") : 
+                         translate(language, "KhÃ´ng", "None")}
                       </span>
                     </div>
                   )}</div>
@@ -224,24 +247,24 @@ export function CustomerLoyaltyPageContent() {
                   <Crown className="h-8 w-8" />
                 </div>
                 <div className="rounded-full border bg-white/58 px-3 py-1 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur" style={{ borderColor: tierMetal.border, color: tierMetal.text }}>
-                  {summary.progress.nextTier
-                    ? `${formatTierLabel(summary.progress.nextTier, tiersQuery.data)} ${translate(language, "tiếp theo", "next")}`
-                    : translate(language, "Hạng tối đa", "Max tier")}
+                  {displayedProgress.nextTier
+                    ? `${formatTierLabel(displayedProgress.nextTier, tiersQuery.data)} ${translate(language, "tiáº¿p theo", "next")}`
+                    : translate(language, "Háº¡ng tá»‘i Ä‘a", "Max tier")}
                 </div>
               </div>
             </div>
 
-            {summary.progress.nextTier && (
+            {displayedProgress.nextTier && (
               <div className="relative z-10 mt-10 flex h-14 items-center overflow-hidden rounded-full bg-white p-1.5 shadow-[inset_0_2px_10px_rgba(0,0,0,0.06)]">
                 <div
                   className="relative h-full overflow-hidden rounded-full shadow-sm transition-all duration-1000 ease-out"
-                  style={{ width: `${summary.progress.progressPercent}%`, background: tierMetal.progress }}
+                  style={{ width: `${displayedProgress.progressPercent}%`, background: tierMetal.progress }}
                 >
                   <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.42),transparent_54%,rgba(0,0,0,0.08))]" />
                   <span className="absolute inset-0 -translate-x-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.30),transparent)] animate-[customerShimmer_3s_infinite_ease-in-out]" />
                 </div>
                 <div className={cn("pointer-events-none absolute inset-0 flex items-center justify-center text-sm font-bold tracking-tight text-slate-900")}>
-                  {summary.lifetimePoints.toLocaleString(locale)} / {(summary.lifetimePoints + summary.progress.pointsToNextTier).toLocaleString(locale)} lifetime pts
+                  {displayedLifetimePoints.toLocaleString(locale)} / {(displayedLifetimePoints + displayedProgress.pointsToNextTier).toLocaleString(locale)} lifetime pts
                 </div>
               </div>
             )}
@@ -252,7 +275,7 @@ export function CustomerLoyaltyPageContent() {
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5 text-emerald-900 shadow-sm animate-in fade-in zoom-in duration-500 flex items-center justify-center">
             <div className="flex items-center gap-2 text-base font-bold uppercase tracking-[0.14em] text-emerald-700">
               <CheckCircle2 className="h-5 w-5" />
-              {translate(language, "Đổi voucher thành công", "Redemption successful")}
+              {translate(language, "Äá»•i voucher thÃ nh cÃ´ng", "Redemption successful")}
             </div>
           </div>
         ) : null}
@@ -268,16 +291,16 @@ export function CustomerLoyaltyPageContent() {
           <div className="space-y-4">
             <div className="flex items-center justify-end gap-4 pb-4">
               <div className="shrink-0 hidden sm:flex">
-                <Button type="button" onClick={() => setActiveTab("history")} variant={activeTab === "history" ? "default" : "outline"} size="icon" className={cn("h-12 w-12 rounded-full shadow-sm transition-all", activeTab === "history" ? "bg-slate-900 text-white hover:bg-slate-800" : "bg-white text-slate-500 hover:text-slate-900 border-slate-200 hover:bg-slate-50")} title={translate(language, "Lịch sử điểm", "Point history")}>
+                <Button type="button" onClick={() => setActiveTab("history")} variant={activeTab === "history" ? "default" : "outline"} size="icon" className={cn("h-12 w-12 rounded-full shadow-sm transition-all", activeTab === "history" ? "bg-slate-900 text-white hover:bg-slate-800" : "bg-white text-slate-500 hover:text-slate-900 border-slate-200 hover:bg-slate-50")} title={translate(language, "Lá»‹ch sá»­ Ä‘iá»ƒm", "Point history")}>
                   <History className="h-6 w-6" />
                 </Button>
               </div>
               <div className="inline-flex items-center justify-center rounded-xl bg-slate-100 p-1.5 text-slate-500 w-full sm:w-auto shrink-0">
                 <Button type="button" variant="ghost" onClick={() => setActiveTab("exchange")} className={cn("h-11 px-8 text-base font-bold hover:bg-white rounded-lg transition-all", activeTab === "exchange" ? "bg-white text-slate-950 shadow-sm" : "hover:text-slate-950")}>
-                  {translate(language, "Đổi voucher", "Voucher exchange")}
+                  {translate(language, "Äá»•i voucher", "Voucher exchange")}
                 </Button>
                 <Button type="button" variant="ghost" onClick={() => setActiveTab("my-vouchers")} className={cn("h-11 px-8 text-base font-bold hover:bg-white rounded-lg transition-all", activeTab === "my-vouchers" ? "bg-white text-slate-950 shadow-sm" : "hover:text-slate-950")}>
-                  {translate(language, "Ví Voucher của tôi", "My Vouchers")}
+                  {translate(language, "VÃ­ Voucher cá»§a tÃ´i", "My Vouchers")}
                 </Button>
               </div>
             </div>
@@ -286,16 +309,16 @@ export function CustomerLoyaltyPageContent() {
               <div className="space-y-6">
                 <div className="flex flex-wrap items-center gap-2">
                   <Button variant={exchangeFilter === "all" ? "default" : "outline"} onClick={() => setExchangeFilter("all")} className={cn("rounded-full border-slate-200 transition-all font-semibold", exchangeFilter === "all" ? "bg-[#007A78] text-white hover:bg-[#00605E] border-transparent shadow-md" : "bg-white text-slate-600 hover:bg-slate-50")}>
-                    {translate(language, "Tất cả ưu đãi", "All Offers")}
+                    {translate(language, "Táº¥t cáº£ Æ°u Ä‘Ã£i", "All Offers")}
                   </Button>
                   <Button variant={exchangeFilter === "available" ? "default" : "outline"} onClick={() => setExchangeFilter("available")} className={cn("rounded-full border-slate-200 transition-all font-semibold", exchangeFilter === "available" ? "bg-[#007A78] text-white hover:bg-[#00605E] border-transparent shadow-md" : "bg-white text-slate-600 hover:bg-slate-50")}>
-                    {translate(language, "Khả dụng", "Available")}
+                    {translate(language, "Kháº£ dá»¥ng", "Available")}
                   </Button>
 
                 </div>
 
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                  {summary.voucherOffers
+                  {voucherOffers
                     .filter(offer => {
                       if (!offer.eligible) return false;
                       if (exchangeFilter === "all") return true;
@@ -309,7 +332,7 @@ export function CustomerLoyaltyPageContent() {
                         offer={offer}
                         locale={locale}
                         language={language}
-                        availablePoints={summary.availablePoints}
+                        availablePoints={displayedPoints}
                         isPending={redeemMutation.isPending}
                         onSelect={setSelectedOffer}
                         tierConfigs={tiersQuery.data}
@@ -329,7 +352,7 @@ export function CustomerLoyaltyPageContent() {
                   </div>
                 ) : !transactionsQuery.data || transactionsQuery.data.items.length === 0 ? (
                   <div className="rounded-xl border border-slate-200 bg-white px-4 py-12 text-center text-sm text-slate-600 shadow-sm">
-                    {translate(language, "Chưa có giao dịch điểm nào.", "No point transactions yet.")}
+                    {translate(language, "ChÆ°a cÃ³ giao dá»‹ch Ä‘iá»ƒm nÃ o.", "No point transactions yet.")}
                   </div>
                 ) : (
                   transactionsQuery.data.items.map((item) => (
@@ -358,13 +381,13 @@ export function CustomerLoyaltyPageContent() {
       <Dialog open={Boolean(selectedOffer)} onOpenChange={(open: boolean) => !open && setSelectedOffer(null)}>
         <DialogContent className="rounded-lg">
           <DialogHeader>
-            <DialogTitle>{translate(language, "Xác nhận đổi voucher?", "Confirm voucher redemption?")}</DialogTitle>
+            <DialogTitle>{translate(language, "XÃ¡c nháº­n Ä‘á»•i voucher?", "Confirm voucher redemption?")}</DialogTitle>
             <DialogDescription>
               {selectedOffer
                 ? translate(
                     language,
-                    `Bạn sẽ dùng ${selectedOffer.pointsCost.toLocaleString("vi-VN")} điểm để đổi ${selectedOffer.title}, trị giá ${selectedOffer.discountValue.toLocaleString("vi-VN")} VND.`,
-                    `You will spend ${selectedOffer.pointsCost.toLocaleString("en-US")} points to redeem ${selectedOffer.title}, worth ${selectedOffer.discountValue.toLocaleString("en-US")} VND.`,
+                    `Báº¡n sáº½ dÃ¹ng ${selectedOffer.pointsCost.toLocaleString("vi-VN")} Ä‘iá»ƒm Ä‘á»ƒ Ä‘á»•i ${selectedOffer.title}, trá»‹ giÃ¡ ${selectedOffer.voucherValue.toLocaleString("vi-VN")} VND.`,
+                    `You will spend ${selectedOffer.pointsCost.toLocaleString("en-US")} points to redeem ${selectedOffer.title}, worth ${selectedOffer.voucherValue.toLocaleString("en-US")} VND.`,
                   )
                 : ""}
             </DialogDescription>
@@ -372,19 +395,19 @@ export function CustomerLoyaltyPageContent() {
 
           {selectedOffer ? (
             <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
-              <RuleRow label={translate(language, "Điểm khả dụng", "Available points")} value={`${summary.availablePoints.toLocaleString(locale)} pts`} />
-              <RuleRow label={translate(language, "Điểm sử dụng", "Points used")} value={`${selectedOffer.pointsCost.toLocaleString(locale)} pts`} />
-              <RuleRow label={translate(language, "Số dư sau đổi", "Balance after redemption")} value={`${selectedRemainingPoints.toLocaleString(locale)} pts`} />
+              <RuleRow label={translate(language, "Äiá»ƒm kháº£ dá»¥ng", "Available points")} value={`${displayedPoints.toLocaleString(locale)} pts`} />
+              <RuleRow label={translate(language, "Äiá»ƒm sá»­ dá»¥ng", "Points used")} value={`${selectedOffer.pointsCost.toLocaleString(locale)} pts`} />
+              <RuleRow label={translate(language, "Sá»‘ dÆ° sau Ä‘á»•i", "Balance after redemption")} value={`${selectedRemainingPoints.toLocaleString(locale)} pts`} />
             </div>
           ) : null}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setSelectedOffer(null)} disabled={redeemMutation.isPending}>
-              {translate(language, "Huỷ", "Cancel")}
+              {translate(language, "Huá»·", "Cancel")}
             </Button>
             <Button type="button" onClick={handleRedeem} disabled={redeemMutation.isPending} className="bg-[#007A78] text-white hover:bg-[#00605E]">
               {redeemMutation.isPending ? <Loader2 className="animate-spin" /> : <Gift />}
-              {translate(language, "Xác nhận đổi điểm", "Confirm redemption")}
+              {translate(language, "XÃ¡c nháº­n Ä‘á»•i Ä‘iá»ƒm", "Confirm redemption")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -457,13 +480,13 @@ function ExchangeVoucherCard({
       <div className="relative z-10 mt-5 flex-1">
         <h3 className="text-[17px] font-black text-slate-900 leading-tight">{offer.title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-700">
-          {offer.discountValue.toLocaleString(locale)} VND voucher {translate(language, "cho thành viên", "for")} <span className="font-bold" style={{ color: metal.text }}>{formatTierLabel(offer.minTier, tierConfigs)}</span> {translate(language, "trở lên", "and above")}.
+          {normalizeMoneyValue(offer.voucherValue).toLocaleString(locale)} VND voucher {translate(language, "cho thÃ nh viÃªn", "for")} <span className="font-bold" style={{ color: metal.text }}>{formatTierLabel(offer.minTier, tierConfigs)}</span> {translate(language, "trá»Ÿ lÃªn", "and above")}.
         </p>
       </div>
 
       <div className="relative z-10 mt-5 flex items-end justify-between gap-3 border-t border-black/5 pt-4">
         <div>
-          <div className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">{translate(language, "Chi phí", "Cost")}</div>
+          <div className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">{translate(language, "Chi phÃ­", "Cost")}</div>
           <div className="text-xl font-black text-slate-900">{offer.pointsCost} <span className="text-sm font-bold text-slate-600">pts</span></div>
         </div>
         <Button
@@ -480,10 +503,10 @@ function ExchangeVoucherCard({
           )}
         >
           {!offer.eligible
-            ? <span className="flex items-center gap-1.5"><Lock className="w-4 h-4" /> {translate(language, `Lên hạng ${formatTierLabel(offer.minTier)}`, `Reach ${formatTierLabel(offer.minTier)}`)}</span>
+            ? <span className="flex items-center gap-1.5"><Lock className="w-4 h-4" /> {translate(language, `LÃªn háº¡ng ${formatTierLabel(offer.minTier)}`, `Reach ${formatTierLabel(offer.minTier)}`)}</span>
             : !offer.affordable
-              ? translate(language, `Cần thêm ${offer.pointsCost - availablePoints} pts`, `Need ${offer.pointsCost - availablePoints} pts`)
-              : translate(language, "Đổi ngay", "Redeem")}
+              ? translate(language, `Cáº§n thÃªm ${offer.pointsCost - availablePoints} pts`, `Need ${offer.pointsCost - availablePoints} pts`)
+              : translate(language, "Äá»•i ngay", "Redeem")}
         </Button>
       </div>
     </div>
@@ -541,7 +564,7 @@ function MyVouchersList({ language, locale }: { language: string, locale: string
     return (
       <Card className="border-rose-200 bg-white">
         <CardHeader>
-          <CardTitle>{translate(language as any, "Không thể tải voucher", "Unable to load vouchers")}</CardTitle>
+          <CardTitle>{translate(language as any, "KhÃ´ng thá»ƒ táº£i voucher", "Unable to load vouchers")}</CardTitle>
           <CardDescription>{getErrorMessage(vouchersQuery.error)}</CardDescription>
         </CardHeader>
       </Card>
@@ -552,11 +575,11 @@ function MyVouchersList({ language, locale }: { language: string, locale: string
     return (
       <Card className="border-slate-200 bg-white">
         <CardHeader>
-          <CardTitle>{translate(language as any, "Chưa có voucher nào", "No vouchers available")}</CardTitle>
+          <CardTitle>{translate(language as any, "ChÆ°a cÃ³ voucher nÃ o", "No vouchers available")}</CardTitle>
           <CardDescription>
             {translate(
               language as any,
-              "Hiện chưa có voucher nào dành cho hạng thành viên của bạn.",
+              "Hiá»‡n chÆ°a cÃ³ voucher nÃ o dÃ nh cho háº¡ng thÃ nh viÃªn cá»§a báº¡n.",
               "There are no exclusive vouchers for your tier at the moment."
             )}
           </CardDescription>
@@ -580,13 +603,13 @@ function MyVouchersList({ language, locale }: { language: string, locale: string
           tier={
             voucher.applicableTierIds && voucher.applicableTierIds.length > 0
               ? voucher.applicableTierIds.map(t => formatTierLabel(t as any)).join(", ")
-              : translate(language as any, "Tất cả hạng", "All Tiers")
+              : translate(language as any, "Táº¥t cáº£ háº¡ng", "All Tiers")
           }
-          validUntil={voucher.endAt ? new Date(voucher.endAt).toLocaleDateString(locale) : "Không giới hạn"}
+          validUntil={voucher.endAt ? new Date(voucher.endAt).toLocaleDateString(locale) : "KhÃ´ng giá»›i háº¡n"}
           minOrder={
             voucher.minOrderAmount && voucher.minOrderAmount > 0
               ? `${voucher.minOrderAmount.toLocaleString(locale)} VND`
-              : translate(language as any, "Không yêu cầu", "None")
+              : translate(language as any, "KhÃ´ng yÃªu cáº§u", "None")
           }
         />
       )})}
@@ -595,4 +618,11 @@ function MyVouchersList({ language, locale }: { language: string, locale: string
 }
 
 
+
+
+
+function normalizeMoneyValue(value: unknown) {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 

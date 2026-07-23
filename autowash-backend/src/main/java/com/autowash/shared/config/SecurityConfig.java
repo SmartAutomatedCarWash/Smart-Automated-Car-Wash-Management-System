@@ -57,6 +57,7 @@ public class SecurityConfig {
                                 "/api/v1/packages/*",
                                 "/api/v1/combos/*",
                                 "/api/v1/settings/public",
+                                "/api/v1/public/**",
                                 "/uploads/**",
                                 "/v3/api-docs",
                                 "/v3/api-docs/**",

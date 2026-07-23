@@ -20,8 +20,8 @@ public class JwtServiceImpl implements JwtService {
     private final long accessTokenExpirationSeconds;
 
     public JwtServiceImpl(
-            @Value("${autowash.auth.jwt.secret}") String secret,
-            @Value("${autowash.auth.jwt.access-token-expiration-seconds}") long accessTokenExpirationSeconds
+            @Value("${autowash.auth.jwt.secret:${AUTOWASH_JWT_SECRET:autowash-secret-key-for-jwt-signing-2026}}") String secret,
+            @Value("${autowash.auth.jwt.access-token-expiration-seconds:${AUTOWASH_JWT_ACCESS_TTL:86400}}") long accessTokenExpirationSeconds
     ) {
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessTokenExpirationSeconds = accessTokenExpirationSeconds;

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 
 import { useEffect, useMemo, useState } from "react";
@@ -140,11 +140,11 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
   const isVoucherView = activeKind === "VOUCHER";
   const itemLabelPlural = isVoucherView
     ? translate(language, "voucher", "vouchers")
-    : translate(language, "khuyến mãi", "promotions");
+    : translate(language, "khuyáº¿n mÃ£i", "promotions");
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
   const activeMutationError = (createMutation.error ?? updateMutation.error) as ApiErrorResponse | null;
-  const clientErrors = useMemo(() => validatePromotionForm(form, language), [form, language]);
+  const clientErrors = useMemo(() => validatePromotionForm(form, language, isVoucherView), [form, language, isVoucherView]);
   const displayErrors = mergeFormErrors(clientErrors, activeMutationError, showValidation);
 
   const filteredPromotions = useMemo(
@@ -186,30 +186,30 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
 
   const summaryCards = [
     {
-      label: translate(language, "Tổng chiến dịch", "Total campaigns"),
+      label: translate(language, "Tá»•ng chiáº¿n dá»‹ch", "Total campaigns"),
       value: filteredPromotions.length,
-      description: translate(language, "Hiển thị trong chế độ xem hiện tại", "Visible in the current view"),
+      description: translate(language, "Hiá»ƒn thá»‹ trong cháº¿ Ä‘á»™ xem hiá»‡n táº¡i", "Visible in the current view"),
       icon: Layers3,
       tone: "from-slate-900 via-slate-800 to-slate-700 text-white shadow-slate-900/20",
     },
     {
-      label: translate(language, "Đang chạy", "Running now"),
+      label: translate(language, "Äang cháº¡y", "Running now"),
       value: runningPromotions.length,
-      description: translate(language, "Đang hoạt động và trong khoảng thời gian hiện tại", "Active and currently in date range"),
+      description: translate(language, "Äang hoáº¡t Ä‘á»™ng vÃ  trong khoáº£ng thá»i gian hiá»‡n táº¡i", "Active and currently in date range"),
       icon: Flame,
       tone: "from-orange-500 via-amber-500 to-yellow-400 text-white shadow-orange-500/25",
     },
     {
-      label: translate(language, "Đang hoạt động", "Active"),
+      label: translate(language, "Äang hoáº¡t Ä‘á»™ng", "Active"),
       value: activePromotions.length,
-      description: translate(language, "Sẵn sàng áp dụng cho khách hàng", "Ready to be applied by customers"),
+      description: translate(language, "Sáºµn sÃ ng Ã¡p dá»¥ng cho khÃ¡ch hÃ ng", "Ready to be applied by customers"),
       icon: BadgeCheck,
       tone: "from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-emerald-500/25",
     },
     {
-      label: translate(language, "Sắp kết thúc", "Ending soon"),
+      label: translate(language, "Sáº¯p káº¿t thÃºc", "Ending soon"),
       value: expiringSoonPromotions.length,
-      description: translate(language, "Cần xem xét nhanh trong tuần này", "Need a quick review this week"),
+      description: translate(language, "Cáº§n xem xÃ©t nhanh trong tuáº§n nÃ y", "Need a quick review this week"),
       icon: Clock3,
       tone: "from-rose-500 via-pink-500 to-fuchsia-500 text-white shadow-rose-500/25",
     },
@@ -250,15 +250,15 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
         await updateMutation.mutateAsync({ promotionId: editingPromotion.promotionId, payload });
         toast.success(
           isVoucherView
-            ? translate(language, "Đã cập nhật voucher.", "Voucher updated.")
-            : translate(language, "Đã cập nhật chương trình khuyến mãi.", "Promotion updated."),
+            ? translate(language, "ÄÃ£ cáº­p nháº­t voucher.", "Voucher updated.")
+            : translate(language, "ÄÃ£ cáº­p nháº­t chÆ°Æ¡ng trÃ¬nh khuyáº¿n mÃ£i.", "Promotion updated."),
         );
       } else {
         await createMutation.mutateAsync(payload);
         toast.success(
           isVoucherView
-            ? translate(language, "Đã tạo voucher.", "Voucher created.")
-            : translate(language, "Đã tạo chương trình khuyến mãi.", "Promotion created."),
+            ? translate(language, "ÄÃ£ táº¡o voucher.", "Voucher created.")
+            : translate(language, "ÄÃ£ táº¡o chÆ°Æ¡ng trÃ¬nh khuyáº¿n mÃ£i.", "Promotion created."),
         );
       }
       handleResetForm();
@@ -266,8 +266,8 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
     } catch {
       toast.error(
         isVoucherView
-          ? translate(language, "Không thể lưu voucher.", "Unable to save voucher.")
-          : translate(language, "Không thể lưu chương trình khuyến mãi.", "Unable to save promotion."),
+          ? translate(language, "KhÃ´ng thá»ƒ lÆ°u voucher.", "Unable to save voucher.")
+          : translate(language, "KhÃ´ng thá»ƒ lÆ°u chÆ°Æ¡ng trÃ¬nh khuyáº¿n mÃ£i.", "Unable to save promotion."),
       );
     }
   };
@@ -288,7 +288,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                   <h1 className="text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
                     {isVoucherView
                       ? translate(language, "Voucher", "Vouchers")
-                      : translate(language, "Khuyến mãi", "Promotions")}
+                      : translate(language, "Khuyáº¿n mÃ£i", "Promotions")}
                   </h1>
                   <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 shadow-sm">
                     <Button
@@ -337,8 +337,8 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
               >
                 <Plus className="mr-2 h-4 w-4" />
                 {isVoucherView
-                  ? translate(language, "Tạo voucher", "Create voucher")
-                  : translate(language, "Tạo khuyến mãi", "Create promotion")}
+                  ? translate(language, "Táº¡o voucher", "Create voucher")
+                  : translate(language, "Táº¡o khuyáº¿n mÃ£i", "Create promotion")}
               </Button>
               <Button
                 type="button"
@@ -348,7 +348,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                 disabled={promotionsQuery.isFetching}
               >
                 <RefreshCcw className={cn("mr-2 h-4 w-4", promotionsQuery.isFetching && "animate-spin")} />
-                {translate(language, "Tải lại", "Refresh")}
+                {translate(language, "Táº£i láº¡i", "Refresh")}
               </Button>
             </div>
           </div>
@@ -389,7 +389,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                 htmlFor="filter-name"
                 className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500"
               >
-                {translate(language, "Tìm kiếm chiến dịch", "Search campaign")}
+                {translate(language, "TÃ¬m kiáº¿m chiáº¿n dá»‹ch", "Search campaign")}
               </Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -399,8 +399,8 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                   onChange={(event) => setFilters((prev) => ({ ...prev, name: event.target.value }))}
                   placeholder={
                     isVoucherView
-                      ? translate(language, "Tìm theo tên voucher...", "Search by voucher name...")
-                      : translate(language, "Tìm theo tên khuyến mãi...", "Search by promotion name...")
+                      ? translate(language, "TÃ¬m theo tÃªn voucher...", "Search by voucher name...")
+                      : translate(language, "TÃ¬m theo tÃªn khuyáº¿n mÃ£i...", "Search by promotion name...")
                   }
                   className="h-11 rounded-2xl border-slate-200 bg-slate-50/80 pl-10 shadow-inner shadow-slate-100/70 focus:bg-white"
                 />
@@ -412,7 +412,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                 htmlFor="filter-status"
                 className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500"
               >
-                {translate(language, "Trạng thái", "Status")}
+                {translate(language, "Tráº¡ng thÃ¡i", "Status")}
               </Label>
               <Select
                 value={filters.status}
@@ -424,19 +424,19 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                   id="filter-status"
                   className="h-11 rounded-2xl border-slate-200 bg-slate-50/80 shadow-inner shadow-slate-100/70"
                 >
-                  <SelectValue placeholder={translate(language, "Tất cả trạng thái", "All status")} />
+                  <SelectValue placeholder={translate(language, "Táº¥t cáº£ tráº¡ng thÃ¡i", "All status")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">{translate(language, "Tất cả trạng thái", "All status")}</SelectItem>
-                  <SelectItem value="ACTIVE">{translate(language, "Đang hoạt động", "Active")}</SelectItem>
-                  <SelectItem value="INACTIVE">{translate(language, "Không hoạt động", "Inactive")}</SelectItem>
+                  <SelectItem value="ALL">{translate(language, "Táº¥t cáº£ tráº¡ng thÃ¡i", "All status")}</SelectItem>
+                  <SelectItem value="ACTIVE">{translate(language, "Äang hoáº¡t Ä‘á»™ng", "Active")}</SelectItem>
+                  <SelectItem value="INACTIVE">{translate(language, "KhÃ´ng hoáº¡t Ä‘á»™ng", "Inactive")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex-1 space-y-1.5">
               <Label className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                {translate(language, "Hoạt động vào ngày", "Active on date")}
+                {translate(language, "Hoáº¡t Ä‘á»™ng vÃ o ngÃ y", "Active on date")}
               </Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -448,7 +448,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filters.date ? formatFilterDate(filters.date, language) : translate(language, "Chọn ngày", "Pick a date")}
+                    {filters.date ? formatFilterDate(filters.date, language) : translate(language, "Chá»n ngÃ y", "Pick a date")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -479,7 +479,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                 className="h-11 rounded-full border-slate-200 bg-white px-4 font-semibold text-slate-600"
               >
                 <X className="mr-1.5 h-3.5 w-3.5" />
-                {translate(language, "Đặt lại", "Reset")}
+                {translate(language, "Äáº·t láº¡i", "Reset")}
               </Button>
             </div>
           </div>
@@ -499,16 +499,16 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
               <DialogTitle className="text-2xl font-black tracking-tight text-slate-950">
                 {isEditing
                   ? isVoucherView
-                    ? translate(language, "Chỉnh sửa voucher", "Edit voucher")
-                    : translate(language, "Chỉnh sửa khuyến mãi", "Edit promotion")
+                    ? translate(language, "Chá»‰nh sá»­a voucher", "Edit voucher")
+                    : translate(language, "Chá»‰nh sá»­a khuyáº¿n mÃ£i", "Edit promotion")
                   : isVoucherView
-                    ? translate(language, "Tạo voucher", "Create voucher")
-                    : translate(language, "Tạo khuyến mãi", "Create promotion")}
+                    ? translate(language, "Táº¡o voucher", "Create voucher")
+                    : translate(language, "Táº¡o khuyáº¿n mÃ£i", "Create promotion")}
               </DialogTitle>
               <DialogDescription className="text-sm leading-6 text-slate-500">
                 {translate(
                   language,
-                  "Thiết lập thông tin giảm giá, ngày áp dụng và đối tượng mục tiêu trước khi đăng.",
+                  "Thiáº¿t láº­p thÃ´ng tin giáº£m giÃ¡, ngÃ y Ã¡p dá»¥ng vÃ  Ä‘á»‘i tÆ°á»£ng má»¥c tiÃªu trÆ°á»›c khi Ä‘Äƒng.",
                   "Set discount details, active dates, and tier targeting before publishing.",
                 )}
               </DialogDescription>
@@ -518,8 +518,8 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                 <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   {isVoucherView
-                    ? translate(language, "Đang tải chi tiết voucher...", "Loading latest voucher details...")
-                    : translate(language, "Đang tải chi tiết khuyến mãi...", "Loading latest promotion details...")}
+                    ? translate(language, "Äang táº£i chi tiáº¿t voucher...", "Loading latest voucher details...")
+                    : translate(language, "Äang táº£i chi tiáº¿t khuyáº¿n mÃ£i...", "Loading latest promotion details...")}
                 </div>
               ) : null}
 
@@ -537,30 +537,42 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
 
               <div className="grid gap-5 rounded-[24px] border border-slate-100 bg-slate-50/75 p-5">
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                  {translate(language, "Thông tin cơ bản", "Basic Information")}
+                  {translate(language, "ThÃ´ng tin cÆ¡ báº£n", "Basic Information")}
                 </p>
-                <FormField label={translate(language, "Tên", "Name")} error={displayErrors.name}>
-                  <input type="hidden" value={form.pointMultiplier} />
-                  <Input
+                <FormField label={translate(language, "TÃªn", "Name")} error={displayErrors.name}>
+                                    <Input
                     value={form.name}
                     onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
                     placeholder={
                       isVoucherView
-                        ? translate(language, "Tên voucher", "Voucher name")
-                        : translate(language, "Tên chương trình khuyến mãi", "Promotion name")
+                        ? translate(language, "TÃªn voucher", "Voucher name")
+                        : translate(language, "TÃªn chÆ°Æ¡ng trÃ¬nh khuyáº¿n mÃ£i", "Promotion name")
                     }
                     className="h-11 rounded-2xl border-slate-200 bg-white"
                   />
                   <p className="text-xs text-slate-500">{promotionNameFormatMessage}</p>
                 </FormField>
+
+                {isVoucherView ? (
+                  <FormField label={translate(language, "Số điểm đổi voucher", "Voucher points")} error={displayErrors.pointMultiplier}>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={form.pointMultiplier}
+                      onChange={(event) => setForm((prev) => ({ ...prev, pointMultiplier: event.target.value }))}
+                      placeholder={translate(language, "Nhập số điểm cần đổi", "Enter redeem points")}
+                      className="h-11 rounded-2xl border-slate-200 bg-white"
+                    />
+                  </FormField>
+                ) : null}
               </div>
 
               <div className="grid gap-5 rounded-[24px] border border-slate-100 bg-slate-50/75 p-5">
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                  {translate(language, "Cài đặt giảm giá", "Discount Setup")}
+                  {translate(language, "CÃ i Ä‘áº·t giáº£m giÃ¡", "Discount Setup")}
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField label={translate(language, "Loại giảm giá", "Discount type")} error={displayErrors.discountType}>
+                  <FormField label={translate(language, "Loáº¡i giáº£m giÃ¡", "Discount type")} error={displayErrors.discountType}>
                     <select
                       className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
                       value={form.discountType}
@@ -572,21 +584,21 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                         }))
                       }
                     >
-                      <option value="NONE">{translate(language, "Không chọn", "None")}</option>
-                      <option value="PERCENT">{translate(language, "Phần trăm", "Percent")}</option>
-                      <option value="FIXED_AMOUNT">{translate(language, "Cố định", "Fixed")}</option>
+                      <option value="NONE">{translate(language, "KhÃ´ng chá»n", "None")}</option>
+                      <option value="PERCENT">{translate(language, "Pháº§n trÄƒm", "Percent")}</option>
+                      <option value="FIXED_AMOUNT">{translate(language, "Cá»‘ Ä‘á»‹nh", "Fixed")}</option>
                     </select>
                   </FormField>
 
                   {form.discountType !== "NONE" ? (
-                    <FormField label={translate(language, "Giá trị giảm giá", "Discount value")} error={displayErrors.discountValue}>
+                    <FormField label={translate(language, "GiÃ¡ trá»‹ giáº£m giÃ¡", "Discount value")} error={displayErrors.discountValue}>
                       {form.discountType === "PERCENT" ? (
                         <select
                           className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
                           value={form.discountValue}
                           onChange={(event) => setForm((prev) => ({ ...prev, discountValue: event.target.value }))}
                         >
-                          <option value="">{translate(language, "Chọn mức giảm", "Select discount")}</option>
+                          <option value="">{translate(language, "Chá»n má»©c giáº£m", "Select discount")}</option>
                           <option value="5">5%</option>
                           <option value="10">10%</option>
                           <option value="15">15%</option>
@@ -602,7 +614,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                           min={1}
                           value={form.discountValue}
                           onChange={(event) => setForm((prev) => ({ ...prev, discountValue: event.target.value }))}
-                          placeholder={translate(language, "Số tiền VND", "VND amount")}
+                          placeholder={translate(language, "Sá»‘ tiá»n VND", "VND amount")}
                           className="h-11 rounded-2xl border-slate-200 bg-white"
                         />
                       )}
@@ -613,10 +625,10 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
 
               <div className="grid gap-5 rounded-[24px] border border-slate-100 bg-slate-50/75 p-5">
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                  {translate(language, "Thời gian áp dụng", "Availability")}
+                  {translate(language, "Thá»i gian Ã¡p dá»¥ng", "Availability")}
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField label={translate(language, "Ngày bắt đầu", "Start date")} error={displayErrors.startDate}>
+                  <FormField label={translate(language, "NgÃ y báº¯t Ä‘áº§u", "Start date")} error={displayErrors.startDate}>
                     <Input
                       type="datetime-local"
                       value={form.startDate}
@@ -625,7 +637,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                     />
                   </FormField>
 
-                  <FormField label={translate(language, "Ngày kết thúc", "End date")} error={displayErrors.endDate}>
+                  <FormField label={translate(language, "NgÃ y káº¿t thÃºc", "End date")} error={displayErrors.endDate}>
                     <Input
                       type="datetime-local"
                       value={form.endDate}
@@ -638,9 +650,9 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
 
               <div className="grid gap-5 rounded-[24px] border border-slate-100 bg-slate-50/75 p-5">
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                  {translate(language, "Đối tượng mục tiêu", "Audience Targeting")}
+                  {translate(language, "Äá»‘i tÆ°á»£ng má»¥c tiÃªu", "Audience Targeting")}
                 </p>
-                <FormField label={translate(language, "Chế độ nhắm mục tiêu", "Targeting mode")} error={displayErrors.targetingMode}>
+                <FormField label={translate(language, "Cháº¿ Ä‘á»™ nháº¯m má»¥c tiÃªu", "Targeting mode")} error={displayErrors.targetingMode}>
                   <select
                     className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
                     value={form.targetingMode}
@@ -652,13 +664,13 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                       }))
                     }
                   >
-                    <option value="ALL_TIERS">{translate(language, "Tất cả các hạng", "All tiers")}</option>
-                    <option value="SELECTED_TIERS">{translate(language, "Hạng được chọn", "Selected tiers")}</option>
+                    <option value="ALL_TIERS">{translate(language, "Táº¥t cáº£ cÃ¡c háº¡ng", "All tiers")}</option>
+                    <option value="SELECTED_TIERS">{translate(language, "Háº¡ng Ä‘Æ°á»£c chá»n", "Selected tiers")}</option>
                   </select>
                 </FormField>
 
                 {form.targetingMode === "SELECTED_TIERS" ? (
-                  <FormField label={translate(language, "Các hạng được áp dụng", "Applicable tiers")} error={displayErrors.applicableTiers}>
+                  <FormField label={translate(language, "CÃ¡c háº¡ng Ä‘Æ°á»£c Ã¡p dá»¥ng", "Applicable tiers")} error={displayErrors.applicableTiers}>
                     <div className="grid grid-cols-2 gap-2">
                       {tierOptions.map((tier) => (
                         <TierSelectionOption
@@ -680,25 +692,25 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                 ) : null}
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField label={translate(language, "Số lần dùng tối đa / khách", "Max usage / customer")} error={displayErrors.maxUsagePerCustomer}>
+                  <FormField label={translate(language, "Sá»‘ láº§n dÃ¹ng tá»‘i Ä‘a / khÃ¡ch", "Max usage / customer")} error={displayErrors.maxUsagePerCustomer}>
                     <Input
                       type="number"
                       min={1}
                       value={form.maxUsagePerCustomer}
                       onChange={(event) => setForm((prev) => ({ ...prev, maxUsagePerCustomer: event.target.value }))}
-                      placeholder={translate(language, "Tuỳ chọn", "Optional")}
+                      placeholder={translate(language, "Tuá»³ chá»n", "Optional")}
                       className="h-11 rounded-2xl border-slate-200 bg-white"
                     />
                   </FormField>
 
-                  <FormField label={translate(language, "Trạng thái", "Status")} error={displayErrors.status}>
+                  <FormField label={translate(language, "Tráº¡ng thÃ¡i", "Status")} error={displayErrors.status}>
                     <select
                       className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
                       value={form.status}
                       onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as PromotionStatus }))}
                     >
-                      <option value="ACTIVE">{translate(language, "Đang hoạt động", "Active")}</option>
-                      <option value="INACTIVE">{translate(language, "Không hoạt động", "Inactive")}</option>
+                      <option value="ACTIVE">{translate(language, "Äang hoáº¡t Ä‘á»™ng", "Active")}</option>
+                      <option value="INACTIVE">{translate(language, "KhÃ´ng hoáº¡t Ä‘á»™ng", "Inactive")}</option>
                     </select>
                   </FormField>
                 </div>
@@ -706,7 +718,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="outline" className="rounded-full px-5" onClick={() => setIsModalOpen(false)}>
-                  {translate(language, "Huỷ", "Cancel")}
+                  {translate(language, "Huá»·", "Cancel")}
                 </Button>
                 <Button
                   type="button"
@@ -716,10 +728,10 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                 >
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isEditing
-                    ? translate(language, "Lưu thay đổi", "Save changes")
+                    ? translate(language, "LÆ°u thay Ä‘á»•i", "Save changes")
                     : isVoucherView
-                      ? translate(language, "Tạo voucher", "Create voucher")
-                      : translate(language, "Tạo khuyến mãi", "Create promotion")}
+                      ? translate(language, "Táº¡o voucher", "Create voucher")
+                      : translate(language, "Táº¡o khuyáº¿n mÃ£i", "Create promotion")}
                 </Button>
               </div>
             </div>
@@ -732,18 +744,18 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
               <div>
                 <CardTitle className="text-xl font-black tracking-tight text-slate-950">
                   {isVoucherView
-                    ? translate(language, "Danh sách voucher", "Voucher list")
-                    : translate(language, "Danh sách khuyến mãi", "Promotion list")}
+                    ? translate(language, "Danh sÃ¡ch voucher", "Voucher list")
+                    : translate(language, "Danh sÃ¡ch khuyáº¿n mÃ£i", "Promotion list")}
                 </CardTitle>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {hasActiveFilters ? (
                   <Badge variant="outline" className="rounded-full border-orange-200 bg-orange-50 px-3 py-1 text-orange-700">
-                    {translate(language, "Đang lọc", "Filters applied")}
+                    {translate(language, "Äang lá»c", "Filters applied")}
                   </Badge>
                 ) : null}
                 <Badge variant="outline" className="rounded-full border-slate-200 bg-slate-50 px-3 py-1 text-slate-600">
-                  {activePromotions.length} {translate(language, "đang hoạt động", "active")}
+                  {activePromotions.length} {translate(language, "Ä‘ang hoáº¡t Ä‘á»™ng", "active")}
                 </Badge>
               </div>
             </div>
@@ -753,8 +765,8 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
               <div className="flex items-center justify-center gap-2 p-12 text-sm text-slate-600">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 {isVoucherView
-                  ? translate(language, "Đang tải voucher...", "Loading vouchers...")
-                  : translate(language, "Đang tải khuyến mãi...", "Loading promotions...")}
+                  ? translate(language, "Äang táº£i voucher...", "Loading vouchers...")
+                  : translate(language, "Äang táº£i khuyáº¿n mÃ£i...", "Loading promotions...")}
               </div>
             ) : promotionsQuery.isError ? (
               <div className="m-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
@@ -767,15 +779,15 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                   {hasActiveFilters
                     ? translate(
                         language,
-                        `Không có ${itemLabelPlural} nào khớp với bộ lọc.`,
+                        `KhÃ´ng cÃ³ ${itemLabelPlural} nÃ o khá»›p vá»›i bá»™ lá»c.`,
                         `No ${itemLabelPlural} match your filters.`,
                       )
-                    : translate(language, `Chưa có ${itemLabelPlural} nào.`, `No ${itemLabelPlural} yet.`)}
+                    : translate(language, `ChÆ°a cÃ³ ${itemLabelPlural} nÃ o.`, `No ${itemLabelPlural} yet.`)}
                 </p>
                 <p className="text-xs text-slate-400">
                   {hasActiveFilters
-                    ? translate(language, "Thử điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc.", "Try adjusting search or filter criteria.")
-                    : translate(language, "Tạo chiến dịch đầu tiên để bắt đầu.", "Create your first campaign to get started.")}
+                    ? translate(language, "Thá»­ Ä‘iá»u chá»‰nh tiÃªu chÃ­ tÃ¬m kiáº¿m hoáº·c bá»™ lá»c.", "Try adjusting search or filter criteria.")
+                    : translate(language, "Táº¡o chiáº¿n dá»‹ch Ä‘áº§u tiÃªn Ä‘á»ƒ báº¯t Ä‘áº§u.", "Create your first campaign to get started.")}
                 </p>
               </div>
             ) : (
@@ -785,22 +797,22 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                     <TableHeader className="bg-slate-50/90">
                       <TableRow className="hover:bg-transparent">
                         <TableHead className="pl-6 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                          {translate(language, "Chiến dịch", "Campaign")}
+                          {translate(language, "Chiáº¿n dá»‹ch", "Campaign")}
                         </TableHead>
                         <TableHead className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                          {translate(language, "Giảm giá", "Discount")}
+                          {translate(language, "Giáº£m giÃ¡", "Discount")}
                         </TableHead>
                         <TableHead className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                          {translate(language, "Đối tượng", "Audience")}
+                          {translate(language, "Äá»‘i tÆ°á»£ng", "Audience")}
                         </TableHead>
                         <TableHead className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                          {translate(language, "Lịch trình", "Schedule")}
+                          {translate(language, "Lá»‹ch trÃ¬nh", "Schedule")}
                         </TableHead>
                         <TableHead className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                          {translate(language, "Trạng thái", "Status")}
+                          {translate(language, "Tráº¡ng thÃ¡i", "Status")}
                         </TableHead>
                         <TableHead className="pr-6 text-right text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                          {translate(language, "Hành động", "Actions")}
+                          {translate(language, "HÃ nh Ä‘á»™ng", "Actions")}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -816,7 +828,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                             <TableCell>
                               {promotion.discountType === "NONE" ? (
                                 <Badge variant="outline" className="rounded-full border-slate-200 bg-slate-50 px-3 py-1 font-bold text-slate-500">
-                                  {translate(language, "Không áp dụng", "N/A")}
+                                  {translate(language, "KhÃ´ng Ã¡p dá»¥ng", "N/A")}
                                 </Badge>
                               ) : (
                                 <Badge
@@ -841,7 +853,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                                   variant="outline"
                                   className="rounded-full border-slate-200 bg-slate-100 px-3 py-1 text-slate-700"
                                 >
-                                  {translate(language, "Tất cả các hạng", "All tiers")}
+                                  {translate(language, "Táº¥t cáº£ cÃ¡c háº¡ng", "All tiers")}
                                 </Badge>
                               ) : (
                                 <div className="flex max-w-[220px] flex-wrap gap-1.5 items-center">
@@ -861,7 +873,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                                       </PopoverTrigger>
                                       <PopoverContent className="w-auto p-3" align="start">
                                         <p className="mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                                          {translate(language, "Hạng áp dụng", "Applicable tiers")}
+                                          {translate(language, "Háº¡ng Ã¡p dá»¥ng", "Applicable tiers")}
                                         </p>
                                         <div className="flex flex-wrap gap-1.5 max-w-[200px]">
                                           {(promotion.applicableTiers || []).map((tier) => (
@@ -897,8 +909,8 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                                   )}
                                 >
                                   {promotion.status === "ACTIVE"
-                                    ? translate(language, "Hoạt động", "Active")
-                                    : translate(language, "Không hoạt động", "Inactive")}
+                                    ? translate(language, "Hoáº¡t Ä‘á»™ng", "Active")
+                                    : translate(language, "KhÃ´ng hoáº¡t Ä‘á»™ng", "Inactive")}
                                 </Badge>
                                 <div className="text-xs font-medium text-slate-400">{phaseLabel}</div>
                               </div>
@@ -913,7 +925,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                                   onClick={() => handleEdit(promotion)}
                                 >
                                   <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                                  {translate(language, "Sửa", "Edit")}
+                                  {translate(language, "Sá»­a", "Edit")}
                                 </Button>
                               </div>
                             </TableCell>
@@ -935,7 +947,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                         disabled={!canGoPrev}
                         onClick={() => setDisplayPage((value) => Math.max(1, value - 1))}
                       >
-                        {translate(language, "Trước", "Previous")}
+                        {translate(language, "TrÆ°á»›c", "Previous")}
                       </Button>
                       <span className="min-w-[96px] px-2 text-center text-sm font-semibold text-slate-600">
                         {translate(language, "Trang", "Page")} {displayPage} / {totalDisplayPages}
@@ -948,7 +960,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                         disabled={!canGoNext}
                         onClick={() => setDisplayPage((value) => Math.min(totalDisplayPages, value + 1))}
                       >
-                        {translate(language, "Tiếp", "Next")}
+                        {translate(language, "Tiáº¿p", "Next")}
                       </Button>
                     </div>
                   </div>
@@ -1030,35 +1042,39 @@ function TierSelectionOption({
   );
 }
 
-function validatePromotionForm(form: PromotionFormValues, language: "vi" | "en"): PromotionFormErrors {
+function validatePromotionForm(form: PromotionFormValues, language: "vi" | "en", isVoucherView = false): PromotionFormErrors {
   const errors: PromotionFormErrors = {};
   const discountValue = Number(form.discountValue);
   const maxUsage = form.maxUsagePerCustomer ? Number(form.maxUsagePerCustomer) : null;
 
   if (!form.name.trim()) {
-    errors.name = translate(language, "Tên là bắt buộc.", "Name is required.");
+    errors.name = translate(language, "TÃªn lÃ  báº¯t buá»™c.", "Name is required.");
   }
   if (form.discountType !== "NONE" && (!form.discountValue || Number.isNaN(discountValue) || discountValue < 1)) {
-    errors.discountValue = translate(language, "Giá trị giảm giá phải ít nhất là 1.", "Discount value must be at least 1.");
+    errors.discountValue = translate(language, "GiÃ¡ trá»‹ giáº£m giÃ¡ pháº£i Ã­t nháº¥t lÃ  1.", "Discount value must be at least 1.");
   } else if (form.discountType === "PERCENT" && discountValue > 100) {
-    errors.discountValue = translate(language, "Giảm giá theo % phải từ 1 đến 100.", "Percent discount must be between 1 and 100.");
+    errors.discountValue = translate(language, "Giáº£m giÃ¡ theo % pháº£i tá»« 1 Ä‘áº¿n 100.", "Percent discount must be between 1 and 100.");
   }
 
-  if (!form.startDate) errors.startDate = translate(language, "Ngày bắt đầu là bắt buộc.", "Start date is required.");
-  if (!form.endDate) errors.endDate = translate(language, "Ngày kết thúc là bắt buộc.", "End date is required.");
+  if (!form.startDate) errors.startDate = translate(language, "NgÃ y báº¯t Ä‘áº§u lÃ  báº¯t buá»™c.", "Start date is required.");
+  if (!form.endDate) errors.endDate = translate(language, "NgÃ y káº¿t thÃºc lÃ  báº¯t buá»™c.", "End date is required.");
 
   if (form.startDate && form.endDate) {
     const start = new Date(form.startDate).getTime();
     const end = new Date(form.endDate).getTime();
-    if (start > end) errors.startDate = translate(language, "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.", "Start date must be before or equal to end date.");
+    if (start > end) errors.startDate = translate(language, "NgÃ y báº¯t Ä‘áº§u pháº£i trÆ°á»›c hoáº·c báº±ng ngÃ y káº¿t thÃºc.", "Start date must be before or equal to end date.");
+  }
+
+  if (isVoucherView && (!form.pointMultiplier || Number.isNaN(Number(form.pointMultiplier)) || Number(form.pointMultiplier) < 1)) {
+    errors.pointMultiplier = translate(language, "Số điểm đổi voucher phải lớn hơn 0.", "Voucher points must be greater than 0.");
   }
 
   if (form.targetingMode === "SELECTED_TIERS" && form.applicableTiers.length === 0) {
-    errors.applicableTiers = translate(language, "Chọn ít nhất một hạng.", "Select at least one tier.");
+    errors.applicableTiers = translate(language, "Chá»n Ã­t nháº¥t má»™t háº¡ng.", "Select at least one tier.");
   }
 
   if (maxUsage !== null && (!Number.isInteger(maxUsage) || maxUsage < 1)) {
-    errors.maxUsagePerCustomer = translate(language, "Số lần dùng tối đa phải là số nguyên lớn hơn 0.", "Max usage must be an integer greater than 0.");
+    errors.maxUsagePerCustomer = translate(language, "Sá»‘ láº§n dÃ¹ng tá»‘i Ä‘a pháº£i lÃ  sá»‘ nguyÃªn lá»›n hÆ¡n 0.", "Max usage must be an integer greater than 0.");
   }
 
   return errors;
@@ -1221,10 +1237,10 @@ function getPromotionPhase(promotion: Promotion) {
 
 function translatePhase(phase: string, language: "vi" | "en"): string {
   const map: Record<string, [string, string]> = {
-    Paused: ["Tạm dừng", "Paused"],
-    Upcoming: ["Sắp diễn ra", "Upcoming"],
-    Expired: ["Đã hết hạn", "Expired"],
-    Running: ["Đang chạy", "Running"],
+    Paused: ["Táº¡m dá»«ng", "Paused"],
+    Upcoming: ["Sáº¯p diá»…n ra", "Upcoming"],
+    Expired: ["ÄÃ£ háº¿t háº¡n", "Expired"],
+    Running: ["Äang cháº¡y", "Running"],
   };
   const entry = map[phase];
   if (!entry) return phase;
@@ -1244,3 +1260,4 @@ function isPromotionExpiringSoon(promotion: Promotion) {
 
   return daysLeft >= 0 && daysLeft <= 7;
 }
+

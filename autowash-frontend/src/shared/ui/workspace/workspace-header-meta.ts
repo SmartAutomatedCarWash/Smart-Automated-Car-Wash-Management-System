@@ -71,7 +71,7 @@ const ROUTE_META: Array<{
     match: (pathname) => pathname.startsWith("/customer/history"),
     meta: {
       title: "History",
-      subtitle: "Review booking history, completed washes, and loyalty point activity",
+      subtitle: "",
       workspace: "CUSTOMER",
     },
   },
@@ -92,13 +92,28 @@ const ROUTE_META: Array<{
     },
   },
   {
-    match: (pathname) =>
-      pathname.startsWith("/customer/notifications") ||
-      pathname.startsWith("/customer/settings") ||
-      pathname.startsWith("/customer/combos"),
+    match: (pathname) => pathname.startsWith("/customer/notifications"),
     meta: {
-      title: "Customer Workspace",
-      subtitle: "Review customer tools, notifications, and preferences",
+      title: "Notifications",
+      subtitle: "Review customer alerts and unread updates",
+      workspace: "CUSTOMER",
+    },
+  },
+  {
+    match: (pathname) => pathname.startsWith("/customer/settings"),
+    meta: {
+      title: "Settings",
+      subtitle: "Manage account preferences and workspace options",
+      workspace: "CUSTOMER",
+    },
+  },
+  {
+    match: (pathname) => pathname.startsWith("/customer/combos"),
+    meta: {
+      title: "Combos",
+      subtitle: "Browse and manage combo offers",
+      titleVi: "Combo",
+      subtitleVi: "Xem và quản lý các gói combo ưu đãi",
       workspace: "CUSTOMER",
     },
   },

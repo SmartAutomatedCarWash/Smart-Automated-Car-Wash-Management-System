@@ -5,6 +5,9 @@ import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
+import { translateNotificationField } from "@/features/notifications/lib/notification-utils";
+import { useLanguageStore } from "@/shared/store/language.store";
+import { cn } from "@/shared/lib/utils";
 import {
   useCustomerNotifications,
   useMarkCustomerNotificationAsRead,
@@ -13,6 +16,8 @@ import {
 export default function CustomerNotificationsPage() {
   const getErrorMessage = useErrorMessage();
   const notificationsQuery = useCustomerNotifications();
+  const { language } = useLanguageStore();
+
   const markAsReadMutation = useMarkCustomerNotificationAsRead();
 
   const unreadCount = notificationsQuery.data?.filter((item) => !item.read).length ?? 0;
@@ -94,7 +99,9 @@ export default function CustomerNotificationsPage() {
                         </div>
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
-                            <div className="text-base font-bold text-slate-900 dark:text-slate-100">{item.title}</div>
+                            <div className={cn("text-base font-bold", item.read ? "text-slate-600 dark:text-slate-400" : "text-slate-900 dark:text-slate-100")}>
+                              {translateNotificationField(item.title, language)}
+                            </div>
                             <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-350">
                               {item.type}
                             </span>
@@ -104,7 +111,7 @@ export default function CustomerNotificationsPage() {
                               </span>
                             ) : null}
                           </div>
-                          <p className="text-sm leading-6 text-slate-600 dark:text-slate-400">{item.message}</p>
+                          <p className="text-sm leading-6 text-slate-600 dark:text-slate-400">{translateNotificationField(item.message, language)}</p>
                           <div className="text-xs text-slate-400 dark:text-slate-500">
                             {new Date(item.createdAt).toLocaleString("vi-VN")}
                           </div>

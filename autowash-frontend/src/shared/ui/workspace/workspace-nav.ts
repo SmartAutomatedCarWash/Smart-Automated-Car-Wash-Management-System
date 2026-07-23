@@ -81,7 +81,7 @@ export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
 const CUSTOMER_NAV: WorkspaceNavItem[] = [
   { href: "/customer/home", label: "Home Feed", labelVi: "Ban tin", icon: LayoutDashboard, exact: true },
   { href: "/customer/guides", label: "Guides", labelVi: "Bai viet", icon: BookOpen },
-  { href: "/customer/services", label: "Service Catalog", labelVi: "Danh muc dich vu", icon: Wrench },
+  { href: "/customer/services", label: "Catalog", labelVi: "Danh muc dich vu", icon: Wrench },
   { href: "/customer/bookings", label: "Manage Bookings", labelVi: "Quan ly dat lich", icon: ClipboardList },
   { href: "/customer/history", label: "History", labelVi: "Lich su", icon: History },
   { href: "/customer/vehicles", label: "All vehicles", labelVi: "Tat ca xe", icon: CarFront },

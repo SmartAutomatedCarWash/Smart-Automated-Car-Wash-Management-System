@@ -35,6 +35,7 @@ import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { DynamicTierBadge } from "@/shared/ui/workspace/dynamic-tier-badge";
 
 const PAGE_LIMIT = 20;
+const STAFF_CLIENT_FILTER_LIMIT = 100;
 const ROLE_OPTIONS: AdminAccountRole[] = ["CUSTOMER", "STAFF", "MANAGER", "ADMIN", "GUEST"];
 const STAFF_ROLE_OPTIONS: AdminAccountRole[] = ["STAFF", "MANAGER", "ADMIN"];
 const STATUS_OPTIONS: AdminAccountStatus[] = ["PENDING", "ACTIVE", "BLOCKED", "SUSPENDED", "DELETED"];
@@ -125,7 +126,7 @@ export function AdminAccountsPageContent() {
   const accountsQuery = useAdminAccounts(
     normalizedFilters,
     page,
-    isStaffClientFiltering ? 200 : PAGE_LIMIT,
+    isStaffClientFiltering ? STAFF_CLIENT_FILTER_LIMIT : PAGE_LIMIT,
   );
   
   const rawAccounts = accountsQuery.data?.items ?? [];

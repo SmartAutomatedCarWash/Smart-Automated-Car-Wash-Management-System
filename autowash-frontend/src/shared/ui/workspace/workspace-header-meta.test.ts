@@ -11,6 +11,27 @@ describe("getWorkspaceHeaderMeta", () => {
     assert.equal(meta.workspace, "CUSTOMER");
   });
 
+  it("describes customer notifications without falling back to a workspace label", () => {
+    const meta = getWorkspaceHeaderMeta("/customer/notifications");
+
+    assert.equal(meta.title, "Notifications");
+    assert.equal(meta.workspace, "CUSTOMER");
+  });
+
+  it("describes customer settings without falling back to a workspace label", () => {
+    const meta = getWorkspaceHeaderMeta("/customer/settings");
+
+    assert.equal(meta.title, "Settings");
+    assert.equal(meta.workspace, "CUSTOMER");
+  });
+
+  it("describes customer combos without falling back to a workspace label", () => {
+    const meta = getWorkspaceHeaderMeta("/customer/combos");
+
+    assert.equal(meta.title, "Combos");
+    assert.equal(meta.workspace, "CUSTOMER");
+  });
+
   it("describes staff operations routes without changing their URL shape", () => {
     const meta = getWorkspaceHeaderMeta("/staff/sessions/WS-01");
 
