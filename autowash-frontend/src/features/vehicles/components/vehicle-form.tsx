@@ -21,6 +21,7 @@ import {
   type CustomerVehicleFormErrors,
   type CustomerVehicleFormValues,
 } from "@/entities/vehicles";
+import { VEHICLE_COLOR_OPTIONS, getVehicleColorOption } from "@/features/vehicles/lib/vehicle-colors";
 
 const CAR_BRANDS_MAP: Record<string, string[]> = {
   Toyota:      ["Camry", "Corolla", "Vios", "Fortuner", "Innova", "Hilux", "Rush", "Raize", "Yaris", "Land Cruiser", "Other"],
@@ -52,14 +53,7 @@ const VEHICLE_TYPE_OPTIONS: Record<(typeof CUSTOMER_VEHICLE_TYPES)[number], stri
   MOTORBIKE: "Motorbike",
   VAN: "Van",
 };
-const COLOR_OPTIONS = [
-  "White", "Black", "Silver", "Gray", "Red", "Blue", "Brown",
-  "Green", "Yellow", "Orange", "Gold", "Beige", "Navy Blue",
-  "Champagne", "Pearl White", "Midnight Black", "Other",
-].map((color) => ({
-  value: color,
-  label: color === "Other" ? "Other color" : color,
-}));
+const COLOR_OPTIONS = VEHICLE_COLOR_OPTIONS.map(({ value, label }) => ({ value, label }));
 
 function getModelOptions(brand: string) {
   return (CAR_BRANDS_MAP[brand] ?? ["Other model"]).map((model) => ({
@@ -276,7 +270,14 @@ function VehicleSelectField({
         <SelectContent>
           {normalizedOptions.map((option) => (
             <SelectItem key={option.value} value={option.value}>
-              {option.label}
+              {isVehicleColorOption(option.value) ? (
+                <span className="flex items-center gap-2">
+                  <ColorSwatch value={option.value} />
+                  <span>{option.label}</span>
+                </span>
+              ) : (
+                option.label
+              )}
             </SelectItem>
           ))}
         </SelectContent>
@@ -284,5 +285,21 @@ function VehicleSelectField({
       {description ? <p className="text-xs text-slate-500">{description}</p> : null}
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
     </div>
+  );
+}
+
+function isVehicleColorOption(value: string) {
+  return VEHICLE_COLOR_OPTIONS.some((option) => option.value === value);
+}
+
+function ColorSwatch({ value }: { value: string }) {
+  const color = getVehicleColorOption(value);
+
+  return (
+    <span
+      className="h-3 w-3 rounded-full border"
+      style={{ backgroundColor: color.hex, borderColor: color.border ?? color.hex }}
+      aria-hidden="true"
+    />
   );
 }

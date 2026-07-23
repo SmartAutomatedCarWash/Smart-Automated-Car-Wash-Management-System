@@ -1,5 +1,5 @@
-import { CustomerVehicleCreateClientPage } from "@/features/vehicles/components/vehicle-pages";
+import { redirect } from "next/navigation";
 
 export default function AddVehiclePage() {
-  return <CustomerVehicleCreateClientPage />;
+  redirect("/customer/vehicles");
 }

@@ -6,6 +6,7 @@ import {
   BadgeCheck,
   CalendarClock,
   CheckCircle2,
+  ChevronDown,
   Download,
   Edit3,
   Eye,
@@ -627,14 +628,27 @@ function QuickDetailPanel({
   onDeleteStaff: (staffId: string) => void;
   isFetching: boolean;
 }) {
+  const [expanded, setExpanded] = useState(true);
+
   if (!staff) {
     return <Card className="rounded-lg border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">Select a staff member to view details.</Card>;
   }
   const bookings = [...staff.activeSessions, ...staff.queuedSessions].slice(0, 2);
 
   return (
-    <Card className="flex h-full min-h-[43rem] flex-col rounded-lg border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-black text-slate-950">Quick details</h2>
+    <Card className={cn("flex flex-col rounded-lg border-slate-200 bg-white p-6 shadow-sm", expanded ? "h-full min-h-[43rem]" : "h-fit")}>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-black text-slate-950">Quick details</h2>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-9 rounded-lg border-slate-200 bg-white px-3 text-xs font-black"
+          onClick={() => setExpanded((current) => !current)}
+        >
+          <ChevronDown className={cn("h-4 w-4 transition-transform", expanded ? "rotate-180" : "")} />
+          {expanded ? "Collapse" : "Expand"}
+        </Button>
+      </div>
       <div className="mt-5 flex items-center gap-4">
         <Avatar name={staff.staffName} src={staff.avatarUrl} size="lg" />
         <div>
@@ -642,6 +656,15 @@ function QuickDetailPanel({
           <StatusBadge status={staff.status} />
         </div>
       </div>
+      {!expanded ? (
+        <div className="mt-5 grid grid-cols-3 gap-2 rounded-lg bg-slate-50 p-3 text-center">
+          <MiniCount label="Queued" value={staff.queuedSessions.length} />
+          <MiniCount label="Active" value={staff.activeSessions.length} />
+          <MiniCount label="Done" value={staff.completedSessions.length} />
+        </div>
+      ) : null}
+      {expanded ? (
+        <>
       <div className="mt-5 flex gap-2">
         <Button variant="outline" className="h-10 flex-1 rounded-lg border-slate-200 bg-white text-sm font-bold" onClick={() => onViewProfile(staff.staffId)}>
           <UserRound className="h-4 w-4" />
@@ -706,7 +729,18 @@ function QuickDetailPanel({
         {isFetching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
         {isFetching ? "Syncing backend" : "Backend data"}
       </div>
+        </>
+      ) : null}
     </Card>
+  );
+}
+
+function MiniCount({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md bg-white px-2 py-2">
+      <div className="text-base font-black text-slate-950">{value}</div>
+      <div className="text-[10px] font-black uppercase text-slate-400">{label}</div>
+    </div>
   );
 }
 
