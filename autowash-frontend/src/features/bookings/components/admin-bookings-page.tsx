@@ -145,7 +145,6 @@ export function AdminBookingsPageContent() {
   }, [bookingsQuery.data]);
 
   const kpis = summaryQuery.data ?? fallbackKpis;
-  const showSummaryFallbackNotice = summaryQuery.isError && bookingsQuery.isSuccess;
 
   return (
     <div className="p-4 md:p-8 bg-slate-50/50 min-h-screen">
@@ -249,16 +248,6 @@ export function AdminBookingsPageContent() {
             </CardContent>
           </Card>
         </div>
-
-        {showSummaryFallbackNotice && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-700">
-            {translate(
-              language,
-              "Không tải được thống kê tổng hợp từ server. Đang hiển thị số liệu tạm tính từ danh sách booking.",
-              "Could not load server summary. Showing estimated metrics from the booking list."
-            )}
-          </div>
-        )}
 
         {/* ─── Filtering Area ─────────────────────────────────────────── */}
         <Card className="border border-slate-100 bg-white p-4 shadow-sm rounded-2xl">

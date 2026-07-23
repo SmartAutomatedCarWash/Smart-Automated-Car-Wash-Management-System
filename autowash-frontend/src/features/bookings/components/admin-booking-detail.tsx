@@ -861,8 +861,7 @@ function VehicleDetailModal({
   onClose: () => void;
 }) {
   const { language } = useLanguageStore();
-  const { data: vehicle, isPending, isError, error } = useAdminVehicleDetail(vehicleId, true);
-  const getErrorMessage = useErrorMessage();
+  const { data: vehicle, isPending } = useAdminVehicleDetail(vehicleId, true);
   const displayVehicle = vehicle
     ? {
         plate: vehicle.plate,
@@ -952,18 +951,7 @@ function VehicleDetailModal({
                 </div>
               </div>
 
-              {isError && (
-                <div className="p-4 bg-amber-50 text-amber-700 rounded-2xl border border-amber-100 text-xs font-semibold">
-                  {translate(
-                    language,
-                    "Đã tải thông tin xe từ booking hiện tại, nhưng chưa lấy được lịch sử xe từ server:",
-                    "Loaded vehicle metadata from this booking, but could not load vehicle history from the server:"
-                  )}{" "}
-                  {getErrorMessage(error)}
-                </div>
-              )}
-
-              {!vehicle && !isError && (
+              {!vehicle && (
                 <div className="p-4 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 text-xs font-semibold">
                   {translate(
                     language,
