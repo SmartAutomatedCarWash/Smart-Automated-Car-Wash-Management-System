@@ -11,11 +11,24 @@ public record PurchaseCustomerComboResponse(
         long amount,
         PaymentMethod paymentMethod,
         String paymentStatus,
+        Payment payment,
         int totalUsages,
         int remainingUsages,
         Instant activatedAt,
         Instant expiresAt,
         Instant purchasedAt
 ) {
+    public record Payment(
+            String method,
+            String status,
+            String transactionId,
+            Instant paidAt,
+            String qrUrl,
+            String bankCode,
+            String accountNumber,
+            String accountName,
+            String transferDescription
+    ) {
+    }
 }
 

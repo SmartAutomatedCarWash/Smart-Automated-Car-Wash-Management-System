@@ -29,7 +29,7 @@ public class FlywayResetConfig {
     @Autowired
     private DataSource dataSource;
 
-    @Value("${spring.flyway.default-schema:public}")
+    @Value("${spring.flyway.default-schema:autowash_local}")
     private String defaultSchema;
 
     @Bean

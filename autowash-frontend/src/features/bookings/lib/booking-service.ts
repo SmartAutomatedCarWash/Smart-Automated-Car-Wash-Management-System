@@ -12,6 +12,7 @@ import type {
   BookingListPage,
   BookingPackage,
   CustomerCombo,
+  CustomerComboPaymentStatus,
   ApplyBookingPointsRequest,
   ApplyBookingPointsResponse,
   CreateBookingResponse,
@@ -70,6 +71,11 @@ export async function listActiveCustomerCombos(): Promise<CustomerCombo[]> {
   return response.data.data as CustomerCombo[];
 }
 
+export async function getCustomerComboPaymentStatus(transactionRef: string): Promise<CustomerComboPaymentStatus> {
+  const response = await apiClient.get(`/customers/combos/payments/${encodeURIComponent(transactionRef)}/status`);
+  return response.data.data as CustomerComboPaymentStatus;
+}
+
 export function validateBookingDiscount(payload: DiscountValidationRequest) {
   return apiRequest<DiscountValidationResult, DiscountValidationRequest>({
     method: "POST",
@@ -103,6 +109,14 @@ export function createVnpayCheckout(bookingId: string) {
   });
 }
 
+export function createComboVnpayCheckout(payload: { transactionRef: string; amount: number }) {
+  return apiRequest<VnpayCheckoutResponse, { transactionRef: string; amount: number }>({
+    method: "POST",
+    url: "/payments/combos/vnpay/checkout",
+    data: payload,
+  });
+}
+
 export function changeBookingPaymentMethod(bookingId: string, paymentMethod: PaymentMethod) {
   return apiRequest<PayBookingResponse, { paymentMethod: PaymentMethod }>({
     method: "POST",
@@ -123,6 +137,14 @@ export function queryVnpayTransaction(bookingId: string) {
   return apiRequest<VnpayPaymentResultResponse>({
     method: "POST",
     url: `/payments/bookings/${bookingId}/vnpay/query`,
+  });
+}
+
+export function queryComboVnpayTransaction(txnRef: string) {
+  return apiRequest<VnpayPaymentResultResponse, { txnRef: string }>({
+    method: "POST",
+    url: "/payments/combos/vnpay/query",
+    data: { txnRef },
   });
 }
 
@@ -171,25 +193,11 @@ export function updateCustomerBookingStaff(bookingId: string, payload: UpdateBoo
 }
 
 export async function purchaseCustomerCombo(payload: PurchaseCustomerComboRequest) {
-  try {
-    return await apiRequest<PurchaseCustomerComboResponse, PurchaseCustomerComboRequest>({
-      method: "POST",
-      url: `/customers/combos/${payload.comboId}/activate`,
-      data: payload,
-    });
-  } catch (error) {
-    const statusCode = typeof error === "object" && error !== null && "statusCode" in error ? error.statusCode : null;
-
-    if (statusCode !== 404) {
-      throw error;
-    }
-
-    return apiRequest<PurchaseCustomerComboResponse, PurchaseCustomerComboRequest>({
-      method: "POST",
-      url: `/customers/combos/${payload.comboId}/purchase`,
-      data: payload,
-    });
-  }
+  return apiRequest<PurchaseCustomerComboResponse, PurchaseCustomerComboRequest>({
+    method: "POST",
+    url: "/customers/combos/purchase",
+    data: payload,
+  });
 }
 
 export async function listCustomerBookings(filters: BookingListFilters = {}): Promise<BookingListPage> {

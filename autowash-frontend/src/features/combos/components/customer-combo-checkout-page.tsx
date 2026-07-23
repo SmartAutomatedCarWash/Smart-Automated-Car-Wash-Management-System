@@ -1,90 +1,82 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
+import { useEffect, useMemo, useRef, useState, type ElementType } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import Swal from "sweetalert2";
+import { ArrowRight, Banknote, Building2, CheckCircle2, Copy, Loader2, Package, QrCode, Wallet } from "lucide-react";
 import {
-  CheckCircle2,
-  Clock3,
-  Loader2,
-  Sparkles,
-  Wallet,
-  ShieldCheck,
-  ArrowRight,
-  BadgeCheck,
-  CreditCard,
-  CarFront,
-  Star,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+  useBookingCombos,
+  useCreateComboVnpayCheckout,
+  useCustomerComboPaymentStatus,
+  usePurchaseCustomerCombo,
+} from "@/features/bookings/hooks/use-bookings";
+import {
+  clearCartCheckoutSnapshot,
+  getCartCheckoutSnapshot,
+  type CartCheckoutSnapshotItem,
+} from "@/features/cart/store/cart.store";
+import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { notify } from "@/shared/lib/notify";
 import { Badge } from "@/shared/ui/ui/badge";
 import { Button } from "@/shared/ui/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
-import { useErrorMessage } from "@/shared/hooks/use-error-message";
-import {
-  generateTimeSlotsFromRange,
-  formatBookingCurrency,
-  formatLocalDateInput,
-  getAvailableBookingTimeSlots,
-  getPaymentMethodLabel,
-} from "@/features/bookings/lib/booking-format";
-import { usePublicSettings } from "@/features/settings/hooks/use-public-settings";
-import { useActiveCustomerCombos, useBookingCombos, useCreateCustomerBooking, usePurchaseCustomerCombo } from "@/features/bookings/hooks/use-bookings";
-import { useCustomerVehicles } from "@/features/vehicles/hooks/use-customer-vehicles";
-import { cn } from "@/shared/lib/utils";
-import type { BookingCombo, CustomerCombo, PaymentMethod } from "@/entities/bookings";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/shared/ui/ui/dialog";
+import type { BookingCombo, PaymentMethod } from "@/entities/bookings";
 
 type CustomerComboCheckoutPageProps = {
-  comboId: string;
+  comboIds?: string[];
 };
 
-const PAYMENT_METHODS: PaymentMethod[] = ["BANK_TRANSFER", "E_WALLET", "CASH_AT_COUNTER"];
+type GroupedCheckoutItem = {
+  combo: BookingCombo;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+};
 
-function buildComboHeroImage(combo: BookingCombo) {
-  if (
-    combo.image &&
-    (combo.image.startsWith("/") || combo.image.startsWith("data:") || combo.image.startsWith("http"))
-  ) {
+type ComboPaymentPreview = {
+  comboNames: string[];
+  amount: number;
+  paymentMethod: PaymentMethod;
+  reference: string;
+  qrUrl?: string | null;
+  bankCode?: string | null;
+  accountNumber?: string | null;
+  accountName?: string | null;
+  transferDescription?: string | null;
+};
+
+const PAYMENT_METHODS: Array<{ value: PaymentMethod; label: string; note: string }> = [
+  { value: "BANK_TRANSFER", label: "SePay", note: "Auto-confirmed using AU payment code" },
+  { value: "E_WALLET", label: "VNPay", note: "Pay online through the VNPay gateway" },
+];
+
+function buildHeroImage(combo: BookingCombo) {
+  if (combo.image && (combo.image.startsWith("/") || combo.image.startsWith("data:") || combo.image.startsWith("http"))) {
     return combo.image;
   }
 
-  const palettes = [
-    { start: "#0f172a", end: "#1d4ed8", accent: "#38bdf8" },
-    { start: "#111827", end: "#0f766e", accent: "#34d399" },
-    { start: "#172554", end: "#7c3aed", accent: "#c084fc" },
-    { start: "#3f1d0d", end: "#c2410c", accent: "#fb923c" },
-    { start: "#1f2937", end: "#be123c", accent: "#fb7185" },
-  ];
-  const palette =
-    palettes[
-      Math.abs(combo.comboId.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0)) % palettes.length
-    ];
-  const safeTitle = combo.name;
-  const safeSubtitle = `${combo.durationDays} ngày • ${combo.maxServices} lượt`;
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
       <defs>
         <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="${palette.start}" />
-          <stop offset="100%" stop-color="${palette.end}" />
+          <stop offset="0%" stop-color="#0b1021" />
+          <stop offset="100%" stop-color="#1d4ed8" />
         </linearGradient>
-        <radialGradient id="glow" cx="50%" cy="35%" r="60%">
-          <stop offset="0%" stop-color="${palette.accent}" stop-opacity="0.55" />
+        <radialGradient id="glow" cx="72%" cy="28%" r="65%">
+          <stop offset="0%" stop-color="#67e8f9" stop-opacity="0.25" />
           <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
         </radialGradient>
       </defs>
       <rect width="1200" height="800" rx="48" fill="url(#bg)" />
       <rect width="1200" height="800" fill="url(#glow)" />
-      <circle cx="1010" cy="170" r="150" fill="#ffffff" fill-opacity="0.08" />
-      <circle cx="180" cy="680" r="180" fill="#ffffff" fill-opacity="0.06" />
-      <path d="M120 520 C240 350, 470 290, 690 350 S1030 520, 1110 470" stroke="#ffffff" stroke-opacity="0.18" stroke-width="18" fill="none" stroke-linecap="round"/>
-      <text x="92" y="120" fill="#e0f2fe" font-size="28" font-family="Arial, sans-serif" font-weight="700" letter-spacing="6">AURA CAR CARE</text>
-      <text x="92" y="452" fill="#ffffff" font-size="76" font-family="Arial, sans-serif" font-weight="800">${safeTitle}</text>
-      <text x="92" y="515" fill="#dbeafe" font-size="30" font-family="Arial, sans-serif" font-weight="600">${safeSubtitle}</text>
-      <rect x="92" y="574" width="240" height="58" rx="29" fill="#ffffff" fill-opacity="0.12" stroke="#ffffff" stroke-opacity="0.24"/>
-      <text x="132" y="612" fill="#ffffff" font-size="24" font-family="Arial, sans-serif" font-weight="700">Premium combo</text>
+      <path d="M122 556C250 410 420 360 608 410C759 451 875 568 1020 506" stroke="#5eead4" stroke-opacity="0.24" stroke-width="18" fill="none" stroke-linecap="round"/>
+      <text x="92" y="122" fill="#22d3ee" font-size="28" font-family="Arial, sans-serif" font-weight="700" letter-spacing="6">AURA CAR CARE</text>
+      <text x="92" y="454" fill="#ffffff" font-size="72" font-family="Arial, sans-serif" font-weight="800">${combo.name}</text>
+      <text x="92" y="522" fill="#dbeafe" font-size="30" font-family="Arial, sans-serif" font-weight="600">${combo.durationDays} days • ${combo.maxServices} uses</text>
     </svg>
   `.trim();
 
@@ -92,80 +84,164 @@ function buildComboHeroImage(combo: BookingCombo) {
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
   }
 
-  const encodedSvg = window.btoa(unescape(encodeURIComponent(svg)));
-  return `data:image/svg+xml;base64,${encodedSvg}`;
+  return `data:image/svg+xml;base64,${window.btoa(unescape(encodeURIComponent(svg)))}`;
 }
 
-export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPageProps) {
+export function CustomerComboCheckoutPage({ comboIds }: CustomerComboCheckoutPageProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const getErrorMessage = useErrorMessage();
   const combosQuery = useBookingCombos();
-  const activeCombosQuery = useActiveCustomerCombos();
-  const vehiclesQuery = useCustomerVehicles();
-  const createBookingMutation = useCreateCustomerBooking();
   const purchaseComboMutation = usePurchaseCustomerCombo();
-  const publicSettingsQuery = usePublicSettings();
-  const [vehicleId, setVehicleId] = useState("");
-  const [bookingDate, setBookingDate] = useState(formatLocalDateInput(0));
-  const [bookingTime, setBookingTime] = useState<string>("");
+  const createComboVnpayCheckoutMutation = useCreateComboVnpayCheckout();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("BANK_TRANSFER");
-  const [showValidation, setShowValidation] = useState(false);
-  const [slideIndex, setSlideIndex] = useState(0);
-
-  // Dynamic time slots from admin operating hours, fallback to legacy hardcode
-  const timeSlots = useMemo(() => {
-    const s = publicSettingsQuery.data;
-    if (s?.operatingStartTime && s?.operatingEndTime) {
-      return generateTimeSlotsFromRange(s.operatingStartTime, s.operatingEndTime);
-    }
-    return ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
-  }, [publicSettingsQuery.data]);
-
-  const selectedCombo = useMemo(
-    () => combosQuery.data?.find((combo) => combo.comboId === comboId) ?? null,
-    [comboId, combosQuery.data],
+  const [snapshotReady, setSnapshotReady] = useState(false);
+  const [checkoutItems, setCheckoutItems] = useState<CartCheckoutSnapshotItem[]>([]);
+  const [comboPaymentPreview, setComboPaymentPreview] = useState<ComboPaymentPreview | null>(null);
+  const handledPaymentSuccessRef = useRef(false);
+  const comboPaymentStatusQuery = useCustomerComboPaymentStatus(
+    comboPaymentPreview?.reference,
+    Boolean(comboPaymentPreview?.reference)
   );
-  const ownedCombo = useMemo(
-    () =>
-      activeCombosQuery.data?.find(
-        (item) => item.comboId === comboId && Number(item.remainingUsages) > 0,
-      ) ?? null,
-    [activeCombosQuery.data, comboId],
-  );
-  const availableTimeSlots = useMemo(
-    () => getAvailableBookingTimeSlots(bookingDate, timeSlots),
-    [bookingDate, timeSlots],
-  );
-  const firstAvailableTimeSlot = availableTimeSlots.find((slot) => !slot.disabled)?.time ?? "";
+  const comboPaymentStatus = comboPaymentStatusQuery.data?.paymentStatus?.toUpperCase() ?? "PENDING_PAYMENT";
+  const comboPaymentConfirmed = comboPaymentStatus === "PAID";
 
-  // Set initial booking time once slots are loaded
   useEffect(() => {
-    if (!bookingTime && firstAvailableTimeSlot) {
-      setBookingTime(firstAvailableTimeSlot);
+    const snapshot = getCartCheckoutSnapshot();
+
+    if (snapshot.length > 0) {
+      setCheckoutItems(snapshot.filter((item) => item.type === "COMBO"));
+    } else {
+      setCheckoutItems(
+        (comboIds ?? []).map((comboId) => ({
+          type: "COMBO",
+          itemId: comboId,
+          name: "",
+          price: 0,
+          quantity: 1,
+        }))
+      );
     }
-  }, [bookingTime, firstAvailableTimeSlot]);
 
-  // Derive combo images (multi or fallback)
-  const comboImages = useMemo(() => {
-    if (!selectedCombo) return [];
-    const urls = selectedCombo.imageUrls && selectedCombo.imageUrls.length > 0
-      ? selectedCombo.imageUrls
-      : selectedCombo.image
-        ? [selectedCombo.image]
-        : [];
-    return urls;
-  }, [selectedCombo]);
+    setSnapshotReady(true);
+  }, [comboIds]);
 
-  // Auto-advance slideshow every 3 seconds
+  const groupedItems = useMemo<GroupedCheckoutItem[]>(() => {
+    const combos = combosQuery.data ?? [];
+    const map = new Map<string, GroupedCheckoutItem>();
+
+    for (const item of checkoutItems) {
+      const combo = combos.find((candidate) => candidate.comboId === item.itemId);
+      if (!combo) continue;
+
+      const quantity = item.quantity > 0 ? item.quantity : 1;
+      const current = map.get(combo.comboId);
+
+      if (current) {
+        current.quantity += quantity;
+        current.totalPrice = current.quantity * current.unitPrice;
+      } else {
+        map.set(combo.comboId, {
+          combo,
+          quantity,
+          unitPrice: combo.basePrice,
+          totalPrice: combo.basePrice * quantity,
+        });
+      }
+    }
+
+    return Array.from(map.values());
+  }, [checkoutItems, combosQuery.data]);
+
+  const totalPrice = groupedItems.reduce((sum, item) => sum + item.totalPrice, 0);
+  const heroCombo = groupedItems[0]?.combo ?? null;
+  const heroImage = heroCombo ? buildHeroImage(heroCombo) : null;
+  const error = combosQuery.error ?? null;
+
+  const handlePurchase = async () => {
+    if (groupedItems.length === 0) {
+      notify.error("No combo found for checkout.");
+      return;
+    }
+
+    try {
+      const comboIds = groupedItems.flatMap((item) => Array.from({ length: item.quantity }, () => item.combo.comboId));
+      const result = await purchaseComboMutation.mutateAsync({
+        comboId: groupedItems[0].combo.comboId,
+        comboIds,
+        paymentMethod,
+      });
+
+      if (paymentMethod === "E_WALLET") {
+        const checkout = await createComboVnpayCheckoutMutation.mutateAsync({
+          transactionRef: result.payment?.transactionId ?? result.customerComboId ?? result.comboId,
+          amount: totalPrice,
+        });
+        clearCartCheckoutSnapshot();
+        notify.info("Redirecting to VNPay payment.");
+        window.location.href = checkout.paymentUrl;
+        return;
+      }
+
+      if (result.paymentStatus === "PENDING_PAYMENT" || result.payment?.status === "PENDING_PAYMENT" || result.payment?.qrUrl) {
+        handledPaymentSuccessRef.current = false;
+        setComboPaymentPreview({
+          comboNames: groupedItems.flatMap((item) => Array.from({ length: item.quantity }, () => item.combo.name)),
+          amount: totalPrice,
+          paymentMethod,
+          reference: result.payment?.transactionId ?? result.customerComboId ?? result.comboId ?? `COMBO-${Date.now()}`,
+          qrUrl: result.payment?.qrUrl ?? null,
+          bankCode: result.payment?.bankCode ?? null,
+          accountNumber: result.payment?.accountNumber ?? null,
+          accountName: result.payment?.accountName ?? null,
+          transferDescription: result.payment?.transferDescription ?? null,
+        });
+        return;
+      }
+
+      notify.error("Payment was not initialized. Please try again.");
+    } catch (submitError) {
+      notify.error(getErrorMessage(submitError));
+    }
+  };
+
   useEffect(() => {
-    if (comboImages.length <= 1) return;
-    const timer = setInterval(() => {
-      setSlideIndex((prev) => (prev + 1) % comboImages.length);
-    }, 3000);
-    return () => clearInterval(timer);
-  }, [comboImages.length]);
+    if (!comboPaymentPreview || !comboPaymentConfirmed || handledPaymentSuccessRef.current) {
+      return;
+    }
 
-  if (combosQuery.isPending || activeCombosQuery.isPending || vehiclesQuery.isPending) {
+    handledPaymentSuccessRef.current = true;
+    void (async () => {
+      await queryClient.invalidateQueries({ queryKey: ["booking-catalog", "customer-combos", "active"] });
+      clearCartCheckoutSnapshot();
+      setComboPaymentPreview(null);
+      await Swal.fire({
+        icon: "success",
+        title: "Payment successful!",
+        text: "Your combo payment has been confirmed. The purchased combos are now available in your account.",
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        customClass: {
+          popup: "swal-notify-popup",
+          title: "swal-notify-title",
+          htmlContainer: "swal-notify-message",
+          confirmButton: "swal-notify-btn-success",
+        },
+      });
+      router.push("/customer/services");
+    })();
+  }, [comboPaymentConfirmed, comboPaymentPreview, queryClient, router]);
+
+  const handleClosePaymentPreview = () => {
+    setComboPaymentPreview(null);
+    if (comboPaymentConfirmed) {
+      router.push("/customer/services");
+    }
+  };
+
+  if (!snapshotReady || combosQuery.isPending) {
     return (
       <div className="min-h-[calc(100vh-72px)] bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_25%),linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-7xl items-center justify-center rounded-3xl border border-slate-200 bg-white p-10 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
@@ -175,21 +251,19 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
     );
   }
 
-  const error = combosQuery.error ?? activeCombosQuery.error ?? vehiclesQuery.error ?? null;
   if (error) {
     return (
       <div className="min-h-[calc(100vh-72px)] bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_25%),linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">
         <Card className="mx-auto max-w-3xl border-rose-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
           <CardHeader>
-            <CardTitle>Không tải được trang thanh toán combo</CardTitle>
-            <CardDescription>{getErrorMessage(error)}</CardDescription>
+            <CardTitle>Unable to load combo checkout</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Button asChild variant="outline">
-              <Link href="/customer/home">Về trang chủ</Link>
+              <Link href="/customer/services">Back to catalog</Link>
             </Button>
             <Button asChild>
-              <Link href="/customer/combos">Xem danh sách combo</Link>
+              <Link href="/customer/combos">View combo list</Link>
             </Button>
           </CardContent>
         </Card>
@@ -197,20 +271,19 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
     );
   }
 
-  if (!selectedCombo) {
+  if (groupedItems.length === 0 || !heroCombo || !heroImage) {
     return (
       <div className="min-h-[calc(100vh-72px)] bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_25%),linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">
         <Card className="mx-auto max-w-3xl border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
           <CardHeader>
-            <CardTitle>Combo không tồn tại</CardTitle>
-            <CardDescription>Vui lòng quay lại danh sách combo để chọn gói khác.</CardDescription>
+            <CardTitle>Combo not found</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Button asChild variant="outline">
-              <Link href="/customer/home">Về trang chủ</Link>
+              <Link href="/customer/services">Back to catalog</Link>
             </Button>
             <Button asChild>
-              <Link href="/customer/combos">Xem combo</Link>
+              <Link href="/customer/combos">View combos</Link>
             </Button>
           </CardContent>
         </Card>
@@ -218,381 +291,240 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
     );
   }
 
-  const combo = selectedCombo as BookingCombo & { services?: any[] };
-  const originalPrice = combo.upgradePriceFrom && combo.upgradePriceFrom > combo.basePrice
-    ? combo.upgradePriceFrom
-    : combo.basePrice;
-  const savings = Math.max(0, originalPrice - combo.basePrice);
-  // services may be objects {serviceId, name, ...} or plain strings
-  const rawBenefits: any[] = combo.benefits ?? combo.services ?? [];
-  const comboBenefits: string[] = rawBenefits.map((b) =>
-    typeof b === "string" ? b : (b?.name ?? b?.optionName ?? JSON.stringify(b))
-  );
-  const heroImageSrc = buildComboHeroImage(combo);
-  const vehicles = vehiclesQuery.data?.items ?? [];
-  const selectedVehicle = vehicles.find((item) => item.vehicleId === vehicleId) ?? null;
-  const demoVisualBenefits = [
-    "Khoang nội thất sạch sâu, hoàn thiện nhanh",
-    "Bề mặt sơn bóng hơn sau mỗi lần dùng",
-    "Phù hợp khách hàng đi xe thường xuyên trong tháng",
-  ];
-  const paymentMethods = [
-    {
-      label: "SePay",
-      note: "Xác nhận tự động bằng mã thanh toán AU",
-    },
-    {
-      label: "Ví điện tử",
-      note: "Dùng cho luồng QR hoặc ví liên kết ở giai đoạn sau",
-    },
-    {
-      label: "Thanh toán tại quầy",
-      note: "Nhân viên xác nhận gói trực tiếp tại cửa hàng",
-    },
-  ];
-
-  if (!vehicleId && vehicles.length > 0) {
-    const nextVehicleId = vehicles.find((item) => item.isPrimary)?.vehicleId ?? vehicles[0]?.vehicleId ?? "";
-    if (nextVehicleId) {
-      setTimeout(() => setVehicleId(nextVehicleId), 0);
-    }
-  }
-
-  const fieldErrors = {
-    vehicleId: !vehicleId ? "Vui lòng chọn xe." : null,
-    bookingDate: !bookingDate ? "Vui lòng chọn ngày đặt lịch." : null,
-    bookingTime: !bookingTime ? "Vui lòng chọn giờ đặt lịch." : null,
-    paymentMethod: !paymentMethod ? "Vui lòng chọn phương thức thanh toán." : null,
-  };
-
-  const handleConfirm = async () => {
-    setShowValidation(true);
-
-    if (!ownedCombo && fieldErrors.paymentMethod) {
-      notify.error("Thiếu thông tin thanh toán combo.");
-      return;
-    }
-
-    if (
-      ownedCombo &&
-      (fieldErrors.vehicleId || fieldErrors.bookingDate || fieldErrors.bookingTime || fieldErrors.paymentMethod)
-    ) {
-      notify.error("Thiếu thông tin đặt lịch cho combo.");
-      return;
-    }
-
-    try {
-      if (ownedCombo) {
-        const booking = await createBookingMutation.mutateAsync({
-          mode: "COMBO",
-          vehicleId,
-          packageId: "",
-          comboId: combo.comboId,
-          addonIds: [],
-          bookingDate,
-          bookingTime,
-          discountCode: "",
-          paymentMethod,
-        });
-
-        notify.success("Đã dùng combo sẵn có và tạo lịch thành công.");
-        router.push(`/customer/bookings/${booking.bookingId}`);
-        return;
-      }
-
-      await purchaseComboMutation.mutateAsync({
-        comboId: combo.comboId,
-        paymentMethod,
-      });
-
-      notify.success("Đã mua combo thành công. Bạn có thể dùng gói này để đặt lịch ngay bây giờ.");
-      router.push("/customer/home");
-    } catch (submitError) {
-      notify.error(getErrorMessage(submitError));
-    }
-  };
-
   return (
-    <div className="min-h-[calc(100vh-72px)] bg-background px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6">
-
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-black tracking-tight text-foreground">Combo Checkout</h1>
-          <Button asChild variant="outline" className="rounded-xl">
-            <Link href="/customer/home">Back to home</Link>
-          </Button>
+    <div className="min-h-[calc(100vh-72px)] bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_25%),linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <Button asChild variant="outline" className="rounded-xl border-sky-200 bg-white text-slate-900 shadow-sm hover:bg-sky-50">
+              <Link href="/customer/services">Back to catalog</Link>
+            </Button>
+          </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr,380px]">
-
-          {/* ── Left: Combo info + booking form ── */}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_480px]">
           <div className="space-y-4">
-
-            {/* Combo summary card */}
-            <Card className="border-border/70 bg-card shadow-sm">
-              <CardContent className="p-5 space-y-4">
-                {/* Image slideshow */}
-                {comboImages.length > 0 && (
-                  <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-100 group">
-                    {comboImages.map((src, i) => (
-                      <img
-                        key={src}
-                        src={src}
-                        alt={`${combo.name} - ${i + 1}`}
-                        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${i === slideIndex ? "opacity-100" : "opacity-0"}`}
-                      />
-                    ))}
-                    {comboImages.length > 1 && (
-                      <>
-                        <button
-                          type="button"
-                          className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/30 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/50"
-                          onClick={() => setSlideIndex((prev) => (prev > 0 ? prev - 1 : comboImages.length - 1))}
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/30 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/50"
-                          onClick={() => setSlideIndex((prev) => (prev < comboImages.length - 1 ? prev + 1 : 0))}
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                        <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
-                          {comboImages.map((_, i) => (
-                            <div
-                              key={i}
-                              className={`h-1.5 rounded-full transition-all duration-300 shadow-sm ${i === slideIndex ? "w-4 bg-white" : "w-1.5 bg-white/50"}`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <h2 className="text-lg font-bold text-foreground">{combo.name}</h2>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="rounded-full text-xs">{combo.durationDays} days</Badge>
-                      <Badge variant="outline" className="rounded-full text-xs">Max {combo.maxServices} uses</Badge>
-                      <Badge variant="outline" className={`rounded-full text-xs ${combo.isActive ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 text-slate-500"}`}>
-                        {combo.isActive ? "Available" : "Unavailable"}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-xs text-muted-foreground">Price</p>
-                    <p className="text-2xl font-black text-primary">{formatBookingCurrency(combo.basePrice)}</p>
-                    {savings > 0 && (
-                      <p className="text-xs text-emerald-600 font-semibold">Save {formatBookingCurrency(savings)}</p>
-                    )}
+            <Card className="overflow-hidden border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+              <CardContent className="space-y-4 p-5 sm:p-6">
+                <div className="relative overflow-hidden rounded-[22px]">
+                  <img src={heroImage} alt={heroCombo.name} className="h-[260px] w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
+                  <div className="absolute left-5 top-5 flex items-center gap-2 rounded-full bg-black/30 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.28em] text-white backdrop-blur-md">
+                    <span>AURA CAR CARE</span>
                   </div>
                 </div>
 
-                {/* Services included */}
-                {comboBenefits.length > 0 && (
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Services included</p>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {comboBenefits.map((benefit) => (
-                        <div key={benefit} className="flex items-center gap-2 text-sm text-foreground">
-                          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-                          {benefit}
-                        </div>
-                      ))}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-2">
+                    <h2 className="text-[30px] font-black leading-none tracking-tight text-slate-950">{heroCombo.name}</h2>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className="rounded-full border-slate-200 bg-slate-50 text-slate-700">{heroCombo.durationDays} days</Badge>
+                      <Badge variant="outline" className="rounded-full border-slate-200 bg-slate-50 text-slate-700">Max {heroCombo.maxServices} uses</Badge>
+                      <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 text-emerald-700">Available</Badge>
                     </div>
                   </div>
-                )}
-
-                {/* Owned combo notice */}
-                {ownedCombo && (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                    <span className="font-bold">You already own this combo</span> — {ownedCombo.remainingUsages} uses left, expires {new Date(ownedCombo.expiresAt).toLocaleDateString("en-GB")}.
+                  <div className="text-right">
+                    <p className="text-xs text-slate-500">Price</p>
+                    <p className="text-3xl font-black tracking-tight text-cyan-500">{formatBookingCurrency(heroCombo.basePrice)}</p>
                   </div>
-                )}
+                </div>
+
+                <div className="border-t border-slate-200 pt-4">
+                  <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Combos in this payment</p>
+                  <div className="space-y-2">
+                    {groupedItems.map(({ combo, quantity, totalPrice: lineTotal }) => (
+                      <div key={combo.comboId} className="flex items-center justify-between gap-3 rounded-[14px] border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+                            <Package className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-950">{combo.name}</p>
+                            <p className="text-xs text-slate-500">x{quantity}</p>
+                          </div>
+                        </div>
+                        <span className="shrink-0 text-sm font-bold text-cyan-600">{formatBookingCurrency(lineTotal)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </CardContent>
             </Card>
-
-            {/* Booking form (only when using owned combo) */}
-            {ownedCombo && (
-              <Card className="border-border/70 bg-card shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-bold">Schedule your appointment</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-0">
-                  {/* Vehicle */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-muted-foreground">Vehicle</label>
-                    <select
-                      value={vehicleId}
-                      onChange={(e) => setVehicleId(e.target.value)}
-                      className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="">Select a vehicle</option>
-                      {vehicles.map((v) => (
-                        <option key={v.vehicleId} value={v.vehicleId}>{v.plate} · {v.brand} {v.model}</option>
-                      ))}
-                    </select>
-                    {showValidation && fieldErrors.vehicleId && <p className="text-xs text-rose-600">{fieldErrors.vehicleId}</p>}
-                  </div>
-
-                  {/* Date + Time */}
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground">Date</label>
-                      <input
-                        type="date"
-                        min={formatLocalDateInput(0)}
-                        value={bookingDate}
-                        onChange={(e) => setBookingDate(e.target.value)}
-                        className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      />
-                      {showValidation && fieldErrors.bookingDate && <p className="text-xs text-rose-600">{fieldErrors.bookingDate}</p>}
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground">Time</label>
-                      <select
-                        value={bookingTime}
-                        onChange={(e) => setBookingTime(e.target.value)}
-                        className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        {availableTimeSlots.map(({ time, disabled }) => (
-                          <option key={time} value={time} disabled={disabled}>{time}</option>
-                        ))}
-                      </select>
-                      {showValidation && fieldErrors.bookingTime && <p className="text-xs text-rose-600">{fieldErrors.bookingTime}</p>}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
-          {/* ── Right: Payment + confirm ── */}
           <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-            <Card className="border-border/70 bg-card shadow-sm">
+            <Card className="border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-bold">Payment method</CardTitle>
+                <CardTitle className="text-sm font-bold text-slate-950">Payment method</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 pt-0">
                 {PAYMENT_METHODS.map((method) => {
-                  const active = paymentMethod === method;
+                  const active = paymentMethod === method.value;
                   return (
                     <button
-                      key={method}
+                      key={method.value}
                       type="button"
-                      onClick={() => setPaymentMethod(method)}
-                      className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-semibold transition-all ${
-                        active ? "border-primary bg-primary/5 text-primary" : "border-border bg-card text-foreground hover:border-primary/40"
+                      onClick={() => setPaymentMethod(method.value)}
+                      className={`w-full rounded-[14px] border px-4 py-3 text-left transition-all ${
+                        active
+                          ? "border-cyan-400 bg-cyan-50 text-cyan-600 shadow-sm"
+                          : "border-slate-200 bg-white text-slate-900 hover:border-cyan-200 hover:bg-slate-50"
                       }`}
                     >
-                      <span>{getPaymentMethodLabel(method)}</span>
-                      {active && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-semibold">{method.label}</span>
+                        {active && <CheckCircle2 className="h-4 w-4 text-cyan-500" />}
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">{method.note}</p>
                     </button>
                   );
                 })}
-                {showValidation && fieldErrors.paymentMethod && <p className="text-xs text-rose-600">{fieldErrors.paymentMethod}</p>}
               </CardContent>
             </Card>
 
-            {/* Order summary */}
-            <Card className="border-border/70 bg-card shadow-sm">
-              <CardContent className="p-5 space-y-3">
+            <Card className="border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+              <CardContent className="space-y-3 p-5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Base price</span>
-                  <span className="font-medium">{formatBookingCurrency(originalPrice)}</span>
+                  <span className="text-slate-500">Base price</span>
+                  <span className="font-medium text-slate-950">{formatBookingCurrency(totalPrice)}</span>
                 </div>
-                {savings > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Discount</span>
-                    <span className="font-semibold text-emerald-600">−{formatBookingCurrency(savings)}</span>
-                  </div>
-                )}
-                <div className="border-t border-border pt-3 flex justify-between">
-                  <span className="font-bold text-foreground">Total</span>
-                  <span className="text-lg font-black text-primary">{formatBookingCurrency(combo.basePrice)}</span>
+                <div className="border-t border-slate-200 pt-3 flex justify-between">
+                  <span className="font-bold text-slate-950">Total</span>
+                  <span className="text-2xl font-black tracking-tight text-cyan-500">{formatBookingCurrency(totalPrice)}</span>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Error */}
-            {(createBookingMutation.isError || purchaseComboMutation.isError) && (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {getErrorMessage(createBookingMutation.error ?? purchaseComboMutation.error ?? null)}
+            {purchaseComboMutation.isError && (
+              <div className="rounded-[14px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {getErrorMessage(purchaseComboMutation.error ?? null)}
               </div>
             )}
 
-            {/* Actions */}
             <div className="flex flex-col gap-2">
               <Button
                 type="button"
-                className="h-11 rounded-xl font-bold gap-2"
-                onClick={handleConfirm}
-                disabled={createBookingMutation.isPending || purchaseComboMutation.isPending || !combo.isActive || Boolean(ownedCombo && vehicles.length === 0)}
+                className="h-11 rounded-[14px] bg-gradient-to-r from-cyan-500 to-blue-600 font-bold text-white shadow-[0_12px_24px_rgba(34,211,238,0.22)] hover:from-cyan-400 hover:to-blue-500"
+                onClick={handlePurchase}
+                disabled={purchaseComboMutation.isPending || createComboVnpayCheckoutMutation.isPending}
               >
-                {createBookingMutation.isPending || purchaseComboMutation.isPending ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" />{ownedCombo ? "Booking..." : "Processing..."}</>
+                {purchaseComboMutation.isPending || createComboVnpayCheckoutMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
                 ) : (
-                  <>{ownedCombo ? "Use combo & book" : "Purchase combo"}<ArrowRight className="h-4 w-4" /></>
+                  <>
+                    Proceed to payment
+                    <ArrowRight className="h-4 w-4" />
+                  </>
                 )}
               </Button>
-              <Button asChild variant="outline" className="h-11 rounded-xl">
+              <Button asChild variant="outline" className="h-11 rounded-[14px] border-slate-200 bg-white text-slate-900 hover:bg-slate-50">
                 <Link href="/customer/combos">Browse other combos</Link>
               </Button>
             </div>
           </div>
-
         </div>
       </div>
+
+      <Dialog open={Boolean(comboPaymentPreview)} onOpenChange={(open) => !open && handleClosePaymentPreview()}>
+        <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700">
+              <QrCode className="h-6 w-6" />
+            </div>
+            <DialogTitle>Pay with SePay</DialogTitle>
+            <DialogDescription>
+              Scan the QR code or transfer with the exact details below. Your combo will be confirmed after payment is received.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <p className="font-semibold text-slate-900">Combos in this payment</p>
+              <p className="mt-1">
+                {comboPaymentPreview?.comboNames?.length ? comboPaymentPreview.comboNames.join(", ") : "Selected combos"}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              {comboPaymentPreview?.qrUrl ? (
+                <div className="flex justify-center rounded-xl border bg-slate-50 p-3">
+                  <img
+                    src={comboPaymentPreview.qrUrl}
+                    alt="Combo payment QR code"
+                    className="h-auto w-full max-w-[300px] rounded-lg"
+                  />
+                </div>
+              ) : (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  QR is not configured yet. Use the transfer details below.
+                </div>
+              )}
+
+              <ComboPaymentInfoRow icon={Building2} label="Bank" value={comboPaymentPreview?.bankCode ?? "TPBank"} />
+              <ComboPaymentInfoRow icon={Banknote} label="Account" value={comboPaymentPreview?.accountNumber ?? "--"} />
+              <ComboPaymentInfoRow icon={Wallet} label="Account name" value={comboPaymentPreview?.accountName ?? "AURA CAR CARE"} />
+              <ComboPaymentInfoRow icon={Copy} label="Amount" value={formatBookingCurrency(comboPaymentPreview?.amount ?? 0)} />
+              <ComboPaymentInfoRow
+                icon={Copy}
+                label="Description"
+                value={comboPaymentPreview?.transferDescription ?? comboPaymentPreview?.reference ?? "--"}
+                monospace
+              />
+            </div>
+
+            <div
+              className={`rounded-xl border px-4 py-3 text-xs font-semibold ${
+                comboPaymentConfirmed
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  : "border-sky-100 bg-sky-50 text-sky-800"
+              }`}
+            >
+              {comboPaymentConfirmed ? (
+                "Payment confirmed. Your combos are now available."
+              ) : (
+                <span className="flex items-center gap-2">
+                  {comboPaymentStatusQuery.isFetching && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  Checking SePay confirmation every 3 seconds. Keep this window open until payment is confirmed.
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button type="button" onClick={handleClosePaymentPreview}>
+              {comboPaymentConfirmed ? "Done" : "Close"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function InfoBox({
+function ComboPaymentInfoRow({
   icon: Icon,
   label,
   value,
-  helper,
+  monospace = false,
 }: {
-  icon: typeof Clock3;
+  icon: ElementType;
   label: string;
   value: string;
-  helper: string;
+  monospace?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-sky-700 shadow-sm">
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{label}</div>
-          <div className="mt-1 text-sm font-bold text-slate-900">{value}</div>
-          <div className="mt-1 text-xs text-slate-500">{helper}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DetailRow({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-3">
-      <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">{label}</div>
-      <div className={cn("text-right text-sm font-semibold text-slate-900", mono && "font-mono text-xs sm:text-sm")}>
+    <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-sm">
+      <span className="flex items-center gap-2 shrink-0 text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" />
+        {label}
+      </span>
+      <span className={`truncate text-right font-bold text-foreground ${monospace ? "font-mono tracking-wide" : ""}`}>
         {value}
-      </div>
+      </span>
     </div>
   );
 }

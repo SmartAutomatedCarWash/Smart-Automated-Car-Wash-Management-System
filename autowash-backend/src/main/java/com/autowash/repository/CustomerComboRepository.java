@@ -2,6 +2,7 @@ package com.autowash.repository;
 
 import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.enums.CustomerComboStatus;
+import com.autowash.entity.enums.PaymentStatus;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +29,22 @@ public interface CustomerComboRepository extends JpaRepository<CustomerCombo, UU
             UUID customerId,
             CustomerComboStatus status,
             Instant now
+    );
+
+    List<CustomerCombo> findByTransactionRefAndPaymentStatusAndStatusOrderByCreatedAtAsc(
+            String transactionRef,
+            PaymentStatus paymentStatus,
+            CustomerComboStatus status
+    );
+
+    List<CustomerCombo> findByTransactionRefOrderByCreatedAtAsc(String transactionRef);
+
+    List<CustomerCombo> findByCustomer_IdAndTransactionRefOrderByCreatedAtAsc(UUID customerId, String transactionRef);
+
+    Optional<CustomerCombo> findFirstByTransactionRefAndPaymentStatusAndStatusOrderByCreatedAtAsc(
+            String transactionRef,
+            PaymentStatus paymentStatus,
+            CustomerComboStatus status
     );
 
     private static Optional<UUID> parseUuid(String id) {

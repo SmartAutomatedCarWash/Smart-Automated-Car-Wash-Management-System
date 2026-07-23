@@ -21,9 +21,9 @@ const MOCK_CONFIGS: TierConfig[] = [
 ];
 
 const MOCK_OFFERS: TierVoucherOffer[] = [
-  { id: "bronze-50", title: "Bronze Voucher", minTier: "BRONZE", pointsCost: 50, discountValue: 50000, accent: "sky", badge: "Bronze" },
-  { id: "silver-100", title: "Silver Voucher", minTier: "SILVER", pointsCost: 100, discountValue: 100000, accent: "violet", badge: "Silver" },
-  { id: "platinum-200", title: "Platinum Voucher", minTier: "PLATINUM", pointsCost: 200, discountValue: 200000, accent: "rose", badge: "Platinum" },
+  { id: "bronze-50", title: "Bronze Voucher", minTier: "BRONZE", pointsCost: 50, voucherValue: 50000, accent: "sky", badge: "Bronze" },
+  { id: "silver-100", title: "Silver Voucher", minTier: "SILVER", pointsCost: 100, voucherValue: 100000, accent: "violet", badge: "Silver" },
+  { id: "platinum-200", title: "Platinum Voucher", minTier: "PLATINUM", pointsCost: 200, voucherValue: 200000, accent: "rose", badge: "Platinum" },
 ];
 
 test("computes loyalty tier progress against the next threshold", () => {

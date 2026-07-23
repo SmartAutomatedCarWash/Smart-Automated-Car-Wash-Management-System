@@ -6,6 +6,7 @@ import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.repository.PaymentRepository;
 import com.autowash.service.BookingService;
+import com.autowash.service.CustomerComboService;
 import com.autowash.service.SepayPaymentService;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.shared.exception.ErrorCode;
@@ -34,6 +35,7 @@ public class SepayPaymentServiceImpl implements SepayPaymentService {
     private final ObjectMapper objectMapper;
     private final PaymentRepository paymentRepository;
     private final BookingService bookingService;
+    private final CustomerComboService customerComboService;
     private final String webhookSecret;
     private final String paymentCodePrefix;
 
@@ -41,12 +43,14 @@ public class SepayPaymentServiceImpl implements SepayPaymentService {
             ObjectMapper objectMapper,
             PaymentRepository paymentRepository,
             BookingService bookingService,
+            CustomerComboService customerComboService,
             @Value("${autowash.payment.sepay.webhook-secret:}") String webhookSecret,
             @Value("${autowash.payment.sepay.payment-code-prefix:AU}") String paymentCodePrefix
     ) {
         this.objectMapper = objectMapper;
         this.paymentRepository = paymentRepository;
         this.bookingService = bookingService;
+        this.customerComboService = customerComboService;
         this.webhookSecret = webhookSecret;
         this.paymentCodePrefix = paymentCodePrefix;
     }
@@ -74,27 +78,27 @@ public class SepayPaymentServiceImpl implements SepayPaymentService {
         }
 
         Payment payment = paymentRepository.findByTransactionRef(paymentCode).orElse(null);
-        if (payment == null || payment.getMethod() != PaymentMethod.BANK_TRANSFER) {
-            return;
-        }
-        if (payment.getStatus() == PaymentStatus.PAID) {
-            return;
-        }
-        if (payment.getBooking().getStatus() == BookingStatus.CANCELLED
-                || payment.getBooking().getStatus() == BookingStatus.NO_SHOW) {
-            return;
-        }
-        if (payment.getBooking().getStatus() == BookingStatus.PENDING
-                && !payment.getBooking().getCreatedAt().plus(PENDING_BOOKING_HOLD_DURATION).isAfter(Instant.now())) {
-            return;
-        }
-
         long transferAmount = amountIn(payload);
-        if (transferAmount < payment.getAmount()) {
+        if (payment != null && payment.getMethod() == PaymentMethod.BANK_TRANSFER) {
+            if (payment.getStatus() == PaymentStatus.PAID) {
+                return;
+            }
+            if (payment.getBooking().getStatus() == BookingStatus.CANCELLED
+                    || payment.getBooking().getStatus() == BookingStatus.NO_SHOW) {
+                return;
+            }
+            if (payment.getBooking().getStatus() == BookingStatus.PENDING
+                    && !payment.getBooking().getCreatedAt().plus(PENDING_BOOKING_HOLD_DURATION).isAfter(Instant.now())) {
+                return;
+            }
+            if (transferAmount < payment.getAmount()) {
+                return;
+            }
+            bookingService.markBookingPaidForOperations(payment.getBooking().getId().toString(), paymentCode);
             return;
         }
 
-        bookingService.markBookingPaidForOperations(payment.getBooking().getId().toString(), paymentCode);
+        customerComboService.markPendingPaymentAsPaid(paymentCode);
     }
 
     private void ensureConfigured() {

@@ -25,6 +25,14 @@ if (Test-Path $envFile) {
   }
 }
 
+if (-not $env:SPRING_PROFILES_ACTIVE) {
+  $env:SPRING_PROFILES_ACTIVE = "local"
+}
+
+if (-not $env:AUTOWASH_DB_SCHEMA) {
+  $env:AUTOWASH_DB_SCHEMA = "autowash_local"
+}
+
 Set-Location $here
 
 Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue |

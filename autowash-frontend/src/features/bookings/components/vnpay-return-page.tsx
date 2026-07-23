@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, ReceiptText, ShieldAlert, XCircle } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { queryVnpayTransaction, verifyVnpayReturn } from "@/features/bookings/lib/booking-service";
+import { queryComboVnpayTransaction, queryVnpayTransaction, verifyVnpayReturn } from "@/features/bookings/lib/booking-service";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
 import { cn } from "@/shared/lib/utils";
@@ -29,7 +29,10 @@ export function VnpayReturnPage() {
   const result = resultQuery.data;
   const isSuccess = Boolean(result?.validSignature && result.success);
   const bookingId = result?.bookingId ?? params.vnp_TxnRef ?? "";
-  const shouldSyncPayment = isSuccess && bookingId.length > 0;
+  const vnpayTxnRef = params.vnp_TxnRef ?? "";
+  const isComboPayment = Boolean(vnpayTxnRef && !isBookingTxnRef(vnpayTxnRef));
+  const shouldSyncPayment = isSuccess && !isComboPayment && bookingId.length > 0;
+  const shouldSyncComboPayment = isSuccess && isComboPayment && vnpayTxnRef.length > 0;
   const syncQuery = useQuery({
     queryKey: ["vnpay-return-sync", bookingId, result?.responseCode, result?.transactionStatus],
     queryFn: async () => {
@@ -43,13 +46,24 @@ export function VnpayReturnPage() {
     enabled: shouldSyncPayment,
     retry: 1,
   });
+  const comboSyncQuery = useQuery({
+    queryKey: ["combo-vnpay-return-sync", vnpayTxnRef, result?.responseCode, result?.transactionStatus],
+    queryFn: async () => {
+      const synced = await queryComboVnpayTransaction(vnpayTxnRef);
+      await queryClient.invalidateQueries({ queryKey: ["booking-catalog", "customer-combos", "active"] });
+      return synced;
+    },
+    enabled: shouldSyncComboPayment,
+    retry: 1,
+  });
   const syncResult = syncQuery.data;
-  const isSynced = Boolean(syncResult?.success);
-  const hasSyncFailure = Boolean(syncResult && !syncResult.success);
+  const effectiveSyncResult = comboSyncQuery.data ?? syncResult;
+  const isSynced = Boolean(effectiveSyncResult?.success);
+  const hasSyncFailure = Boolean(effectiveSyncResult && !effectiveSyncResult.success);
   const isInvalidSignature = Boolean(result && !result.validSignature);
-  const isSyncing = shouldSyncPayment && syncQuery.isFetching;
+  const isSyncing = (shouldSyncPayment && syncQuery.isFetching) || (shouldSyncComboPayment && comboSyncQuery.isFetching);
   const isCheckingPayment = resultQuery.isFetching || isSyncing;
-  const failureMessage = buildVnpayFailureMessage(syncResult ?? result, params, language);
+  const failureMessage = buildVnpayFailureMessage(effectiveSyncResult ?? result, params, language);
   const title = !hasParams
     ? translate(language, "Thiếu kết quả VNPay", "Missing VNPay result")
     : isCheckingPayment
@@ -107,7 +121,7 @@ export function VnpayReturnPage() {
             <p className="mt-2 text-sm text-slate-600">{description}</p>
 
             <div className="mt-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4 text-sm">
-              <ResultRow label={translate(language, "Lịch đặt", "Booking")} value={result?.bookingId ?? params.vnp_TxnRef ?? "-"} />
+              <ResultRow label={isComboPayment ? "Combo payment" : translate(language, "Lịch đặt", "Booking")} value={result?.bookingId ?? params.vnp_TxnRef ?? "-"} />
               <ResultRow label={translate(language, "Mã phản hồi", "Response code")} value={result?.responseCode ?? params.vnp_ResponseCode ?? "-"} />
               <ResultRow
                 label={translate(language, "Trạng thái giao dịch", "Transaction status")}
@@ -121,7 +135,7 @@ export function VnpayReturnPage() {
                     ? translate(language, "Đang đồng bộ", "Syncing")
                     : isSynced
                       ? translate(language, "Đã xác nhận", "Confirmed")
-                      : syncQuery.isError || hasSyncFailure
+                      : syncQuery.isError || comboSyncQuery.isError || hasSyncFailure
                         ? translate(language, "Cần đồng bộ lại", "Needs resync")
                         : "-"
                 }
@@ -129,7 +143,7 @@ export function VnpayReturnPage() {
             </div>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              {result?.bookingId ? (
+              {result?.bookingId && !isComboPayment ? (
                 <Button asChild className="flex-1">
                   <Link href={`/customer/bookings/${result.bookingId}`}>
                     <ReceiptText className="h-4 w-4" />
@@ -138,7 +152,9 @@ export function VnpayReturnPage() {
                 </Button>
               ) : null}
               <Button asChild variant="outline" className="flex-1">
-                <Link href="/customer/bookings">{translate(language, "Về danh sách", "Back to bookings")}</Link>
+                <Link href={isComboPayment ? "/customer/member-lounge" : "/customer/bookings"}>
+                  {isComboPayment ? "Back to member lounge" : translate(language, "Về danh sách", "Back to bookings")}
+                </Link>
               </Button>
             </div>
           </CardContent>
@@ -168,6 +184,13 @@ function buildVnpayFailureMessage(
     return baseMessage;
   }
   return `${baseMessage} ${translate(language, "Trạng thái giao dịch:", "Transaction status:")} ${vnpayTransactionStatusMessage(transactionStatus, language)}.`;
+}
+
+function isBookingTxnRef(txnRef: string) {
+  if (txnRef.length < 36) {
+    return false;
+  }
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(txnRef.substring(0, 36));
 }
 
 function vnpayResponseMessage(code: string | null | undefined, language: Language, fallback?: string) {

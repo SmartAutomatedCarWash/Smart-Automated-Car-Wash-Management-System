@@ -9,6 +9,7 @@ import {
   getDemoEligibleSessionBookings,
   getDemoOperationsQueue,
   isManagerDemoToken,
+  transferDemoWashSession,
   startDemoWashSession,
 } from "@/features/operations/lib/operations-demo-data";
 import type {
@@ -141,9 +142,13 @@ export function cancelWashSession(sessionId: string, reason: string, faultType?:
 }
 
 export function transferWashSession(sessionId: string, toStaffId: string, reason?: string) {
+  if (isManagerDemoToken(getAccessToken())) {
+    return transferDemoWashSession(sessionId, toStaffId, reason);
+  }
+
   return apiRequest<TransferWashSessionResponse, { toStaffId: string; reason?: string }>({
     method: "POST",
-    url: `/manager/operations/sessions/${sessionId}/transfer`,
+    url: `${SESSION_BASE_URL}/${sessionId}/transfer`,
     data: { toStaffId, reason },
   });
 }

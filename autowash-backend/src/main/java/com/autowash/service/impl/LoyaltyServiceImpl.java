@@ -320,8 +320,8 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         Notification notification = Notification.builder()
                 .id(UUID.randomUUID())
                 .user(account.getCustomer())
-                .title("Chúc mừng! Bạn đã thăng hạng")
-                .message("Hạng thành viên của bạn đã được nâng lên " + targetTier + ".")
+                .title("Congratulations! You have been upgraded")
+                .message("Your membership tier has been upgraded to " + targetTier + ".")
                 .type(NotificationType.LOYALTY)
                 .read(false)
                 .createdAt(Instant.now())
@@ -353,8 +353,8 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         ));
         loyaltyAccountRepository.save(account);
         
-        String title = "Hạng thành viên đã thay đổi";
-        String message = "Hạng thành viên của bạn đã được cập nhật thành " + targetTier + " bởi Quản trị viên.";
+        String title = "Membership tier changed";
+        String message = "Your membership tier has been updated to " + targetTier + " by Administrator.";
         Notification notification = Notification.builder()
                 .id(UUID.randomUUID())
                 .user(customer)

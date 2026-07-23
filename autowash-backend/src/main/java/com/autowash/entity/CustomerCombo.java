@@ -1,6 +1,8 @@
 package com.autowash.entity;
 
 import com.autowash.entity.enums.CustomerComboStatus;
+import com.autowash.entity.enums.PaymentMethod;
+import com.autowash.entity.enums.PaymentStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -41,7 +43,7 @@ public class CustomerCombo {
     @Column(nullable = false)
     private CustomerComboStatus status;
 
-    @Column(name = "activated_at", nullable = false)
+    @Column(name = "activated_at")
     private Instant activatedAt;
 
     @Column(name = "expires_at", nullable = false)
@@ -50,6 +52,32 @@ public class CustomerCombo {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method")
+    private PaymentMethod paymentMethod;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status")
+    private PaymentStatus paymentStatus;
+
+    @Column(name = "transaction_ref", length = 120)
+    private String transactionRef;
+
+    @Column(name = "qr_url", columnDefinition = "TEXT")
+    private String qrUrl;
+
+    @Column(name = "bank_code", length = 50)
+    private String bankCode;
+
+    @Column(name = "account_number", length = 100)
+    private String accountNumber;
+
+    @Column(name = "account_name", length = 255)
+    private String accountName;
+
+    @Column(name = "transfer_description", length = 255)
+    private String transferDescription;
+
     public CustomerCombo(UUID id, User customer, UUID comboId, int totalUsages, Instant activatedAt, Instant expiresAt) {
         this.id = id;
         this.customer = customer;
@@ -57,9 +85,30 @@ public class CustomerCombo {
         this.totalUsages = totalUsages;
         this.remainingUsages = totalUsages;
         this.status = CustomerComboStatus.ACTIVE;
+        this.paymentStatus = PaymentStatus.PAID;
         this.activatedAt = activatedAt;
         this.expiresAt = expiresAt;
         this.createdAt = Instant.now();
+    }
+
+    public void markPendingPayment(PaymentMethod method, String transactionRef, String qrUrl, String bankCode, String accountNumber, String accountName, String transferDescription) {
+        this.status = CustomerComboStatus.PENDING_PAYMENT;
+        this.paymentMethod = method;
+        this.paymentStatus = PaymentStatus.PENDING_PAYMENT;
+        this.activatedAt = null;
+        this.transactionRef = transactionRef;
+        this.qrUrl = qrUrl;
+        this.bankCode = bankCode;
+        this.accountNumber = accountNumber;
+        this.accountName = accountName;
+        this.transferDescription = transferDescription;
+    }
+
+    public void markActivated(Instant expiresAt) {
+        this.status = CustomerComboStatus.ACTIVE;
+        this.paymentStatus = PaymentStatus.PAID;
+        this.activatedAt = Instant.now();
+        this.expiresAt = expiresAt;
     }
 
     public void consumeUsage() {

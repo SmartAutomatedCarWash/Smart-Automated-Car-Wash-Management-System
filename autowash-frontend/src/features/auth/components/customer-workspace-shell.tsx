@@ -64,14 +64,6 @@ export function CustomerWorkspaceShell({
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
               <Home className="h-5 w-5" />
             </div>
-            <div>
-              <div className="text-sm font-semibold text-foreground">
-                {t("Khu vực khách hàng", "Customer Area")}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {user.fullName} • {user.tier ?? t("THÀNH VIÊN", "MEMBER")}
-              </div>
-            </div>
           </div>
 
           <nav className="flex flex-wrap items-center gap-2">

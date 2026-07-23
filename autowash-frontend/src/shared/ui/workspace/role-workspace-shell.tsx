@@ -62,6 +62,7 @@ import {
   type ManagerNotificationKind,
 } from "@/features/operations/store/manager-notification.store";
 import { useCustomerNotifications, useMarkCustomerNotificationAsRead } from "@/features/notifications/hooks/use-customer-notifications";
+import { translateNotificationField } from "@/features/notifications/lib/notification-utils";
 import { useTierStore } from "@/shared/store/tier.store";
 import { useTierStyle } from "@/shared/lib/tier-styles";
 import { WorkspaceHeaderProvider, type WorkspaceHeaderConfig } from "@/shared/ui/workspace/workspace-header-context";
@@ -181,15 +182,15 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       // Find the latest unread notification
       const latestUnread = customerNotificationsQuery.data.find(n => !n.read);
       if (latestUnread) {
-        toast.info(latestUnread.title, {
-          description: latestUnread.message,
+        toast.info(translateNotificationField(latestUnread.title, language), {
+          description: translateNotificationField(latestUnread.message, language),
           position: "bottom-right",
           duration: 5000,
         });
       }
     }
     setPrevUnreadCount(currentUnread);
-  }, [unreadCustomerNotifications, customerNotificationsQuery.data, isCustomer, isMounted, prevUnreadCount]);
+  }, [unreadCustomerNotifications, customerNotificationsQuery.data, isCustomer, isMounted, prevUnreadCount, language]);
 
   const eligibleCount = eligibleQuery.data?.length ?? 0;
   const pendingSessions = useMemo(() => {
@@ -434,24 +435,15 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               </button>
 
               <div className="min-w-0 flex-1">
-                <p className={cn("mb-1 inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider", workspaceTheme.accentSoft)}>
-                  {language === "vi" ? (workspaceTheme.labelVi ?? workspaceTheme.label) : workspaceTheme.label}
-                </p>
                 <h1 className="truncate text-xl font-bold tracking-tight lg:text-2xl">
                   {headerTitle}
                 </h1>
-                {headerSubtitle || headerConfig?.toolbar ? (
+                {headerConfig?.toolbar ? (
                   <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-                    {headerSubtitle ? (
-                      <p className="min-w-0 flex-1 text-sm font-semibold text-muted-foreground">
-                        {headerSubtitle}
-                      </p>
-                    ) : <div />}
-                    {headerConfig?.toolbar ? (
-                      <div className="shrink-0">
-                        {headerConfig.toolbar}
-                      </div>
-                    ) : null}
+                    <div />
+                    <div className="shrink-0">
+                      {headerConfig.toolbar}
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -648,13 +640,13 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                         </div>
                         <div className="flex flex-col gap-2 p-1 overflow-y-auto max-h-64">
                           <div className="text-sm font-bold text-cyan-950 dark:text-cyan-100">
-                            {selectedNotification.title}
+                            {translateNotificationField(selectedNotification.title, language)}
                           </div>
                           <div className="text-[10px] font-semibold text-muted-foreground">
                             {new Date(selectedNotification.createdAt).toLocaleString(language === "vi" ? "vi-VN" : "en-US")}
                           </div>
                           <div className="text-xs leading-relaxed text-foreground dark:text-slate-300 mt-2 whitespace-pre-wrap">
-                            {selectedNotification.message}
+                            {translateNotificationField(selectedNotification.message, language)}
                           </div>
                         </div>
                       </div>
@@ -712,14 +704,14 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                               >
                                 <div className="flex items-center justify-between">
                                   <span className={cn("font-bold", notification.read ? "text-muted-foreground" : "text-cyan-955 dark:text-cyan-200")}>
-                                    {notification.title}
+                                    {translateNotificationField(notification.title, language)}
                                   </span>
                                   {!notification.read && (
                                     <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
                                   )}
                                 </div>
                                 <div className={cn("line-clamp-2 text-[11px]", notification.read ? "text-muted-foreground" : "text-foreground dark:text-slate-300")}>
-                                  {notification.message}
+                                  {translateNotificationField(notification.message, language)}
                                 </div>
                               </button>
                             ))}
@@ -1377,6 +1369,9 @@ function SidebarNavLink({
 function isNavActive(pathname: string, item: WorkspaceNavItem) {
   const itemPath = item.href.split("?")[0];
   if (item.exact) return pathname === itemPath;
+  if (itemPath === "/customer/services" && pathname.startsWith("/customer/combos/")) {
+    return true;
+  }
   return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 }
 

@@ -6,7 +6,9 @@ import {
   cancelCustomerBooking,
   changeBookingPaymentMethod,
   createCustomerBooking,
+  createComboVnpayCheckout,
   createVnpayCheckout,
+  getCustomerComboPaymentStatus,
   getActiveWashTracking,
   getCustomerBookingDetail,
   getWashTrackingDetail,
@@ -59,6 +61,7 @@ import type {
   BookingStaffOption,
   BookingStaffOptionsRequest,
   CustomerCombo,
+  CustomerComboPaymentStatus,
   ExtraServiceRecommendation,
   SlotAvailability,
   UpdateBookingStaffRequest,
@@ -149,6 +152,22 @@ export function useActiveCustomerCombos() {
     queryKey: ["booking-catalog", "customer-combos", "active"],
     queryFn: listActiveCustomerCombos,
     enabled,
+  });
+}
+
+export function useCustomerComboPaymentStatus(transactionRef: string | null | undefined, enabled = true) {
+  const context = useBookingQueryContext();
+
+  return useQuery<CustomerComboPaymentStatus, ApiErrorResponse>({
+    queryKey: ["booking-catalog", "customer-combos", "payment-status", context.userId, transactionRef ?? ""],
+    queryFn: () => getCustomerComboPaymentStatus(transactionRef!),
+    enabled: context.enabled && enabled && Boolean(transactionRef),
+    refetchInterval: (query) => {
+      const status = query.state.data?.paymentStatus?.toUpperCase();
+      return status === "PAID" ? false : 3_000;
+    },
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -279,6 +298,12 @@ export function useCreateCustomerBooking() {
 export function useCreateVnpayCheckout() {
   return useMutation<VnpayCheckoutResponse, ApiErrorResponse, string>({
     mutationFn: createVnpayCheckout,
+  });
+}
+
+export function useCreateComboVnpayCheckout() {
+  return useMutation<VnpayCheckoutResponse, ApiErrorResponse, { transactionRef: string; amount: number }>({
+    mutationFn: createComboVnpayCheckout,
   });
 }
 
