@@ -128,7 +128,48 @@ export function useUpdateCustomerVehicle(vehicleId: string) {
     UpdateCustomerVehicleRequest
   >({
     mutationFn: (payload) => updateCustomerVehicle(vehicleId, payload),
-    onSuccess: async () => {
+    onSuccess: async (updatedVehicle) => {
+      queryClient.setQueryData<CustomerVehicleDetail>(
+        customerVehicleDetailQueryKey(userId, vehicleId),
+        (current) =>
+          current
+            ? {
+                ...current,
+                brand: updatedVehicle.brand,
+                model: updatedVehicle.model,
+                year: updatedVehicle.year,
+                color: updatedVehicle.color,
+              }
+            : current,
+      );
+
+      queryClient.setQueriesData<CustomerVehicleListPage>(
+        { queryKey: customerVehiclesQueryScope(userId) },
+        (current) => {
+          if (
+            !current ||
+            !("items" in current) ||
+            !Array.isArray(current.items)
+          ) {
+            return current;
+          }
+
+          return {
+            ...current,
+            items: current.items.map((vehicle) =>
+              vehicle.vehicleId === vehicleId
+                ? {
+                    ...vehicle,
+                    brand: updatedVehicle.brand,
+                    model: updatedVehicle.model,
+                    color: updatedVehicle.color,
+                  }
+                : vehicle,
+            ),
+          };
+        },
+      );
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: customerVehiclesQueryScope(userId) }),
         queryClient.invalidateQueries({

@@ -78,6 +78,7 @@ import {
   validateCustomerVehicleForm,
   buildCreateCustomerVehicleRequest,
 } from "@/features/vehicles/lib/vehicle-form";
+import { VEHICLE_COLOR_OPTIONS } from "@/features/vehicles/lib/vehicle-colors";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -152,11 +153,7 @@ const CAR_BRANDS: Record<string, string[]> = {
 
 const BRAND_LIST = Object.keys(CAR_BRANDS);
 
-const VEHICLE_COLORS = [
-  "White", "Black", "Silver", "Gray", "Red", "Blue", "Brown",
-  "Green", "Yellow", "Orange", "Gold", "Beige", "Navy Blue",
-  "Champagne", "Pearl White", "Midnight Black", "Other",
-];
+const VEHICLE_COLORS = VEHICLE_COLOR_OPTIONS.map((color) => color.value);
 
 const selectCls =
   "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -1262,7 +1259,7 @@ export function CustomerBookingForm() {
       <BookingPageErrorState
         title="No active vehicles found"
         description="Add at least one vehicle before creating a booking."
-        actionHref="/customer/vehicles/add"
+        actionHref="/customer/vehicles"
         actionLabel="Add vehicle"
       />
     );

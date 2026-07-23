@@ -7,11 +7,14 @@ import {
   ArrowLeft,
   CalendarClock,
   CarFront,
+  Eye,
+  Filter,
   Loader2,
   Palette,
   Plus,
   RefreshCcw,
   Save,
+  Search,
   ShieldCheck,
   Sparkles,
   Star,
@@ -20,6 +23,13 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/ui/ui/dialog";
+import { Input } from "@/shared/ui/ui/input";
 import { getFieldErrorMessage } from "@/shared/lib/api-errors";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
@@ -52,12 +62,17 @@ import type {
 } from "@/entities/vehicles";
 import { CustomerVehicleFormCard } from "@/features/vehicles/components/vehicle-form";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
+import { getVehicleColorOption } from "@/features/vehicles/lib/vehicle-colors";
 
 export function CustomerVehiclesListClientPage() {
   const { language } = useLanguageStore();
   const getErrorMessage = useErrorMessage();
+  const router = useRouter();
   const vehiclesQuery = useCustomerVehicles();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [search, setSearch] = useState("");
+  const [sortMode, setSortMode] = useState<"RECENT" | "PRIMARY" | "PLATE">("RECENT");
 
   if (vehiclesQuery.isPending) {
     return <VehiclePageLoadingState />;
@@ -74,43 +89,94 @@ export function CustomerVehiclesListClientPage() {
     );
   }
 
-  if (!vehiclesQuery.data || vehiclesQuery.data.items.length === 0) {
-    return <VehicleEmptyState language={language} />;
-  }
+  const vehicles = vehiclesQuery.data?.items ?? [];
+  const filteredVehicles = vehicles
+    .filter((vehicle) => {
+      const query = search.trim().toLowerCase();
+      if (!query) return true;
+      return [vehicle.plate, vehicle.brand, vehicle.model, vehicle.color ?? "", vehicle.type]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    })
+    .sort((a, b) => {
+      if (sortMode === "PRIMARY") {
+        return Number(b.isPrimary) - Number(a.isPrimary);
+      }
+      if (sortMode === "PLATE") {
+        return a.plate.localeCompare(b.plate);
+      }
+      return 0;
+    });
+  const activeCount = vehicles.filter((vehicle) => vehicle.status.toUpperCase() === "ACTIVE").length;
+  const primaryCount = vehicles.filter((vehicle) => vehicle.isPrimary).length;
 
   return (
-    <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_25%),linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">
+    <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-[#f7fbff] px-4 py-6 sm:px-6 lg:px-8">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -right-24 top-10 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl" />
-        <div className="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-blue-100/60 blur-3xl" />
+        <div className="absolute right-0 top-0 h-64 w-1/2 bg-[linear-gradient(120deg,rgba(219,234,254,0.78),rgba(255,255,255,0))]" />
       </div>
 
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6">
-        <section className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
-                <CarFront className="h-3.5 w-3.5" />
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-xl space-y-4">
+              <div className="text-xs font-black uppercase tracking-[0.18em] text-cyan-600">
                 {translate(language, "Xe cua khach hang", "Customer vehicles")}
               </div>
               <div>
-                <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+                <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
                   {translate(language, "Tat ca xe", "All vehicles")}
                 </h1>
+                <p className="mt-2 text-sm text-slate-500">
+                  {translate(language, "Quan ly xe da luu va mo ho so chi tiet cua tung xe.", "Manage your saved vehicles and open each full vehicle profile.")}
+                </p>
+              </div>
+              <div className="grid max-w-2xl gap-3 sm:grid-cols-3">
+                <VehicleStatCard icon={CarFront} value={vehicles.length} label={translate(language, "Tong so xe", "Total vehicles")} tone="sky" />
+                <VehicleStatCard icon={ShieldCheck} value={activeCount} label={translate(language, "Xe dang hoat dong", "Active vehicles")} tone="emerald" />
+                <VehicleStatCard icon={Star} value={primaryCount} label={translate(language, "Xe uu tien", "Primary vehicles")} tone="amber" />
               </div>
             </div>
 
-            <Button asChild className="h-11 rounded-xl bg-slate-900 px-5 text-white hover:bg-slate-800">
-              <Link href="/customer/vehicles/add">
+            <Button className="h-12 rounded-lg bg-[#06275f] px-6 text-white shadow-sm hover:bg-[#041d48]" onClick={() => setShowCreateDialog(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 {translate(language, "Them xe", "Add vehicle")}
-              </Link>
             </Button>
           </div>
         </section>
 
-        <section className="grid gap-4">
-          {vehiclesQuery.data.items.map((vehicle) => (
+        {vehicles.length === 0 ? (
+          <VehicleEmptyState language={language} onAddClick={() => setShowCreateDialog(true)} />
+        ) : (
+          <>
+            <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+              <div className="relative w-full lg:max-w-xl">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder={translate(language, "Tim theo bien so, mau xe, dong xe...", "Search vehicles by plate, model, or color...")}
+                  className="h-11 rounded-lg border-slate-200 pl-10"
+                />
+              </div>
+              <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600">
+                <Filter className="h-4 w-4 text-slate-400" />
+                <span>{translate(language, "Sap xep", "Sort by")}</span>
+                <select
+                  value={sortMode}
+                  onChange={(event) => setSortMode(event.target.value as typeof sortMode)}
+                  className="bg-transparent text-slate-950 outline-none"
+                >
+                  <option value="RECENT">{translate(language, "Moi them gan day", "Recently added")}</option>
+                  <option value="PRIMARY">{translate(language, "Xe uu tien", "Primary first")}</option>
+                  <option value="PLATE">{translate(language, "Bien so", "Plate")}</option>
+                </select>
+              </label>
+            </section>
+
+            <section className="grid gap-4">
+              {filteredVehicles.map((vehicle) => (
             <VehicleListCard
               key={vehicle.vehicleId}
               vehicle={vehicle}
@@ -118,9 +184,25 @@ export function CustomerVehiclesListClientPage() {
               onDeleteChange={setDeleteId}
               language={language}
             />
-          ))}
-        </section>
+              ))}
+              {filteredVehicles.length === 0 ? (
+                <Card className="border-dashed border-slate-200 bg-white p-10 text-center text-sm font-semibold text-slate-500">
+                  {translate(language, "Khong tim thay xe phu hop.", "No vehicles match your search.")}
+                </Card>
+              ) : null}
+            </section>
+          </>
+        )}
       </div>
+
+      <VehicleCreateDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onCreated={(vehicleId) => {
+          setShowCreateDialog(false);
+          router.push(`/customer/vehicles/${vehicleId}`);
+        }}
+      />
     </div>
   );
 }
@@ -240,8 +322,14 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
   }
 
   const vehicle = vehicleQuery.data;
-  const vehicleDisplayName = getVehicleDisplayName(vehicle, language);
   const submitErrors = getSubmitErrors(updateMutation.error, clientErrors, showValidation);
+  const previewVehicle: CustomerVehicleDetail = {
+    ...vehicle,
+    brand: form.brand || vehicle.brand,
+    model: form.model || vehicle.model,
+    year: Number(form.year) || vehicle.year,
+    color: form.color || null,
+  };
   const hasChanges =
     form.brand !== vehicle.brand ||
     form.model !== vehicle.model ||
@@ -315,77 +403,10 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
       backHref="/customer/vehicles"
       backLabel={translate(language, "Quay lai danh sach xe", "Back to vehicles")}
     >
-      <section className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(13,148,136,0.92))] p-6 text-white shadow-[0_30px_80px_rgba(15,23,42,0.18)] sm:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-white/80">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              {translate(language, "Chi tiet xe", "Vehicle detail")}
-            </div>
-            <div className="space-y-2">
-              <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-                {vehicleDisplayName}
-              </h1>
-              <div className="flex flex-wrap items-center gap-2 text-sm text-white/75">
-                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 font-semibold">
-                  {vehicle.plate}
-                </span>
-                <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 font-semibold text-emerald-100">
-                  {vehicle.status}
-                </span>
-                {vehicle.isPrimary ? (
-                  <span className="inline-flex items-center rounded-full border border-amber-300/20 bg-amber-300/15 px-3 py-1 font-semibold text-amber-100">
-                    <Star className="mr-1 h-3.5 w-3.5" />
-                    {translate(language, "Xe chinh", "Primary vehicle")}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-            <p className="max-w-2xl text-sm leading-6 text-white/75">
-              {translate(
-                language,
-                "Theo doi xe dang dung cho booking, cap nhat thong tin hien thi va dat lai xe chinh khi can.",
-                "Review the vehicle used for bookings, keep profile details current, and switch the primary vehicle when needed.",
-              )}
-            </p>
-          </div>
-
-          <div className="grid gap-3 sm:min-w-[320px] sm:grid-cols-2 lg:w-[360px] lg:grid-cols-1">
-            <VehicleHeroMetric
-              icon={CarFront}
-              label={translate(language, "Loai xe", "Vehicle type")}
-              value={vehicle.type}
-            />
-            <VehicleHeroMetric
-              icon={Palette}
-              label={translate(language, "Mau sac", "Color")}
-              value={getVehicleDisplayColor(vehicle.color, language)}
-            />
-            <VehicleHeroMetric
-              icon={CalendarClock}
-              label={translate(language, "Ngay tao", "Created")}
-              value={formatDateTime(vehicle.createdAt, locale)}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
-        <div className="space-y-6">
-          <VehicleInfoSummaryCard vehicle={vehicle} language={language} locale={locale} />
-          <VehicleQuickActionsCard
-            vehicle={vehicle}
-            language={language}
-            onSetPrimary={handleSetPrimary}
-            onDelete={handleDelete}
-            isSettingPrimary={setPrimaryMutation.isPending}
-            isDeleting={deleteMutation.isPending}
-          />
-        </div>
-
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <CustomerVehicleFormCard
-          title={vehicleDisplayName}
-          description={translate(language, "Cap nhat cac truong xe co the chinh sua. Bien so va loai xe chi doc de giu lich su xe nhat quan.", "Update editable vehicle fields. Plate and type stay read-only to keep vehicle history consistent.")}
+          title={translate(language, "Thong tin xe", "Vehicle information")}
+          description={translate(language, "Cap nhat thong tin xe dang luu trong ho so cua ban.", "Update the vehicle details saved in your profile.")}
           form={form}
           errors={submitErrors}
           submitLabel={translate(language, "Luu thay doi", "Save changes")}
@@ -400,16 +421,242 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
           onSubmit={handleSave}
           onCancel={() => router.push("/customer/vehicles")}
           extraActions={
-            <div className="flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
-              <Save className="h-3.5 w-3.5" />
-              {hasChanges
-                ? translate(language, "Co thay doi chua luu", "Unsaved changes")
-                : translate(language, "Da dong bo", "Up to date")}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                {vehicle.status}
+              </span>
+              {vehicle.isPrimary ? (
+                <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                  <Star className="mr-1 h-3.5 w-3.5" />
+                  {translate(language, "Xe uu tien", "Primary vehicle")}
+                </span>
+              ) : null}
+              <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+                <Save className="h-3.5 w-3.5" />
+                {hasChanges
+                  ? translate(language, "Co thay doi chua luu", "Unsaved changes")
+                  : translate(language, "Da dong bo", "Up to date")}
+              </span>
             </div>
           }
         />
+
+        <div className="space-y-5">
+          <VehiclePreviewCard vehicle={previewVehicle} language={language} locale={locale} />
+          <VehicleQuickActionsCard
+            vehicle={vehicle}
+            language={language}
+            onSetPrimary={handleSetPrimary}
+            onDelete={handleDelete}
+            isSettingPrimary={setPrimaryMutation.isPending}
+            isDeleting={deleteMutation.isPending}
+          />
+        </div>
       </section>
     </VehicleFormPageShell>
+  );
+}
+
+function VehicleCreateDialog({
+  open,
+  onOpenChange,
+  onCreated,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: (vehicleId: string) => void;
+}) {
+  const { language } = useLanguageStore();
+  const getErrorMessage = useErrorMessage();
+  const createVehicleMutation = useCreateCustomerVehicle();
+  const [form, setForm] = useState<CustomerVehicleFormValues>(EMPTY_CUSTOMER_VEHICLE_FORM);
+  const [showValidation, setShowValidation] = useState(false);
+  const clientErrors = useMemo(() => validateCustomerVehicleForm(form, "create"), [form]);
+  const submitErrors = getSubmitErrors(createVehicleMutation.error, clientErrors, showValidation);
+
+  const handleSubmit = async () => {
+    setShowValidation(true);
+
+    if (Object.keys(clientErrors).length > 0) {
+      return;
+    }
+
+    try {
+      const createdVehicle = await createVehicleMutation.mutateAsync(buildCreateCustomerVehicleRequest(form));
+      toast.success(translate(language, "Xe da duoc tao thanh cong.", "Vehicle created successfully."), VEHICLE_TOAST_OPTIONS);
+      setForm(EMPTY_CUSTOMER_VEHICLE_FORM);
+      setShowValidation(false);
+      onCreated(createdVehicle.vehicleId);
+    } catch (error) {
+      toast.error(
+        getVehicleToastErrorMessage(
+          error,
+          translate(language, "Khong the tao xe.", "Unable to create vehicle."),
+          getErrorMessage,
+        ),
+        VEHICLE_TOAST_OPTIONS,
+      );
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        onOpenChange(nextOpen);
+        if (!nextOpen) {
+          createVehicleMutation.reset();
+          setShowValidation(false);
+        }
+      }}
+    >
+      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto rounded-2xl p-0">
+        <DialogHeader className="sr-only">
+          <DialogTitle>{translate(language, "Them xe moi", "Add a new vehicle")}</DialogTitle>
+        </DialogHeader>
+        <CustomerVehicleFormCard
+          title={translate(language, "Them xe moi", "Add a new vehicle")}
+          description={translate(language, "Nhap thong tin xe, sau khi luu he thong se mo trang chi tiet xe vua tao.", "Enter the vehicle details. After saving, the vehicle detail page will open.")}
+          form={form}
+          errors={submitErrors}
+          submitLabel={translate(language, "Tao xe", "Create vehicle")}
+          isSubmitting={createVehicleMutation.isPending}
+          onChange={(field, value) => {
+            setForm((current) => ({ ...current, [field]: value }));
+            if (createVehicleMutation.isError) {
+              createVehicleMutation.reset();
+            }
+          }}
+          onSubmit={handleSubmit}
+          onCancel={() => onOpenChange(false)}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function VehicleStatCard({
+  icon: Icon,
+  value,
+  label,
+  tone,
+}: {
+  icon: typeof CarFront;
+  value: number;
+  label: string;
+  tone: "sky" | "emerald" | "amber";
+}) {
+  const styles = {
+    sky: "bg-sky-50 text-sky-700",
+    emerald: "bg-emerald-50 text-emerald-700",
+    amber: "bg-amber-50 text-amber-700",
+  }[tone];
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${styles}`}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <span>
+        <span className="block text-lg font-black text-slate-950">{value}</span>
+        <span className="block text-xs font-semibold text-slate-500">{label}</span>
+      </span>
+    </div>
+  );
+}
+
+function VehiclePreviewCard({
+  vehicle,
+  language,
+  locale,
+}: {
+  vehicle: CustomerVehicleDetail;
+  language: "vi" | "en";
+  locale: string;
+}) {
+  const details = [
+    { icon: CarFront, label: translate(language, "Bien so", "License plate"), value: vehicle.plate },
+    { icon: ShieldCheck, label: translate(language, "Loai xe", "Vehicle type"), value: vehicle.type },
+    { icon: Sparkles, label: translate(language, "Hang xe", "Brand"), value: getVehicleDisplayField("brand", vehicle.brand, language) },
+    { icon: CarFront, label: translate(language, "Dong xe", "Model"), value: getVehicleDisplayField("model", vehicle.model, language) },
+    { icon: CalendarClock, label: translate(language, "Nam", "Year"), value: String(vehicle.year) },
+    { icon: Palette, label: translate(language, "Mau sac", "Color"), value: getVehicleDisplayColor(vehicle.color, language) },
+    { icon: CalendarClock, label: translate(language, "Ngay tao", "Created"), value: formatDateTime(vehicle.createdAt, locale) },
+  ];
+
+  return (
+    <Card className="overflow-hidden rounded-lg border-slate-200 bg-white shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg font-black text-slate-950">
+          {getVehicleDisplayName(vehicle, language)}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 p-5 pt-0">
+        <VehicleImage vehicle={vehicle} size="large" />
+        <div className="grid grid-cols-2 gap-3">
+          {details.map((item) => (
+            <div key={item.label} className={item.label === translate(language, "Ngay tao", "Created") ? "col-span-2" : ""}>
+              <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500">
+                <item.icon className="h-3.5 w-3.5 text-sky-500" />
+                {item.label}
+              </div>
+              <div className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-950">
+                {item.label === translate(language, "Mau sac", "Color") ? <VehicleColorSwatch color={vehicle.color} /> : null}
+                {item.value}
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function VehicleImage({
+  vehicle,
+  size = "small",
+}: {
+  vehicle: Pick<CustomerVehicleListItem, "color" | "brand" | "model" | "type">;
+  size?: "small" | "large";
+}) {
+  const isLarge = size === "large";
+  const colorOption = getVehicleColorOption(vehicle.color);
+
+  return (
+    <div
+      className={`relative overflow-hidden rounded-lg border border-slate-100 shadow-inner ${
+        isLarge ? "h-36" : "h-20 w-32"
+      }`}
+      style={{ background: colorOption.imageBackground ?? "linear-gradient(135deg,#f8fdff,#eef8ff)" }}
+    >
+      <img
+        src={colorOption.image}
+        alt={`${vehicle.brand} ${vehicle.model}`}
+        className={`absolute left-1/2 top-1/2 max-w-none -translate-x-1/2 -translate-y-1/2 object-contain ${
+          isLarge ? "h-[132%] w-[132%]" : "h-[145%] w-[145%]"
+        }`}
+        style={colorOption.imageFilter ? { filter: colorOption.imageFilter } : undefined}
+        loading="lazy"
+      />
+      <div className="pointer-events-none absolute inset-0 rounded-lg ring-1 ring-inset ring-white/70" />
+      {isLarge ? (
+        <div className="absolute bottom-3 left-4 rounded-full bg-white/80 px-3 py-1 text-xs font-black text-slate-700">
+          {vehicle.type}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function VehicleColorSwatch({ color }: { color: string | null | undefined }) {
+  const option = getVehicleColorOption(color);
+
+  return (
+    <span
+      className="inline-flex h-2.5 w-2.5 shrink-0 rounded-full border"
+      style={{ backgroundColor: option.hex, borderColor: option.border ?? option.hex }}
+      aria-hidden="true"
+    />
   );
 }
 
@@ -665,50 +912,59 @@ function VehicleListCard({
   };
 
   return (
-    <Card className="border-slate-200/80 bg-white/90 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
-      <CardContent className="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-md">
-            <CarFront className="h-6 w-6" />
-          </div>
-          <div className="space-y-3">
+    <Card className="rounded-2xl border-slate-200 bg-white shadow-sm transition hover:border-cyan-200 hover:shadow-md">
+      <CardContent className="flex flex-col gap-5 p-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-start gap-4">
+          <VehicleImage vehicle={vehicle} />
+          <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-black text-slate-900">{vehicle.plate}</h2>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+              <h2 className="text-xl font-black text-slate-950">{vehicle.plate}</h2>
+              <span className="rounded-md bg-sky-50 px-2 py-1 text-[11px] font-black text-sky-700">
                 {vehicle.type}
               </span>
-              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              <span className="rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-black text-emerald-700">
                 {vehicle.status}
               </span>
               {vehicle.isPrimary ? (
-                <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
-                  <Star className="mr-1 h-3.5 w-3.5" />
-                  {translate(language, "Xe chinh", "Primary")}
+                <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-1 text-[11px] font-black text-amber-800">
+                  <Star className="mr-1 h-3 w-3" />
+                  {translate(language, "Uu tien", "Primary")}
                 </span>
               ) : null}
             </div>
-            <div className="text-sm text-slate-600">
+            <div className="truncate text-sm font-semibold text-slate-600">
               {vehicleDisplayName}
             </div>
-            <div className="text-sm text-slate-500">
-              {translate(language, "Mau sac", "Color")}: {getVehicleDisplayColor(vehicle.color, language)}
+            <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500">
+              <span className="inline-flex items-center gap-1">
+                <Palette className="h-3.5 w-3.5 text-slate-400" />
+                <VehicleColorSwatch color={vehicle.color} />
+                {getVehicleDisplayColor(vehicle.color, language)}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <ShieldCheck className="h-3.5 w-3.5 text-slate-400" />
+                {vehicle.isPrimary
+                  ? translate(language, "Se duoc uu tien khi booking", "Preferred for bookings")
+                  : translate(language, "Co the dat lam xe uu tien", "Can be set as primary")}
+              </span>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="outline"
-            className="rounded-xl"
+            className="h-10 rounded-lg border-slate-200"
             onClick={() => router.push(`/customer/vehicles/${vehicle.vehicleId}`)}
           >
+            <Eye className="mr-2 h-4 w-4" />
             {translate(language, "Xem chi tiet", "View details")}
           </Button>
           <Button
             type="button"
             variant="outline"
-            className="rounded-xl"
+            className="h-10 rounded-lg border-slate-200"
             onClick={handleSetPrimary}
             disabled={vehicle.isPrimary || setPrimaryMutation.isPending}
           >
@@ -731,7 +987,7 @@ function VehicleListCard({
               <Button
                 type="button"
                 variant="destructive"
-                className="rounded-xl"
+                className="h-10 rounded-lg"
                 onClick={handleDelete}
                 disabled={deleteMutation.isPending}
               >
@@ -747,7 +1003,7 @@ function VehicleListCard({
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-xl"
+                className="h-10 rounded-lg border-slate-200"
                 onClick={() => onDeleteChange(null)}
               >
                 {translate(language, "Huy", "Cancel")}
@@ -757,7 +1013,7 @@ function VehicleListCard({
             <Button
               type="button"
               variant="destructive"
-              className="rounded-xl"
+              className="h-10 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100"
               onClick={() => onDeleteChange(vehicle.vehicleId)}
             >
               <Trash2 className="mr-2 h-4 w-4" />
@@ -811,10 +1067,10 @@ function VehiclePageErrorState({
   );
 }
 
-function VehicleEmptyState({ language }: { language: "vi" | "en" }) {
+function VehicleEmptyState({ language, onAddClick }: { language: "vi" | "en"; onAddClick: () => void }) {
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8">
-      <Card className="mx-auto max-w-4xl border-slate-200 bg-white/95 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+    <div>
+      <Card className="border-dashed border-slate-200 bg-white/95 shadow-sm">
         <CardHeader>
           <CardTitle className="text-slate-900">
             {translate(language, "Chua co xe nao duoc luu", "No vehicles saved yet")}
@@ -824,11 +1080,9 @@ function VehicleEmptyState({ language }: { language: "vi" | "en" }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button asChild className="rounded-xl bg-slate-900 text-white hover:bg-slate-800">
-            <Link href="/customer/vehicles/add">
-              <Plus className="mr-2 h-4 w-4" />
-              {translate(language, "Them xe dau tien", "Add first vehicle")}
-            </Link>
+          <Button className="rounded-lg bg-[#06275f] text-white hover:bg-[#041d48]" onClick={onAddClick}>
+            <Plus className="mr-2 h-4 w-4" />
+            {translate(language, "Them xe dau tien", "Add first vehicle")}
           </Button>
         </CardContent>
       </Card>
