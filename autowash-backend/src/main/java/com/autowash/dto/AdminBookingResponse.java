@@ -24,6 +24,9 @@ public record AdminBookingResponse(
         String washStatus,
         Instant createdAt,
         String staffName,
-        List<BookingDetailResponse.StaffAssignment> assignedStaff
+        List<BookingDetailResponse.StaffAssignment> assignedStaff,
+        Integer rating,
+        Integer durationMinutes,
+        String sessionNote
 ) {
 }

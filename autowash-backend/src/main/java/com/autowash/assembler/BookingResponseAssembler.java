@@ -125,7 +125,8 @@ public class BookingResponseAssembler {
                 washSession == null ? null : washSession.getNotes(),
                 booking.getCreatedAt(),
                 null,
-                statusHistory
+                statusHistory,
+                null
         );
     }
 

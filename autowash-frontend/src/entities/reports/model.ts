@@ -18,6 +18,9 @@ export type AdminBooking = {
   createdAt: string;
   staffName: string | null;
   assignedStaff?: AdminBookingStaffAssignment[];
+  rating: number | null;
+  durationMinutes: number | null;
+  sessionNote: string | null;
 };
 
 export type AdminBookingStaffAssignment = {

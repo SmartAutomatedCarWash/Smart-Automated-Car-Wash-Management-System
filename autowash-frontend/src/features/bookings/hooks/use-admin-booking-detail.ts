@@ -4,6 +4,8 @@ import {
   getAdminBookingDetail,
   refundAdminVnpayPayment,
   updateAdminBookingStatus,
+  getAdminVehicleDetail,
+  type AdminVehicleDetail
 } from "@/features/reports/api/admin-reporting-service";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
@@ -60,5 +62,17 @@ export function useRefundAdminVnpayPayment(id: string) {
         queryClient.invalidateQueries({ queryKey: ["admin-bookings"] }),
       ]);
     },
+  });
+}
+
+export function useAdminVehicleDetail(vehicleId: string, enabled: boolean) {
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const user = useAuthStore((state) => state.user);
+  const isAuthorized = Boolean(accessToken && (user?.role === "ADMIN" || user?.role === "MANAGER"));
+
+  return useQuery<AdminVehicleDetail, ApiErrorResponse>({
+    queryKey: ["admin-vehicle-detail", vehicleId],
+    queryFn: () => getAdminVehicleDetail(vehicleId),
+    enabled: isAuthorized && enabled && Boolean(vehicleId),
   });
 }

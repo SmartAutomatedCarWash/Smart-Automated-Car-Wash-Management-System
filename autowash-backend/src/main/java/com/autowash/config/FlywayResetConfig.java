@@ -57,6 +57,7 @@ public class FlywayResetConfig {
                     .locations("classpath:db/demo")
                     .table("flyway_demo_history")
                     .defaultSchema(defaultSchema)
+                    .baselineOnMigrate(true)
                     .validateOnMigrate(false)
                     .outOfOrder(true)
                     .ignoreMigrationPatterns("*:missing", "*:future")

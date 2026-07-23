@@ -7,6 +7,7 @@ import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.StaffKpiItem;
 
 import com.autowash.dto.AdminBookingResponse;
+import com.autowash.dto.AdminBookingSummaryResponse;
 import com.autowash.dto.AdminBusinessHealthReportResponse;
 import com.autowash.dto.AdminAccountResponse;
 import com.autowash.dto.AdminCustomerDetailResponse;
@@ -37,6 +38,7 @@ public interface AdminReportingService {
     AdminAccountResponse getAccountDetail(UUID accountId);
     AdminBusinessHealthReportResponse getBusinessHealthReport(String range, String analysisGroup, LocalDate customDateFrom, LocalDate customDateTo);
     BookingPage listBookings(String status, LocalDate dateFrom, LocalDate dateTo, UUID customerId, String searchQuery, int page, int limit);
+    AdminBookingSummaryResponse getBookingSummary();
     BookingDetailResponse getBookingDetail(String bookingId);
     AdminCustomerDetailResponse getCustomerDetail(UUID customerId);
     UpdateAdminCustomerRoleResponse updateCustomerRole(UUID customerId, String role);
@@ -46,6 +48,7 @@ public interface AdminReportingService {
     LoyaltyService.TransactionPage getPointHistory(UUID customerId, String type, Instant dateFrom, Instant dateTo, int page, int limit);
     CustomerVehiclePage getCustomerVehicles(UUID customerId, int page, int limit);
     TierHistoryPage getTierHistory(UUID customerId, int page, int limit);
+    com.autowash.dto.AdminVehicleDetailResponse getVehicleDetail(String vehicleId);
 
     record BookingPage(List<AdminBookingResponse> items, PaginationMeta pagination) {}
     record AccountPage(List<AdminAccountResponse> items, PaginationMeta pagination) {}

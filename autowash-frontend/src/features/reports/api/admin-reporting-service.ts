@@ -84,6 +84,30 @@ export async function getAdminBookingDetail(id: string): Promise<BookingDetail> 
   return response.data.data;
 }
 
+export interface AdminVehicleDetail {
+  vehicleId: string;
+  plate: string;
+  brand: string;
+  model: string;
+  color: string;
+  ownerName: string;
+  ownerPhone: string;
+  bookingHistory: {
+    bookingId: string;
+    confirmationNumber: string;
+    bookingDate: string;
+    bookingTime: string;
+    primaryItemName: string;
+    finalAmount: number;
+    status: string;
+  }[];
+}
+
+export async function getAdminVehicleDetail(vehicleId: string): Promise<AdminVehicleDetail> {
+  const response = await apiClient.get<ApiSuccessResponse<AdminVehicleDetail>>(`/admin/bookings/vehicles/${vehicleId}`);
+  return response.data.data;
+}
+
 export async function confirmAdminBooking(id: string): Promise<BookingDetail> {
   return apiRequest<BookingDetail>({
     method: "POST",
@@ -328,4 +352,19 @@ function isEndpointUnavailable(error: unknown) {
 
   const statusCode = (error as { statusCode?: unknown }).statusCode;
   return statusCode === 404 || statusCode === 405;
+}
+
+export async function getAdminBookingSummary(): Promise<{
+  totalBookings: number;
+  todayBookings: number;
+  inProgress: number;
+  completedComboSessions: number;
+}> {
+  const response = await apiClient.get<ApiSuccessResponse<{
+    totalBookings: number;
+    todayBookings: number;
+    inProgress: number;
+    completedComboSessions: number;
+  }>>("/admin/bookings/summary");
+  return response.data.data;
 }

@@ -105,7 +105,8 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
             select distinct on (booking_id)
                 id as "id",
                 booking_id as "bookingId",
-                status as "status"
+                status as "status",
+                notes as "notes"
             from wash_sessions
             where booking_id in (:bookingIds)
             order by booking_id, coalesce(completed_at, created_at) desc, created_at desc, id desc
@@ -116,6 +117,7 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
         UUID getId();
         UUID getBookingId();
         String getStatus();
+        String getNotes();
     }
 
     @EntityGraph(attributePaths = {"booking"})

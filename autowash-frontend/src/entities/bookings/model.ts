@@ -334,6 +334,11 @@ export type BookingDetail = {
   createdAt: string;
   devOtp?: string;
   statusHistory?: BookingStatusHistoryItem[];
+  review?: {
+    rating: number;
+    comment: string;
+    createdAt: string;
+  } | null;
 };
 
 export type BookingListPage = {
