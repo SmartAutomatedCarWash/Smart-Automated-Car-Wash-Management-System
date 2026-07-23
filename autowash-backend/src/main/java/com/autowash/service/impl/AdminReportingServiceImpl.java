@@ -54,6 +54,7 @@ import java.util.Map;
 
 
 import com.autowash.dto.AdminBookingResponse;
+import com.autowash.dto.AdminBookingSummaryResponse;
 import com.autowash.dto.AdminBusinessHealthReportResponse;
 import com.autowash.dto.AdminAccountResponse;
 import com.autowash.dto.AdminCustomerDetailResponse;
@@ -108,6 +109,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.autowash.repository.ReviewRepository;
+import com.autowash.entity.Review;
+import com.autowash.entity.BookingDetail;
+import com.autowash.repository.BookingStatusHistoryRepository;
+import com.autowash.entity.BookingStatusHistory;
+import com.autowash.dto.BookingStatusHistoryItem;
+
 @Service
 public class AdminReportingServiceImpl implements AdminReportingService {
     private static final EnumSet<BookingStatus> REVENUE_STATUSES = EnumSet.of(
@@ -131,6 +139,8 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     private final BookingStaffAssignmentRepository bookingStaffAssignmentRepository;
     private final WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository;
     private final BookingResponseAssembler bookingResponseAssembler;
+    private final ReviewRepository reviewRepository;
+    private final BookingStatusHistoryRepository bookingStatusHistoryRepository;
 
     public AdminReportingServiceImpl(
             BookingRepository bookingRepository,
@@ -146,7 +156,9 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             LoyaltyAccountRepository loyaltyAccountRepository,
             BookingStaffAssignmentRepository bookingStaffAssignmentRepository,
             WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository,
-            BookingResponseAssembler bookingResponseAssembler
+            BookingResponseAssembler bookingResponseAssembler,
+            ReviewRepository reviewRepository,
+            BookingStatusHistoryRepository bookingStatusHistoryRepository
     ) {
         this.bookingRepository = bookingRepository;
         this.washSessionRepository = washSessionRepository;
@@ -162,6 +174,8 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         this.bookingStaffAssignmentRepository = bookingStaffAssignmentRepository;
         this.washSessionStaffAssignmentRepository = washSessionStaffAssignmentRepository;
         this.bookingResponseAssembler = bookingResponseAssembler;
+        this.reviewRepository = reviewRepository;
+        this.bookingStatusHistoryRepository = bookingStatusHistoryRepository;
     }
 
     @Transactional
@@ -362,6 +376,23 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         );
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public AdminBookingSummaryResponse getBookingSummary() {
+        long total = bookingRepository.count();
+        
+        LocalDate today = LocalDate.now();
+        ZoneId zone = ZoneId.systemDefault();
+        Instant startOfToday = today.atStartOfDay(zone).toInstant();
+        Instant endOfToday = today.plusDays(1).atStartOfDay(zone).minusNanos(1).toInstant();
+        long todayBookings = bookingRepository.countByScheduledAtBetween(startOfToday, endOfToday);
+        
+        long inProgress = bookingRepository.countByStatus(BookingStatus.IN_PROGRESS);
+        long completedCombo = bookingRepository.countCompletedComboBookings();
+        
+        return new AdminBookingSummaryResponse(total, todayBookings, inProgress, completedCombo);
+    }
+
     @Transactional(readOnly = true)
     public AccountPage listAccounts(String role, String status, String searchQuery, int page, int limit) {
         UserRole parsedRole = parseRole(role);
@@ -514,8 +545,14 @@ public class AdminReportingServiceImpl implements AdminReportingService {
 
         Map<UUID, WashSessionRepository.SessionSummary> sessionsByBookingId = sessionSummariesByBookingId(bookings.getContent());
         Map<UUID, String> serviceNames = serviceNames(bookings.getContent());
+        
+        List<UUID> bookingIds = bookings.getContent().stream().map(Booking::getId).toList();
+        List<Review> reviews = reviewRepository.findByBookingIdIn(bookingIds);
+        Map<UUID, Integer> ratingsByBookingId = reviews.stream()
+                .collect(Collectors.toMap(r -> r.getBooking().getId(), Review::getRating, (r1, r2) -> r1));
+
         List<AdminBookingResponse> items = bookings.getContent().stream()
-                .map(booking -> toBookingResponse(booking, sessionsByBookingId.get(booking.getId()), serviceNames))
+                .map(booking -> toBookingResponse(booking, sessionsByBookingId.get(booking.getId()), serviceNames, ratingsByBookingId))
                 .toList();
         return new BookingPage(items, pagination(bookings));
     }
@@ -535,6 +572,24 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         PaymentInfo payment = resolvePaymentInfo(booking);
         List<BookingDetailResponse.StaffAssignment> assignedStaff = assignedStaffForBookingDetail(booking, washSession);
         String staffName = firstStaffName(assignedStaff, booking.getAssignedStaff());
+
+        List<BookingStatusHistoryItem> statusHistory = bookingStatusHistoryRepository.findByBooking_IdOrderByChangedAtAsc(booking.getId())
+                .stream()
+                .map(h -> new BookingStatusHistoryItem(
+                        h.getOldStatus(),
+                        h.getNewStatus(),
+                        h.getChangedBy() != null ? h.getChangedBy().getFullName() : "System",
+                        h.getReason(),
+                        h.getChangedAt()
+                ))
+                .toList();
+
+        Review reviewEntity = reviewRepository.findByBookingId(booking.getId()).orElse(null);
+        BookingDetailResponse.ReviewInfo review = reviewEntity == null ? null : new BookingDetailResponse.ReviewInfo(
+                (double) reviewEntity.getRating(),
+                reviewEntity.getComment(),
+                reviewEntity.getCreatedAt()
+        );
 
         return new BookingDetailResponse(
                 booking.getId().toString(),
@@ -581,7 +636,8 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 washSession == null ? null : washSession.getNotes(),
                 booking.getCreatedAt(),
                 null,
-                List.of()
+                statusHistory,
+                review
         );
     }
 
@@ -825,11 +881,26 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     private AdminBookingResponse toBookingResponse(
             Booking booking,
             WashSessionRepository.SessionSummary session,
-            Map<UUID, String> serviceNames
+            Map<UUID, String> serviceNames,
+            Map<UUID, Integer> ratingsByBookingId
     ) {
         List<BookingDetailResponse.StaffAssignment> assignedStaff = bookingStaffAssignments(booking);
         String staffName = firstStaffName(assignedStaff, booking.getAssignedStaff());
         PaymentInfo payment = resolvePaymentInfo(booking);
+        
+        int durationMinutes = booking.getDetails() != null ? booking.getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum() : 0;
+        
+        String sessionNote = session != null ? session.getNotes() : null;
+        if (sessionNote == null) {
+            if (booking.getStatus() == BookingStatus.CANCELLED) {
+                sessionNote = booking.getCancelReason() != null ? booking.getCancelReason() : "Customer cancelled";
+            } else {
+                sessionNote = booking.getNote();
+            }
+        }
+        
+        Integer rating = ratingsByBookingId.get(booking.getId());
+
         return new AdminBookingResponse(
                 booking.getId().toString(),
                 booking.getId().toString(),
@@ -848,7 +919,10 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 session == null ? null : session.getStatus(),
                 booking.getCreatedAt(),
                 staffName,
-                assignedStaff
+                assignedStaff,
+                rating,
+                durationMinutes,
+                sessionNote
         );
     }
 
@@ -1322,6 +1396,41 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             Month firstMonthOfQuarter = Month.of(((date.getMonthValue() - 1) / 3) * 3 + 1);
             return LocalDate.of(date.getYear(), firstMonthOfQuarter, 1).with(TemporalAdjusters.firstDayOfMonth());
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.autowash.dto.AdminVehicleDetailResponse getVehicleDetail(String vehicleId) {
+        var vehicle = VehicleRepository.findById(UUID.fromString(vehicleId))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Vehicle not found", ErrorCode.RESOURCE_NOT_FOUND));
+
+        List<Booking> bookings = bookingRepository.findByVehicleIdOrderByScheduledAtDesc(vehicle.getId());
+
+        List<com.autowash.dto.AdminVehicleDetailResponse.VehicleBookingHistoryItem> bookingHistory = bookings.stream()
+                .map(b -> {
+                    String packageName = primaryServiceName(b);
+                    return new com.autowash.dto.AdminVehicleDetailResponse.VehicleBookingHistoryItem(
+                            b.getId().toString(),
+                            b.getId().toString(),
+                            b.getBookingDate(),
+                            b.getBookingTime().toString(),
+                            packageName,
+                            b.getPricing() != null ? b.getPricing().getFinalAmount() : 0L,
+                            b.getStatus().name()
+                    );
+                })
+                .toList();
+
+        return new com.autowash.dto.AdminVehicleDetailResponse(
+                vehicle.getId().toString(),
+                vehicle.getPlate(),
+                vehicle.getBrand(),
+                vehicle.getModel(),
+                vehicle.getColor(),
+                vehicle.getOwner().getFullName(),
+                vehicle.getOwner().getPhone(),
+                bookingHistory
+        );
     }
 
     private PaymentInfo resolvePaymentInfo(Booking booking) {

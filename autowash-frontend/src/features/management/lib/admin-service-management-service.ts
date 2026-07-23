@@ -137,6 +137,8 @@ export function updateAdminPackage(payload: {
   });
 }
 
+// API Flow: Calls GET /api/v1/admin/combos in Backend
+// Handled by: AdminComboController.listCombos() -> AdminComboServiceImpl.listCombos()
 export async function listAdminCombos() {
   const response = await apiClient.get<ApiSuccessResponse<AdminCombo[]>>("/admin/combos");
   return response.data.data;

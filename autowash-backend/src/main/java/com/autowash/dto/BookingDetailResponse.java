@@ -30,7 +30,8 @@ public record BookingDetailResponse(
         String notes,
         Instant createdAt,
         String devOtp,
-        List<BookingStatusHistoryItem> statusHistory
+        List<BookingStatusHistoryItem> statusHistory,
+        ReviewInfo review
 ) {
     public record Pricing(
             long subtotal,
@@ -63,5 +64,11 @@ public record BookingDetailResponse(
             String staffId,
             String staffName,
             int sortOrder
+    ) {}
+
+    public record ReviewInfo(
+            Double rating,
+            String comment,
+            Instant createdAt
     ) {}
 }

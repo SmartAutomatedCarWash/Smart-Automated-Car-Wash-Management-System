@@ -48,3 +48,9 @@ start-db.ps1
 
 # Root local logs
 *.log
+
+# Local SQL dumps, seed data and local-only mock data
+/*.sql
+seed-data.sql
+*mock-data*
+*seed-data*

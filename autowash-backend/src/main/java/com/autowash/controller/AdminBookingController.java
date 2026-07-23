@@ -43,6 +43,12 @@ public class AdminBookingController {
         this.bookingService = bookingService;
     }
 
+    @GetMapping("/summary")
+    @Operation(summary = "Get summary statistics for bookings")
+    public ApiResponse<com.autowash.dto.AdminBookingSummaryResponse> getBookingSummary() {
+        return ApiResponse.ok("Booking summary retrieved", adminReportingService.getBookingSummary());
+    }
+
     @GetMapping
     @Operation(summary = "List all bookings for admin with filters")
     public ApiResponse<List<AdminBookingResponse>> listBookings(
@@ -78,6 +84,12 @@ public class AdminBookingController {
             @Valid @RequestBody UpdateBookingStatusRequest request
     ) {
         return ApiResponse.ok("Booking status updated", bookingService.updateBookingStatus(bookingId, request.status()));
+    }
+
+    @GetMapping("/vehicles/{vehicleId}")
+    @Operation(summary = "Get vehicle details and history for admin")
+    public ApiResponse<com.autowash.dto.AdminVehicleDetailResponse> getVehicleDetail(@PathVariable String vehicleId) {
+        return ApiResponse.ok("Vehicle details retrieved", adminReportingService.getVehicleDetail(vehicleId));
     }
 
 }

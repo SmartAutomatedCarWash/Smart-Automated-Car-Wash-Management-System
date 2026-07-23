@@ -65,6 +65,9 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
         return parseUuid(id).flatMap(this::findById);
     }
 
+    @EntityGraph(attributePaths = {"details", "pricing"})
+    List<Booking> findByVehicleIdOrderByScheduledAtDesc(UUID vehicleId);
+
     @EntityGraph(attributePaths = {"vehicle", "pricing"})
     Page<Booking> findByCustomerOrderByCreatedAtDesc(User customer, Pageable pageable);
 
@@ -223,6 +226,9 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     @Query("select coalesce(sum(b.pricing.finalAmount), 0) from Booking b where b.status = 'COMPLETED'")
     long sumTotalRevenue();
+
+    @Query("select count(b) from Booking b join b.details d where b.status = 'COMPLETED' and d.itemType = 'COMBO'")
+    long countCompletedComboBookings();
 
     // Booking trend: count per day
     @Query("select count(b) from Booking b where b.scheduledAt >= :from and b.scheduledAt < :to")
