@@ -38,12 +38,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
 import { Badge } from "@/shared/ui/ui/badge";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
-import type { BookingDetail, BookingStatus } from "@/entities/bookings";
-
-type VehicleFallback = Pick<
-  BookingDetail,
-  "vehicleId" | "vehiclePlate" | "vehicleBrand" | "vehicleModel" | "customerName" | "customerPhone"
->;
+import type { BookingStatus } from "@/entities/bookings";
 
 function translateStatus(st: string, lang: "vi" | "en") {
   const map: Record<string, { vi: string; en: string }> = {
@@ -843,7 +838,6 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
       {isVehicleModalOpen && (
         <VehicleDetailModal
           vehicleId={booking.vehicleId}
-          fallbackVehicle={booking}
           onClose={() => setIsVehicleModalOpen(false)}
         />
       )}
@@ -853,32 +847,14 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
 
 function VehicleDetailModal({
   vehicleId,
-  fallbackVehicle,
   onClose,
 }: {
   vehicleId: string;
-  fallbackVehicle: VehicleFallback;
   onClose: () => void;
 }) {
   const { language } = useLanguageStore();
-  const { data: vehicle, isPending } = useAdminVehicleDetail(vehicleId, true);
-  const displayVehicle = vehicle
-    ? {
-        plate: vehicle.plate,
-        brand: vehicle.brand,
-        model: vehicle.model,
-        color: vehicle.color,
-        ownerName: vehicle.ownerName,
-        ownerPhone: vehicle.ownerPhone,
-      }
-    : {
-        plate: fallbackVehicle.vehiclePlate,
-        brand: fallbackVehicle.vehicleBrand,
-        model: fallbackVehicle.vehicleModel,
-        color: null,
-        ownerName: fallbackVehicle.customerName,
-        ownerPhone: fallbackVehicle.customerPhone,
-      };
+  const { data: vehicle, isPending, isError, error } = useAdminVehicleDetail(vehicleId, true);
+  const getErrorMessage = useErrorMessage();
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -916,94 +892,96 @@ function VehicleDetailModal({
           ) : (
             <>
               {/* Vehicle Metadata */}
-              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100/50">
-                <div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-                    {translate(language, "Biển số xe", "License Plate")}
-                  </span>
-                  <span className="inline-block font-mono font-black text-slate-900 bg-white border border-slate-200 rounded-lg px-2 py-0.5 mt-1 text-sm">
-                    {displayVehicle.plate}
-                  </span>
+              {isError ? (
+                <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl border border-rose-100 text-xs">
+                  {getErrorMessage(error)}
                 </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-                    {translate(language, "Hãng & Dòng xe", "Brand & Model")}
-                  </span>
-                  <span className="font-bold text-slate-800 block mt-1 text-sm">
-                    {displayVehicle.brand} {displayVehicle.model}
-                  </span>
+              ) : !vehicle ? (
+                <div className="text-center text-slate-400 py-6 text-xs">
+                  {translate(language, "Không tìm thấy dữ liệu xe.", "No vehicle data found.")}
                 </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-                    {translate(language, "Màu sắc", "Color")}
-                  </span>
-                  <span className="font-medium text-slate-700 block mt-1 text-sm">
-                    {displayVehicle.color || translate(language, "Không có", "None")}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-                    {translate(language, "Chủ sở hữu", "Owner")}
-                  </span>
-                  <span className="font-bold text-slate-800 block mt-1 text-sm">
-                    {displayVehicle.ownerName} ({displayVehicle.ownerPhone})
-                  </span>
-                </div>
-              </div>
-
-              {!vehicle && (
-                <div className="p-4 bg-slate-50 text-slate-500 rounded-2xl border border-slate-100 text-xs font-semibold">
-                  {translate(
-                    language,
-                    "Chưa có dữ liệu lịch sử xe từ server.",
-                    "No vehicle history data was returned from the server."
-                  )}
-                </div>
-              )}
-
-              {/* History list */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">
-                  {translate(language, "Lịch sử đặt lịch của xe", "Booking History")}
-                </h4>
-                {(vehicle?.bookingHistory ?? []).length === 0 ? (
-                  <p className="text-xs text-slate-400 italic bg-slate-50 p-4 rounded-2xl text-center">
-                    {translate(language, "Chưa có lịch sử đặt lịch nào.", "No booking history found.")}
-                  </p>
-                ) : (
-                  <div className="border border-slate-100 rounded-2xl overflow-hidden">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
-                          <th className="p-3">{translate(language, "Ngày & Giờ", "Date & Time")}</th>
-                          <th className="p-3">{translate(language, "Dịch vụ", "Service")}</th>
-                          <th className="p-3 text-right">{translate(language, "Tổng tiền", "Amount")}</th>
-                          <th className="p-3 text-right">{translate(language, "Trạng thái", "Status")}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50 font-medium text-slate-700">
-                        {vehicle!.bookingHistory.map((history) => (
-                          <tr key={history.bookingId} className="hover:bg-slate-50/50">
-                            <td className="p-3">
-                              <div>{history.bookingDate}</div>
-                              <div className="text-[10px] text-slate-400">{history.bookingTime.substring(0, 5)}</div>
-                            </td>
-                            <td className="p-3 font-semibold text-slate-900">{history.primaryItemName}</td>
-                            <td className="p-3 text-right font-bold text-slate-900">
-                              {history.finalAmount.toLocaleString("vi-VN")} đ
-                            </td>
-                            <td className="p-3 text-right">
-                              <Badge variant="outline" className={`font-bold px-2 py-0.5 rounded-full text-[10px] uppercase border bg-white`}>
-                                {history.status}
-                              </Badge>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100/50">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                        {translate(language, "Biển số xe", "License Plate")}
+                      </span>
+                      <span className="inline-block font-mono font-black text-slate-900 bg-white border border-slate-200 rounded-lg px-2 py-0.5 mt-1 text-sm">
+                        {vehicle.plate}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                        {translate(language, "Hãng & Dòng xe", "Brand & Model")}
+                      </span>
+                      <span className="font-bold text-slate-800 block mt-1 text-sm">
+                        {vehicle.brand} {vehicle.model}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                        {translate(language, "Màu sắc", "Color")}
+                      </span>
+                      <span className="font-medium text-slate-700 block mt-1 text-sm">
+                        {vehicle.color || translate(language, "Không có", "None")}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                        {translate(language, "Chủ sở hữu", "Owner")}
+                      </span>
+                      <span className="font-bold text-slate-800 block mt-1 text-sm">
+                        {vehicle.ownerName} ({vehicle.ownerPhone})
+                      </span>
+                    </div>
                   </div>
-                )}
-              </div>
+
+                  {/* History list */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                      {translate(language, "Lịch sử đặt lịch của xe", "Booking History")}
+                    </h4>
+                    {vehicle.bookingHistory.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic bg-slate-50 p-4 rounded-2xl text-center">
+                        {translate(language, "Chưa có lịch sử đặt lịch nào.", "No booking history found.")}
+                      </p>
+                    ) : (
+                      <div className="border border-slate-100 rounded-2xl overflow-hidden">
+                        <table className="w-full text-left text-xs">
+                          <thead>
+                            <tr className="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
+                              <th className="p-3">{translate(language, "Ngày & Giờ", "Date & Time")}</th>
+                              <th className="p-3">{translate(language, "Dịch vụ", "Service")}</th>
+                              <th className="p-3 text-right">{translate(language, "Tổng tiền", "Amount")}</th>
+                              <th className="p-3 text-right">{translate(language, "Trạng thái", "Status")}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50 font-medium text-slate-700">
+                            {vehicle.bookingHistory.map((history) => (
+                              <tr key={history.bookingId} className="hover:bg-slate-50/50">
+                                <td className="p-3">
+                                  <div>{history.bookingDate}</div>
+                                  <div className="text-[10px] text-slate-400">{history.bookingTime.substring(0, 5)}</div>
+                                </td>
+                                <td className="p-3 font-semibold text-slate-900">{history.primaryItemName}</td>
+                                <td className="p-3 text-right font-bold text-slate-900">
+                                  {history.finalAmount.toLocaleString("vi-VN")} đ
+                                </td>
+                                <td className="p-3 text-right">
+                                  <Badge variant="outline" className={`font-bold px-2 py-0.5 rounded-full text-[10px] uppercase border bg-white`}>
+                                    {history.status}
+                                  </Badge>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

@@ -118,6 +118,8 @@ import com.autowash.dto.BookingStatusHistoryItem;
 
 @Service
 public class AdminReportingServiceImpl implements AdminReportingService {
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+
     private static final EnumSet<BookingStatus> REVENUE_STATUSES = EnumSet.of(
             BookingStatus.CONFIRMED,
             BookingStatus.CHECKED_IN,
@@ -381,11 +383,10 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     public AdminBookingSummaryResponse getBookingSummary() {
         long total = bookingRepository.count();
         
-        LocalDate today = LocalDate.now();
-        ZoneId zone = ZoneId.systemDefault();
-        Instant startOfToday = today.atStartOfDay(zone).toInstant();
-        Instant endOfToday = today.plusDays(1).atStartOfDay(zone).minusNanos(1).toInstant();
-        long todayBookings = bookingRepository.countByScheduledAtBetween(startOfToday, endOfToday);
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        Instant startOfToday = today.atStartOfDay(BUSINESS_ZONE).toInstant();
+        Instant startOfTomorrow = today.plusDays(1).atStartOfDay(BUSINESS_ZONE).toInstant();
+        long todayBookings = bookingRepository.countByScheduledAtBetween(startOfToday, startOfTomorrow);
         
         long inProgress = bookingRepository.countByStatus(BookingStatus.IN_PROGRESS);
         long completedCombo = bookingRepository.countCompletedComboBookings();
@@ -1402,15 +1403,17 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     @Override
     @Transactional(readOnly = true)
     public com.autowash.dto.AdminVehicleDetailResponse getVehicleDetail(String vehicleId) {
-        UUID parsedVehicleId;
+        UUID parsedId;
         try {
-            parsedVehicleId = UUID.fromString(vehicleId);
+            parsedId = UUID.fromString(vehicleId);
         } catch (IllegalArgumentException exception) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid vehicle id", ErrorCode.VALIDATION_ERROR);
         }
 
-        var vehicle = VehicleRepository.findById(parsedVehicleId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Vehicle not found", ErrorCode.RESOURCE_NOT_FOUND));
+        var vehicle = VehicleRepository.findById(parsedId)
+                .orElseGet(() -> bookingRepository.findWithVehicleById(parsedId)
+                        .map(Booking::getVehicle)
+                        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Vehicle not found", ErrorCode.RESOURCE_NOT_FOUND)));
 
         List<Booking> bookings = bookingRepository.findByVehicleIdOrderByScheduledAtDesc(vehicle.getId());
 
