@@ -1,10 +1,9 @@
 package com.autowash.dto;
 
-public record EarnPointsResponse(
-        Long transactionId,
-        int pointsAwarded,
-        int newBalance,
-        String tier,
+public record AdjustTotalEarnedPointsResponse(
+        String customerId,
+        int currentPoints,
+        int totalEarnedPoints,
         String oldTier,
         String newTier,
         boolean tierChanged,

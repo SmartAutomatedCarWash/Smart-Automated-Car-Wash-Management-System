@@ -696,21 +696,43 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public BookingDetailResponse updateBookingStaff(String bookingId, List<String> staffIds) {
         Booking booking = findOwnedBooking(bookingId);
-        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking staff cannot be changed for this status", ErrorCode.BUSINESS_RULE_VIOLATION);
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Assigned staff can only be changed after booking is confirmed", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
         if (washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId()).isPresent()) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking staff cannot be changed after a wash session is created", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
 
+        List<BookingStaffAssignment> existingAssignments = bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking);
+        if (existingAssignments.isEmpty()) {
+            assignStaffGroupOnConfirmation(booking);
+            existingAssignments = bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking);
+        }
+        if (existingAssignments.size() != 3) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking must have exactly 3 assigned staff before staff can be changed", ErrorCode.BUSINESS_RULE_VIOLATION);
+        }
+
         List<UUID> selectedStaffIds = parseSelectedStaffIds(staffIds);
-        List<User> selectedStaff = selectedStaffIds.stream()
-                .map(staffAssignmentService::requireActiveStaff)
-                .toList();
-        for (User staff : selectedStaff) {
-            if (!staffAssignmentService.isStaffAvailableForBooking(staff, booking)) {
+        int changedIndex = -1;
+        int changedCount = 0;
+        for (int index = 0; index < selectedStaffIds.size(); index++) {
+            UUID currentStaffId = existingAssignments.get(index).getStaff().getId();
+            if (!selectedStaffIds.get(index).equals(currentStaffId)) {
+                changedIndex = index;
+                changedCount++;
+            }
+        }
+        if (changedCount != 1) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Exactly 1 assigned staff can be changed per request", ErrorCode.BUSINESS_RULE_VIOLATION);
+        }
+
+        List<User> selectedStaff = new ArrayList<>();
+        for (int index = 0; index < selectedStaffIds.size(); index++) {
+            User staff = staffAssignmentService.requireActiveStaff(selectedStaffIds.get(index));
+            if (index == changedIndex && !staffAssignmentService.isStaffAvailableForBooking(staff, booking)) {
                 throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Selected staff is not available for this booking time", ErrorCode.BUSINESS_RULE_VIOLATION);
             }
+            selectedStaff.add(staff);
         }
 
         bookingStaffAssignmentRepository.deleteByBooking(booking);

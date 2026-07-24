@@ -602,7 +602,15 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
               {/* Customer notification bell */}
               {isCustomer && (
-                <Popover onOpenChange={(open) => { if (!open) setSelectedNotificationId(null); }}>
+                <Popover
+                  onOpenChange={(open) => {
+                    if (open) {
+                      void customerNotificationsQuery.refetch();
+                      return;
+                    }
+                    setSelectedNotificationId(null);
+                  }}
+                >
                   <PopoverTrigger asChild>
                     <button
                       type="button"

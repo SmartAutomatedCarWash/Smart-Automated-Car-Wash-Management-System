@@ -1,5 +1,6 @@
 package com.autowash.service;
 
+import com.autowash.dto.AdjustTotalEarnedPointsResponse;
 import com.autowash.dto.UpdateAdminCustomerRoleResponse;
 
 import com.autowash.dto.BookingDetailResponse;
@@ -44,6 +45,7 @@ public interface AdminReportingService {
     UpdateAdminCustomerRoleResponse updateCustomerRole(UUID customerId, String role);
     UpdateAdminCustomerRoleResponse updateCustomerTier(UUID customerId, String tier);
     void adjustActivePoints(UUID customerId, int points, String reason);
+    AdjustTotalEarnedPointsResponse adjustTotalEarnedPoints(UUID customerId, int pointsDelta, String reason);
     WashHistoryPage getWashHistory(UUID customerId, Instant dateFrom, Instant dateTo, int page, int limit);
     LoyaltyService.TransactionPage getPointHistory(UUID customerId, String type, Instant dateFrom, Instant dateTo, int page, int limit);
     CustomerVehiclePage getCustomerVehicles(UUID customerId, int page, int limit);

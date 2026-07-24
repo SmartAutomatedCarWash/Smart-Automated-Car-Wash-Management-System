@@ -5,6 +5,8 @@ import com.autowash.service.LoyaltyService;
 import com.autowash.dto.PointTransactionResponse;
 
 import com.autowash.dto.AdjustPointsRequest;
+import com.autowash.dto.AdjustTotalEarnedPointsRequest;
+import com.autowash.dto.AdjustTotalEarnedPointsResponse;
 
 import com.autowash.dto.UpdateAdminCustomerTierRequest;
 
@@ -122,6 +124,20 @@ public class AdminCustomerController {
     ) {
         adminReportingService.adjustActivePoints(customerId, request.points(), request.reason());
         return ApiResponse.ok("Customer points adjusted", null);
+    }
+
+    @PutMapping("/customers/{customerId}/lifetime-points")
+    @Operation(summary = "Add customer lifetime earned points and recalculate tier")
+    public ApiResponse<AdjustTotalEarnedPointsResponse> updateCustomerLifetimePoints(
+            @PathVariable UUID customerId,
+            @Valid @RequestBody AdjustTotalEarnedPointsRequest request
+    ) {
+        AdjustTotalEarnedPointsResponse response = adminReportingService.adjustTotalEarnedPoints(
+                customerId,
+                request.pointsDelta(),
+                request.reason()
+        );
+        return ApiResponse.ok(response.message(), response);
     }
 
     @GetMapping("/customers/{customerId}/wash-sessions")
