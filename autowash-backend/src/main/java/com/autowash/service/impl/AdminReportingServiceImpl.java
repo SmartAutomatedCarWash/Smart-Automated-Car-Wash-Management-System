@@ -65,6 +65,7 @@ import com.autowash.dto.CreateAdminStaffRequest;
 import com.autowash.dto.UpdateAdminStaffRequest;
 import com.autowash.dto.AdminTierHistoryResponse;
 import com.autowash.dto.AdminWashHistoryResponse;
+import com.autowash.dto.AdjustTotalEarnedPointsResponse;
 import com.autowash.entity.User;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
@@ -708,6 +709,12 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     public void adjustActivePoints(UUID customerId, int points, String reason) {
         requireCustomer(customerId);
         loyaltyService.adjustActivePoints(customerId, points, reason);
+    }
+
+    @Transactional
+    public AdjustTotalEarnedPointsResponse adjustTotalEarnedPoints(UUID customerId, int pointsDelta, String reason) {
+        requireCustomer(customerId);
+        return loyaltyService.adjustTotalEarnedPoints(customerId, pointsDelta, reason);
     }
 
     @Transactional(readOnly = true)

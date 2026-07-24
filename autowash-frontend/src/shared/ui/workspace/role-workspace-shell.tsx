@@ -24,6 +24,7 @@ import {
   RefreshCw,
   Settings2,
   ShieldCheck,
+  Sparkles,
   Sun,
   UserCog,
   Wrench,
@@ -141,6 +142,11 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     plate: string;
     path: string;
   }>({ show: false, title: "", message: "", plate: "", path: "" });
+  const [tierUpgradePopup, setTierUpgradePopup] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+  }>({ show: false, title: "", message: "" });
   const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
 
   const isStaff = requiredRole === "STAFF";
@@ -182,11 +188,17 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       // Find the latest unread notification
       const latestUnread = customerNotificationsQuery.data.find(n => !n.read);
       if (latestUnread) {
-        toast.info(translateNotificationField(latestUnread.title, language), {
-          description: translateNotificationField(latestUnread.message, language),
-          position: "bottom-right",
-          duration: 5000,
-        });
+        const title = translateNotificationField(latestUnread.title, language);
+        const message = translateNotificationField(latestUnread.message, language);
+        if (isTierUpgradeNotification(latestUnread)) {
+          setTierUpgradePopup({ show: true, title, message });
+        } else {
+          toast.info(title, {
+            description: message,
+            position: "bottom-right",
+            duration: 5000,
+          });
+        }
       }
     }
     setPrevUnreadCount(currentUnread);
@@ -602,7 +614,15 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
               {/* Customer notification bell */}
               {isCustomer && (
-                <Popover onOpenChange={(open) => { if (!open) setSelectedNotificationId(null); }}>
+                <Popover
+                  onOpenChange={(open) => {
+                    if (open) {
+                      void customerNotificationsQuery.refetch();
+                      return;
+                    }
+                    setSelectedNotificationId(null);
+                  }}
+                >
                   <PopoverTrigger asChild>
                     <button
                       type="button"
@@ -1115,6 +1135,48 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       {activeManagerPopup ? (
         <ManagerNotificationPopup notification={activeManagerPopup} onClose={closeManagerNotificationPopup} />
       ) : null}
+      {tierUpgradePopup.show ? (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm animate-in fade-in">
+          <div className="relative w-full max-w-md overflow-hidden rounded-md border border-cyan-200 bg-white p-6 text-center shadow-[0_28px_80px_-24px_rgba(8,145,178,0.55)]">
+            <button
+              type="button"
+              onClick={() => setTierUpgradePopup((prev) => ({ ...prev, show: false }))}
+              className="absolute right-3 top-3 rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+              aria-label={t("Đóng thông báo", "Dismiss notification")}
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-cyan-200 bg-cyan-50 text-cyan-700 shadow-sm">
+              <Sparkles className="h-8 w-8" />
+            </div>
+            <p className="mt-5 text-xs font-black uppercase tracking-[0.22em] text-cyan-700">
+              {t("Lên hạng thành công", "Tier upgraded")}
+            </p>
+            <h3 className="mt-2 text-2xl font-black leading-tight text-slate-950">
+              {tierUpgradePopup.title}
+            </h3>
+            <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">
+              {tierUpgradePopup.message}
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/customer/loyalty"
+                onClick={() => setTierUpgradePopup((prev) => ({ ...prev, show: false }))}
+                className="inline-flex h-11 flex-1 items-center justify-center rounded-sm bg-cyan-600 px-4 text-sm font-black text-white shadow-sm transition hover:bg-cyan-700"
+              >
+                {t("Xem hạng của tôi", "View my tier")}
+              </Link>
+              <button
+                type="button"
+                onClick={() => setTierUpgradePopup((prev) => ({ ...prev, show: false }))}
+                className="inline-flex h-11 flex-1 items-center justify-center rounded-sm border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50"
+              >
+                {t("Đóng", "Close")}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       </div>
     </div>
   );
@@ -1130,6 +1192,15 @@ function WorkspaceGate({ message }: { message: string }) {
       </p>
     </main>
   );
+}
+
+function isTierUpgradeNotification(notification: { type?: string; title: string; message: string }) {
+  if ((notification.type ?? "").toUpperCase() !== "LOYALTY") return false;
+  const text = `${notification.title} ${notification.message}`.toLowerCase();
+  return text.includes("thăng hạng")
+    || text.includes("lên hạng")
+    || text.includes("upgraded")
+    || text.includes("upgrade");
 }
 
 function ManagerNotificationPopup({

@@ -312,6 +312,10 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
       setSelectedStaffIds(assignedIds.slice(0, 3));
       return;
     }
+    if (booking.status !== "CONFIRMED") {
+      setSelectedStaffIds([]);
+      return;
+    }
     const autoIds = (staffOptionsQuery.data ?? [])
       .filter((staff) => staff.available !== false)
       .slice(0, 3)
@@ -374,9 +378,12 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const canShowAppointmentCountdown = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS"].includes(booking.status);
   const showCashConfirmationNote = booking.status === "PENDING" && paymentMethod === "CASH_AT_COUNTER";
   const isPaymentActionPending = changePaymentMethodMutation.isPending || createVnpayCheckoutMutation.isPending;
-  const canEditAssignedStaff = ["PENDING", "CONFIRMED"].includes(booking.status) && !booking.washSessionId;
-  const assignedStaffDirty = selectedStaffIds.join("|") !== assignedStaffList(booking).map((staff) => staff.staffId).join("|");
-  const canSaveAssignedStaff = canEditAssignedStaff && selectedStaffIds.length === 3 && assignedStaffDirty;
+  const originalAssignedStaffIds = assignedStaffList(booking).map((staff) => staff.staffId);
+  const changedAssignedStaffIndexes = selectedStaffIds
+    .map((staffId, index) => staffId !== originalAssignedStaffIds[index] ? index : -1)
+    .filter((index) => index >= 0);
+  const canEditAssignedStaff = booking.status === "CONFIRMED" && originalAssignedStaffIds.length === 3 && !booking.washSessionId;
+  const canSaveAssignedStaff = canEditAssignedStaff && selectedStaffIds.length === 3 && changedAssignedStaffIndexes.length === 1;
   const refundStatusLabel = getRefundStatusLabel(booking, language);
   const customerName = booking.customerName || profileQuery.data?.fullName || translate(language, "Khách hàng", "Customer");
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || translate(language, "Chưa có số điện thoại", "No phone number");
@@ -574,7 +581,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
               </div>
               <CardDescription>
                 {canEditAssignedStaff
-                  ? translate(language, "Bạn có thể đổi 3 nhân viên rảnh, sau đó bấm Confirm để lưu.", "You can choose 3 available staff, then press Confirm to save.")
+                  ? translate(language, "Bạn chỉ có thể đổi 1 trong 3 nhân viên rảnh, sau đó bấm Confirm để lưu.", "You can replace only 1 of the 3 assigned available staff, then press Confirm to save.")
                   : translate(language, "Danh sách nhân viên phụ trách lịch đặt này.", "Staff assigned to this booking.")}
               </CardDescription>
             </CardHeader>
@@ -590,6 +597,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                   {[0, 1, 2].map((index) => {
                     const currentStaffId = selectedStaffIds[index] ?? "";
                     const selectedStaff = staffOptionById(staffOptions, booking, currentStaffId);
+                    const hasChangedAnotherStaff = changedAssignedStaffIndexes.length === 1 && changedAssignedStaffIndexes[0] !== index;
                     return (
                       <div key={index} className="rounded-2xl border border-emerald-100 bg-white/80 p-3">
                         <span className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-700">
@@ -599,10 +607,12 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                         {canEditAssignedStaff ? (
                           <Select
                             value={currentStaffId || undefined}
+                            disabled={hasChangedAnotherStaff}
                             onValueChange={(staffId) => {
+                              if (hasChangedAnotherStaff) return;
                               const nextStaffIds = [...selectedStaffIds];
                               nextStaffIds[index] = staffId;
-                              setSelectedStaffIds(nextStaffIds.filter((id, staffIndex) => id && nextStaffIds.indexOf(id) === staffIndex).slice(0, 3));
+                              setSelectedStaffIds(nextStaffIds.slice(0, 3));
                             }}
                           >
                             <SelectTrigger className="h-auto min-h-12 rounded-xl bg-white px-3 py-2 text-left [&>span]:line-clamp-none">
@@ -653,7 +663,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                     disabled={!canSaveAssignedStaff || updateBookingStaffMutation.isPending}
                   >
                     {updateBookingStaffMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {translate(language, "Confirm", "Confirm")}
+                    {translate(language, "Confirm staff change", "Confirm staff change")}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => void bookingQuery.refetch()}>
                     {translate(language, "Tải lại từ máy chủ", "Refresh from server")}

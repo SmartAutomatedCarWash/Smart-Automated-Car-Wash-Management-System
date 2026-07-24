@@ -1,6 +1,7 @@
 package com.autowash.service.impl;
 
 import com.autowash.dto.EarnPointsResponse;
+import com.autowash.dto.AdjustTotalEarnedPointsResponse;
 import com.autowash.dto.LoyaltyAccountResponse;
 import com.autowash.dto.PointTransactionResponse;
 import com.autowash.dto.RedeemPointsResponse;
@@ -132,7 +133,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 .findByTypeAndBookingId(PointTransactionType.EARN, session.getBooking().getId())
                 .orElse(null);
         if (existing != null) {
-            return toEarnResponse(existing, account);
+            return toEarnResponse(existing, account, noTierChange(account));
         }
 
         int pointsAwarded = calculateEarnPoints(sessionId);
@@ -152,11 +153,11 @@ public class LoyaltyServiceImpl implements LoyaltyService {
             PointTransaction racedTransaction = pointTransactionRepository
                     .findByTypeAndBookingId(PointTransactionType.EARN, session.getBooking().getId())
                     .orElseThrow(() -> exception);
-            return toEarnResponse(racedTransaction, account);
+            return toEarnResponse(racedTransaction, account, noTierChange(account));
         }
 
-        evaluateTierUpgrade(account);
-        return toEarnResponse(transaction, account);
+        TierChangeResult tierChange = recalculateTierFromTotalEarnedPoints(account);
+        return toEarnResponse(transaction, account, tierChange);
     }
 
     @Transactional
@@ -182,7 +183,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 account.getCurrentPoints(),
                 reason
         ));
-        evaluateTierUpgrade(account);
+        recalculateTierFromTotalEarnedPoints(account);
         return actualPoints;
     }
 
@@ -206,6 +207,40 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 account.getCurrentPoints(),
                 reason
         ));
+    }
+
+    @Transactional
+    public AdjustTotalEarnedPointsResponse adjustTotalEarnedPoints(UUID customerId, int pointsDelta, String reason) {
+        User customer = requireCustomer(customerId);
+        LoyaltyAccount account = getOrCreateAccountForUpdate(customer);
+        account.adjustTotalEarnedPoints(pointsDelta);
+        TierChangeResult tierChange = recalculateTierFromTotalEarnedPoints(account);
+        loyaltyAccountRepository.save(account);
+
+        String message = tierChange.message();
+        if (!tierChange.changed()) {
+            message = "Tổng điểm tích lũy đã được cập nhật. Hạng hiện tại vẫn là " + account.getTier() + ".";
+        }
+
+        pointTransactionRepository.save(new PointTransaction(
+                account,
+                null,
+                PointTransactionType.ADJUST,
+                0,
+                account.getCurrentPoints(),
+                "Total earned points adjusted by " + pointsDelta + ": " + reason
+        ));
+
+        return new AdjustTotalEarnedPointsResponse(
+                customer.getId().toString(),
+                account.getCurrentPoints(),
+                account.getTotalEarnedPoints(),
+                tierChange.oldTier(),
+                tierChange.newTier(),
+                tierChange.changed(),
+                tierChange.direction(),
+                message
+        );
     }
 
     @Transactional
@@ -297,36 +332,43 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         return new LoyaltyService.TransactionPage(items, pagination);
     }
 
-    void evaluateTierUpgrade(LoyaltyAccount account) {
+    TierChangeResult recalculateTierFromTotalEarnedPoints(LoyaltyAccount account) {
         String targetTier = tierConfigService.calculateTierForPoints(account.getTotalEarnedPoints());
-        if (tierConfigService.getTierRank(targetTier) <= tierConfigService.getTierRank(account.getTier())) {
-            return;
+        String oldTier = account.getTier();
+        int oldRank = tierConfigService.getTierRank(oldTier);
+        int targetRank = tierConfigService.getTierRank(targetTier);
+        if (targetRank <= oldRank) {
+            return noTierChange(account);
         }
 
-        String oldTier = account.getTier();
         account.updateTier(targetTier);
         tierHistoryRepository.save(new TierHistory(account, oldTier, targetTier, account.getTotalEarnedPoints()));
+        String direction = "UPGRADE";
+        String reason = "Tier upgraded from " + oldTier + " to " + targetTier;
         pointTransactionRepository.save(new PointTransaction(
                 account,
                 null,
                 PointTransactionType.ADJUST,
                 0,
                 account.getCurrentPoints(),
-                "Tier upgraded from " + oldTier + " to " + targetTier
+                reason
         ));
-        log.info("loyalty_tier_upgraded customerId={} oldTier={} newTier={}", account.getCustomer().getId(), oldTier, targetTier);
+        log.info("loyalty_tier_changed customerId={} oldTier={} newTier={} direction={}", account.getCustomer().getId(), oldTier, targetTier, direction);
         loyaltyAccountRepository.save(account);
 
+        String title = "Chúc mừng! Bạn đã thăng hạng";
+        String message = "Bạn đã lên hạng từ " + oldTier + " lên " + targetTier + ".";
         Notification notification = Notification.builder()
                 .id(UUID.randomUUID())
                 .user(account.getCustomer())
-                .title("Congratulations! You have been upgraded")
-                .message("Your membership tier has been upgraded to " + targetTier + ".")
+                .title(title)
+                .message(message)
                 .type(NotificationType.LOYALTY)
                 .read(false)
                 .createdAt(Instant.now())
                 .build();
         notificationRepository.save(notification);
+        return new TierChangeResult(true, oldTier, targetTier, direction, message);
     }
 
     @Transactional
@@ -424,13 +466,31 @@ public class LoyaltyServiceImpl implements LoyaltyService {
 
 
 
-    private EarnPointsResponse toEarnResponse(PointTransaction transaction, LoyaltyAccount account) {
+    private TierChangeResult noTierChange(LoyaltyAccount account) {
+        return new TierChangeResult(false, account.getTier(), account.getTier(), "NONE", "Hạng thành viên hiện tại vẫn là " + account.getTier() + ".");
+    }
+
+    private EarnPointsResponse toEarnResponse(PointTransaction transaction, LoyaltyAccount account, TierChangeResult tierChange) {
         return new EarnPointsResponse(
                 transaction.getId(),
                 transaction.getPoints(),
                 transaction.getBalanceAfter(),
-                account.getTier()
+                account.getTier(),
+                tierChange.oldTier(),
+                tierChange.newTier(),
+                tierChange.changed(),
+                tierChange.direction(),
+                tierChange.message()
         );
+    }
+
+    private record TierChangeResult(
+            boolean changed,
+            String oldTier,
+            String newTier,
+            String direction,
+            String message
+    ) {
     }
 
     private PointTransactionResponse toTransactionResponse(PointTransaction transaction) {
