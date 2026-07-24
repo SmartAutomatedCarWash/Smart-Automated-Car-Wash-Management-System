@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/operations/bookings")
 @Tag(name = "Operations")
 @SecurityRequirement(name = "bearerAuth")
-@PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
+@PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
 public class OperationsBookingController {
 
     private final OperationsService operationsService;
