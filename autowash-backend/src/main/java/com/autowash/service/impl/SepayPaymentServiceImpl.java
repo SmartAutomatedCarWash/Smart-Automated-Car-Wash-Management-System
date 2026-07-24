@@ -98,7 +98,7 @@ public class SepayPaymentServiceImpl implements SepayPaymentService {
             return;
         }
 
-        customerComboService.markPendingPaymentAsPaid(paymentCode);
+        customerComboService.markPendingPaymentAsPaid(paymentCode, transferAmount);
     }
 
     private void ensureConfigured() {
