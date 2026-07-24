@@ -129,22 +129,7 @@ export function AdminBookingsPageContent() {
   const totalPages = Math.max(bookingsQuery.data?.pagination.totalPages || 1, 1);
   const totalItems = bookingsQuery.data?.pagination.total || 0;
 
-  const fallbackKpis = useMemo(() => {
-    const items = bookingsQuery.data?.items ?? [];
-    const today = new Date().toISOString().slice(0, 10);
-    return {
-      totalBookings: bookingsQuery.data?.pagination.total ?? 0,
-      todayBookings: items.filter((booking) => booking.bookingDate === today).length,
-      inProgress: items.filter((booking) => booking.status === "IN_PROGRESS").length,
-      completedComboSessions: items.filter(
-        (booking) =>
-          booking.status === "COMPLETED" &&
-          /combo|pass|monthly|express/i.test(booking.primaryItemName ?? "")
-      ).length,
-    };
-  }, [bookingsQuery.data]);
-
-  const kpis = summaryQuery.data ?? fallbackKpis;
+  const kpis = summaryQuery.data;
 
   return (
     <div className="p-4 md:p-8 bg-slate-50/50 min-h-screen">

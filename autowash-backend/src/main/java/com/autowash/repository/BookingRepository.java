@@ -65,6 +65,10 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
         return parseUuid(id).flatMap(this::findById);
     }
 
+    @EntityGraph(attributePaths = {"vehicle", "vehicle.owner"})
+    @Query("select booking from Booking booking where booking.id = :id")
+    Optional<Booking> findWithVehicleById(@Param("id") UUID id);
+
     @EntityGraph(attributePaths = {"details", "pricing"})
     List<Booking> findByVehicleIdOrderByScheduledAtDesc(UUID vehicleId);
 
