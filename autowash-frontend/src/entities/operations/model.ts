@@ -77,6 +77,7 @@ export type StaffOption = {
 
 export type EligibleSessionBooking = {
   bookingId: string;
+  status?: BookingStatus | null;
   customerName: string;
   customerPhone: string;
   vehiclePlate: string;

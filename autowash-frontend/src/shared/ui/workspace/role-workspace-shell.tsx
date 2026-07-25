@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { TierBadge } from "@/shared/ui/customer/customer-experience";
 import { CartDrawer } from "@/features/cart/components/cart-drawer";
 import {
@@ -119,6 +119,7 @@ function getPageTitle(title: string, lang: "vi" | "en"): string {
 export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const logoutMutation = useCustomerLogout();
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
@@ -160,7 +161,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
   const eligibleQuery = useQuery({
     queryKey: ["staff-notifications", "eligible"],
-    queryFn: getEligibleSessionBookings,
+    queryFn: () => getEligibleSessionBookings(),
     enabled: false,
     refetchInterval: 10_000,
   });
@@ -260,7 +261,12 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const workspaceTheme = WORKSPACE_THEMES[requiredRole];
   const navItems = navForRole(requiredRole);
   const mobileItems = mobileNavForRole(requiredRole);
-  const headerMeta = getWorkspaceHeaderMeta(pathname);
+  const isHistoryBookingDetail =
+    pathname.startsWith("/customer/bookings/") &&
+    !pathname.startsWith("/customer/bookings/new") &&
+    searchParams.get("from") === "history";
+  const activePathname = isHistoryBookingDetail ? "/customer/history" : pathname;
+  const headerMeta = getWorkspaceHeaderMeta(activePathname);
   const headerTitle = language === "vi" ? (headerMeta.titleVi ?? getPageTitle(headerMeta.title, language)) : headerMeta.title;
   const headerSubtitle = language === "vi" ? (headerMeta.subtitleVi ?? headerMeta.subtitle) : headerMeta.subtitle;
   const managerNotifications = useManagerNotificationStore((state) => state.notifications);
@@ -408,7 +414,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               <SidebarNavLink
                 key={item.href}
                 item={item}
-                pathname={pathname}
+                pathname={activePathname}
                 collapsed={sidebarCollapsed}
                 activeClassName={workspaceTheme.activeNav}
                 language={language}
@@ -1065,7 +1071,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
         <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-cyan-900/10 bg-white/95 px-2 py-2 shadow-[0_-14px_44px_rgba(6,17,26,0.08)] backdrop-blur-xl lg:hidden">
           <ul className="grid grid-cols-4 gap-1">
             {mobileItems.map((item) => {
-              const active = isNavActive(pathname, item);
+              const active = isNavActive(activePathname, item);
               const Icon = item.icon;
               return (
                 <li key={item.href}>
@@ -1111,7 +1117,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <SidebarNavLink
                     key={item.href}
                     item={item}
-                    pathname={pathname}
+                    pathname={activePathname}
                     collapsed={false}
                     activeClassName={workspaceTheme.activeNav}
                     language={language}

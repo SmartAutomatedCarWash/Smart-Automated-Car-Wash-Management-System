@@ -379,7 +379,7 @@ public class BookingServiceImpl implements BookingService {
 
         long totalBookings = BookingRepository.countByCustomer(user);
         if (totalBookings == 1) {
-            loyaltyService.postBonusTransaction(user.getId(), 30, "First booking bonus");
+            loyaltyService.postBonusTransaction(user.getId(), booking.getId(), 30, "First booking bonus");
         }
         
         Payment payment = new Payment(

@@ -20,6 +20,7 @@ const STAFF: StaffOption[] = [
 let eligibleBookings: EligibleSessionBooking[] = [
   {
     bookingId: "demo-booking-001",
+    status: "CONFIRMED",
     customerName: "Anh Quang",
     customerPhone: "0901001001",
     vehiclePlate: "51H-888.68",
@@ -36,6 +37,7 @@ let eligibleBookings: EligibleSessionBooking[] = [
   },
   {
     bookingId: "demo-booking-002",
+    status: "CONFIRMED",
     customerName: "Chi Mai",
     customerPhone: "0902002002",
     vehiclePlate: "30K-245.19",
@@ -52,6 +54,7 @@ let eligibleBookings: EligibleSessionBooking[] = [
   },
   {
     bookingId: "demo-booking-003",
+    status: "PENDING",
     customerName: "Anh Bao",
     customerPhone: "0903003003",
     vehiclePlate: "59A-707.77",
@@ -68,6 +71,7 @@ let eligibleBookings: EligibleSessionBooking[] = [
   },
   {
     bookingId: "demo-booking-019-001",
+    status: "CONFIRMED",
     customerName: "Chi Hoa",
     customerPhone: "0904004004",
     vehiclePlate: "51K-111.22",
@@ -84,6 +88,7 @@ let eligibleBookings: EligibleSessionBooking[] = [
   },
   {
     bookingId: "demo-booking-020-001",
+    status: "PENDING",
     customerName: "Anh Nam",
     customerPhone: "0905005005",
     vehiclePlate: "30F-808.09",
