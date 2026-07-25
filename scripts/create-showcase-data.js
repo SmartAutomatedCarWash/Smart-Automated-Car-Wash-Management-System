@@ -100,12 +100,12 @@ const customers = [
 ];
 
 const services = [
-  ["84000000-0000-0000-0000-000000000001", "Foam Exterior Wash", "High-pressure foam wash for daily city driving dust.", 90000, 25, "ACTIVE", "/images/catalog/foam-exterior-wash.jpg"],
-  ["84000000-0000-0000-0000-000000000002", "Interior Vacuum", "Cabin vacuum, mats, dashboard wipe, and quick deodorizing.", 70000, 20, "ACTIVE", "/images/catalog/interior-vacuum.jpg"],
-  ["84000000-0000-0000-0000-000000000003", "Tire Shine", "Tire and wheel cleaning with gloss protection.", 45000, 10, "ACTIVE", "/images/catalog/tire-shine.jpg"],
-  ["84000000-0000-0000-0000-000000000004", "Ceramic Wax Coat", "Short-term ceramic wax protection for paint gloss.", 180000, 35, "ACTIVE", "/images/catalog/ceramic-wax-coat.jpg"],
-  ["84000000-0000-0000-0000-000000000005", "Engine Bay Clean", "Careful engine bay dust removal and wipe-down.", 160000, 30, "ACTIVE", "/images/catalog/engine-bay-clean.jpg"],
-  ["84000000-0000-0000-0000-000000000006", "Ozone Odor Treatment", "Deep odor neutralization for cabin air refresh.", 220000, 40, "INACTIVE", "/images/catalog/ozone-odor-treatment.jpg"],
+  ["84000000-0000-0000-0000-000000000001", "Foam Exterior Wash", "High-pressure foam wash for daily city driving dust.", 90000, 25, "ACTIVE", "/images/catalog/foam-exterior-wash.jpg,/images/catalog/foam-exterior-wash-2.jpg"],
+  ["84000000-0000-0000-0000-000000000002", "Interior Vacuum", "Cabin vacuum, mats, dashboard wipe, and quick deodorizing.", 70000, 20, "ACTIVE", "/images/catalog/interior-vacuum.jpg,/images/catalog/interior-vacuum-2.jpg"],
+  ["84000000-0000-0000-0000-000000000003", "Tire Shine", "Tire and wheel cleaning with gloss protection.", 45000, 10, "ACTIVE", "/images/catalog/tire-shine.jpg,/images/catalog/tire-shine-2.jpg"],
+  ["84000000-0000-0000-0000-000000000004", "Ceramic Wax Coat", "Short-term ceramic wax protection for paint gloss.", 180000, 35, "ACTIVE", "/images/catalog/ceramic-wax-coat.jpg,/images/catalog/ceramic-wax-coat-2.jpg"],
+  ["84000000-0000-0000-0000-000000000005", "Engine Bay Clean", "Careful engine bay dust removal and wipe-down.", 160000, 30, "ACTIVE", "/images/catalog/engine-bay-clean.jpg,/images/catalog/engine-bay-clean-2.jpg"],
+  ["84000000-0000-0000-0000-000000000006", "Ozone Odor Treatment", "Deep odor neutralization for cabin air refresh.", 220000, 40, "INACTIVE", "/images/catalog/ozone-odor-treatment.jpg,/images/catalog/ozone-odor-treatment-2.jpg"],
 ];
 
 const packages = [
@@ -117,7 +117,7 @@ const packages = [
     duration: 50,
     category: "Daily Care",
     status: "ACTIVE",
-    imageUrls: ["/images/catalog/city-wash.jpg", "/images/catalog/foam-exterior-wash.jpg", "/images/catalog/interior-vacuum.jpg"],
+    imageUrls: ["/images/catalog/city-wash.jpg", "/images/catalog/city-wash-2.jpg", "/images/catalog/foam-exterior-wash.jpg", "/images/catalog/interior-vacuum.jpg"],
     serviceIds: [services[0][0], services[1][0], services[2][0]],
   },
   {
@@ -128,7 +128,7 @@ const packages = [
     duration: 90,
     category: "Detailing",
     status: "ACTIVE",
-    imageUrls: ["/images/catalog/premium-detail.jpg", "/images/catalog/ceramic-wax-coat.jpg", "/images/catalog/tire-shine.jpg"],
+    imageUrls: ["/images/catalog/premium-detail.jpg", "/images/catalog/premium-detail-2.jpg", "/images/catalog/ceramic-wax-coat.jpg", "/images/catalog/tire-shine.jpg"],
     serviceIds: [services[0][0], services[1][0], services[2][0], services[3][0]],
   },
   {
@@ -139,7 +139,7 @@ const packages = [
     duration: 75,
     category: "Maintenance",
     status: "ACTIVE",
-    imageUrls: ["/images/catalog/engine-refresh.jpg", "/images/catalog/engine-bay-clean.jpg", "/images/catalog/foam-exterior-wash.jpg"],
+    imageUrls: ["/images/catalog/engine-refresh.jpg", "/images/catalog/engine-refresh-2.jpg", "/images/catalog/engine-bay-clean.jpg", "/images/catalog/foam-exterior-wash.jpg"],
     serviceIds: [services[0][0], services[4][0]],
   },
 ];
@@ -155,7 +155,7 @@ const combos = [
     durationDays: 30,
     maxUsages: 4,
     status: "ACTIVE",
-    imageUrls: ["/images/catalog/monthly-shine-pass.jpg", "/images/catalog/city-wash.jpg", "/images/catalog/foam-exterior-wash.jpg"],
+    imageUrls: ["/images/catalog/monthly-shine-pass.jpg", "/images/catalog/monthly-shine-pass-2.jpg", "/images/catalog/city-wash.jpg", "/images/catalog/foam-exterior-wash.jpg"],
     serviceIds: [services[0][0], services[1][0], services[2][0]],
   },
   {
@@ -168,7 +168,7 @@ const combos = [
     durationDays: 90,
     maxUsages: 8,
     status: "ACTIVE",
-    imageUrls: ["/images/catalog/quarterly-detail-pass.jpg", "/images/catalog/premium-detail.jpg", "/images/catalog/ceramic-wax-coat.jpg"],
+    imageUrls: ["/images/catalog/quarterly-detail-pass.jpg", "/images/catalog/quarterly-detail-pass-2.jpg", "/images/catalog/premium-detail.jpg", "/images/catalog/ceramic-wax-coat.jpg"],
     serviceIds: [services[0][0], services[1][0], services[2][0], services[3][0]],
   },
 ];
