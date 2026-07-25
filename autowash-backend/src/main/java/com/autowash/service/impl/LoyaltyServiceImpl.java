@@ -144,6 +144,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
 
         int pointsAwarded = calculateEarnPoints(sessionId);
         account.addPoints(pointsAwarded);
+        loyaltyAccountRepository.saveAndFlush(account);
         PointTransaction transaction = new PointTransaction(
                 account,
                 session.getBooking(),
@@ -196,6 +197,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         }
         
         account.addActivePoints(actualPoints);
+        loyaltyAccountRepository.saveAndFlush(account);
         pointTransactionRepository.save(new PointTransaction(
                 account,
                 booking,
@@ -219,6 +221,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         }
         
         account.addActivePoints(actualPoints);
+        loyaltyAccountRepository.saveAndFlush(account);
         pointTransactionRepository.save(new PointTransaction(
                 account,
                 null,
@@ -288,6 +291,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         }
 
         account.redeemPoints(pointsToRedeem);
+        loyaltyAccountRepository.saveAndFlush(account);
         Instant expiresAt = null;
         if (offer.getDiscount().getValidDaysAfterClaim() != null) {
             expiresAt = Instant.now().plus(offer.getDiscount().getValidDaysAfterClaim(), ChronoUnit.DAYS);
