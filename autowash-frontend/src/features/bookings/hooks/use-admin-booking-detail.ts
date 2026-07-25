@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   confirmAdminBooking,
   getAdminBookingDetail,
-  refundAdminVnpayPayment,
   updateAdminBookingStatus,
   updateAdminBookingStaff,
   getAdminVehicleDetail,
@@ -10,7 +9,7 @@ import {
 } from "@/features/reports/api/admin-reporting-service";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
-import type { BookingDetail, BookingStatus, VnpayPaymentResultResponse } from "@/entities/bookings";
+import type { BookingDetail, BookingStatus } from "@/entities/bookings";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -64,20 +63,6 @@ export function useUpdateAdminBookingStaff(id: string) {
         queryClient.invalidateQueries({ queryKey: ["admin-booking-detail", id] }),
         queryClient.invalidateQueries({ queryKey: ["admin-bookings"] }),
         queryClient.invalidateQueries({ queryKey: ["manager-operations"] }),
-      ]);
-    },
-  });
-}
-
-export function useRefundAdminVnpayPayment(id: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation<VnpayPaymentResultResponse, ApiErrorResponse, number | undefined>({
-    mutationFn: (amount) => refundAdminVnpayPayment(id, amount),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["admin-booking-detail", id] }),
-        queryClient.invalidateQueries({ queryKey: ["admin-bookings"] }),
       ]);
     },
   });

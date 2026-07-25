@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
-  Banknote,
   Calendar,
   Car,
   CheckCircle2,
@@ -68,36 +67,6 @@ function getBookingOptions(booking: BookingDetail): BookingAddonSelection[] {
       addonName: detail.snapshotName,
       addonPrice: detail.snapshotPrice,
     }));
-}
-
-function getRefundStatusLabel(booking: BookingDetail, language: "vi" | "en") {
-  if (booking.status !== "CANCELLED") {
-    return null;
-  }
-
-  const paymentMethod = booking.payment.method?.toUpperCase() ?? "";
-  const paymentStatus = booking.payment.status?.toUpperCase() ?? "";
-
-  if (paymentStatus === "REFUND_PENDING") {
-    return translate(language, "Đang chờ hoàn tiền", "Refund pending");
-  }
-  if (paymentStatus === "REFUNDED") {
-    return translate(language, "Đã hoàn tiền toàn bộ", "Fully refunded");
-  }
-  if (paymentStatus === "PARTIALLY_REFUNDED") {
-    return translate(language, "Đã hoàn tiền một phần", "Partially refunded");
-  }
-  if (paymentStatus === "REFUND_FAILED") {
-    return translate(language, "Hoàn tiền thất bại", "Refund failed");
-  }
-  if (paymentStatus === "PAID" && paymentMethod === "E_WALLET") {
-    return translate(language, "Không hoàn tiền theo chính sách hủy", "No refund by cancellation policy");
-  }
-  if (["UNPAID", "FAILED", "CANCELLED"].includes(paymentStatus)) {
-    return translate(language, "Không phát sinh hoàn tiền", "No refund needed");
-  }
-
-  return humanizeCode(paymentStatus);
 }
 
 // ── Status timeline config ───────────────────────────────────────────────────
@@ -248,7 +217,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const earnedPoints = useMemo(() => {
     const currentBookingId = bookingQuery.data?.bookingId ?? bookingId;
     return loyaltyTransactionsQuery.data?.items.find(
-      (transaction) => transaction.bookingId === currentBookingId && transaction.points > 0,
+      (transaction) => transaction.bookingId === currentBookingId && transaction.type === "EARN" && transaction.points > 0,
     )?.points ?? null;
   }, [bookingId, bookingQuery.data?.bookingId, loyaltyTransactionsQuery.data]);
 
@@ -379,7 +348,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const canChoosePendingPaymentAction = isPendingBookingHold && !pendingHoldExpired;
   const canPayAgainWithVnpay = canChoosePendingPaymentAction && paymentMethod !== "CASH_AT_COUNTER" && booking.pricing.finalAmount > 0;
   const canChangeToSepay = canChoosePendingPaymentAction && paymentMethod === "E_WALLET" && booking.pricing.finalAmount > 0;
-  const canChangeToCash = canChoosePendingPaymentAction && paymentMethod !== "CASH_AT_COUNTER";
   const canShowSepayInstructions = canChoosePendingPaymentAction && paymentMethod === "BANK_TRANSFER";
   const sepayPaymentCode = canShowSepayInstructions ? booking.payment.transactionId : null;
   const sepayTransferDescription = canShowSepayInstructions
@@ -391,7 +359,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const originalAssignedStaffIds = assignedStaffList(booking).map((staff) => staff.staffId).slice(0, 1);
   const canEditAssignedStaff = booking.status === "CONFIRMED" && originalAssignedStaffIds.length === 1 && !booking.washSessionId;
   const canSaveAssignedStaff = canEditAssignedStaff && selectedStaffIds.length === 1 && selectedStaffIds[0] !== originalAssignedStaffIds[0];
-  const refundStatusLabel = getRefundStatusLabel(booking, language);
   const customerName = booking.customerName || profileQuery.data?.fullName || translate(language, "Khách hàng", "Customer");
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || translate(language, "Chưa có số điện thoại", "No phone number");
   const customerEmail = booking.confirmationEmail || profileQuery.data?.email || translate(language, "email của bạn", "your email");
@@ -450,15 +417,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
       const checkout = await createVnpayCheckoutMutation.mutateAsync(booking.bookingId);
       notify.success(translate(language, "Đang chuyển sang VNPay.", "Redirecting to VNPay."));
       window.location.href = checkout.paymentUrl;
-    } catch (error) {
-      notify.error(getErrorMessage(error));
-    }
-  };
-
-  const handleChangeToCash = async () => {
-    try {
-      await changePaymentMethodMutation.mutateAsync("CASH_AT_COUNTER");
-      notify.success(translate(language, "Đã chuyển sang thanh toán tại quầy.", "Changed to cash at counter."));
     } catch (error) {
       notify.error(getErrorMessage(error));
     }
@@ -718,9 +676,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 [translate(language, "Dự kiến kết thúc", "Estimated end"), booking.scheduling.estimatedEndTime],
                 [translate(language, "Phương thức TT", "Payment method"), getPaymentMethodLabel(booking.payment.method)],
                 [translate(language, "Trạng thái TT", "Payment status"), getPaymentStatusLabel(booking.payment.status)],
-                ...(refundStatusLabel
-                  ? [[translate(language, "Trạng thái hoàn tiền", "Refund status"), refundStatusLabel] as [string, string]]
-                  : []),
                 [translate(language, "Mã giao dịch", "Transaction"), booking.payment.transactionId || "--"],
               ]}
             />
@@ -896,18 +851,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                       {translate(language, "Đổi sang SePay", "Change to SePay")}
                     </Button>
                   ) : null}
-                  {canChangeToCash ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full bg-white"
-                      onClick={handleChangeToCash}
-                      disabled={isPaymentActionPending}
-                    >
-                      {changePaymentMethodMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Banknote className="mr-2 h-4 w-4" />}
-                      {translate(language, "Đổi sang trả tại quầy", "Change to cash at counter")}
-                    </Button>
-                  ) : null}
                 </div>
               ) : null}
 
@@ -1000,6 +943,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
             <BookingCompletionPopup
               bookingId={bookingId}
               vehiclePlate={booking.vehiclePlate}
+              pointsEarned={earnedPoints}
               isOpen={showReviewPopup}
               onClose={() => setShowReviewPopup(false)}
               onSubmitReview={handleSubmitReview}

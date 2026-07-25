@@ -40,7 +40,7 @@ export function buildCreateBookingPayload(draft: BookingDraft): CreateBookingReq
     options: draft.addonIds,
     bookingDate: draft.bookingDate,
     bookingTime: draft.bookingTime,
-    paymentMethod: draft.paymentMethod ?? "CASH_AT_COUNTER",
+    paymentMethod: draft.paymentMethod ?? "BANK_TRANSFER",
   };
 
   if (draft.mode === "PACKAGE") {

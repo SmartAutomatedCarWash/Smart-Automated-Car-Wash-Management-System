@@ -116,7 +116,7 @@ export function CustomerLoyaltyPageContent() {
 
 
 
-  if (tiersQuery.isLoading || offersQuery.isLoading) {
+  if (accountQuery.isPending || tiersQuery.isLoading || offersQuery.isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -271,15 +271,6 @@ export function CustomerLoyaltyPageContent() {
           </div>
         </section>
 
-        {isSuccessVoucher ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5 text-emerald-900 shadow-sm animate-in fade-in zoom-in duration-500 flex items-center justify-center">
-            <div className="flex items-center gap-2 text-base font-bold uppercase tracking-[0.14em] text-emerald-700">
-              <CheckCircle2 className="h-5 w-5" />
-              {translate(language, "Äá»•i voucher thÃ nh cÃ´ng", "Redemption successful")}
-            </div>
-          </div>
-        ) : null}
-
         {redeemMutation.isError ? (
           <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
             {getErrorMessage(redeemMutation.error)}
@@ -408,6 +399,38 @@ export function CustomerLoyaltyPageContent() {
             <Button type="button" onClick={handleRedeem} disabled={redeemMutation.isPending} className="bg-[#007A78] text-white hover:bg-[#00605E]">
               {redeemMutation.isPending ? <Loader2 className="animate-spin" /> : <Gift />}
               {translate(language, "XÃ¡c nháº­n Ä‘á»•i Ä‘iá»ƒm", "Confirm redemption")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isSuccessVoucher} onOpenChange={setIsSuccessVoucher}>
+        <DialogContent className="rounded-lg sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+              <CheckCircle2 className="h-7 w-7" />
+            </div>
+            <DialogTitle className="text-center">
+              {translate(language, "Äá»•i voucher thÃ nh cÃ´ng", "Redemption successful")}
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              {translate(
+                language,
+                "Voucher Ä‘Ã£ Ä‘Æ°á»£c thÃªm vÃ o vÃ­ cá»§a báº¡n.",
+                "The voucher has been added to your wallet.",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button
+              type="button"
+              className="bg-[#007A78] text-white hover:bg-[#00605E]"
+              onClick={() => {
+                setIsSuccessVoucher(false);
+                setActiveTab("my-vouchers");
+              }}
+            >
+              {translate(language, "Xem voucher cá»§a tÃ´i", "View my vouchers")}
             </Button>
           </DialogFooter>
         </DialogContent>

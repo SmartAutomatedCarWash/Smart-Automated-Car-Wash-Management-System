@@ -316,6 +316,7 @@ export type BookingDetail = {
   payment: {
     method: string;
     status: string;
+    amount: number;
     transactionId: string | null;
     paidAt: string | null;
     qrUrl?: string | null;
@@ -372,9 +373,6 @@ export type CancelBookingResponse = {
   bookingId: string;
   status: string;
   cancelledAt: string;
-  refundAmount: number;
-  refundStatus: string;
-  refundMessage: string;
 };
 
 export type PurchaseCustomerComboRequest = {

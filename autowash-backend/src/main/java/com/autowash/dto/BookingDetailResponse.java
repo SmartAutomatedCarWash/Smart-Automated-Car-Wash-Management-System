@@ -51,6 +51,7 @@ public record BookingDetailResponse(
     public record Payment(
             String method,
             String status,
+            long amount,
             String transactionId,
             Instant paidAt,
             String qrUrl,

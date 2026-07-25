@@ -192,75 +192,6 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
         return applyGatewayStatus(booking, payment, response, "VNPay query synced");
     }
 
-    @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public VnpayPaymentResultResponse refund(UUID bookingId, Long amount, String createdBy, String ipAddress) {
-        ensureApiConfigured();
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", ErrorCode.RESOURCE_NOT_FOUND));
-        Payment payment = paymentRepository.findByBooking(booking)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking payment not found", ErrorCode.RESOURCE_NOT_FOUND));
-        if (payment.getMethod() != PaymentMethod.E_WALLET || payment.getStatus() != PaymentStatus.PAID) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Only paid VNPay payments can be refunded", ErrorCode.BUSINESS_RULE_VIOLATION);
-        }
-
-        long refundAmount = amount == null ? payment.getAmount() : amount;
-        if (refundAmount <= 0 || refundAmount > payment.getAmount()) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid refund amount", ErrorCode.INVALID_INPUT);
-        }
-
-        String transactionNo = resolveVnpayTransactionNo(payment);
-        String requestId = newRequestId();
-        String createDate = nowVnpay();
-        String transactionDate = payment.getPaidAt() == null ? formatInstant(payment.getCreatedAt()) : formatInstant(payment.getPaidAt());
-        String operator = createdBy == null || createdBy.isBlank() ? currentUserService.getCurrentUser().getEmail() : createdBy.trim();
-        String transactionType = refundAmount == payment.getAmount() ? "02" : "03";
-        String orderInfo = "Refund booking " + booking.getId();
-
-        Map<String, String> request = new LinkedHashMap<>();
-        request.put("vnp_RequestId", requestId);
-        request.put("vnp_Version", "2.1.0");
-        request.put("vnp_Command", "refund");
-        request.put("vnp_TmnCode", tmnCode);
-        request.put("vnp_TransactionType", transactionType);
-        request.put("vnp_TxnRef", booking.getId().toString());
-        request.put("vnp_Amount", String.valueOf(refundAmount * 100));
-        request.put("vnp_TransactionNo", transactionNo);
-        request.put("vnp_TransactionDate", transactionDate);
-        request.put("vnp_CreateBy", operator);
-        request.put("vnp_CreateDate", createDate);
-        request.put("vnp_IpAddr", normalizeIp(ipAddress));
-        request.put("vnp_OrderInfo", orderInfo);
-        request.put("vnp_SecureHash", hmacSha512(pipe(
-                requestId,
-                "2.1.0",
-                "refund",
-                tmnCode,
-                transactionType,
-                booking.getId().toString(),
-                String.valueOf(refundAmount * 100),
-                transactionNo,
-                transactionDate,
-                operator,
-                createDate,
-                normalizeIp(ipAddress),
-                orderInfo
-        ), hashSecret));
-
-        payment.markRefundPending();
-        Map<String, String> response = postVnpayApi(request);
-        if (!validApiResponseHash(response)) {
-            payment.markRefundFailed();
-            return new VnpayPaymentResultResponse(false, false, booking.getId().toString(), response.get("vnp_ResponseCode"), response.get("vnp_TransactionStatus"), response.get("vnp_TransactionNo"), "Invalid VNPay refund signature");
-        }
-        if (SUCCESS_CODE.equals(response.get("vnp_ResponseCode"))) {
-            payment.markRefunded(refundAmount < payment.getAmount());
-            return new VnpayPaymentResultResponse(true, true, booking.getId().toString(), response.get("vnp_ResponseCode"), response.get("vnp_TransactionStatus"), response.get("vnp_TransactionNo"), "VNPay refund accepted");
-        }
-        payment.markRefundFailed();
-        return new VnpayPaymentResultResponse(true, false, booking.getId().toString(), response.get("vnp_ResponseCode"), response.get("vnp_TransactionStatus"), response.get("vnp_TransactionNo"), "VNPay refund rejected");
-    }
-
     private VnpayPaymentResultResponse verifyReturnOnly(Map<String, String> rawParams) {
         ensureCheckoutConfigured();
         Map<String, String> params = new TreeMap<>(rawParams);
@@ -415,22 +346,6 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
                     response.get("vnp_PromotionCode"),
                     response.get("vnp_PromotionAmount")
             );
-        } else if ("refund".equalsIgnoreCase(command)) {
-            data = pipe(
-                    response.get("vnp_ResponseId"),
-                    response.get("vnp_Command"),
-                    response.get("vnp_ResponseCode"),
-                    response.get("vnp_Message"),
-                    response.get("vnp_TmnCode"),
-                    response.get("vnp_TxnRef"),
-                    response.get("vnp_Amount"),
-                    response.get("vnp_BankCode"),
-                    response.get("vnp_PayDate"),
-                    response.get("vnp_TransactionNo"),
-                    response.get("vnp_TransactionType"),
-                    response.get("vnp_TransactionStatus"),
-                    response.get("vnp_OrderInfo")
-            );
         } else {
             return hmacSha512(buildQuery(fields), hashSecret).equalsIgnoreCase(secureHash);
         }
@@ -501,7 +416,7 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
             case "02" -> "Payment failed. The bank or VNPay declined the transaction.";
             case "04" -> "Payment was reversed. The transaction was cancelled or rolled back by the bank.";
             case "05" -> "Payment is still being processed by VNPay. Please check the booking again later before retrying.";
-            case "06" -> "A refund request was sent for this payment.";
+            case "06" -> "Payment requires manual review by VNPay.";
             case "07" -> "Payment was rejected because VNPay marked the transaction as suspicious.";
             case "09" -> "Payment failed because the card or account is not registered for Internet Banking.";
             case "10" -> "Payment failed because card or account authentication was entered incorrectly too many times.";
@@ -528,9 +443,9 @@ public class VnpayPaymentServiceImpl implements VnpayPaymentService {
             case "02" -> "failed";
             case "04" -> "reversed";
             case "05" -> "processing";
-            case "06" -> "refund request sent";
+            case "06" -> "manual review";
             case "07" -> "suspected fraud";
-            case "09" -> "refund rejected";
+            case "09" -> "not approved";
             case "10" -> "authentication failed too many times";
             case "11" -> "payment session expired";
             case "12" -> "card or account locked or inactive";

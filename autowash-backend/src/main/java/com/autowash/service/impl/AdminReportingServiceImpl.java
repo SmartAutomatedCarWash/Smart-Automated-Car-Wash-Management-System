@@ -722,6 +722,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                         new BookingResponseAssembler.PaymentInfo(
                                 PaymentMethod.valueOf(payment.method()),
                                 PaymentStatus.valueOf(payment.status()),
+                                payment.amount(),
                                 payment.transactionRef(),
                                 payment.paidAt()
                         )
@@ -1554,10 +1555,11 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 .map(payment -> new PaymentInfo(
                         defaultString(payment.getMethod(), PaymentMethod.CASH_AT_COUNTER.name()),
                         defaultString(payment.getStatus(), PaymentStatus.UNPAID.name()),
+                        payment.getAmount(),
                         payment.getTransactionRef(),
                         payment.getPaidAt()
                 ))
-                .orElseGet(() -> new PaymentInfo(PaymentMethod.CASH_AT_COUNTER.name(), PaymentStatus.UNPAID.name(), null, null));
+                .orElseGet(() -> new PaymentInfo(PaymentMethod.CASH_AT_COUNTER.name(), PaymentStatus.UNPAID.name(), 0L, null, null));
     }
 
     private String defaultString(String value, String fallback) {
@@ -1570,6 +1572,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     private record PaymentInfo(
             String method,
             String status,
+            long amount,
             String transactionRef,
             Instant paidAt
     ) {

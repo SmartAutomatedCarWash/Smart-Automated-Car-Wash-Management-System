@@ -68,7 +68,6 @@ import com.autowash.service.CustomerComboService;
 import com.autowash.service.DiscountRedemptionService;
 import com.autowash.service.LoyaltyService;
 import com.autowash.service.StaffAssignmentService;
-import com.autowash.service.VnpayPaymentService;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.service.BookingEmailDeliveryService;
 import com.autowash.service.CurrentUserService;
@@ -89,7 +88,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -153,7 +151,6 @@ public class BookingServiceImpl implements BookingService {
     private final NotificationRepository notificationRepository;
     private final BookingResponseAssembler bookingResponseAssembler;
     private final StaffAssignmentService staffAssignmentService;
-    private final ObjectProvider<VnpayPaymentService> vnpayPaymentServiceProvider;
     private final WebSocketEventPublisher webSocketEventPublisher;
 
     @Value("${autowash.payment.sepay.payment-code-prefix:AU}")
@@ -181,7 +178,6 @@ public class BookingServiceImpl implements BookingService {
             NotificationRepository notificationRepository,
             BookingResponseAssembler bookingResponseAssembler,
             StaffAssignmentService staffAssignmentService,
-            ObjectProvider<VnpayPaymentService> vnpayPaymentServiceProvider,
             WebSocketEventPublisher webSocketEventPublisher
     ) {
         this.currentUserService = currentUserService;
@@ -205,7 +201,6 @@ public class BookingServiceImpl implements BookingService {
         this.notificationRepository = notificationRepository;
         this.bookingResponseAssembler = bookingResponseAssembler;
         this.staffAssignmentService = staffAssignmentService;
-        this.vnpayPaymentServiceProvider = vnpayPaymentServiceProvider;
         this.webSocketEventPublisher = webSocketEventPublisher;
     }
 
@@ -548,9 +543,6 @@ public class BookingServiceImpl implements BookingService {
             );
         }
         Payment payment = paymentRepository.findByBooking(booking).orElse(null);
-        long refundAmount = 0L;
-        String refundStatus = "NONE";
-        String refundMessage = "Cancellation processed according to voucher policy.";
         if (booking.getStatus() == BookingStatus.PENDING && payment != null && payment.getStatus() != PaymentStatus.PAID) {
             payment.markCancelled();
         }
@@ -558,64 +550,26 @@ public class BookingServiceImpl implements BookingService {
         booking.cancel(cancelReason);
 
         long hoursUntilScheduled = timeUntilScheduled.toHours();
-        
-        String voucherRefundStatus = "NONE";
         boolean shouldApplyVoucherPolicy = oldStatus == BookingStatus.CONFIRMED;
-        
-        if (payment != null
-                && payment.getMethod() == PaymentMethod.E_WALLET
-                && payment.getStatus() == PaymentStatus.PAID
-                && oldStatus == BookingStatus.CONFIRMED) {
-            refundAmount = resolveRefundAmount(payment.getAmount(), hoursUntilScheduled);
-            if (refundAmount > 0) {
-                try {
-                    vnpayPaymentServiceProvider.getObject().refund(booking.getId(), refundAmount, "customer-cancel", null);
-                    refundStatus = payment.getStatus().name();
-                    refundMessage = "Booking cancelled. VNPay refund request was submitted.";
-                } catch (RuntimeException exception) {
-                    payment.markRefundPending();
-                    refundStatus = "REFUND_PENDING";
-                    refundMessage = "Booking cancelled. VNPay refund is pending manual verification.";
-                    LOGGER.warn("VNPay refund request failed during customer cancellation: bookingId={}", booking.getId(), exception);
-                }
-            } else {
-                refundStatus = "NO_REFUND";
-                refundMessage = "Booking cancelled inside the non-refundable window.";
-            }
-        }
 
         if (shouldApplyVoucherPolicy && hoursUntilScheduled > 24) {
             customerComboService.releaseUsageForBooking(booking.getId().toString());
             if (booking.getPricing().getDiscountType() != null) {
                 discountRedemptionService.revertRedemption(booking);
-                voucherRefundStatus = "REFUNDED";
             }
         } else if (shouldApplyVoucherPolicy && hoursUntilScheduled >= 6) {
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled between 6 and 24 hours"));
-            if (booking.getPricing().getDiscountType() != null) {
-                voucherRefundStatus = "FORFEITED";
-            }
         } else if (shouldApplyVoucherPolicy && hoursUntilScheduled >= 1) {
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled between 1 and 6 hours"));
-            if (booking.getPricing().getDiscountType() != null) {
-                voucherRefundStatus = "FORFEITED";
-            }
         } else if (shouldApplyVoucherPolicy) {
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled under 1 hour"));
-            if (booking.getPricing().getDiscountType() != null) {
-                voucherRefundStatus = "FORFEITED";
-            }
         }
 
         recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), cancelReason);
         CancelBookingResponse cancelResponse = new CancelBookingResponse(
                 booking.getId().toString(),
                 booking.getStatus().name(),
-                booking.getUpdatedAt(),
-                refundAmount,
-                refundStatus,
-                voucherRefundStatus,
-                refundMessage
+                booking.getUpdatedAt()
         );
         webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), booking.getStatus().name());
         return cancelResponse;
@@ -1098,25 +1052,16 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private long resolveRefundAmount(long paymentAmount, long hoursUntilScheduled) {
-        if (hoursUntilScheduled > 24) {
-            return paymentAmount;
-        }
-        if (hoursUntilScheduled >= 6) {
-            return paymentAmount / 2;
-        }
-        return 0L;
-    }
-
     private BookingResponseAssembler.PaymentInfo resolvePaymentInfo(Booking booking) {
         return paymentRepository.findFirstByBookingOrderByCreatedAtDesc(booking)
                 .map(payment -> new BookingResponseAssembler.PaymentInfo(
                         payment.getMethod() == null ? PaymentMethod.CASH_AT_COUNTER : payment.getMethod(),
                         payment.getStatus() == null ? PaymentStatus.UNPAID : payment.getStatus(),
+                        payment.getAmount(),
                         payment.getTransactionRef(),
                         payment.getPaidAt()
                 ))
-                .orElseGet(() -> new BookingResponseAssembler.PaymentInfo(PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, null, null));
+                .orElseGet(() -> new BookingResponseAssembler.PaymentInfo(PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, 0L, null, null));
     }
 
     private String resolveTransactionRef(Booking booking, String transactionRef) {
