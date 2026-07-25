@@ -111,6 +111,22 @@ public class BookingServiceImpl implements BookingService {
             BookingStatus.PENDING,
             BookingStatus.CONFIRMED
     );
+    private static final List<BookingStatus> MAIN_BOOKING_STATUS_FLOW = List.of(
+            BookingStatus.PENDING,
+            BookingStatus.CONFIRMED,
+            BookingStatus.CHECKED_IN,
+            BookingStatus.IN_PROGRESS,
+            BookingStatus.COMPLETED
+    );
+    private static final Set<BookingStatus> TERMINAL_BOOKING_STATUSES = Set.of(
+            BookingStatus.COMPLETED,
+            BookingStatus.CANCELLED,
+            BookingStatus.NO_SHOW
+    );
+    private static final Set<BookingStatus> SIDE_BOOKING_STATUSES = Set.of(
+            BookingStatus.CANCELLED,
+            BookingStatus.NO_SHOW
+    );
 
     private final CurrentUserService currentUserService;
     private final VehicleRepository VehicleRepository;
@@ -756,7 +772,8 @@ public class BookingServiceImpl implements BookingService {
         if (oldStatus == status) {
             return toDetailResponse(booking);
         }
-        if (oldStatus == BookingStatus.PENDING && status != BookingStatus.CANCELLED) {
+        validateAdminBookingStatusTransition(oldStatus, status);
+        if (oldStatus == BookingStatus.PENDING && !SIDE_BOOKING_STATUSES.contains(status)) {
             ensurePendingBookingHoldOpen(booking);
         }
         booking.updateStatus(status);
@@ -765,6 +782,29 @@ public class BookingServiceImpl implements BookingService {
         }
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), "Booking status updated by admin");
         return toDetailResponse(booking);
+    }
+
+    private void validateAdminBookingStatusTransition(BookingStatus oldStatus, BookingStatus newStatus) {
+        if (TERMINAL_BOOKING_STATUSES.contains(oldStatus)) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Booking status is locked after " + oldStatus,
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
+        if (SIDE_BOOKING_STATUSES.contains(newStatus)) {
+            return;
+        }
+
+        int oldIndex = MAIN_BOOKING_STATUS_FLOW.indexOf(oldStatus);
+        int newIndex = MAIN_BOOKING_STATUS_FLOW.indexOf(newStatus);
+        if (oldIndex < 0 || newIndex < 0 || newIndex <= oldIndex) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Booking status cannot move backward",
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
     }
 
     @Transactional(readOnly = true)

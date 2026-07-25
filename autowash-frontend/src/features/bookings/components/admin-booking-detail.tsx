@@ -53,6 +53,20 @@ function translateStatus(st: string, lang: "vi" | "en") {
   return map[st]?.[lang] || st;
 }
 
+const MAIN_BOOKING_STATUS_FLOW: BookingStatus[] = ["PENDING", "CONFIRMED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED"];
+const SIDE_BOOKING_STATUSES: BookingStatus[] = ["CANCELLED", "NO_SHOW"];
+const TERMINAL_BOOKING_STATUSES: BookingStatus[] = ["COMPLETED", "CANCELLED", "NO_SHOW"];
+
+function getAllowedNextStatuses(currentStatus: BookingStatus): BookingStatus[] {
+  if (TERMINAL_BOOKING_STATUSES.includes(currentStatus)) {
+    return [];
+  }
+
+  const currentIndex = MAIN_BOOKING_STATUS_FLOW.indexOf(currentStatus);
+  const nextMainStatuses = currentIndex >= 0 ? MAIN_BOOKING_STATUS_FLOW.slice(currentIndex + 1) : [];
+  return [...nextMainStatuses, ...SIDE_BOOKING_STATUSES];
+}
+
 function translatePaymentMethod(method: string, lang: "vi" | "en") {
   const map: Record<string, { vi: string; en: string }> = {
     E_WALLET: { vi: "VNPay", en: "VNPay" },
@@ -161,11 +175,7 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
     }
   };
 
-  const getAvailableStatuses = (): BookingStatus[] => {
-    return ["PENDING", "CONFIRMED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"];
-  };
-
-  const availableStatuses = getAvailableStatuses().filter((status) => status !== booking.status);
+  const availableStatuses = getAllowedNextStatuses(booking.status);
   const statusDirty = Boolean(selectedStatus && selectedStatus !== booking.status);
   const isVnpayPayment = booking.payment.method === "E_WALLET";
   const isSepayPayment = booking.payment.method === "BANK_TRANSFER";
@@ -796,17 +806,23 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
                 <Select
                   value={selectedStatus || undefined}
                   onValueChange={(value) => setSelectedStatus(value as BookingStatus)}
-                  disabled={updateStatusMutation.isPending}
+                  disabled={updateStatusMutation.isPending || availableStatuses.length === 0}
                 >
                   <SelectTrigger className={`w-full rounded-2xl h-10 border border-slate-200 text-xs font-bold ${statusColor(selectedStatus || booking.status)}`}>
                     <SelectValue placeholder={translateStatus(booking.status, language as "vi" | "en")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableStatuses.map((st) => (
-                      <SelectItem key={st} value={st} className="text-xs font-semibold">
-                        {translateStatus(st, language as "vi" | "en")}
+                    {availableStatuses.length > 0 ? (
+                      availableStatuses.map((st) => (
+                        <SelectItem key={st} value={st} className="text-xs font-semibold">
+                          {translateStatus(st, language as "vi" | "en")}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="__LOCKED__" disabled className="text-xs font-semibold">
+                        {translate(language, "Trạng thái đã khóa", "Status locked")}
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
               </div>
