@@ -110,7 +110,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
               and (:#{#dateTo == null} = true or booking.scheduledAt <= :dateTo)
               and (
                     :#{#searchLike == null} = true
-                    or lower(str(booking.id)) like :searchLike
+                    or lower(cast(booking.id as string)) like :searchLike
                     or lower(booking.customer.fullName) like :searchLike
                     or lower(booking.customer.phone) like :searchLike
                     or lower(booking.vehicle.plate) like :searchLike
