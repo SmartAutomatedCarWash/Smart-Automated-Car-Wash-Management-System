@@ -165,12 +165,6 @@ export function CustomerVehicleFormCard({
             />
           </div>
 
-          {disableIdentityFields ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 mt-4">
-              Plate and vehicle type are locked after creation to keep service history, invoices,
-              and booking records consistent.
-            </div>
-          ) : null}
         </div>
 
         <div className="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
