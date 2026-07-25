@@ -787,6 +787,7 @@ public class BookingServiceImpl implements BookingService {
             assignSingleStaffOnConfirmation(booking);
         }
         if (status == BookingStatus.COMPLETED) {
+            markBookingPaidForOperations(booking.getId().toString(), null);
             completeAdminManagedWashSession(booking);
         }
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), "Booking status updated by admin");
