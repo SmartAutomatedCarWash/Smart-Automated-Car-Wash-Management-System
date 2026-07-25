@@ -72,6 +72,7 @@ class BookingResponseAssemblerTest {
         var payment = new BookingResponseAssembler.PaymentInfo(
                 PaymentMethod.BANK_TRANSFER,
                 PaymentStatus.PAID,
+                200_000L,
                 "TXN-001",
                 Instant.parse("2026-07-20T02:30:00Z")
         );
@@ -96,6 +97,7 @@ class BookingResponseAssemblerTest {
         assertThat(response.scheduling().estimatedDuration()).isEqualTo(75);
         assertThat(response.payment().method()).isEqualTo("BANK_TRANSFER");
         assertThat(response.payment().status()).isEqualTo("PAID");
+        assertThat(response.payment().amount()).isEqualTo(200_000L);
         assertThat(response.washSessionId()).isEqualTo(washSession.getId().toString());
         assertThat(response.staffName()).isEqualTo("Session Staff");
         assertThat(response.washStatus()).isEqualTo("COMPLETED");
