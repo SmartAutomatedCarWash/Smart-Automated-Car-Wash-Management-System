@@ -369,18 +369,21 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
         </nav>
 
         <div className="mt-auto space-y-3 border-t border-border/70 p-4">
-          {requiredRole === "CUSTOMER" && (
-            <Link
-              href="/customer/bookings/new"
-              title={sidebarCollapsed ? t("Đặt lịch mới", "Book New Service") : undefined}
-              className={cn(
-                "flex w-full items-center justify-center gap-2 rounded-sm bg-primary text-primary-foreground text-sm font-black shadow-[0_16px_32px_rgba(45,255,238,0.20)] transition hover:-translate-y-0.5 hover:bg-cyan-200",
-                sidebarCollapsed ? "h-11 px-0" : "px-4 py-3",
-              )}
-            >
-              <ClipboardList className={cn("h-4 w-4", !sidebarCollapsed && "hidden")} />
-              {!sidebarCollapsed && t("Đặt lịch mới", "Book New Service")}
-            </Link>
+          {requiredRole === "CUSTOMER" && !sidebarCollapsed && (
+            <div className="rounded-md border border-cyan-900/10 bg-white/72 p-3 shadow-[0_14px_36px_rgba(6,17,26,0.05)]">
+              <div className="flex items-start gap-3">
+                <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", workspaceTheme.accent)}>
+                  <Phone className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold">Hotline</div>
+                  <div className="mt-0.5 text-sm font-extrabold tracking-tight">1900 1234</div>
+                  <div className="mt-1 text-[10px] text-muted-foreground">
+                    {t("8:00 - 20:00 hằng ngày", "8:00 AM - 8:00 PM daily")}
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           {requiredRole !== "CUSTOMER" && !sidebarCollapsed && (

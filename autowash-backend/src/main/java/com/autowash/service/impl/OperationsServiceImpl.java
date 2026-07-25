@@ -42,6 +42,7 @@ import com.autowash.service.OperationsService;
 import com.autowash.service.StaffAssignmentService;
 import com.autowash.service.TierConfigService;
 import com.autowash.service.WashSessionLifecycle;
+import com.autowash.event.WebSocketEventPublisher;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.shared.exception.ErrorCode;
 import java.time.Instant;
@@ -89,6 +90,7 @@ public class OperationsServiceImpl implements OperationsService {
     private final TierConfigService tierConfigService;
     private final NotificationRepository notificationRepository;
     private final ReviewRepository reviewRepository;
+    private final WebSocketEventPublisher webSocketEventPublisher;
     private final String currency;
 
     public OperationsServiceImpl(
@@ -103,6 +105,7 @@ public class OperationsServiceImpl implements OperationsService {
             TierConfigService tierConfigService,
             NotificationRepository notificationRepository,
             ReviewRepository reviewRepository,
+            WebSocketEventPublisher webSocketEventPublisher,
             @Value("${autowash.currency}") String currency
     ) {
         this.bookingService = bookingService;
@@ -116,6 +119,7 @@ public class OperationsServiceImpl implements OperationsService {
         this.tierConfigService = tierConfigService;
         this.notificationRepository = notificationRepository;
         this.reviewRepository = reviewRepository;
+        this.webSocketEventPublisher = webSocketEventPublisher;
         this.currency = currency;
     }
 
@@ -141,7 +145,7 @@ public class OperationsServiceImpl implements OperationsService {
         User assignedStaff = resolveSessionAssigneeForCreate(booking, actor);
         WashSession session = washSessionRepository.save(WashSession.create(booking, request.notes(), assignedStaff));
         List<BookingDetailResponse.StaffAssignment> assignedStaffList = copyBookingStaffAssignmentsToSession(booking, session);
-        return CreateWashSessionResponse.builder()
+        CreateWashSessionResponse createResponse = CreateWashSessionResponse.builder()
                 .sessionId(session.getId())
                 .status(session.getStatus().name())
                 .bookingId(booking.getId().toString())
@@ -150,6 +154,8 @@ public class OperationsServiceImpl implements OperationsService {
                 .assignedStaff(assignedStaffList)
                 .createdAt(session.getCreatedAt())
                 .build();
+        webSocketEventPublisher.publishWashSessionUpdate(session.getId().toString(), session.getStatus().name());
+        return createResponse;
     }
 
     @Transactional(readOnly = true)
@@ -212,11 +218,13 @@ public class OperationsServiceImpl implements OperationsService {
         WashSession session = requireSessionForCurrentUser(sessionId);
         WashSessionLifecycle.validateTransition(session.getStatus(), WashSessionStatus.QUEUED);
         session.queue(Instant.now());
-        return QueueWashSessionResponse.builder()
+        QueueWashSessionResponse queueResponse = QueueWashSessionResponse.builder()
                 .sessionId(session.getId())
                 .status(session.getStatus().name())
                 .queuedAt(session.getCreatedAt())
                 .build();
+        webSocketEventPublisher.publishWashSessionUpdate(session.getId().toString(), session.getStatus().name());
+        return queueResponse;
     }
 
     @Transactional
@@ -256,11 +264,13 @@ public class OperationsServiceImpl implements OperationsService {
         WashSessionLifecycle.validateTransition(session.getStatus(), WashSessionStatus.IN_PROGRESS);
         session.start(startedAt);
         bookingService.updateStatus(session.getBooking(), BookingStatus.IN_PROGRESS);
-        return StartWashSessionResponse.builder()
+        StartWashSessionResponse startResponse = StartWashSessionResponse.builder()
                 .sessionId(session.getId())
                 .status(session.getStatus().name())
                 .startedAt(session.getStartedAt())
                 .build();
+        webSocketEventPublisher.publishWashSessionUpdate(session.getId().toString(), session.getStatus().name());
+        return startResponse;
     }
 
     @Transactional
@@ -288,12 +298,14 @@ public class OperationsServiceImpl implements OperationsService {
                 .createdAt(Instant.now())
                 .build());
         markCustomerAsNotNew(session.getBooking().getCustomer());
-        return CompleteWashSessionResponse.builder()
+        CompleteWashSessionResponse completeResponse = CompleteWashSessionResponse.builder()
                 .sessionId(session.getId())
                 .status(session.getStatus().name())
                 .completedAt(session.getCompletedAt())
                 .awardedLoyaltyPoints(earnResult.pointsAwarded())
                 .build();
+        webSocketEventPublisher.publishWashSessionUpdate(session.getId().toString(), session.getStatus().name());
+        return completeResponse;
     }
 
     @Transactional

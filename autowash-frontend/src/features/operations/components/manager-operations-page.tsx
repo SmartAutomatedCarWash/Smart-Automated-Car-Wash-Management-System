@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -39,6 +39,7 @@ import {
 import { useManagerNotificationStore } from "@/features/operations/store/manager-notification.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { EligibleSessionBooking, OperationStaffAssignment, OperationsQueueSession, StaffOption, WashSessionStatus } from "@/entities/operations";
+import { useWebSocket } from "@/shared/hooks/use-web-socket";
 
 type FocusFilter = "ALL" | "NEEDS_ACTION" | "DELAYED" | "UNASSIGNED";
 type BoardStage = "WAITING_CUSTOMER" | "CHECKED_IN" | "WAITING_START" | "IN_PROGRESS" | "INSPECTION" | "COMPLETED";
@@ -118,6 +119,8 @@ const BOARD_COLUMNS: Array<{ stage: BoardStage; title: string; tint: string; rai
 export function ManagerOperationsPage() {
   const getErrorMessage = useErrorMessage();
   const queryClient = useQueryClient();
+  // Real-time updates via WebSocket
+  useWebSocket();
   const pushManagerNotification = useManagerNotificationStore((state) => state.push);
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState(getTodayInputValue());

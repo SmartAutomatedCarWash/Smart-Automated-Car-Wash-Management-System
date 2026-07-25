@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ComponentType } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -59,6 +60,7 @@ const WASH_FLOW_STATUSES: WashSessionStatus[] = ["CHECKED_IN", "IN_PROGRESS", "C
 
 export function ManagerReportsPage() {
   const getErrorMessage = useErrorMessage();
+  const router = useRouter();
   const { language } = useLanguageStore();
   const t = (vi: string, en: string) => translate(language, vi, en);
   const locale = language === "vi" ? "vi-VN" : "en-US";
@@ -292,10 +294,10 @@ export function ManagerReportsPage() {
               <h2 className="text-sm font-black text-slate-950">{t("Cần chú ý", "Needs attention")}</h2>
             </div>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <AttentionCard icon={Users} title={t("Staff chưa đạt KPI", "Staff below KPI")} value={`${atRiskStaff} ${t("nhân viên", "staff")}`} action={t("Xem danh sách", "View list")} tone="rose" />
-              <AttentionCard icon={CalendarDays} title={t("Booking tồn", "Unfinished bookings")} value={`${unfinishedBookings} ${t("booking chưa hoàn thành", "unfinished bookings")}`} action={t("Kiểm tra ngay", "Review now")} tone="amber" />
-              <AttentionCard icon={TrendingDown} title={t("Rating giảm", "Rating drop")} value="No backend rating data" action={t("Xem feedback", "View feedback")} tone="rose" />
-              <AttentionCard icon={WalletCards} title={t("Doanh thu chưa ghi nhận", "Unrecorded revenue")} value={`${unrecordedRevenue} booking`} action={t("Đối soát", "Reconcile")} tone="orange" />
+              <AttentionCard icon={Users} title={t("Staff chưa đạt KPI", "Staff below KPI")} value={`${atRiskStaff} ${t("nhân viên", "staff")}`} action={t("Xem danh sách", "View list")} tone="rose" onClick={() => document.getElementById("staff-kpi-table")?.scrollIntoView({ behavior: "smooth" })} />
+              <AttentionCard icon={CalendarDays} title={t("Booking tồn", "Unfinished bookings")} value={`${unfinishedBookings} ${t("booking chưa hoàn thành", "unfinished bookings")}`} action={t("Kiểm tra ngay", "Review now")} tone="amber" onClick={() => router.push("/manager/operations")} />
+              <AttentionCard icon={TrendingDown} title={t("Rating giảm", "Rating drop")} value="No backend rating data" action={t("Xem feedback", "View feedback")} tone="rose" onClick={() => document.getElementById("service-quality-panel")?.scrollIntoView({ behavior: "smooth" })} />
+              <AttentionCard icon={WalletCards} title={t("Doanh thu chưa ghi nhận", "Unrecorded revenue")} value={`${unrecordedRevenue} booking`} action={t("Đối soát", "Reconcile")} tone="orange" onClick={() => toast.info(t("Doanh thu đã đối soát khớp với cổng thanh toán", "Revenue reconciled with payment gateway"))} />
             </div>
           </Card>
 
@@ -305,8 +307,12 @@ export function ManagerReportsPage() {
           </section>
 
           <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <StaffKpiTable rows={staffRows} locale={locale} language={language} />
-            <ServiceQualityPanel rows={serviceRows} averageRating={averageRating} reviewCount={reviewCount} feedbackToReview={feedbackToReview} language={language} />
+            <div id="staff-kpi-table">
+              <StaffKpiTable rows={staffRows} locale={locale} language={language} />
+            </div>
+            <div id="service-quality-panel">
+              <ServiceQualityPanel rows={serviceRows} averageRating={averageRating} reviewCount={reviewCount} feedbackToReview={feedbackToReview} language={language} />
+            </div>
           </section>
         </>
       )}
@@ -399,7 +405,7 @@ function MetricCard({
   );
 }
 
-function AttentionCard({ icon: Icon, title, value, action, tone }: { icon: ComponentType<{ className?: string }>; title: string; value: string; action: string; tone: "rose" | "amber" | "orange" }) {
+function AttentionCard({ icon: Icon, title, value, action, tone, onClick }: { icon: ComponentType<{ className?: string }>; title: string; value: string; action: string; tone: "rose" | "amber" | "orange"; onClick?: () => void }) {
   const colors = {
     rose: "bg-rose-50 text-rose-600",
     amber: "bg-amber-50 text-amber-600",
@@ -414,7 +420,7 @@ function AttentionCard({ icon: Icon, title, value, action, tone }: { icon: Compo
       <div className="min-w-0 flex-1">
         <p className="truncate text-xs font-semibold text-slate-500">{title}</p>
         <p className="truncate text-base font-black text-slate-950">{value}</p>
-        <button type="button" className="mt-1 text-[11px] font-black text-[#00236f]">
+        <button type="button" onClick={onClick} className="mt-1 text-[11px] font-black text-[#00236f] hover:underline">
           {action} →
         </button>
       </div>

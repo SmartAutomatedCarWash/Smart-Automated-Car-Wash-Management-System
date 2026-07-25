@@ -4,6 +4,7 @@ import {
   getAdminBookingDetail,
   refundAdminVnpayPayment,
   updateAdminBookingStatus,
+  updateAdminBookingStaff,
   getAdminVehicleDetail,
   type AdminVehicleDetail
 } from "@/features/reports/api/admin-reporting-service";
@@ -48,6 +49,21 @@ export function useUpdateAdminBookingStatus(id: string) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin-booking-detail", id] }),
         queryClient.invalidateQueries({ queryKey: ["admin-bookings"] }),
+      ]);
+    },
+  });
+}
+
+export function useUpdateAdminBookingStaff(id: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation<BookingDetail, ApiErrorResponse, string[]>({
+    mutationFn: (staffIds) => updateAdminBookingStaff(id, staffIds),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-booking-detail", id] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-bookings"] }),
+        queryClient.invalidateQueries({ queryKey: ["manager-operations"] }),
       ]);
     },
   });

@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import com.autowash.dto.BookingStatusHistoryItem;
 import com.autowash.entity.User;
 import com.autowash.entity.enums.NotificationType;
+import com.autowash.event.WebSocketEventPublisher;
 import com.autowash.dto.BookingListItemResponse;
 import com.autowash.dto.CancelBookingResponse;
 import com.autowash.dto.CreateBookingRequest;
@@ -135,6 +136,7 @@ public class BookingServiceImpl implements BookingService {
     private final BookingResponseAssembler bookingResponseAssembler;
     private final StaffAssignmentService staffAssignmentService;
     private final ObjectProvider<VnpayPaymentService> vnpayPaymentServiceProvider;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     @Value("${autowash.payment.sepay.payment-code-prefix:AU}")
     private String sepayPaymentCodePrefix;
@@ -161,7 +163,8 @@ public class BookingServiceImpl implements BookingService {
             NotificationRepository notificationRepository,
             BookingResponseAssembler bookingResponseAssembler,
             StaffAssignmentService staffAssignmentService,
-            ObjectProvider<VnpayPaymentService> vnpayPaymentServiceProvider
+            ObjectProvider<VnpayPaymentService> vnpayPaymentServiceProvider,
+            WebSocketEventPublisher webSocketEventPublisher
     ) {
         this.currentUserService = currentUserService;
         this.VehicleRepository = VehicleRepository;
@@ -185,6 +188,7 @@ public class BookingServiceImpl implements BookingService {
         this.bookingResponseAssembler = bookingResponseAssembler;
         this.staffAssignmentService = staffAssignmentService;
         this.vnpayPaymentServiceProvider = vnpayPaymentServiceProvider;
+        this.webSocketEventPublisher = webSocketEventPublisher;
     }
 
     @Override
@@ -422,7 +426,7 @@ public class BookingServiceImpl implements BookingService {
         }
         sendBookingConfirmationEmailAfterCommit(booking);
 
-        return new CreateBookingResponse(
+        CreateBookingResponse response = new CreateBookingResponse(
                 booking.getId().toString(),
                 user.getId().toString(),
                 vehicle.getId().toString(),
@@ -455,6 +459,8 @@ public class BookingServiceImpl implements BookingService {
                 booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getId().toString(),
                 booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getFullName()
         );
+        webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), booking.getStatus().name());
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -594,7 +600,7 @@ public class BookingServiceImpl implements BookingService {
         }
 
         recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), cancelReason);
-        return new CancelBookingResponse(
+        CancelBookingResponse cancelResponse = new CancelBookingResponse(
                 booking.getId().toString(),
                 booking.getStatus().name(),
                 booking.getUpdatedAt(),
@@ -603,6 +609,8 @@ public class BookingServiceImpl implements BookingService {
                 voucherRefundStatus,
                 refundMessage
         );
+        webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), booking.getStatus().name());
+        return cancelResponse;
     }
 
     private String sanitizeCancelReason(String reason) {
@@ -662,7 +670,9 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
-        return toPayBookingResponse(booking, payment);
+        PayBookingResponse response = toPayBookingResponse(booking, payment);
+        webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), booking.getStatus().name());
+        return response;
     }
 
     @Override
@@ -743,7 +753,9 @@ public class BookingServiceImpl implements BookingService {
                 .read(false)
                 .createdAt(Instant.now())
                 .build());
-        return toDetailResponse(booking);
+        BookingDetailResponse confirmResponse = toDetailResponse(booking);
+        webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), booking.getStatus().name());
+        return confirmResponse;
     }
 
     @Override
@@ -765,7 +777,9 @@ public class BookingServiceImpl implements BookingService {
             assignStaffGroupOnConfirmation(booking);
         }
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), "Booking status updated by admin");
-        return toDetailResponse(booking);
+        BookingDetailResponse updateStatusResponse = toDetailResponse(booking);
+        webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), status.name());
+        return updateStatusResponse;
     }
 
     @Transactional(readOnly = true)
@@ -782,6 +796,7 @@ public class BookingServiceImpl implements BookingService {
         }
         booking.updateStatus(status);
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), null);
+        webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), status.name());
     }
 
     private void validateBookingTime(LocalDate bookingDate, LocalTime bookingTime, SystemSettings settings) {
@@ -864,8 +879,8 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private List<UUID> parseSelectedStaffIds(List<String> staffIds) {
-        if (staffIds == null || staffIds.size() != 3) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Exactly 3 staff must be selected", ErrorCode.INVALID_INPUT);
+        if (staffIds == null || staffIds.size() != 1) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Exactly 1 staff must be selected", ErrorCode.INVALID_INPUT);
         }
         Set<UUID> selected = new LinkedHashSet<>();
         for (String rawId : staffIds) {
@@ -878,7 +893,7 @@ public class BookingServiceImpl implements BookingService {
                 throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid staff id", ErrorCode.INVALID_INPUT);
             }
         }
-        if (selected.size() != 3) {
+        if (selected.size() != 1) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Selected staff must be unique", ErrorCode.INVALID_INPUT);
         }
         return new ArrayList<>(selected);
@@ -893,7 +908,7 @@ public class BookingServiceImpl implements BookingService {
             return;
         }
 
-        List<User> staffGroup = staffAssignmentService.pickStaffGroupForBooking(booking, parsePreferredStaffIds(booking), 3);
+        List<User> staffGroup = staffAssignmentService.pickStaffGroupForBooking(booking, parsePreferredStaffIds(booking), 1);
         bookingStaffAssignmentRepository.deleteByBooking(booking);
         for (int index = 0; index < staffGroup.size(); index++) {
             bookingStaffAssignmentRepository.save(new BookingStaffAssignment(booking, staffGroup.get(index), index + 1));
