@@ -207,6 +207,7 @@ public class DiscountServiceImpl implements DiscountService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<UserDiscountResponse> getUserDiscounts(UUID userId, Pageable pageable) {
         return userDiscountRepository.findByUserId(userId, pageable).map(this::mapUserDiscount);
     }

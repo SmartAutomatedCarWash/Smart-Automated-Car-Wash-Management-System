@@ -90,7 +90,6 @@ function translateEnumLabel(value: string, lang: "vi" | "en") {
     ADJUST: { vi: "Điều chỉnh", en: "Adjust" },
     EXPIRE: { vi: "Hết hạn", en: "Expire" },
     FAILED: { vi: "Thất bại", en: "Failed" },
-    REFUNDED: { vi: "Đã hoàn tiền", en: "Refunded" },
     NOT_STARTED: { vi: "Chưa bắt đầu", en: "Not started" },
     PREPARING: { vi: "Đang chuẩn bị", en: "Preparing" },
     WASHING: { vi: "Đang rửa", en: "Washing" },
@@ -1434,5 +1433,4 @@ const STATUS_TONE: Record<string, string> = {
   ADJUST: "border-violet-300 bg-violet-100 text-violet-800",
   EXPIRE: "border-slate-400 bg-slate-200 text-slate-800",
   FAILED: "border-rose-300 bg-rose-100 text-rose-800",
-  REFUNDED: "border-zinc-300 bg-zinc-100 text-zinc-800",
 };

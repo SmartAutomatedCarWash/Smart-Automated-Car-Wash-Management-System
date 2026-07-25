@@ -134,6 +134,7 @@ public class BookingResponseAssembler {
         return new BookingDetailResponse.Payment(
                 payment.method().name(),
                 payment.status().name(),
+                payment.amount(),
                 payment.transactionRef(),
                 payment.paidAt(),
                 buildSepayQrUrl(booking, payment),
@@ -294,6 +295,7 @@ public class BookingResponseAssembler {
     public record PaymentInfo(
             PaymentMethod method,
             PaymentStatus status,
+            long amount,
             String transactionRef,
             Instant paidAt
     ) {

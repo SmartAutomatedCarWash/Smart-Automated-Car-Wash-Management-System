@@ -54,7 +54,7 @@ public class CustomerLoyaltyServiceImpl implements CustomerLoyaltyService {
         this.loyaltyService = loyaltyService;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public LoyaltyAccountResponse getAccount() {
         User user = currentUserService.getCurrentUser();
         LoyaltyAccountResponse account = loyaltyService.getAccount(user.getId());
@@ -104,7 +104,7 @@ public class CustomerLoyaltyServiceImpl implements CustomerLoyaltyService {
         return new CustomerLoyaltyService.WashHistoryPage(items, toPagination(sessions));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public int getCurrentBalance(User user) {
         return loyaltyService.getAccount(user.getId()).currentPoints();
     }

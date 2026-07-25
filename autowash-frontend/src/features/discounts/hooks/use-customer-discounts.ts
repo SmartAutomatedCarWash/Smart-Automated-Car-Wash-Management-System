@@ -14,11 +14,35 @@ type SpringPageResponse<T> = {
   last?: boolean;
 };
 
-function normalizeDiscountPage(payload: ApiPaginatedResponse<CustomerDiscount> | SpringPageResponse<CustomerDiscount>) {
-  if ("data" in payload) {
+type CustomerDiscountPayload =
+  | ApiPaginatedResponse<CustomerDiscount>
+  | ApiSuccessResponse<ApiPaginatedResponse<CustomerDiscount> | SpringPageResponse<CustomerDiscount> | CustomerDiscount[]>
+  | SpringPageResponse<CustomerDiscount>
+  | CustomerDiscount[];
+
+function normalizeDiscountPage(payload: CustomerDiscountPayload) {
+  if (Array.isArray(payload)) {
     return {
-      items: payload.data ?? [],
-      pagination: payload.pagination,
+      items: payload,
+      pagination: {
+        page: 1,
+        limit: payload.length,
+        total: payload.length,
+        totalPages: 1,
+        hasMore: false,
+      },
+    };
+  }
+
+  if ("success" in payload && "data" in payload) {
+    return normalizeDiscountPage(payload.data);
+  }
+
+  if ("data" in payload && Array.isArray(payload.data)) {
+    const paginatedPayload = payload as ApiPaginatedResponse<CustomerDiscount>;
+    return {
+      items: paginatedPayload.data ?? [],
+      pagination: paginatedPayload.pagination,
     };
   }
 
@@ -38,7 +62,7 @@ export function useCustomerDiscounts() {
   return useQuery({
     queryKey: customerDiscountsQueryKey,
     queryFn: async () => {
-      const response = await apiClient.get<ApiPaginatedResponse<CustomerDiscount> | SpringPageResponse<CustomerDiscount>>(
+      const response = await apiClient.get<CustomerDiscountPayload>(
         "/customer/discounts/my-discounts",
       );
 

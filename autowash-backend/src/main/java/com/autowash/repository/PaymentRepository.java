@@ -38,6 +38,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
             select
                 method as "method",
                 status as "status",
+                amount as "amount",
                 transaction_ref as "transactionRef",
                 paid_at as "paidAt"
             from payments
@@ -50,6 +51,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     interface PaymentSummary {
         String getMethod();
         String getStatus();
+        long getAmount();
         String getTransactionRef();
         Instant getPaidAt();
     }

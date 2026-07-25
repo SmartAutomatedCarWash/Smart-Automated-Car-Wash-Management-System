@@ -29,7 +29,7 @@ import type {
   UpdateAdminCustomerStatusPayload,
   UpdateAdminCustomerStatusResult,
 } from "@/entities/reports";
-import type { BookingDetail, BookingStatus, VnpayPaymentResultResponse } from "@/entities/bookings";
+import type { BookingDetail, BookingStatus } from "@/entities/bookings";
 
 export async function listAdminAccounts(
   filters: AdminAccountsFilters,
@@ -139,14 +139,6 @@ export async function updateAdminBookingStaff(id: string, staffIds: string[]): P
     method: "POST",
     url: `/admin/bookings/${id}/staff`,
     data: { staffIds },
-  });
-}
-
-export async function refundAdminVnpayPayment(id: string, amount?: number): Promise<VnpayPaymentResultResponse> {
-  return apiRequest<VnpayPaymentResultResponse, { amount?: number }>({
-    method: "POST",
-    url: `/payments/bookings/${id}/vnpay/refund`,
-    data: amount ? { amount } : undefined,
   });
 }
 
