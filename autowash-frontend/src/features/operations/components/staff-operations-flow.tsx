@@ -245,7 +245,7 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
 
   const eligibleBookingsQuery = useQuery({
     queryKey: ["staff-operations", "eligible-bookings"],
-    queryFn: getEligibleSessionBookings,
+    queryFn: () => getEligibleSessionBookings(),
     refetchInterval: 30_000,
   });
 

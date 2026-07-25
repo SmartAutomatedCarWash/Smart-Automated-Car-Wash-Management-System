@@ -44,7 +44,15 @@ public class AdminReportingController {
         );
     }
 
-
+    @GetMapping("/reports/service-quality")
+    @Operation(summary = "Get service quality report")
+    public ApiResponse<AdminReportingService.ServiceQualityPage> getServiceQualityReport(
+            @RequestParam(defaultValue = "LAST_30_DAYS") String range,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        return ApiResponse.ok("Service quality report retrieved", adminReportingService.listServiceQuality(range, page, limit));
+    }
 
     @GetMapping("/operations/dashboard")
     @Operation(summary = "Get admin operations dashboard")

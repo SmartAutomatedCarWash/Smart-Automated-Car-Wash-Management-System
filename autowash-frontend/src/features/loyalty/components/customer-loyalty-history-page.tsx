@@ -56,22 +56,39 @@ export function CustomerLoyaltyHistoryPageContent() {
               </div>
             ) : (
               <div className="grid gap-4">
-                {transactionsQuery.data.items.map((item) => (
-                  <Card key={item.transactionId} className="border-slate-200 bg-white">
+                {transactionsQuery.data.items.map((item) => {
+                  const content = (
                     <CardContent className="flex flex-col gap-3 p-6 md:flex-row md:items-center md:justify-between">
                       <div>
                         <div className="text-base font-black text-slate-900">{formatLoyaltyTransactionType(item.type)}</div>
                         <div className="mt-1 text-sm text-slate-600">{item.description}</div>
                         <div className="mt-2 text-xs text-slate-500">
-                          {item.bookingId} • {new Date(item.createdAt).toLocaleString(locale)}
+                          {item.bookingId ? `${item.bookingId} • ` : ""}
+                          {new Date(item.createdAt).toLocaleString(locale)}
                         </div>
                       </div>
                       <div className={item.points >= 0 ? "text-right text-lg font-black text-emerald-700" : "text-right text-lg font-black text-rose-700"}>
                         {formatLoyaltyPoints(item.points)}
                       </div>
                     </CardContent>
-                  </Card>
-                ))}
+                  );
+
+                  return (
+                    <Card key={item.transactionId} className="border-slate-200 bg-white">
+                      {item.bookingId ? (
+                        <Link
+                          href={`/customer/bookings/${item.bookingId}`}
+                          className="block rounded-[inherit] outline-none transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2"
+                          aria-label={`View booking ${item.bookingId}`}
+                        >
+                          {content}
+                        </Link>
+                      ) : (
+                        content
+                      )}
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </CardContent>

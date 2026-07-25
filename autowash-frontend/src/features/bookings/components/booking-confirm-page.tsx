@@ -198,10 +198,10 @@ export function BookingConfirmPage() {
     [staffOptions],
   );
   const selectedStaffIds = useMemo(
-    () => (draft.staffIds && draft.staffIds.length > 0 ? draft.staffIds : draft.staffId ? [draft.staffId] : []).slice(0, 3),
+    () => (draft.staffIds && draft.staffIds.length > 0 ? draft.staffIds : draft.staffId ? [draft.staffId] : []).slice(0, 1),
     [draft.staffId, draft.staffIds],
   );
-  const staffUnavailable = staffOptionsQuery.isSuccess && availableStaffOptions.length < 3;
+  const staffUnavailable = staffOptionsQuery.isSuccess && availableStaffOptions.length < 1;
 
   const redirectToLastCreatedBooking = useCallback(
     (bookingId?: string) => {
@@ -233,7 +233,7 @@ export function BookingConfirmPage() {
     const availableIds = new Set(availableStaffOptions.map((staff) => staff.staffId));
     const nextStaffIds = selectedStaffIds.filter((staffId) => availableIds.has(staffId));
     for (const staff of availableStaffOptions) {
-      if (nextStaffIds.length >= 3) break;
+      if (nextStaffIds.length >= 1) break;
       if (!nextStaffIds.includes(staff.staffId)) {
         nextStaffIds.push(staff.staffId);
       }
@@ -334,15 +334,14 @@ export function BookingConfirmPage() {
   }, [router, sepayPaymentBooking]);
 
   const isComboBooking = draft.mode === "COMBO" && Boolean(selectedCustomerCombo);
-
   const handleConfirm = async () => {
     setShowPaymentError(true);
     if (staffUnavailable) {
       toast.error("No staff is available for this service window.");
       return;
     }
-    if (selectedStaffIds.length < 3) {
-      toast.error("Please select 3 available staff.");
+    if (selectedStaffIds.length < 1) {
+      toast.error("Please select an available staff.");
       return;
     }
     const selectedPaymentMethod = paymentMethod ?? draft.paymentMethod;
@@ -608,7 +607,7 @@ export function BookingConfirmPage() {
             <Button
               type="button"
               onClick={() => void handleConfirm()}
-              disabled={createBookingMutation.isPending || createVnpayCheckoutMutation.isPending || isReleasing || staffOptionsQuery.isPending || staffUnavailable || selectedStaffIds.length < 3}
+              disabled={createBookingMutation.isPending || createVnpayCheckoutMutation.isPending || isReleasing || staffOptionsQuery.isPending || staffUnavailable || selectedStaffIds.length < 1}
               className="rounded-xl gap-2 px-8 font-bold"
             >
               {createBookingMutation.isPending || createVnpayCheckoutMutation.isPending ? (

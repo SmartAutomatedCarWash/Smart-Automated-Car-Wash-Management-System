@@ -69,6 +69,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class OperationsServiceImpl implements OperationsService {
 
     private static final Set<BookingStatus> ELIGIBLE_BOOKING_STATUSES = Set.of(
+            BookingStatus.PENDING,
             BookingStatus.CONFIRMED
     );
 
@@ -195,18 +196,43 @@ public class OperationsServiceImpl implements OperationsService {
 
     @Transactional(readOnly = true)
     public List<EligibleSessionBookingResponse> listEligibleSessionBookings(int limit) {
+        return listEligibleSessionBookings(limit, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EligibleSessionBookingResponse> listEligibleSessionBookings(int limit, LocalDate date) {
         int safeLimit = Math.max(1, Math.min(limit, 50));
         User currentUser = currentUserService.getCurrentUser();
-        List<Booking> bookings = currentUser.getRole() == UserRole.STAFF
-                ? BookingRepository.findEligibleForAssignedStaffOperationsSession(
-                        currentUser,
-                        ELIGIBLE_BOOKING_STATUSES,
-                        ACTIVE_SESSION_STATUSES,
-                        PageRequest.of(0, safeLimit))
-                : BookingRepository.findEligibleForOperationsSession(
-                        ELIGIBLE_BOOKING_STATUSES,
-                        ACTIVE_SESSION_STATUSES,
-                        PageRequest.of(0, safeLimit));
+        List<Booking> bookings;
+        if (date != null) {
+            Instant dayStart = date.atStartOfDay(ZoneId.systemDefault()).toInstant();
+            Instant dayEnd = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+            bookings = currentUser.getRole() == UserRole.STAFF
+                    ? BookingRepository.findEligibleForAssignedStaffOperationsSessionOnDate(
+                            currentUser,
+                            ELIGIBLE_BOOKING_STATUSES,
+                            ACTIVE_SESSION_STATUSES,
+                            dayStart,
+                            dayEnd,
+                            PageRequest.of(0, safeLimit))
+                    : BookingRepository.findEligibleForOperationsSessionOnDate(
+                            ELIGIBLE_BOOKING_STATUSES,
+                            ACTIVE_SESSION_STATUSES,
+                            dayStart,
+                            dayEnd,
+                            PageRequest.of(0, safeLimit));
+        } else {
+            bookings = currentUser.getRole() == UserRole.STAFF
+                    ? BookingRepository.findEligibleForAssignedStaffOperationsSession(
+                            currentUser,
+                            ELIGIBLE_BOOKING_STATUSES,
+                            ACTIVE_SESSION_STATUSES,
+                            PageRequest.of(0, safeLimit))
+                    : BookingRepository.findEligibleForOperationsSession(
+                            ELIGIBLE_BOOKING_STATUSES,
+                            ACTIVE_SESSION_STATUSES,
+                            PageRequest.of(0, safeLimit));
+        }
         return bookings
                 .stream()
                 .map(this::toEligibleBooking)
@@ -276,17 +302,18 @@ public class OperationsServiceImpl implements OperationsService {
     @Transactional
     public CompleteWashSessionResponse completeSession(UUID sessionId) {
         WashSession session = requireSessionForCurrentUser(sessionId);
-        int projectedPoints = loyaltyService.calculateEarnPoints(sessionId);
 
         Instant completedAt = Instant.now();
         WashSessionLifecycle.validateTransition(session.getStatus(), WashSessionStatus.COMPLETED);
-        session.complete(completedAt, projectedPoints);
+        session.complete(completedAt);
+        bookingService.updateStatus(session.getBooking(), BookingStatus.COMPLETED);
+        bookingService.markBookingPaidForOperations(session.getBooking().getId().toString(), null);
+
         EarnPointsResponse earnResult = loyaltyService.postEarnTransaction(
                 session.getBooking().getCustomer().getId(),
                 sessionId
         );
-        bookingService.updateStatus(session.getBooking(), BookingStatus.COMPLETED);
-        bookingService.markBookingPaidForOperations(session.getBooking().getId().toString(), null);
+        session.recordAwardedPoints(earnResult.pointsAwarded());
         
         notificationRepository.save(Notification.builder()
                 .id(UUID.randomUUID())
@@ -873,18 +900,19 @@ public class OperationsServiceImpl implements OperationsService {
     private void ensureBookingStaffAssignments(Booking booking) {
         List<BookingStaffAssignment> existingAssignments = bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking);
         if (!existingAssignments.isEmpty()) {
-            if (booking.getAssignedStaff() == null) {
-                booking.assignStaff(existingAssignments.get(0).getStaff());
-            }
+            normalizeSingleBookingStaffAssignment(booking, existingAssignments.get(0).getStaff());
             return;
         }
 
         List<UUID> preferredStaffIds = booking.getAssignedStaff() == null ? List.of() : List.of(booking.getAssignedStaff().getId());
-        List<User> staffGroup = staffAssignmentService.pickStaffGroupForBooking(booking, preferredStaffIds, 3);
-        for (int index = 0; index < staffGroup.size(); index++) {
-            bookingStaffAssignmentRepository.save(new BookingStaffAssignment(booking, staffGroup.get(index), index + 1));
-        }
-        booking.assignStaff(staffGroup.get(0));
+        User staff = staffAssignmentService.pickStaffGroupForBooking(booking, preferredStaffIds, 1).get(0);
+        normalizeSingleBookingStaffAssignment(booking, staff);
+    }
+
+    private void normalizeSingleBookingStaffAssignment(Booking booking, User staff) {
+        bookingStaffAssignmentRepository.deleteByBooking(booking);
+        bookingStaffAssignmentRepository.save(new BookingStaffAssignment(booking, staff, 1));
+        booking.assignStaff(staff);
     }
 
     private List<BookingDetailResponse.StaffAssignment> copyBookingStaffAssignmentsToSession(Booking booking, WashSession session) {
@@ -1017,6 +1045,7 @@ public class OperationsServiceImpl implements OperationsService {
         UUID comboId = resolveBookingDetailRefId(booking, BookingItemType.COMBO);
         return new EligibleSessionBookingResponse(
                 booking.getId().toString(),
+                booking.getStatus().name(),
                 booking.getCustomer().getFullName(),
                 booking.getCustomer().getPhone(),
                 booking.getVehicle().getPlate(),

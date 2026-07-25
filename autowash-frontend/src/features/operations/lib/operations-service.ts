@@ -1,17 +1,4 @@
 import { apiRequest } from "@/shared/lib/api";
-import { getAccessToken } from "@/features/auth/store/auth.store";
-import {
-  cancelDemoWashSession,
-  checkInDemoWashSession,
-  completeDemoWashSession,
-  createDemoWashSession,
-  getDemoActiveStaffOptions,
-  getDemoEligibleSessionBookings,
-  getDemoOperationsQueue,
-  isManagerDemoToken,
-  transferDemoWashSession,
-  startDemoWashSession,
-} from "@/features/operations/lib/operations-demo-data";
 import type {
   AdminSessionHistoryParams,
   CheckInWashSessionResponse,
@@ -37,10 +24,6 @@ import type {
 const SESSION_BASE_URL = "/operations/sessions";
 
 export function createWashSession(bookingId: string, notes?: string) {
-  if (isManagerDemoToken(getAccessToken())) {
-    return createDemoWashSession(bookingId);
-  }
-
   return apiRequest<CreateWashSessionResponse, { bookingId: string; notes?: string }>({
     method: "POST",
     url: SESSION_BASE_URL,
@@ -48,11 +31,14 @@ export function createWashSession(bookingId: string, notes?: string) {
   });
 }
 
-export function getOperationsQueue() {
-  if (isManagerDemoToken(getAccessToken())) {
-    return getDemoOperationsQueue();
-  }
+export function managerCheckInBooking(bookingId: string) {
+  return apiRequest<{ bookingId: string; sessionId: string; status: string; assignedStaffId: string | null; assignedStaffName: string | null; assignedBay: string | null; checkedInAt: string | null }>({
+    method: "POST",
+    url: `/manager/operations/bookings/${bookingId}/check-in`,
+  });
+}
 
+export function getOperationsQueue() {
   return apiRequest<OperationsQueue>({
     method: "GET",
     url: "/operations/queue",
@@ -67,25 +53,17 @@ export function getStaffDashboardSummary() {
 }
 
 export function getActiveStaffOptions() {
-  if (isManagerDemoToken(getAccessToken())) {
-    return getDemoActiveStaffOptions();
-  }
-
   return apiRequest<StaffOption[]>({
     method: "GET",
     url: "/operations/staff/active",
   });
 }
 
-export function getEligibleSessionBookings() {
-  if (isManagerDemoToken(getAccessToken())) {
-    return getDemoEligibleSessionBookings();
-  }
-
+export function getEligibleSessionBookings(date?: string) {
   return apiRequest<EligibleSessionBooking[]>({
     method: "GET",
     url: "/operations/bookings/eligible-sessions",
-    params: { limit: 20 },
+    params: { limit: 5, ...(date ? { date } : {}) },
   });
 }
 
@@ -97,10 +75,6 @@ export function queueWashSession(sessionId: string) {
 }
 
 export function checkInWashSession(sessionId: string) {
-  if (isManagerDemoToken(getAccessToken())) {
-    return checkInDemoWashSession(sessionId);
-  }
-
   return apiRequest<CheckInWashSessionResponse>({
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/check-in`,
@@ -108,10 +82,6 @@ export function checkInWashSession(sessionId: string) {
 }
 
 export function startWashSession(sessionId: string) {
-  if (isManagerDemoToken(getAccessToken())) {
-    return startDemoWashSession(sessionId);
-  }
-
   return apiRequest<StartWashSessionResponse>({
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/start`,
@@ -119,10 +89,6 @@ export function startWashSession(sessionId: string) {
 }
 
 export function completeWashSession(sessionId: string) {
-  if (isManagerDemoToken(getAccessToken())) {
-    return completeDemoWashSession(sessionId);
-  }
-
   return apiRequest<CompleteWashSessionResponse>({
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/complete`,
@@ -130,10 +96,6 @@ export function completeWashSession(sessionId: string) {
 }
 
 export function cancelWashSession(sessionId: string, reason: string, faultType?: string) {
-  if (isManagerDemoToken(getAccessToken())) {
-    return cancelDemoWashSession(sessionId, reason);
-  }
-
   return apiRequest<CancelWashSessionResponse, { reason: string; faultType?: string }>({
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/cancel`,
@@ -142,10 +104,6 @@ export function cancelWashSession(sessionId: string, reason: string, faultType?:
 }
 
 export function transferWashSession(sessionId: string, toStaffId: string, reason?: string) {
-  if (isManagerDemoToken(getAccessToken())) {
-    return transferDemoWashSession(sessionId, toStaffId, reason);
-  }
-
   return apiRequest<TransferWashSessionResponse, { toStaffId: string; reason?: string }>({
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/transfer`,
@@ -153,7 +111,7 @@ export function transferWashSession(sessionId: string, toStaffId: string, reason
   });
 }
 
-// ─── Staff Today (My Sessions) ────────────────────────────────────────────────
+// â”€â”€â”€ Staff Today (My Sessions) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export function getStaffSessionHistory(params: StaffSessionHistoryParams = {}) {
   return apiRequest<StaffSessionHistoryResponse>({

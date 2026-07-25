@@ -29,16 +29,16 @@ import {
   cancelWashSession,
   checkInWashSession,
   completeWashSession,
-  createWashSession,
   getActiveStaffOptions,
   getEligibleSessionBookings,
   getOperationsQueue,
+  managerCheckInBooking,
   startWashSession,
   transferWashSession,
 } from "@/features/operations/lib/operations-service";
 import { useManagerNotificationStore } from "@/features/operations/store/manager-notification.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
-import type { EligibleSessionBooking, OperationStaffAssignment, OperationsQueueSession, StaffOption, WashSessionStatus } from "@/entities/operations";
+import type { BookingStatus, EligibleSessionBooking, OperationStaffAssignment, OperationsQueueSession, StaffOption, WashSessionStatus } from "@/entities/operations";
 import { useWebSocket } from "@/shared/hooks/use-web-socket";
 
 type FocusFilter = "ALL" | "NEEDS_ACTION" | "DELAYED" | "UNASSIGNED";
@@ -55,7 +55,7 @@ type OperationRow = {
   servicePackage: string;
   bookingDate: string;
   bookingTime: string;
-  status: WashSessionStatus;
+  status: BookingStatus | WashSessionStatus;
   assignedStaffId: string | null;
   assignedStaffName: string | null;
   assignedStaff: OperationStaffAssignment[];
@@ -92,7 +92,7 @@ const STAFF_OVERLOAD_WAITING_THRESHOLD = 3;
 const STAFF_OVERLOAD_DELAYED_THRESHOLD = 2;
 const CHECKED_IN_DELAY_MINUTES = 12;
 const WAITING_CHECKIN_DELAY_MINUTES = 15;
-const TOP_PANEL_PAGE_SIZE = 3;
+const TOP_PANEL_PAGE_SIZE = 5;
 
 const FOCUS_FILTERS: Array<{ value: FocusFilter; label: string }> = [
   { value: "ALL", label: "All" },
@@ -109,7 +109,7 @@ const BAY_FILTERS: Array<{ value: string; label: string }> = [
 
 const BOARD_COLUMNS: Array<{ stage: BoardStage; title: string; tint: string; rail: string }> = [
   { stage: "WAITING_CUSTOMER", title: "Waiting customer", tint: "bg-blue-50/45", rail: "border-l-blue-500" },
-  { stage: "CHECKED_IN", title: "Checked in", tint: "bg-emerald-50/45", rail: "border-l-emerald-500" },
+  { stage: "CHECKED_IN", title: "Check-in", tint: "bg-emerald-50/45", rail: "border-l-emerald-500" },
   { stage: "WAITING_START", title: "Waiting start", tint: "bg-amber-50/55", rail: "border-l-amber-500" },
   { stage: "IN_PROGRESS", title: "Washing", tint: "bg-cyan-50/45", rail: "border-l-cyan-500" },
   { stage: "INSPECTION", title: "Inspection", tint: "bg-slate-50", rail: "border-l-slate-400" },
@@ -145,8 +145,8 @@ export function ManagerOperationsPage() {
     refetchInterval: 15_000,
   });
   const eligibleQuery = useQuery({
-    queryKey: ["manager-operations", "eligible"],
-    queryFn: getEligibleSessionBookings,
+    queryKey: ["manager-operations", "eligible", selectedDate],
+    queryFn: () => getEligibleSessionBookings(selectedDate),
     refetchInterval: 15_000,
   });
   const staffQuery = useQuery({
@@ -174,7 +174,10 @@ export function ManagerOperationsPage() {
     () => interventions.filter((intervention) => filteredRows.some((row) => row.id === intervention.rowId)),
     [filteredRows, interventions],
   );
-  const checkInCandidates = useMemo(() => filteredRows.filter((row) => row.type === "booking" || row.status === "QUEUED"), [filteredRows]);
+  const checkInCandidates = useMemo(
+    () => filteredRows.filter((row) => row.type === "booking" && row.status === "CONFIRMED"),
+    [filteredRows],
+  );
   const checkInPageCount = Math.max(1, Math.ceil(checkInCandidates.length / TOP_PANEL_PAGE_SIZE));
   const interventionPageCount = Math.max(1, Math.ceil(filteredInterventions.length / TOP_PANEL_PAGE_SIZE));
   const safeCheckInPage = Math.min(checkInPage, checkInPageCount);
@@ -193,8 +196,9 @@ export function ManagerOperationsPage() {
     setInterventionPage(1);
   }, [selectedDate, search, bayFilter, staffFilter, focusFilter]);
 
-  const waitingCheckIn = rowsForSelectedDate.filter((row) => row.type === "booking" || row.status === "QUEUED").length;
-  const checkedInCount = rowsForSelectedDate.filter((row) => row.status === "CHECKED_IN").length;
+  const waitingCustomerCount = rowsForSelectedDate.filter((row) => row.type === "booking" && row.status === "PENDING").length;
+  const waitingCheckIn = rowsForSelectedDate.filter((row) => row.type === "booking" && row.status === "CONFIRMED").length;
+  const waitingStartCount = rowsForSelectedDate.filter((row) => row.type === "session" && row.status === "CHECKED_IN").length;
   const washingCount = rowsForSelectedDate.filter((row) => row.status === "IN_PROGRESS").length;
   const overdueCount = rowsForSelectedDate.filter(isDelayed).length;
   const alertCount = filteredInterventions.filter((item) => item.severity !== "INFO").length;
@@ -243,14 +247,14 @@ export function ManagerOperationsPage() {
   };
 
   const createMutation = useMutation({
-    mutationFn: (bookingId: string) => createWashSession(bookingId),
+    mutationFn: (bookingId: string) => managerCheckInBooking(bookingId),
     onSuccess: (_data, bookingId) => {
-      handleActionSuccess("Wash session created and staff assigned.");
+      handleActionSuccess("Vehicle checked in and moved to waiting start.");
       const booking = eligibleBookings.find((item) => item.bookingId === bookingId);
       pushManagerNotification({
         kind: "success",
-        title: "Wash session created",
-        message: booking ? `${booking.vehiclePlate} session has been created.` : "A new session was created successfully.",
+        title: "Booking checked in",
+        message: booking ? `${booking.vehiclePlate} moved to waiting start.` : "A booking was checked in successfully.",
         target: booking?.assignedStaffName ?? "Manager",
         plate: booking?.vehiclePlate,
         href: "/manager/operations",
@@ -291,6 +295,7 @@ export function ManagerOperationsPage() {
 
   const runPrimaryAction = (row: OperationRow) => {
     if (row.type === "booking") {
+      if (row.status !== "CONFIRMED") return;
       createMutation.mutate(row.bookingId);
       return;
     }
@@ -415,9 +420,10 @@ export function ManagerOperationsPage() {
             </Card>
           </section>
 
-          <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <MetricCard icon={Users} label="Waiting check-in" value={waitingCheckIn} tone="blue" />
-            <MetricCard icon={Clock3} label="Checked in" value={checkedInCount} tone="cyan" />
+          <section className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+            <MetricCard icon={Users} label="Waiting customer" value={waitingCustomerCount} tone="blue" />
+            <MetricCard icon={Clock3} label="Check-in" value={waitingCheckIn} tone="cyan" />
+            <MetricCard icon={Check} label="Waiting start" value={waitingStartCount} tone="cyan" />
             <MetricCard icon={Car} label="Washing" value={washingCount} tone="emerald" />
             <MetricCard icon={AlertTriangle} label="Overdue" value={overdueCount} tone="rose" />
           </section>
@@ -536,7 +542,7 @@ function CheckInCandidateRow({
               : "bg-[#00236f] text-white hover:bg-[#001b55]"
         }`}
         onClick={actionIsDetails ? onSelect : onAction}
-        disabled={loading}
+        disabled={loading || !canRunPrimaryAction(row)}
       >
         {loading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
         {display.actionLabel}
@@ -554,12 +560,12 @@ function getCheckInDisplay(row: OperationRow, index: number) {
       tone: "danger" as const,
     };
   }
-  if (row.type === "booking" || row.status === "QUEUED" || row.status === "PENDING") {
+  if (row.type === "booking" && row.status === "CONFIRMED") {
     return {
-      statusLabel: index === 0 ? "Arrived" : "Early check-in",
-      actionLabel: index === 0 ? "Check-in" : "View details",
+      statusLabel: index === 0 ? "Ready now" : "Ready",
+      actionLabel: "Check-in",
       statusClass: index === 0 ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700",
-      tone: index === 0 ? ("primary" as const) : ("neutral" as const),
+      tone: "primary" as const,
     };
   }
   return {
@@ -940,7 +946,7 @@ function SessionDetailPanel({
           )}
 
           <div className="grid gap-2">
-            {row.status !== "COMPLETED" && row.status !== "CANCELLED" ? (
+            {canRunPrimaryAction(row) ? (
               <Button className="h-11 rounded-xl bg-[#00236f] text-sm font-black text-white hover:bg-[#001b55]" onClick={onPrimary}>
                 {getPrimaryAction(row)}
               </Button>
@@ -1024,28 +1030,31 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
   const sessionBookingIds = new Set(sessions.map((session) => session.bookingId));
   const bookingRows: OperationRow[] = bookings
     .filter((booking) => !sessionBookingIds.has(booking.bookingId))
-    .map((booking) => ({
-      id: `booking-${booking.bookingId}`,
-      type: "booking",
-      bookingId: booking.bookingId,
-      customerName: booking.customerName,
-      customerPhone: booking.customerPhone,
-      vehiclePlate: booking.vehiclePlate,
-      servicePackage: getServiceName(booking.packageId),
-      bookingDate: booking.bookingDate,
-      bookingTime: booking.bookingTime,
-      status: "PENDING",
-      assignedStaffId: booking.assignedStaffId,
-      assignedStaffName: booking.assignedStaffName,
-      assignedStaff: normalizeAssignedStaff(booking.assignedStaff, booking.assignedStaffId, booking.assignedStaffName),
-      amount: booking.finalAmount,
-      estimatedDurationMinutes: booking.estimatedDurationMinutes,
-      notes: null,
-      queuedAt: null,
-      checkedInAt: null,
-      startedAt: null,
-      completedAt: null,
-    }));
+    .map((booking) => {
+      const assignedStaff = normalizeAssignedStaff(booking.assignedStaff, booking.assignedStaffId, booking.assignedStaffName);
+      return {
+        id: `booking-${booking.bookingId}`,
+        type: "booking",
+        bookingId: booking.bookingId,
+        customerName: booking.customerName,
+        customerPhone: booking.customerPhone,
+        vehiclePlate: booking.vehiclePlate,
+        servicePackage: getServiceName(booking.packageId),
+        bookingDate: booking.bookingDate,
+        bookingTime: booking.bookingTime,
+        status: normalizeBookingStatus(booking.status, assignedStaff),
+        assignedStaffId: booking.assignedStaffId,
+        assignedStaffName: booking.assignedStaffName,
+        assignedStaff,
+        amount: booking.finalAmount,
+        estimatedDurationMinutes: booking.estimatedDurationMinutes,
+        notes: null,
+        queuedAt: null,
+        checkedInAt: null,
+        startedAt: null,
+        completedAt: null,
+      };
+    });
 
   const sessionRows: OperationRow[] = sessions.map((session) => ({
     id: `session-${session.sessionId}`,
@@ -1078,7 +1087,7 @@ function buildStaffWorkload(staffOptions: StaffOption[], rows: OperationRow[]): 
   return staffOptions
     .map((staff) => {
       const assignedRows = rows.filter((row) => rowHasStaff(row, staff.staffId));
-      const waitingCount = assignedRows.filter((row) => row.status === "PENDING" || row.status === "QUEUED" || row.status === "CHECKED_IN").length;
+      const waitingCount = assignedRows.filter((row) => row.status === "PENDING" || row.status === "CONFIRMED" || row.status === "QUEUED" || row.status === "CHECKED_IN").length;
       const activeCount = assignedRows.filter((row) => row.status === "IN_PROGRESS").length;
       const completedCount = assignedRows.filter((row) => row.status === "COMPLETED").length;
       const delayedCount = assignedRows.filter(isDelayed).length;
@@ -1181,9 +1190,10 @@ function paginateItems<T>(items: T[], page: number, pageSize: number) {
 }
 
 function getBoardStage(row: OperationRow): BoardStage {
-  if (row.type === "booking" || row.status === "PENDING") return "WAITING_CUSTOMER";
-  if (row.status === "QUEUED") return "CHECKED_IN";
-  if (row.status === "CHECKED_IN") return "WAITING_START";
+  if (row.type === "booking" && row.status === "PENDING") return "WAITING_CUSTOMER";
+  if (row.type === "booking" && row.status === "CONFIRMED") return "CHECKED_IN";
+  if (row.type === "booking") return "WAITING_CUSTOMER";
+  if (row.status === "PENDING" || row.status === "QUEUED" || row.status === "CHECKED_IN") return "WAITING_START";
   if (row.status === "IN_PROGRESS") return "IN_PROGRESS";
   if (row.status === "COMPLETED") return "COMPLETED";
   return "INSPECTION";
@@ -1205,25 +1215,44 @@ function buildTimeline(row: OperationRow) {
   ];
 }
 
-function getStatusLabel(status: WashSessionStatus) {
-  const labels: Record<WashSessionStatus, string> = {
+function getStatusLabel(status: BookingStatus | WashSessionStatus) {
+  const labels: Record<BookingStatus | WashSessionStatus, string> = {
     PENDING: "Pending",
-    QUEUED: "Waiting check-in",
+    CONFIRMED: "Ready for check-in",
+    QUEUED: "Queued",
     CHECKED_IN: "Checked in",
     IN_PROGRESS: "Washing",
     COMPLETED: "Complete",
     CANCELLED: "Cancelled",
+    NO_SHOW: "No show",
   };
   return labels[status];
 }
 
 function getPrimaryAction(row: OperationRow) {
-  if (row.type === "booking") return "Create session";
+  if (row.type === "booking") return row.status === "CONFIRMED" ? "Check-in" : "Await payment";
   if (row.status === "PENDING" || row.status === "QUEUED") return "Check-in";
   if (row.status === "CHECKED_IN") return "Start";
   if (row.status === "IN_PROGRESS") return "Complete";
   if (row.status === "COMPLETED") return "View details";
   return "Unavailable";
+}
+
+function canRunPrimaryAction(row: OperationRow) {
+  if (row.type === "booking") {
+    return row.status === "CONFIRMED";
+  }
+  return row.status === "PENDING" || row.status === "QUEUED" || row.status === "CHECKED_IN" || row.status === "IN_PROGRESS";
+}
+
+function normalizeBookingStatus(
+  status: BookingStatus | null | undefined,
+  assignedStaff: OperationStaffAssignment[],
+): BookingStatus {
+  if (status === "PENDING" || status === "CONFIRMED" || status === "CHECKED_IN" || status === "IN_PROGRESS" || status === "COMPLETED" || status === "CANCELLED" || status === "NO_SHOW") {
+    return status;
+  }
+  return assignedStaff.length > 0 ? "CONFIRMED" : "PENDING";
 }
 
 function getServiceName(packageId: string | null) {

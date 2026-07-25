@@ -249,8 +249,17 @@ public class CustomerComboServiceImpl implements CustomerComboService {
 
     @Transactional
     public void markPendingPaymentAsPaid(String transactionRef) {
+        activatePendingPayment(transactionRef, null);
+    }
+
+    @Transactional
+    public boolean markPendingPaymentAsPaid(String transactionRef, long paidAmount) {
+        return activatePendingPayment(transactionRef, paidAmount);
+    }
+
+    private boolean activatePendingPayment(String transactionRef, Long paidAmount) {
         if (transactionRef == null || transactionRef.isBlank()) {
-            return;
+            return false;
         }
         List<CustomerCombo> combos = customerComboRepository
                 .findByTransactionRefAndPaymentStatusAndStatusOrderByCreatedAtAsc(
@@ -259,13 +268,24 @@ public class CustomerComboServiceImpl implements CustomerComboService {
                         CustomerComboStatus.PENDING_PAYMENT
                 );
         if (combos.isEmpty()) {
-            return;
+            return false;
+        }
+
+        long expectedAmount = combos.stream()
+                .map(CustomerCombo::getComboId)
+                .map(ComboRepository::findById)
+                .flatMap(java.util.Optional::stream)
+                .mapToLong(Combo::getPrice)
+                .sum();
+        if (paidAmount != null && paidAmount < expectedAmount) {
+            return false;
         }
         for (CustomerCombo combo : combos) {
             Combo catalogCombo = ComboRepository.findById(combo.getComboId())
                     .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Combo not found", ErrorCode.RESOURCE_NOT_FOUND));
             combo.markActivated(expiresAt(Instant.now(), catalogCombo));
         }
+        return true;
     }
 
     private CustomerComboResponse toResponse(CustomerCombo combo) {

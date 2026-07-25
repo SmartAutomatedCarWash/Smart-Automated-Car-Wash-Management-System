@@ -11,6 +11,11 @@ import type {
 } from "@/entities/loyalty";
 import type { TierConfig } from "@/features/settings/lib/admin-tiers-service";
 
+type TierVoucherOfferApiResponse = Omit<TierVoucherOffer, "discountValue"> & {
+  discountValue?: number;
+  voucherValue?: number;
+};
+
 export async function getCustomerLoyaltyAccount() {
   if (isCustomerDemo()) {
     return {
@@ -81,9 +86,12 @@ export async function getPublicTierConfigs(): Promise<TierConfig[]> {
 
 export async function listPublicTierVoucherOffers(): Promise<TierVoucherOffer[]> {
   if (isCustomerDemo()) return [];
-  const response = await apiRequest<TierVoucherOffer[]>({
+  const response = await apiRequest<TierVoucherOfferApiResponse[]>({
     url: "/public/loyalty/offers",
     method: "GET",
   });
-  return response;
+  return response.map((offer) => ({
+    ...offer,
+    discountValue: offer.discountValue ?? offer.voucherValue ?? 0,
+  }));
 }

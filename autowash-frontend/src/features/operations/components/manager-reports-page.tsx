@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, type ComponentType } from "react";
-import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -32,13 +31,16 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
-import { getOperationsQueue, getManagerReportsDashboard, exportManagerReport, sendManagerReport } from "@/features/operations/lib/operations-service";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/ui/dialog";
+import { listAdminBookings } from "@/features/reports/api/admin-reporting-service";
+import { exportManagerReport, sendManagerReport } from "@/features/operations/lib/operations-service";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useWorkspaceHeader } from "@/shared/ui/workspace/workspace-header-context";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { translate, useLanguageStore, type Language } from "@/shared/store/language.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { OperationsQueueSession, WashSessionStatus } from "@/entities/operations";
+import type { AdminBooking } from "@/entities/reports";
 
 type PeriodMode = "day" | "month" | "year" | "all";
 type TrendRow = { key: string; label: string; revenue: number; bookings: number; completed: number };
@@ -60,7 +62,6 @@ const WASH_FLOW_STATUSES: WashSessionStatus[] = ["CHECKED_IN", "IN_PROGRESS", "C
 
 export function ManagerReportsPage() {
   const getErrorMessage = useErrorMessage();
-  const router = useRouter();
   const { language } = useLanguageStore();
   const t = (vi: string, en: string) => translate(language, vi, en);
   const locale = language === "vi" ? "vi-VN" : "en-US";
@@ -72,98 +73,40 @@ export function ManagerReportsPage() {
   const [staffFilter, setStaffFilter] = useState("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
   const [comparePrevious, setComparePrevious] = useState(false);
+  const [attentionModal, setAttentionModal] = useState<"staff" | "unfinished" | "rating" | "revenue" | null>(null);
 
-  // Fetch report options (staff, service) from queue to keep dropdowns functional
-  const queueQuery = useQuery({
-    queryKey: ["manager-reports-options"],
-    queryFn: getOperationsQueue,
-    staleTime: 5 * 60_000,
+  const query = useQuery({
+    queryKey: ["manager-reports", "bookings", fromDate, toDate],
+    queryFn: () => listAdminBookings({ dateFrom: fromDate, dateTo: toDate }, 1, 100),
+    refetchInterval: 30_000,
   });
 
-  const sessions = useMemo(() => queueQuery.data?.columns.flatMap((column) => column.sessions) ?? [], [queueQuery.data]);
+  const sessions = useMemo(() => query.data?.items.map(mapBookingToSession) ?? [], [query.data]);
   const staffOptions = useMemo(() => buildStaffOptions(sessions), [sessions]);
   const serviceOptions = useMemo(() => buildServiceOptions(sessions), [sessions]);
+  const filteredSessions = useMemo(
+    () => sessions.filter((session) => matchesFilters(session, fromDate, toDate, bayFilter, staffFilter, serviceFilter)),
+    [bayFilter, fromDate, serviceFilter, sessions, staffFilter, toDate],
+  );
 
-  // Main Report Query from BE
-  const query = useQuery({
-    queryKey: ["manager-reports-dashboard", periodMode, fromDate, toDate, comparePrevious, staffFilter, serviceFilter],
-    queryFn: () => getManagerReportsDashboard({
-      rangeType: periodMode.toUpperCase(),
-      fromDate,
-      toDate,
-      comparePrevious,
-      staffId: staffFilter,
-      serviceId: serviceFilter,
-    }),
-    refetchInterval: 60_000,
-  });
-
-  const revenue = query.data?.summary.recordedRevenue ?? 0;
-  const completedBookings = query.data?.summary.completedBookings ?? 0;
-  const totalBookings = query.data?.summary.totalBookings ?? 0;
-  const completionRate = query.data?.summary.completionRate ?? 0;
-  const averageTicket = query.data?.summary.averageTicket ?? 0;
-  const averageRating = query.data?.summary.averageRating > 0 ? query.data.summary.averageRating : null;
-  const reviewCount = query.data?.summary.reviewCount ?? 0;
-  const atRiskStaff = query.data?.staffKpis?.filter((staff: any) => staff.status === "SUPPORT").length ?? 0;
-  const feedbackToReview = query.data?.serviceQuality?.pendingFeedbackCount ?? 0;
-  const unfinishedBookings = totalBookings - completedBookings;
-  const unrecordedRevenue = 0;
-
-  const funnelRows = useMemo<FunnelRow[]>(() => {
-    if (!query.data?.funnel) return [];
-    const colors: Record<string, string> = {
-      total: "bg-[#1687ee]",
-      "checked-in": "bg-[#3098f2]",
-      washing: "bg-[#5ab0f4]",
-      completed: "bg-[#98cff8]",
-      cancelled: "bg-[#ef3f5b]"
-    };
-    return query.data.funnel.map((item: any) => ({
-      key: item.stage,
-      label: item.label,
-      count: item.count,
-      rate: item.rate,
-      barPercent: item.rate,
-      helper: item.stage === "checked-in" ? "Check-in rate" : item.stage === "washing" ? "Start rate" : item.stage === "completed" ? "Completion rate" : "",
-      color: colors[item.stage] || "bg-[#1687ee]",
-    }));
-  }, [query.data]);
-
-  const trendRows = useMemo<TrendRow[]>(() => {
-    if (!query.data?.trend?.points) return [];
-    return query.data.trend.points.map((p: any) => ({
-      key: p.label,
-      label: p.label,
-      revenue: p.revenue,
-      bookings: p.bookingCount,
-      completed: p.bookingCount
-    }));
-  }, [query.data]);
-
-  const staffRows = useMemo<StaffRow[]>(() => {
-    if (!query.data?.staffKpis) return [];
-    return query.data.staffKpis.map((s: any) => ({
-      staffId: s.staffId,
-      staffName: s.fullName,
-      completed: s.completedBookings,
-      target: s.kpiTarget,
-      progress: s.kpiPercent,
-      rating: s.rating > 0 ? s.rating : null,
-      revenue: s.revenue,
-      status: s.status,
-    }));
-  }, [query.data]);
-
-  const serviceRows = useMemo<ServiceRow[]>(() => {
-    if (!query.data?.serviceQuality?.services) return [];
-    return query.data.serviceQuality.services.map((item: any) => ({
-      service: item.serviceName,
-      bookings: item.bookingCount,
-      revenue: item.revenue,
-      rating: item.averageRating > 0 ? item.averageRating : null,
-    }));
-  }, [query.data]);
+  const completedSessions = filteredSessions.filter((session) => session.status === "COMPLETED");
+  const revenue = sumRevenue(completedSessions);
+  const totalBookings = filteredSessions.length;
+  const completedBookings = completedSessions.length;
+  const activeBookings = filteredSessions.filter((session) => ACTIVE_STATUSES.includes(session.status)).length;
+  const cancelledBookings = filteredSessions.filter((session) => session.status === "CANCELLED").length;
+  const unfinishedBookings = filteredSessions.filter((session) => session.status !== "COMPLETED" && session.status !== "CANCELLED").length;
+  const completionRate = totalBookings ? Math.round((completedBookings / totalBookings) * 100) : 0;
+  const averageTicket = completedBookings ? Math.round(revenue / completedBookings) : 0;
+  const reviewCount = filteredSessions.filter((session) => session.rating !== null).length;
+  const unrecordedRevenue = filteredSessions.filter((session) => session.status === "COMPLETED" && !session.feeAmount).length;
+  const staffRows = useMemo(() => buildStaffRows(filteredSessions, 2), [filteredSessions]);
+  const serviceRows = useMemo(() => buildServiceRows(filteredSessions), [filteredSessions]);
+  const averageRating = useMemo<number | null>(() => averageServiceRating(serviceRows), [serviceRows]);
+  const funnelRows = useMemo(() => buildFunnelRows(filteredSessions, language), [filteredSessions, language]);
+  const trendRows = useMemo(() => buildTrendRows(filteredSessions, periodMode, fromDate, toDate), [filteredSessions, fromDate, periodMode, toDate]);
+  const atRiskStaff = staffRows.filter((staff) => staff.status === "SUPPORT").length;
+  const feedbackToReview = 0;
 
   const handleExportExcel = async () => {
     try {
@@ -294,10 +237,10 @@ export function ManagerReportsPage() {
               <h2 className="text-sm font-black text-slate-950">{t("Cần chú ý", "Needs attention")}</h2>
             </div>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <AttentionCard icon={Users} title={t("Staff chưa đạt KPI", "Staff below KPI")} value={`${atRiskStaff} ${t("nhân viên", "staff")}`} action={t("Xem danh sách", "View list")} tone="rose" onClick={() => document.getElementById("staff-kpi-table")?.scrollIntoView({ behavior: "smooth" })} />
-              <AttentionCard icon={CalendarDays} title={t("Booking tồn", "Unfinished bookings")} value={`${unfinishedBookings} ${t("booking chưa hoàn thành", "unfinished bookings")}`} action={t("Kiểm tra ngay", "Review now")} tone="amber" onClick={() => router.push("/manager/operations")} />
-              <AttentionCard icon={TrendingDown} title={t("Rating giảm", "Rating drop")} value="No backend rating data" action={t("Xem feedback", "View feedback")} tone="rose" onClick={() => document.getElementById("service-quality-panel")?.scrollIntoView({ behavior: "smooth" })} />
-              <AttentionCard icon={WalletCards} title={t("Doanh thu chưa ghi nhận", "Unrecorded revenue")} value={`${unrecordedRevenue} booking`} action={t("Đối soát", "Reconcile")} tone="orange" onClick={() => toast.info(t("Doanh thu đã đối soát khớp với cổng thanh toán", "Revenue reconciled with payment gateway"))} />
+              <AttentionCard icon={Users} title={t("Staff chưa đạt KPI", "Staff below KPI")} value={`${atRiskStaff} ${t("nhân viên", "staff")}`} action={t("Xem danh sách", "View list")} tone="rose" onClick={() => setAttentionModal("staff")} />
+              <AttentionCard icon={CalendarDays} title={t("Booking tồn", "Unfinished bookings")} value={`${unfinishedBookings} ${t("booking chưa hoàn thành", "unfinished bookings")}`} action={t("Kiểm tra ngay", "Review now")} tone="amber" onClick={() => setAttentionModal("unfinished")} />
+              <AttentionCard icon={TrendingDown} title={t("Rating giảm", "Rating drop")} value="No backend rating data" action={t("Xem feedback", "View feedback")} tone="rose" onClick={() => setAttentionModal("rating")} />
+              <AttentionCard icon={WalletCards} title={t("Doanh thu chưa ghi nhận", "Unrecorded revenue")} value={`${unrecordedRevenue} booking`} action={t("Đối soát", "Reconcile")} tone="orange" onClick={() => setAttentionModal("revenue")} />
             </div>
           </Card>
 
@@ -307,15 +250,66 @@ export function ManagerReportsPage() {
           </section>
 
           <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <div id="staff-kpi-table">
-              <StaffKpiTable rows={staffRows} locale={locale} language={language} />
-            </div>
-            <div id="service-quality-panel">
-              <ServiceQualityPanel rows={serviceRows} averageRating={averageRating} reviewCount={reviewCount} feedbackToReview={feedbackToReview} language={language} />
-            </div>
+            <StaffKpiTable rows={staffRows} locale={locale} language={language} />
+            <ServiceQualityPanel rows={serviceRows} averageRating={averageRating} reviewCount={reviewCount} feedbackToReview={feedbackToReview} language={language} />
           </section>
         </>
       )}
+
+      <Dialog open={attentionModal !== null} onOpenChange={(open) => !open && setAttentionModal(null)}>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto rounded-[28px] border border-white/70 bg-white/95 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-slate-950">
+              {attentionModal === "staff" ? t("Staff chưa đạt KPI", "Staff below KPI") :
+               attentionModal === "unfinished" ? t("Booking tồn đọng", "Unfinished bookings") :
+               attentionModal === "rating" ? t("Feedback & Rating thấp", "Low ratings") :
+               t("Doanh thu chưa ghi nhận", "Unrecorded revenue")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 space-y-3">
+            {attentionModal === "staff" && staffRows.filter(s => s.status === "SUPPORT").map(staff => (
+              <div key={staff.staffId} className="flex justify-between items-center p-4 border border-rose-100 rounded-xl bg-rose-50/50">
+                <span className="font-bold text-slate-900">{staff.staffName}</span>
+                <span className="text-sm font-semibold text-rose-600">Hoàn thành: {staff.completed}/{staff.target}</span>
+              </div>
+            ))}
+            {attentionModal === "staff" && atRiskStaff === 0 && <p className="text-sm text-slate-500 text-center py-8">Không có nhân viên nào dưới KPI.</p>}
+
+            {attentionModal === "unfinished" && filteredSessions.filter(s => s.status !== "COMPLETED" && s.status !== "CANCELLED").map(session => (
+              <div key={session.bookingId} className="flex flex-col gap-2 p-4 border border-amber-100 rounded-xl bg-amber-50/50">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-slate-900">{session.customerName} - {session.vehiclePlate}</span>
+                  <span className="text-[10px] uppercase tracking-wider font-black px-2 py-1 bg-amber-200 text-amber-800 rounded-md">{session.status}</span>
+                </div>
+                <span className="text-xs font-medium text-slate-600">Lịch: {session.bookingDate} {session.bookingTime} | Gói: {session.servicePackage}</span>
+              </div>
+            ))}
+            {attentionModal === "unfinished" && unfinishedBookings === 0 && <p className="text-sm text-slate-500 text-center py-8">Tuyệt vời! Không có booking tồn.</p>}
+
+            {attentionModal === "revenue" && filteredSessions.filter(s => s.status === "COMPLETED" && !s.feeAmount).map(session => (
+              <div key={session.bookingId} className="flex flex-col gap-2 p-4 border border-orange-100 rounded-xl bg-orange-50/50">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-slate-900">{session.customerName} - {session.vehiclePlate}</span>
+                  <span className="text-xs font-black text-rose-600">Chưa có giá trị hóa đơn</span>
+                </div>
+                <span className="text-xs font-medium text-slate-600">Gói: {session.servicePackage} | Hoàn thành: {session.bookingDate} {session.bookingTime}</span>
+              </div>
+            ))}
+            {attentionModal === "revenue" && unrecordedRevenue === 0 && <p className="text-sm text-slate-500 text-center py-8">Tất cả booking hoàn thành đều đã ghi nhận doanh thu đầy đủ.</p>}
+
+            {attentionModal === "rating" && filteredSessions.filter((session) => session.rating != null && session.rating <= 3).map((session) => (
+              <div key={session.bookingId} className="flex flex-col gap-2 p-4 border border-rose-100 rounded-xl bg-rose-50/50">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-slate-900">{session.customerName} - {session.vehiclePlate}</span>
+                  <span className="text-xs font-black text-rose-600 flex items-center gap-1"><Star className="w-3 h-3 fill-current" /> {session.rating} sao</span>
+                </div>
+                <span className="text-xs font-medium text-slate-600">Gói: {session.servicePackage} | Hoàn thành: {session.bookingDate}</span>
+              </div>
+            ))}
+            {attentionModal === "rating" && filteredSessions.filter((session) => session.rating != null && session.rating <= 3).length === 0 && <p className="text-sm text-slate-500 text-center py-8">Chưa có đánh giá tiêu cực (từ 3 sao trở xuống) trong kỳ này.</p>}
+          </div>
+        </DialogContent>
+      </Dialog>
     </WorkspacePage>
   );
 }
@@ -413,7 +407,7 @@ function AttentionCard({ icon: Icon, title, value, action, tone, onClick }: { ic
   }[tone];
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3">
+    <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3 hover:border-slate-300 transition-colors cursor-default">
       <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${colors}`}>
         <Icon className="h-5 w-5" />
       </span>
@@ -657,13 +651,15 @@ function buildStaffRows(sessions: OperationsQueueSession[], target: number): Sta
       const completed = staffSessions.filter((session) => session.status === "COMPLETED");
       const completedCount = completed.length;
       const progress = Math.min(100, Math.round((completedCount / Math.max(target, 1)) * 100));
+      const ratedSessions = completed.filter((session) => session.rating !== null);
+      const rating = ratedSessions.length > 0 ? ratedSessions.reduce((sum, s) => sum + (s.rating ?? 0), 0) / ratedSessions.length : null;
       return {
         staffId,
         staffName: staffId === "unassigned" ? "Unassigned" : getAssignedStaff(staffSessions[0]!).find((staff) => staff.staffId === staffId)?.staffName ?? "Unassigned",
         completed: completedCount,
         target,
         progress,
-        rating: null,
+        rating,
         revenue: sumRevenue(completed),
         status: progress >= 50 ? "GOOD" : staffSessions.length > 0 ? "SUPPORT" : "LOW_LOAD",
       } satisfies StaffRow;
@@ -676,11 +672,14 @@ function buildServiceRows(sessions: OperationsQueueSession[]): ServiceRow[] {
   return services
     .map((service) => {
       const serviceSessions = sessions.filter((session) => getServiceName(session) === service);
+      const completed = serviceSessions.filter((session) => session.status === "COMPLETED");
+      const ratedSessions = completed.filter((session) => session.rating !== null);
+      const rating = ratedSessions.length > 0 ? ratedSessions.reduce((sum, s) => sum + (s.rating ?? 0), 0) / ratedSessions.length : null;
       return {
         service,
         bookings: serviceSessions.length,
-        revenue: sumRevenue(serviceSessions.filter((session) => session.status === "COMPLETED")),
-        rating: null,
+        revenue: sumRevenue(completed),
+        rating,
       } satisfies ServiceRow;
     })
     .sort((left, right) => right.bookings - left.bookings || right.revenue - left.revenue || left.service.localeCompare(right.service));
@@ -786,4 +785,21 @@ function compactCurrency(value: number) {
   if (value >= 1_000_000) return `${Math.round(value / 100_000) / 10}tr`;
   if (value >= 1_000) return `${Math.round(value / 1_000)}k`;
   return `${value}`;
+}
+
+function mapBookingToSession(booking: AdminBooking): OperationsQueueSession {
+  return {
+    sessionId: booking.sessionId ?? booking.bookingId,
+    bookingId: booking.bookingId,
+    customerName: booking.customerName,
+    customerPhone: booking.customerPhone,
+    vehiclePlate: booking.vehiclePlate,
+    servicePackage: booking.primaryItemName,
+    status: (booking.washStatus ?? booking.status) as WashSessionStatus,
+    bookingDate: booking.bookingDate,
+    bookingTime: booking.bookingTime,
+    feeAmount: booking.finalAmount,
+    assignedStaff: booking.assignedStaff?.map(s => ({ staffId: s.staffId, staffName: s.staffName, sortOrder: s.sortOrder })),
+    rating: booking.rating,
+  };
 }

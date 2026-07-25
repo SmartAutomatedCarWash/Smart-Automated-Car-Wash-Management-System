@@ -44,6 +44,7 @@ export type OperationsQueueSession = {
   startedAt?: string | null;
   completedAt?: string | null;
   notes?: string | null;
+  rating?: number | null;
 };
 
 export type OperationsQueueColumn = {
@@ -77,6 +78,7 @@ export type StaffOption = {
 
 export type EligibleSessionBooking = {
   bookingId: string;
+  status?: BookingStatus | null;
   customerName: string;
   customerPhone: string;
   vehiclePlate: string;

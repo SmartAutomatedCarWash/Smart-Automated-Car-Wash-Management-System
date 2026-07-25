@@ -36,7 +36,7 @@ export function ManagerDashboardView() {
   });
   const eligibleQuery = useQuery({
     queryKey: ["manager-operations", "eligible"],
-    queryFn: getEligibleSessionBookings,
+    queryFn: () => getEligibleSessionBookings(),
     refetchInterval: 15_000,
   });
   const staffQuery = useQuery({
@@ -48,6 +48,7 @@ export function ManagerDashboardView() {
   const sessions = useMemo(() => flattenSessions(queueQuery.data), [queueQuery.data]);
   const activeSessions = sessions.filter((session) => ["CHECKED_IN", "IN_PROGRESS"].includes(session.status));
   const delayedSessions = activeSessions.filter(isDelayed);
+  const pendingCheckInBookings = (eligibleQuery.data ?? []).filter((booking) => booking.status === "CONFIRMED");
 
   return (
     <WorkspacePage className="space-y-6">
@@ -63,7 +64,7 @@ export function ManagerDashboardView() {
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard icon={ClipboardList} label="Pending check-in" value={eligibleQuery.data?.length ?? 0} tone="amber" />
+        <MetricCard icon={ClipboardList} label="Pending check-in" value={pendingCheckInBookings.length} tone="amber" />
         <MetricCard icon={Droplets} label="In service" value={activeSessions.length} tone="cyan" />
         <MetricCard icon={CheckCircle2} label="Completed" value={queueQuery.data?.summary.completed ?? 0} tone="emerald" />
         <MetricCard icon={Users} label="Staff active" value={staffQuery.data?.length ?? 0} tone="slate" />
@@ -80,11 +81,11 @@ export function ManagerDashboardView() {
               <div className="p-5"><WorkspaceEmptyState title="Unable to load queue" description={getErrorMessage((eligibleQuery.error ?? queueQuery.error) as unknown as ApiErrorResponse)} /></div>
             ) : eligibleQuery.isPending || queueQuery.isPending ? (
               <div className="m-5 h-36 animate-pulse rounded-2xl bg-slate-100" />
-            ) : delayedSessions.length === 0 && (eligibleQuery.data?.length ?? 0) === 0 ? (
+            ) : delayedSessions.length === 0 && pendingCheckInBookings.length === 0 ? (
               <div className="p-8"><WorkspaceEmptyState title="Operations are stable" description="No bookings or sessions need immediate intervention." /></div>
             ) : (
               <>
-                {(eligibleQuery.data ?? []).slice(0, 3).map((booking) => (
+                {pendingCheckInBookings.slice(0, 3).map((booking) => (
                   <div key={booking.bookingId} className="flex items-center justify-between gap-4 px-5 py-4">
                     <div className="min-w-0">
                       <p className="font-bold text-slate-900">{booking.vehiclePlate}</p>

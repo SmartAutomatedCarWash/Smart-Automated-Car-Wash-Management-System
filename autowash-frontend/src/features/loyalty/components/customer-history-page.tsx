@@ -233,18 +233,12 @@ export function CustomerHistoryPageContent() {
                  ) : (
                    <div className="divide-y divide-slate-100">
                      {transactionsQuery.data.items.map((item) => (
-                       <div key={item.transactionId} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between hover:bg-slate-50 transition-colors">
-                         <div>
-                           <div className="text-sm font-bold text-slate-900">{formatLoyaltyTransactionType(item.type)}</div>
-                           <div className="mt-1 text-sm text-slate-500">{item.description}</div>
-                           <div className="mt-2 text-xs text-slate-400">
-                             {new Date(item.createdAt).toLocaleString(locale)}
-                           </div>
-                         </div>
-                         <div className={item.points >= 0 ? "text-right text-lg font-bold text-emerald-600" : "text-right text-lg font-bold text-rose-600"}>
-                           {item.points >= 0 ? "+" : ""}{item.points.toLocaleString(locale)} pts
-                         </div>
-                       </div>
+                       <PointTransactionRow
+                         key={item.transactionId}
+                         item={item}
+                         language={language}
+                         locale={locale}
+                       />
                      ))}
                    </div>
                  )}
@@ -375,6 +369,65 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
   );
 }
 
+function PointTransactionRow({
+  item,
+  language,
+  locale,
+}: {
+  item: {
+    bookingId: string | null;
+    createdAt: string;
+    description: string;
+    points: number;
+    type: Parameters<typeof formatLoyaltyTransactionType>[0];
+  };
+  language: string;
+  locale: string;
+}) {
+  const bookingHref = item.bookingId ? `/customer/bookings/${item.bookingId}?from=history` : null;
+  const content = (
+    <>
+      <div>
+        <div className="text-sm font-bold text-slate-900">{formatLoyaltyTransactionType(item.type)}</div>
+        <div className="mt-1 text-sm text-slate-500">{item.description}</div>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+          <span>{new Date(item.createdAt).toLocaleString(locale)}</span>
+          {item.bookingId ? (
+            <span className="font-medium text-cyan-600">
+              {translate(language, "Xem booking", "View booking")}
+            </span>
+          ) : null}
+        </div>
+      </div>
+      <div className="flex items-center justify-end gap-3">
+        <div className={cnPointValue(item.points, Boolean(bookingHref))}>
+          {item.points >= 0 ? "+" : ""}{item.points.toLocaleString(locale)} pts
+        </div>
+        {bookingHref ? <ArrowRight className="h-4 w-4 text-slate-300" /> : null}
+      </div>
+    </>
+  );
+
+  const className =
+    "flex flex-col gap-4 p-5 transition-colors sm:flex-row sm:items-center sm:justify-between hover:bg-slate-50";
+
+  if (!bookingHref) {
+    return <div className={className}>{content}</div>;
+  }
+
+  return (
+    <NextLink href={bookingHref} className={className}>
+      {content}
+    </NextLink>
+  );
+}
+
+function cnPointValue(points: number, linked: boolean) {
+  const tone = points >= 0 ? "text-emerald-600" : "text-rose-600";
+  const linkedStyle = linked ? "rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200" : "";
+  return `text-right text-lg font-bold ${tone} ${linkedStyle}`;
+}
+
 function BookingRow({ booking, language, locale }: { booking: BookingListItem; language: string; locale: string }) {
   let statusBadge = null;
   if (booking.status === "COMPLETED") {
@@ -404,7 +457,7 @@ function BookingRow({ booking, language, locale }: { booking: BookingListItem; l
   } catch(e) {}
 
   return (
-    <NextLink href={`/customer/bookings/${booking.bookingId}`} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between hover:bg-slate-50 transition-colors">
+    <NextLink href={`/customer/bookings/${booking.bookingId}?from=history`} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between hover:bg-slate-50 transition-colors">
       <div className="flex flex-1 items-center gap-8">
         
         <div className="w-[180px]">

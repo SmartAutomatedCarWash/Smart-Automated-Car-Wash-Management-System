@@ -1,5 +1,5 @@
-import { CustomerLoyaltyRedeemPageContent } from "@/features/loyalty/components/customer-loyalty-redeem-page";
+import { redirect } from "next/navigation";
 
 export default function RedeemPointsPage() {
-  return <CustomerLoyaltyRedeemPageContent />;
+  redirect("/customer/loyalty");
 }

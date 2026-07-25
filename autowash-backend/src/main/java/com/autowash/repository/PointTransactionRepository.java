@@ -19,6 +19,8 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
 
     Optional<PointTransaction> findByTypeAndBookingId(PointTransactionType type, UUID bookingId);
 
+    Optional<PointTransaction> findByTypeAndBookingIdAndReason(PointTransactionType type, UUID bookingId, String reason);
+
     Optional<PointTransaction> findByReasonContaining(String reasonPart);
 
     long countByTypeAndBookingId(PointTransactionType type, UUID bookingId);
@@ -52,7 +54,7 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
     @Query("""
             select pt from PointTransaction pt
             where pt.type = :type
-              and (:#{#searchQuery == null} = true or lower(str(pt.booking.id)) like :searchQuery
+              and (:#{#searchQuery == null} = true or lower(cast(pt.booking.id as string)) like :searchQuery
                    or lower(pt.loyaltyAccount.customer.fullName) like :searchQuery
                    or lower(pt.loyaltyAccount.customer.phone) like :searchQuery
                    or lower(pt.loyaltyAccount.customer.email) like :searchQuery

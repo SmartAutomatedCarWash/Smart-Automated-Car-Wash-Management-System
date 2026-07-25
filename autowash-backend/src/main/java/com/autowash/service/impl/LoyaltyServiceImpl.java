@@ -1,12 +1,14 @@
 package com.autowash.service.impl;
 
 import com.autowash.dto.EarnPointsResponse;
+import com.autowash.dto.AdjustTotalEarnedPointsResponse;
 import com.autowash.dto.LoyaltyAccountResponse;
 import com.autowash.dto.PointTransactionResponse;
 import com.autowash.dto.RedeemPointsResponse;
 import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.Notification;
 import com.autowash.entity.PointTransaction;
+import com.autowash.entity.Booking;
 import com.autowash.entity.SystemSettings;
 import com.autowash.entity.TierConfig;
 import com.autowash.entity.TierHistory;
@@ -21,6 +23,7 @@ import com.autowash.entity.enums.UserDiscountStatus;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.LoyaltyAccountRepository;
+import com.autowash.repository.BookingRepository;
 import com.autowash.repository.NotificationRepository;
 import com.autowash.repository.PointTransactionRepository;
 import com.autowash.repository.SystemSettingsRepository;
@@ -40,6 +43,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -55,6 +59,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     private static final Logger log = LoggerFactory.getLogger(LoyaltyService.class);
 
     private final UserRepository UserRepository;
+    private final BookingRepository bookingRepository;
     private final WashSessionRepository washSessionRepository;
     private final LoyaltyAccountRepository loyaltyAccountRepository;
 
@@ -68,6 +73,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
 
     public LoyaltyServiceImpl(
             UserRepository UserRepository,
+            BookingRepository bookingRepository,
             WashSessionRepository washSessionRepository,
             LoyaltyAccountRepository loyaltyAccountRepository,
 
@@ -80,6 +86,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
             UserDiscountRepository userDiscountRepository
     ) {
         this.UserRepository = UserRepository;
+        this.bookingRepository = bookingRepository;
         this.washSessionRepository = washSessionRepository;
         this.loyaltyAccountRepository = loyaltyAccountRepository;
 
@@ -132,11 +139,12 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 .findByTypeAndBookingId(PointTransactionType.EARN, session.getBooking().getId())
                 .orElse(null);
         if (existing != null) {
-            return toEarnResponse(existing, account);
+            return toEarnResponse(existing, account, noTierChange(account));
         }
 
         int pointsAwarded = calculateEarnPoints(sessionId);
         account.addPoints(pointsAwarded);
+        loyaltyAccountRepository.saveAndFlush(account);
         PointTransaction transaction = new PointTransaction(
                 account,
                 session.getBooking(),
@@ -152,18 +160,33 @@ public class LoyaltyServiceImpl implements LoyaltyService {
             PointTransaction racedTransaction = pointTransactionRepository
                     .findByTypeAndBookingId(PointTransactionType.EARN, session.getBooking().getId())
                     .orElseThrow(() -> exception);
-            return toEarnResponse(racedTransaction, account);
+            return toEarnResponse(racedTransaction, account, noTierChange(account));
         }
 
-        evaluateTierUpgrade(account);
-        return toEarnResponse(transaction, account);
+        TierChangeResult tierChange = recalculateTierFromTotalEarnedPoints(account);
+        return toEarnResponse(transaction, account, tierChange);
     }
 
     @Transactional
     public int postBonusTransaction(UUID customerId, int points, String reason) {
+        return postBonusTransaction(customerId, null, points, reason);
+    }
+
+    @Transactional
+    public int postBonusTransaction(UUID customerId, UUID bookingId, int points, String reason) {
         if (points == 0) return 0;
         User customer = requireCustomer(customerId);
         LoyaltyAccount account = getOrCreateAccountForUpdate(customer);
+        Booking booking = resolveOptionalBooking(bookingId, customer);
+
+        if (booking != null) {
+            PointTransaction existing = pointTransactionRepository
+                    .findByTypeAndBookingIdAndReason(PointTransactionType.ADJUST, booking.getId(), reason)
+                    .orElse(null);
+            if (existing != null) {
+                return 0;
+            }
+        }
         
         int actualPoints = points;
         if (points < 0) {
@@ -173,16 +196,16 @@ public class LoyaltyServiceImpl implements LoyaltyService {
             return 0;
         }
         
-        account.addPoints(actualPoints);
+        account.addActivePoints(actualPoints);
+        loyaltyAccountRepository.saveAndFlush(account);
         pointTransactionRepository.save(new PointTransaction(
                 account,
-                null,
+                booking,
                 PointTransactionType.ADJUST,
                 actualPoints,
                 account.getCurrentPoints(),
                 reason
         ));
-        evaluateTierUpgrade(account);
         return actualPoints;
     }
 
@@ -198,6 +221,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         }
         
         account.addActivePoints(actualPoints);
+        loyaltyAccountRepository.saveAndFlush(account);
         pointTransactionRepository.save(new PointTransaction(
                 account,
                 null,
@@ -206,6 +230,40 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 account.getCurrentPoints(),
                 reason
         ));
+    }
+
+    @Transactional
+    public AdjustTotalEarnedPointsResponse adjustTotalEarnedPoints(UUID customerId, int pointsDelta, String reason) {
+        User customer = requireCustomer(customerId);
+        LoyaltyAccount account = getOrCreateAccountForUpdate(customer);
+        account.adjustTotalEarnedPoints(pointsDelta);
+        TierChangeResult tierChange = recalculateTierFromTotalEarnedPoints(account);
+        loyaltyAccountRepository.save(account);
+
+        String message = tierChange.message();
+        if (!tierChange.changed()) {
+            message = "Tổng điểm tích lũy đã được cập nhật. Hạng hiện tại vẫn là " + account.getTier() + ".";
+        }
+
+        pointTransactionRepository.save(new PointTransaction(
+                account,
+                null,
+                PointTransactionType.ADJUST,
+                0,
+                account.getCurrentPoints(),
+                "Total earned points adjusted by " + pointsDelta + ": " + reason
+        ));
+
+        return new AdjustTotalEarnedPointsResponse(
+                customer.getId().toString(),
+                account.getCurrentPoints(),
+                account.getTotalEarnedPoints(),
+                tierChange.oldTier(),
+                tierChange.newTier(),
+                tierChange.changed(),
+                tierChange.direction(),
+                message
+        );
     }
 
     @Transactional
@@ -222,7 +280,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         if (customerRank < minRank) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Your tier is not eligible for this voucher offer", ErrorCode.TIER_NOT_ELIGIBLE);
         }
-        int pointsToRedeem = offer.getPointsCost();
+        int pointsToRedeem = offer.getDiscount().getRequiredPoints();
         LoyaltyAccount account = getOrCreateAccountForUpdate(customer);
         if (account.getCurrentPoints() < pointsToRedeem) {
             throw new ApiException(
@@ -233,13 +291,16 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         }
 
         account.redeemPoints(pointsToRedeem);
+        loyaltyAccountRepository.saveAndFlush(account);
         Instant expiresAt = null;
         if (offer.getDiscount().getValidDaysAfterClaim() != null) {
             expiresAt = Instant.now().plus(offer.getDiscount().getValidDaysAfterClaim(), ChronoUnit.DAYS);
         }
+        String voucherCode = generateVoucherCode();
         UserDiscount userDiscount = userDiscountRepository.save(UserDiscount.builder()
                 .user(customer)
                 .discount(offer.getDiscount())
+                .voucherCode(voucherCode)
                 .acquisitionMethod(DiscountAcquisitionMethod.POINT_REDEEMED)
                 .pointsSpent(pointsToRedeem)
                 .claimedAt(Instant.now())
@@ -252,18 +313,28 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 PointTransactionType.REDEEM,
                 -pointsToRedeem,
                 account.getCurrentPoints(),
-                "Voucher offer redemption: " + offer.getTitle()
+                "Voucher offer redemption: " + offer.getDiscount().getName()
         ));
         
         return new RedeemPointsResponse(
                 transaction.getId(),
                 pointsToRedeem,
                 account.getCurrentPoints(),
-                userDiscount.getId().toString(),
-                offer.getVoucherValue(),
+                userDiscount.getVoucherCode(),
+                (int) offer.getDiscount().getDiscountValue(),
                 expiresAt,
                 "REDEEMED"
         );
+    }
+
+    private String generateVoucherCode() {
+        for (int attempts = 0; attempts < 10; attempts++) {
+            String code = "VC" + String.format("%08d", ThreadLocalRandom.current().nextInt(100_000_000));
+            if (!userDiscountRepository.existsByVoucherCodeIgnoreCase(code)) {
+                return code;
+            }
+        }
+        throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to generate voucher code", ErrorCode.SYSTEM_ERROR);
     }
 
     @Transactional(readOnly = true)
@@ -297,36 +368,43 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         return new LoyaltyService.TransactionPage(items, pagination);
     }
 
-    void evaluateTierUpgrade(LoyaltyAccount account) {
+    TierChangeResult recalculateTierFromTotalEarnedPoints(LoyaltyAccount account) {
         String targetTier = tierConfigService.calculateTierForPoints(account.getTotalEarnedPoints());
-        if (tierConfigService.getTierRank(targetTier) <= tierConfigService.getTierRank(account.getTier())) {
-            return;
+        String oldTier = account.getTier();
+        int oldRank = tierConfigService.getTierRank(oldTier);
+        int targetRank = tierConfigService.getTierRank(targetTier);
+        if (targetRank <= oldRank) {
+            return noTierChange(account);
         }
 
-        String oldTier = account.getTier();
         account.updateTier(targetTier);
         tierHistoryRepository.save(new TierHistory(account, oldTier, targetTier, account.getTotalEarnedPoints()));
+        String direction = "UPGRADE";
+        String reason = "Tier upgraded from " + oldTier + " to " + targetTier;
         pointTransactionRepository.save(new PointTransaction(
                 account,
                 null,
                 PointTransactionType.ADJUST,
                 0,
                 account.getCurrentPoints(),
-                "Tier upgraded from " + oldTier + " to " + targetTier
+                reason
         ));
-        log.info("loyalty_tier_upgraded customerId={} oldTier={} newTier={}", account.getCustomer().getId(), oldTier, targetTier);
+        log.info("loyalty_tier_changed customerId={} oldTier={} newTier={} direction={}", account.getCustomer().getId(), oldTier, targetTier, direction);
         loyaltyAccountRepository.save(account);
 
+        String title = "Chúc mừng! Bạn đã thăng hạng";
+        String message = "Bạn đã lên hạng từ " + oldTier + " lên " + targetTier + ".";
         Notification notification = Notification.builder()
                 .id(UUID.randomUUID())
                 .user(account.getCustomer())
-                .title("Congratulations! You have been upgraded")
-                .message("Your membership tier has been upgraded to " + targetTier + ".")
+                .title(title)
+                .message(message)
                 .type(NotificationType.LOYALTY)
                 .read(false)
                 .createdAt(Instant.now())
                 .build();
         notificationRepository.save(notification);
+        return new TierChangeResult(true, oldTier, targetTier, direction, message);
     }
 
     @Transactional
@@ -424,13 +502,31 @@ public class LoyaltyServiceImpl implements LoyaltyService {
 
 
 
-    private EarnPointsResponse toEarnResponse(PointTransaction transaction, LoyaltyAccount account) {
+    private TierChangeResult noTierChange(LoyaltyAccount account) {
+        return new TierChangeResult(false, account.getTier(), account.getTier(), "NONE", "Hạng thành viên hiện tại vẫn là " + account.getTier() + ".");
+    }
+
+    private EarnPointsResponse toEarnResponse(PointTransaction transaction, LoyaltyAccount account, TierChangeResult tierChange) {
         return new EarnPointsResponse(
                 transaction.getId(),
                 transaction.getPoints(),
                 transaction.getBalanceAfter(),
-                account.getTier()
+                account.getTier(),
+                tierChange.oldTier(),
+                tierChange.newTier(),
+                tierChange.changed(),
+                tierChange.direction(),
+                tierChange.message()
         );
+    }
+
+    private record TierChangeResult(
+            boolean changed,
+            String oldTier,
+            String newTier,
+            String direction,
+            String message
+    ) {
     }
 
     private PointTransactionResponse toTransactionResponse(PointTransaction transaction) {
@@ -440,9 +536,28 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 transaction.getPoints(),
                 transaction.getBalanceAfter(),
                 transaction.getReason(),
-                transaction.getBooking() != null ? transaction.getBooking().getId().toString() : null,
+                resolveReferenceBookingId(transaction),
                 transaction.getCreatedAt()
         );
+    }
+
+    private Booking resolveOptionalBooking(UUID bookingId, User customer) {
+        if (bookingId == null) {
+            return null;
+        }
+        return bookingRepository.findByCustomerAndId(customer, bookingId).orElse(null);
+    }
+
+    private String resolveReferenceBookingId(PointTransaction transaction) {
+        if (transaction.getBooking() != null) {
+            return transaction.getBooking().getId().toString();
+        }
+        if ("First booking bonus".equalsIgnoreCase(transaction.getReason())) {
+            return bookingRepository.findFirstByCustomerOrderByCreatedAtAsc(transaction.getLoyaltyAccount().getCustomer())
+                    .map(booking -> booking.getId().toString())
+                    .orElse(null);
+        }
+        return null;
     }
 }
 

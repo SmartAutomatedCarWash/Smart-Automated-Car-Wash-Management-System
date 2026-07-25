@@ -2,7 +2,6 @@ package com.autowash.controller;
 
 import com.autowash.dto.TierVoucherOfferResponse;
 import com.autowash.entity.TierVoucherOffer;
-import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.repository.TierVoucherOfferRepository;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,9 +26,8 @@ public class PublicLoyaltyController {
     @Operation(summary = "List all active tier voucher offers for public display")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ApiResponse<List<TierVoucherOfferResponse>> listOffers() {
-        List<TierVoucherOfferResponse> offers = tierVoucherOfferRepository.findAllWithDiscountAndMinTier()
+        List<TierVoucherOfferResponse> offers = tierVoucherOfferRepository.findActiveOffersWithDiscountAndTier()
                 .stream()
-                .filter(offer -> offer.getDiscount().getStatus() == ActiveStatus.ACTIVE)
                 .map(this::mapToOfferResponse)
                 .toList();
         return ApiResponse.ok("Tier voucher offers retrieved", offers);
@@ -38,10 +36,10 @@ public class PublicLoyaltyController {
     private TierVoucherOfferResponse mapToOfferResponse(TierVoucherOffer offer) {
         return new TierVoucherOfferResponse(
                 offer.getId().toString(),
-                offer.getTitle(),
+                offer.getDiscount().getName(),
                 offer.getMinTier().getTier(),
-                offer.getPointsCost(),
-                offer.getVoucherValue(),
+                offer.getDiscount().getRequiredPoints(),
+                (int) offer.getDiscount().getDiscountValue(),
                 offer.getAccent(),
                 offer.getBadge()
         );

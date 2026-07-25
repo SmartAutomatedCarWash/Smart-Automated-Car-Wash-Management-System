@@ -45,6 +45,7 @@ import {
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
 import { BookingCompletionPopup } from "@/features/bookings/components/booking-completion-popup";
 import { useBookingReviewCheck, useSubmitBookingReview } from "@/features/bookings/hooks/use-reviews";
+import { useCustomerLoyaltyTransactions } from "@/features/loyalty/hooks/use-customer-loyalty";
 import type { BookingAddonSelection, BookingDetail, BookingStaffOption, BookingStaffOptionsRequest } from "@/entities/bookings";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
@@ -243,6 +244,13 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const submitReviewMutation = useSubmitBookingReview();
   const isCompleted = bookingQuery.data?.status === "COMPLETED" || bookingQuery.data?.washStatus === "COMPLETED";
   const reviewCheckQuery = useBookingReviewCheck(bookingId, isCompleted);
+  const loyaltyTransactionsQuery = useCustomerLoyaltyTransactions(1, 100);
+  const earnedPoints = useMemo(() => {
+    const currentBookingId = bookingQuery.data?.bookingId ?? bookingId;
+    return loyaltyTransactionsQuery.data?.items.find(
+      (transaction) => transaction.bookingId === currentBookingId && transaction.points > 0,
+    )?.points ?? null;
+  }, [bookingId, bookingQuery.data?.bookingId, loyaltyTransactionsQuery.data]);
 
   // Auto-show review popup when booking is COMPLETED and not yet reviewed
   useEffect(() => {
@@ -290,6 +298,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     const packageDetail = booking.details.find((detail) => detail.itemType === "PACKAGE");
     const comboDetail = booking.details.find((detail) => detail.itemType === "COMBO");
     return {
+      bookingId: booking.bookingId,
       packageId: packageDetail?.refId,
       comboId: comboDetail?.refId,
       options: booking.details
@@ -309,12 +318,16 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
       .map((staff) => staff.staffId)
       .filter(Boolean);
     if (assignedIds.length > 0) {
-      setSelectedStaffIds(assignedIds.slice(0, 3));
+      setSelectedStaffIds(assignedIds.slice(0, 1));
+      return;
+    }
+    if (booking.status !== "CONFIRMED") {
+      setSelectedStaffIds([]);
       return;
     }
     const autoIds = (staffOptionsQuery.data ?? [])
       .filter((staff) => staff.available !== false)
-      .slice(0, 3)
+      .slice(0, 1)
       .map((staff) => staff.staffId);
     if (autoIds.length > 0) {
       setSelectedStaffIds(autoIds);
@@ -364,7 +377,8 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const isPaymentPaid = paymentStatus === "PAID";
   const isPendingBookingHold = booking.status === "PENDING" && !isPaymentPaid;
   const canChoosePendingPaymentAction = isPendingBookingHold && !pendingHoldExpired;
-  const canPayAgainWithVnpay = canChoosePendingPaymentAction && booking.pricing.finalAmount > 0;
+  const canPayAgainWithVnpay = canChoosePendingPaymentAction && paymentMethod !== "CASH_AT_COUNTER" && booking.pricing.finalAmount > 0;
+  const canChangeToSepay = canChoosePendingPaymentAction && paymentMethod === "E_WALLET" && booking.pricing.finalAmount > 0;
   const canChangeToCash = canChoosePendingPaymentAction && paymentMethod !== "CASH_AT_COUNTER";
   const canShowSepayInstructions = canChoosePendingPaymentAction && paymentMethod === "BANK_TRANSFER";
   const sepayPaymentCode = canShowSepayInstructions ? booking.payment.transactionId : null;
@@ -374,9 +388,9 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const canShowAppointmentCountdown = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS"].includes(booking.status);
   const showCashConfirmationNote = booking.status === "PENDING" && paymentMethod === "CASH_AT_COUNTER";
   const isPaymentActionPending = changePaymentMethodMutation.isPending || createVnpayCheckoutMutation.isPending;
-  const canEditAssignedStaff = ["PENDING", "CONFIRMED"].includes(booking.status) && !booking.washSessionId;
-  const assignedStaffDirty = selectedStaffIds.join("|") !== assignedStaffList(booking).map((staff) => staff.staffId).join("|");
-  const canSaveAssignedStaff = canEditAssignedStaff && selectedStaffIds.length === 3 && assignedStaffDirty;
+  const originalAssignedStaffIds = assignedStaffList(booking).map((staff) => staff.staffId).slice(0, 1);
+  const canEditAssignedStaff = booking.status === "CONFIRMED" && originalAssignedStaffIds.length === 1 && !booking.washSessionId;
+  const canSaveAssignedStaff = canEditAssignedStaff && selectedStaffIds.length === 1 && selectedStaffIds[0] !== originalAssignedStaffIds[0];
   const refundStatusLabel = getRefundStatusLabel(booking, language);
   const customerName = booking.customerName || profileQuery.data?.fullName || translate(language, "Khách hàng", "Customer");
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || translate(language, "Chưa có số điện thoại", "No phone number");
@@ -450,9 +464,18 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     }
   };
 
+  const handleChangeToSepay = async () => {
+    try {
+      await changePaymentMethodMutation.mutateAsync("BANK_TRANSFER");
+      notify.success(translate(language, "Đã chuyển sang thanh toán SePay.", "Changed to SePay."));
+    } catch (error) {
+      notify.error(getErrorMessage(error));
+    }
+  };
+
   const handleSaveAssignedStaff = async () => {
     try {
-      await updateBookingStaffMutation.mutateAsync({ staffIds: selectedStaffIds });
+      await updateBookingStaffMutation.mutateAsync({ staffIds: selectedStaffIds.slice(0, 1) });
       notify.success(translate(language, "Đã lưu nhân viên phụ trách.", "Assigned staff saved."));
     } catch (error) {
       notify.error(getErrorMessage(error));
@@ -574,72 +597,68 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
               </div>
               <CardDescription>
                 {canEditAssignedStaff
-                  ? translate(language, "Bạn có thể đổi 3 nhân viên rảnh, sau đó bấm Confirm để lưu.", "You can choose 3 available staff, then press Confirm to save.")
-                  : translate(language, "Danh sách nhân viên phụ trách lịch đặt này.", "Staff assigned to this booking.")}
+                  ? translate(language, "Bạn có thể đổi nhân viên đang rảnh, sau đó bấm Confirm để lưu.", "You can replace the assigned staff with an available staff member, then press Confirm to save.")
+                  : translate(language, "Nhân viên phụ trách lịch đặt này.", "Staff assigned to this booking.")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {staffOptionsQuery.isPending ? (
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {[1, 2, 3].map((item) => (
-                    <div key={item} className="h-20 animate-pulse rounded-2xl bg-white/70" />
-                  ))}
-                </div>
+                <div className="h-20 animate-pulse rounded-2xl bg-white/70" />
               ) : (
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {[0, 1, 2].map((index) => {
-                    const currentStaffId = selectedStaffIds[index] ?? "";
-                    const selectedStaff = staffOptionById(staffOptions, booking, currentStaffId);
-                    return (
-                      <div key={index} className="rounded-2xl border border-emerald-100 bg-white/80 p-3">
-                        <span className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-700">
-                          <UserCheck className="h-3.5 w-3.5" />
-                          {translate(language, "Nhân viên", "Staff")} {index + 1}
-                        </span>
-                        {canEditAssignedStaff ? (
-                          <Select
-                            value={currentStaffId || undefined}
-                            onValueChange={(staffId) => {
-                              const nextStaffIds = [...selectedStaffIds];
-                              nextStaffIds[index] = staffId;
-                              setSelectedStaffIds(nextStaffIds.filter((id, staffIndex) => id && nextStaffIds.indexOf(id) === staffIndex).slice(0, 3));
-                            }}
+                <div className="max-w-md rounded-2xl border border-emerald-100 bg-white/80 p-3">
+                  <span className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-700">
+                    <UserCheck className="h-3.5 w-3.5" />
+                    {translate(language, "Nhân viên phụ trách", "Assigned staff")}
+                  </span>
+                  {canEditAssignedStaff ? (
+                    <Select
+                      value={selectedStaffIds[0] || undefined}
+                      onValueChange={(staffId) => setSelectedStaffIds([staffId])}
+                    >
+                      <SelectTrigger className="h-auto min-h-12 rounded-xl bg-white px-3 py-2 text-left [&>span]:line-clamp-none">
+                        <SelectValue placeholder={translate(language, "Chọn nhân viên", "Select staff")}>
+                          {staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "") ? (
+                            <StaffSelectLabel
+                              staff={staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "")!}
+                              statusLabel={selectedStaffIds[0] === originalAssignedStaffIds[0] ? translate(language, "Đang được gán", "Current assignment") : undefined}
+                              statusTone={selectedStaffIds[0] === originalAssignedStaffIds[0] ? "locked" : undefined}
+                            />
+                          ) : null}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent
+                        position="item-aligned"
+                        className="min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)]"
+                      >
+                        {staffOptions.map((staff) => (
+                          <SelectItem
+                            key={staff.staffId}
+                            value={staff.staffId}
+                            disabled={staff.available === false && staff.staffId !== originalAssignedStaffIds[0]}
+                            className="py-2 pr-8 [&>span:last-child]:w-full"
                           >
-                            <SelectTrigger className="h-auto min-h-12 rounded-xl bg-white px-3 py-2 text-left [&>span]:line-clamp-none">
-                              <SelectValue placeholder={translate(language, "Chọn nhân viên", "Select staff")}>
-                                {selectedStaff ? (
-                                  <StaffSelectLabel staff={selectedStaff} />
-                                ) : null}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent
-                              position="item-aligned"
-                              className="min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)]"
-                            >
-                              {staffOptions
-                                .filter((staff) => staff.staffId === currentStaffId || !selectedStaffIds.includes(staff.staffId))
-                                .map((staff) => (
-                                  <SelectItem
-                                    key={staff.staffId}
-                                    value={staff.staffId}
-                                    disabled={staff.available === false}
-                                    className="py-2 pr-8 [&>span:last-child]:w-full"
-                                  >
-                                    <StaffSelectLabel staff={staff} />
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                        ) : selectedStaff ? (
-                          <StaffSelectLabel staff={selectedStaff} />
-                        ) : (
-                          <p className="text-sm font-semibold text-slate-500">
-                            {translate(language, "Sẽ được phân công sau khi xác nhận.", "Will be assigned after confirmation.")}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
+                            <StaffSelectLabel
+                              staff={staff}
+                              statusLabel={staff.staffId === originalAssignedStaffIds[0] ? translate(language, "Đang được gán", "Current assignment") : undefined}
+                              statusTone={staff.staffId === originalAssignedStaffIds[0] ? "locked" : undefined}
+                            />
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "") ? (
+                    <div className="rounded-xl border border-emerald-100 bg-white px-3 py-2">
+                      <StaffSelectLabel
+                        staff={staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "")!}
+                        statusLabel={translate(language, "Đang được gán", "Assigned")}
+                        statusTone="available"
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-sm font-semibold text-slate-500">
+                      {translate(language, "Sẽ được phân công sau khi xác nhận.", "Will be assigned after confirmation.")}
+                    </p>
+                  )}
                 </div>
               )}
               {staffOptionsQuery.isError ? (
@@ -653,10 +672,13 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                     disabled={!canSaveAssignedStaff || updateBookingStaffMutation.isPending}
                   >
                     {updateBookingStaffMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {translate(language, "Confirm", "Confirm")}
+                    {translate(language, "Confirm staff change", "Confirm staff change")}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => void bookingQuery.refetch()}>
                     {translate(language, "Tải lại từ máy chủ", "Refresh from server")}
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={() => setSelectedStaffIds(originalAssignedStaffIds)}>
+                    {translate(language, "Hủy đổi nhân viên", "Cancel staff change")}
                   </Button>
                 </div>
               ) : null}
@@ -752,6 +774,19 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 ) : null}
                 <SummaryLine label={translate(language, "Tổng cộng", "Total")} value={formatBookingCurrency(booking.pricing.finalAmount)} strong />
               </SidebarBlock>
+
+              {earnedPoints !== null ? (
+                <SidebarBlock icon={<Star className="h-4 w-4" />} title={translate(language, "Điểm cộng", "Points earned")}>
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <div className="text-2xl font-black text-emerald-700">
+                      +{earnedPoints.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} pts
+                    </div>
+                    <p className="mt-1 text-xs font-semibold text-emerald-800">
+                      {translate(language, "Điểm được cộng từ booking này.", "Points awarded from this booking.")}
+                    </p>
+                  </div>
+                </SidebarBlock>
+              ) : null}
             </CardContent>
           </Card>
 
@@ -780,13 +815,13 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 </div>
               ) : null}
 
-              {canChoosePendingPaymentAction ? (
+              {canChoosePendingPaymentAction && paymentMethod !== "CASH_AT_COUNTER" ? (
                 <div className="space-y-2 rounded-2xl border border-sky-100 bg-sky-50 p-3">
                   <p className="text-xs font-semibold text-sky-900">
                     {translate(
                       language,
-                      "Lịch đặt đang chờ xác nhận. Bạn có thể thanh toán lại, đổi sang tiền mặt hoặc huỷ lịch.",
-                      "This booking is pending. You can pay again, switch to cash, or cancel it.",
+                      "Lịch đặt đang chờ xác nhận. Bạn có thể đổi giữa SePay/VNPay, đổi sang tiền mặt hoặc huỷ lịch.",
+                      "This booking is pending. You can switch between SePay/VNPay, switch to cash, or cancel it.",
                     )}
                   </p>
                   {canShowSepayInstructions ? (
@@ -849,6 +884,18 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                       {translate(language, "Thanh toán VNPay", "Pay with VNPay")}
                     </Button>
                   ) : null}
+                  {canChangeToSepay ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full bg-white"
+                      onClick={handleChangeToSepay}
+                      disabled={isPaymentActionPending}
+                    >
+                      {changePaymentMethodMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+                      {translate(language, "Đổi sang SePay", "Change to SePay")}
+                    </Button>
+                  ) : null}
                   {canChangeToCash ? (
                     <Button
                       type="button"
@@ -861,16 +908,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                       {translate(language, "Đổi sang trả tại quầy", "Change to cash at counter")}
                     </Button>
                   ) : null}
-                </div>
-              ) : null}
-
-              {showCashConfirmationNote ? (
-                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
-                  {translate(
-                    language,
-                    "Đơn trả tại quầy đang chờ Manager/Admin xác nhận.",
-                    "Cash booking is waiting for Manager/Admin confirmation.",
-                  )}
                 </div>
               ) : null}
 
@@ -945,6 +982,16 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                   ) : null}
                 </>
               ) : null}
+
+              {showCashConfirmationNote ? (
+                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+                  {translate(
+                    language,
+                    "Đơn trả tại quầy đang chờ Manager/Admin xác nhận.",
+                    "Cash booking is waiting for Manager/Admin confirmation.",
+                  )}
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 
@@ -953,7 +1000,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
             <BookingCompletionPopup
               bookingId={bookingId}
               vehiclePlate={booking.vehiclePlate}
-              pointsEarned={10}
               isOpen={showReviewPopup}
               onClose={() => setShowReviewPopup(false)}
               onSubmitReview={handleSubmitReview}
@@ -1006,15 +1052,27 @@ function staffAvailabilityLabel(staff: StaffDisplay) {
   return "Available";
 }
 
-function StaffSelectLabel({ staff }: { staff: StaffDisplay }) {
+function StaffSelectLabel({
+  staff,
+  statusLabel,
+  statusTone,
+}: {
+  staff: StaffDisplay;
+  statusLabel?: string;
+  statusTone?: "available" | "busy" | "locked";
+}) {
   const busy = staff.available === false;
+  const tone = statusTone ?? (busy ? "busy" : "available");
   return (
     <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 pr-2 leading-snug">
       <span className="block max-w-full truncate text-sm font-semibold text-slate-900">
         {staff.staffName}
       </span>
-      <span className={cn("text-[11px] font-bold", busy ? "text-amber-600" : "text-emerald-700")}>
-        {staffAvailabilityLabel(staff)}
+      <span className={cn(
+        "text-[11px] font-bold",
+        tone === "busy" ? "text-amber-600" : tone === "locked" ? "text-slate-500" : "text-emerald-700",
+      )}>
+        {statusLabel ?? staffAvailabilityLabel(staff)}
       </span>
     </span>
   );

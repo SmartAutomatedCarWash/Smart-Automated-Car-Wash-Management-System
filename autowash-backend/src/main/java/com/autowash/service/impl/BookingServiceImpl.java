@@ -2,7 +2,7 @@ package com.autowash.service.impl;
 
 import com.autowash.entity.WashSession;
 import com.autowash.assembler.BookingResponseAssembler;
-import com.autowash.service.LoyaltyService;
+import com.autowash.dto.EarnPointsResponse;
 import com.autowash.entity.Notification;
 import com.autowash.entity.SystemSettings;
 import com.autowash.repository.NotificationRepository;
@@ -49,6 +49,7 @@ import com.autowash.entity.Payment;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.entity.enums.UserDiscountStatus;
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.BookingDetailRepository;
 import com.autowash.repository.BookingStaffAssignmentRepository;
@@ -65,6 +66,7 @@ import com.autowash.service.BookingService;
 import com.autowash.service.CatalogService;
 import com.autowash.service.CustomerComboService;
 import com.autowash.service.DiscountRedemptionService;
+import com.autowash.service.LoyaltyService;
 import com.autowash.service.StaffAssignmentService;
 import com.autowash.service.VnpayPaymentService;
 import com.autowash.shared.dto.PaginationMeta;
@@ -112,6 +114,22 @@ public class BookingServiceImpl implements BookingService {
     private static final Set<BookingStatus> CANCELLABLE_BOOKING_STATUSES = Set.of(
             BookingStatus.PENDING,
             BookingStatus.CONFIRMED
+    );
+    private static final List<BookingStatus> MAIN_BOOKING_STATUS_FLOW = List.of(
+            BookingStatus.PENDING,
+            BookingStatus.CONFIRMED,
+            BookingStatus.CHECKED_IN,
+            BookingStatus.IN_PROGRESS,
+            BookingStatus.COMPLETED
+    );
+    private static final Set<BookingStatus> TERMINAL_BOOKING_STATUSES = Set.of(
+            BookingStatus.COMPLETED,
+            BookingStatus.CANCELLED,
+            BookingStatus.NO_SHOW
+    );
+    private static final Set<BookingStatus> SIDE_BOOKING_STATUSES = Set.of(
+            BookingStatus.CANCELLED,
+            BookingStatus.NO_SHOW
     );
 
     private final CurrentUserService currentUserService;
@@ -200,19 +218,17 @@ public class BookingServiceImpl implements BookingService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher code is required", ErrorCode.INVALID_DISCOUNT);
         }
 
-        Discount discount = discountRepository.findByCodeIgnoreCase(code)
-                .orElseThrow(() -> new ApiException(
-                        HttpStatus.NOT_FOUND,
-                        "Voucher code does not exist",
-                        ErrorCode.INVALID_DISCOUNT
-                ));
-
-        UserDiscount userDiscount = userDiscountRepository.findByUserIdAndDiscountCodeIgnoreCase(user.getId(), code)
-                .orElseThrow(() -> new ApiException(
-                        HttpStatus.BAD_REQUEST,
-                        "This voucher is not available in your account",
-                        ErrorCode.INVALID_DISCOUNT
-                ));
+        Discount discount = discountRepository.findByCodeIgnoreCase(code).orElse(null);
+        UserDiscount userDiscount = null;
+        if (discount == null) {
+            userDiscount = userDiscountRepository.findByUserIdAndVoucherCodeIgnoreCase(user.getId(), code)
+                    .orElseThrow(() -> new ApiException(
+                            HttpStatus.BAD_REQUEST,
+                            "This voucher is not available in your account",
+                            ErrorCode.INVALID_DISCOUNT
+                    ));
+            discount = userDiscount.getDiscount();
+        }
 
         Instant now = Instant.now();
         if (discount.getStatus() != ActiveStatus.ACTIVE) {
@@ -224,10 +240,10 @@ public class BookingServiceImpl implements BookingService {
         if (discount.getEndAt() != null && discount.getEndAt().isBefore(now)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher has expired", ErrorCode.INVALID_DISCOUNT);
         }
-        if (userDiscount.getStatus() != UserDiscountStatus.AVAILABLE) {
+        if (userDiscount != null && userDiscount.getStatus() != UserDiscountStatus.AVAILABLE) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher has already been used or is unavailable", ErrorCode.INVALID_DISCOUNT);
         }
-        if (userDiscount.getExpiresAt() != null && userDiscount.getExpiresAt().isBefore(now)) {
+        if (userDiscount != null && userDiscount.getExpiresAt() != null && userDiscount.getExpiresAt().isBefore(now)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher has expired in your wallet", ErrorCode.INVALID_DISCOUNT);
         }
         if (discount.getUsageLimit() != null && discount.getUsedCount() >= discount.getUsageLimit()) {
@@ -245,13 +261,13 @@ public class BookingServiceImpl implements BookingService {
 
         long discountAmount = calculateDiscountAmount(amount, discount);
         return new DiscountValidationResponse(
-                discount.getCode(),
+                userDiscount != null ? userDiscount.getVoucherCode() : discount.getCode(),
                 true,
                 discount.getDiscountType().name(),
                 discount.getDiscountValue(),
                 discountAmount,
                 Math.max(0, amount - discountAmount),
-                userDiscount.getExpiresAt() != null ? userDiscount.getExpiresAt() : discount.getEndAt()
+                userDiscount != null && userDiscount.getExpiresAt() != null ? userDiscount.getExpiresAt() : discount.getEndAt()
         );
     }
 
@@ -371,12 +387,9 @@ public class BookingServiceImpl implements BookingService {
             if (discount != null) {
                 discountRedemptionService.redeemDiscount(booking, discount);
             } else {
-                // Check user discount
-                UserDiscount ud = null;
-                try {
-                    UUID udId = UUID.fromString(request.discountCode());
-                    ud = userDiscountRepository.findById(udId).orElse(null);
-                } catch(Exception ignored) {}
+                UserDiscount ud = userDiscountRepository
+                        .findByUserIdAndVoucherCodeIgnoreCase(user.getId(), request.discountCode().trim())
+                        .orElse(null);
                 
                 if (ud != null && ud.getUser().getId().equals(user.getId())) {
                     discountRedemptionService.redeemUserDiscount(booking, ud);
@@ -386,11 +399,6 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
-        long totalBookings = BookingRepository.countByCustomer(user);
-        if (totalBookings == 1) {
-            loyaltyService.postBonusTransaction(user.getId(), 30, "First booking bonus");
-        }
-        
         Payment payment = new Payment(
                 booking,
                 request.paymentMethod(),
@@ -655,7 +663,7 @@ public class BookingServiceImpl implements BookingService {
             if (booking.getStatus() == BookingStatus.PENDING) {
                 BookingStatus oldStatus = booking.getStatus();
                 booking.updateStatus(BookingStatus.CONFIRMED);
-                assignStaffGroupOnConfirmation(booking);
+                assignSingleStaffOnConfirmation(booking);
                 recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), "Payment verified");
                 
                 notificationRepository.save(Notification.builder()
@@ -688,6 +696,9 @@ public class BookingServiceImpl implements BookingService {
         if (payment.getStatus() == PaymentStatus.PAID) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Paid booking cannot change payment method", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
+        if (payment.getMethod() == PaymentMethod.CASH_AT_COUNTER && paymentMethod != PaymentMethod.CASH_AT_COUNTER) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Cash at counter bookings cannot switch to another payment method", ErrorCode.BUSINESS_RULE_VIOLATION);
+        }
 
         if (paymentMethod == PaymentMethod.CASH_AT_COUNTER) {
             payment.changeToCashAtCounter();
@@ -706,29 +717,39 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public BookingDetailResponse updateBookingStaff(String bookingId, List<String> staffIds) {
         Booking booking = findOwnedBooking(bookingId);
-        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking staff cannot be changed for this status", ErrorCode.BUSINESS_RULE_VIOLATION);
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Assigned staff can only be changed after booking is confirmed", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
         if (washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId()).isPresent()) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking staff cannot be changed after a wash session is created", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
 
-        List<UUID> selectedStaffIds = parseSelectedStaffIds(staffIds);
-        List<User> selectedStaff = selectedStaffIds.stream()
-                .map(staffAssignmentService::requireActiveStaff)
-                .toList();
-        for (User staff : selectedStaff) {
-            if (!staffAssignmentService.isStaffAvailableForBooking(staff, booking)) {
-                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Selected staff is not available for this booking time", ErrorCode.BUSINESS_RULE_VIOLATION);
-            }
+        List<BookingStaffAssignment> existingAssignments = bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking);
+        if (existingAssignments.isEmpty()) {
+            assignSingleStaffOnConfirmation(booking);
+            existingAssignments = bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking);
+        }
+        if (existingAssignments.isEmpty()) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking must have an assigned staff before staff can be changed", ErrorCode.BUSINESS_RULE_VIOLATION);
+        }
+        if (existingAssignments.size() > 1) {
+            normalizeSingleStaffAssignment(booking, existingAssignments.get(0).getStaff());
+            existingAssignments = bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking);
         }
 
-        bookingStaffAssignmentRepository.deleteByBooking(booking);
-        for (int index = 0; index < selectedStaff.size(); index++) {
-            bookingStaffAssignmentRepository.save(new BookingStaffAssignment(booking, selectedStaff.get(index), index + 1));
+        List<UUID> selectedStaffIds = parseSelectedStaffIds(staffIds);
+        UUID selectedStaffId = selectedStaffIds.get(0);
+        UUID currentStaffId = existingAssignments.get(0).getStaff().getId();
+        if (selectedStaffId.equals(currentStaffId)) {
+            return toDetailResponse(booking);
         }
-        booking.assignStaff(selectedStaff.get(0));
-        booking.setPreferredStaffIds(selectedStaffIds.stream().map(UUID::toString).collect(Collectors.joining(",")));
+        User selectedStaff = staffAssignmentService.requireActiveStaff(selectedStaffId);
+        if (!staffAssignmentService.isStaffAvailableForBooking(selectedStaff, booking)) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Selected staff is not available for this booking time", ErrorCode.BUSINESS_RULE_VIOLATION);
+        }
+
+        normalizeSingleStaffAssignment(booking, selectedStaff);
+        booking.setPreferredStaffIds(selectedStaff.getId().toString());
         return toDetailResponse(booking);
     }
 
@@ -742,7 +763,7 @@ public class BookingServiceImpl implements BookingService {
         ensurePendingBookingHoldOpen(booking);
         BookingStatus oldStatus = booking.getStatus();
         booking.updateStatus(BookingStatus.CONFIRMED);
-        assignStaffGroupOnConfirmation(booking);
+        assignSingleStaffOnConfirmation(booking);
         recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), "Booking confirmed manually");
         notificationRepository.save(Notification.builder()
                 .id(UUID.randomUUID())
@@ -769,17 +790,62 @@ public class BookingServiceImpl implements BookingService {
         if (oldStatus == status) {
             return toDetailResponse(booking);
         }
-        if (oldStatus == BookingStatus.PENDING && status != BookingStatus.CANCELLED) {
+        validateAdminBookingStatusTransition(oldStatus, status);
+        if (oldStatus == BookingStatus.PENDING && !SIDE_BOOKING_STATUSES.contains(status)) {
             ensurePendingBookingHoldOpen(booking);
         }
         booking.updateStatus(status);
         if (status == BookingStatus.CONFIRMED) {
-            assignStaffGroupOnConfirmation(booking);
+            assignSingleStaffOnConfirmation(booking);
+        }
+        if (status == BookingStatus.COMPLETED) {
+            markBookingPaidForOperations(booking.getId().toString(), null);
+            completeAdminManagedWashSession(booking);
         }
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), "Booking status updated by admin");
         BookingDetailResponse updateStatusResponse = toDetailResponse(booking);
         webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), status.name());
         return updateStatusResponse;
+    }
+
+    private void completeAdminManagedWashSession(Booking booking) {
+        WashSession session = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
+                .orElseGet(() -> washSessionRepository.save(WashSession.create(booking, "Completed from admin booking status", booking.getAssignedStaff())));
+
+        if (session.getStatus() != WashSessionStatus.COMPLETED) {
+            session.complete(Instant.now());
+        }
+        washSessionRepository.saveAndFlush(session);
+
+        EarnPointsResponse earnResult = loyaltyService.postEarnTransaction(
+                booking.getCustomer().getId(),
+                session.getId()
+        );
+        session.recordAwardedPoints(earnResult.pointsAwarded());
+        washSessionRepository.save(session);
+    }
+
+    private void validateAdminBookingStatusTransition(BookingStatus oldStatus, BookingStatus newStatus) {
+        if (TERMINAL_BOOKING_STATUSES.contains(oldStatus)) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Booking status is locked after " + oldStatus,
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
+        if (SIDE_BOOKING_STATUSES.contains(newStatus)) {
+            return;
+        }
+
+        int oldIndex = MAIN_BOOKING_STATUS_FLOW.indexOf(oldStatus);
+        int newIndex = MAIN_BOOKING_STATUS_FLOW.indexOf(newStatus);
+        if (oldIndex < 0 || newIndex < 0 || newIndex <= oldIndex) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Booking status cannot move backward",
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
     }
 
     @Transactional(readOnly = true)
@@ -861,6 +927,7 @@ public class BookingServiceImpl implements BookingService {
             }
             if (seen.add(staffId)) {
                 normalized.add(staffId.toString());
+                break;
             }
         }
         return normalized.isEmpty() ? null : String.join(",", normalized);
@@ -875,6 +942,7 @@ public class BookingServiceImpl implements BookingService {
                 .map(String::trim)
                 .filter(value -> !value.isBlank())
                 .map(UUID::fromString)
+                .limit(1)
                 .toList();
     }
 
@@ -899,21 +967,21 @@ public class BookingServiceImpl implements BookingService {
         return new ArrayList<>(selected);
     }
 
-    private void assignStaffGroupOnConfirmation(Booking booking) {
+    private void assignSingleStaffOnConfirmation(Booking booking) {
         List<BookingStaffAssignment> existingAssignments = bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking);
         if (!existingAssignments.isEmpty()) {
-            if (booking.getAssignedStaff() == null) {
-                booking.assignStaff(existingAssignments.get(0).getStaff());
-            }
+            normalizeSingleStaffAssignment(booking, existingAssignments.get(0).getStaff());
             return;
         }
 
-        List<User> staffGroup = staffAssignmentService.pickStaffGroupForBooking(booking, parsePreferredStaffIds(booking), 1);
+        User staff = staffAssignmentService.pickStaffGroupForBooking(booking, parsePreferredStaffIds(booking), 1).get(0);
+        normalizeSingleStaffAssignment(booking, staff);
+    }
+
+    private void normalizeSingleStaffAssignment(Booking booking, User staff) {
         bookingStaffAssignmentRepository.deleteByBooking(booking);
-        for (int index = 0; index < staffGroup.size(); index++) {
-            bookingStaffAssignmentRepository.save(new BookingStaffAssignment(booking, staffGroup.get(index), index + 1));
-        }
-        booking.assignStaff(staffGroup.get(0));
+        bookingStaffAssignmentRepository.save(new BookingStaffAssignment(booking, staff, 1));
+        booking.assignStaff(staff);
     }
 
     private User resolveAssignedStaff(String staffId, Booking booking) {

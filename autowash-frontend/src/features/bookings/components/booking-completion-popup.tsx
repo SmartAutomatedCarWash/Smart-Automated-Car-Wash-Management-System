@@ -12,7 +12,7 @@ import { uploadReviewImage } from "@/features/bookings/lib/review-service";
 interface BookingCompletionPopupProps {
   bookingId: string;
   vehiclePlate?: string;
-  pointsEarned: number;
+  pointsEarned?: number | null;
   newTier?: string | null;
   oldTier?: string | null;
   isOpen: boolean;
@@ -189,15 +189,16 @@ export function BookingCompletionPopup({
               </DialogDescription>
             </DialogHeader>
 
-            {/* Points earned */}
-            <div className="rounded-2xl border border-border/40 bg-accent/20 py-4 px-6 flex items-center justify-between shadow-sm">
-              <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                {translate(language, "Điểm tích lũy", "Loyalty Points")}
-              </span>
-              <span className="text-2xl font-black text-primary">
-                +{pointsEarned} pts
-              </span>
-            </div>
+            {pointsEarned != null && (
+              <div className="rounded-2xl border border-border/40 bg-accent/20 py-4 px-6 flex items-center justify-between shadow-sm">
+                <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                  {translate(language, "Điểm tích lũy", "Loyalty Points")}
+                </span>
+                <span className="text-2xl font-black text-primary">
+                  +{pointsEarned} pts
+                </span>
+              </div>
+            )}
 
             {/* Interactive Stars Rating */}
             <div className="space-y-4">

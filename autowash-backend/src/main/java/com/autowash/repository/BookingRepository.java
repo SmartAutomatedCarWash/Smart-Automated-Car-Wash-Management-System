@@ -110,7 +110,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
               and (:#{#dateTo == null} = true or booking.scheduledAt <= :dateTo)
               and (
                     :#{#searchLike == null} = true
-                    or lower(str(booking.id)) like :searchLike
+                    or lower(cast(booking.id as string)) like :searchLike
                     or lower(booking.customer.fullName) like :searchLike
                     or lower(booking.customer.phone) like :searchLike
                     or lower(booking.vehicle.plate) like :searchLike
@@ -211,6 +211,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     long sumFinalAmountByCustomerAndStatus(@Param("customer") User customer, @Param("status") BookingStatus status);
 
     Optional<Booking> findFirstByCustomerOrderByCreatedAtDesc(User customer);
+    Optional<Booking> findFirstByCustomerOrderByCreatedAtAsc(User customer);
 
     long countByStatus(BookingStatus status);
 
@@ -344,6 +345,29 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             left join LoyaltyAccount la on la.customer = booking.customer
             left join TierConfig tc on tc.tier = la.tier
             where booking.status in :statuses
+              and booking.scheduledAt >= :dayStart
+              and booking.scheduledAt < :dayEnd
+              and not exists (
+                    select session.id from WashSession session
+                    where session.booking = booking
+                      and session.status in :activeStatuses
+              )
+            order by tc.priorityScore desc, booking.scheduledAt asc, booking.createdAt desc
+            """)
+    List<Booking> findEligibleForOperationsSessionOnDate(
+            @Param("statuses") Collection<BookingStatus> statuses,
+            @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
+            @Param("dayStart") Instant dayStart,
+            @Param("dayEnd") Instant dayEnd,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff", "details", "pricing"})
+    @Query("""
+            select booking from Booking booking
+            left join LoyaltyAccount la on la.customer = booking.customer
+            left join TierConfig tc on tc.tier = la.tier
+            where booking.status in :statuses
               and (booking.assignedStaff = :staff or booking.assignedStaff is null)
               and not exists (
                     select activeSession.id from WashSession activeSession
@@ -356,6 +380,31 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             @Param("staff") User staff,
             @Param("statuses") Collection<BookingStatus> statuses,
             @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff", "details", "pricing"})
+    @Query("""
+            select booking from Booking booking
+            left join LoyaltyAccount la on la.customer = booking.customer
+            left join TierConfig tc on tc.tier = la.tier
+            where booking.status in :statuses
+              and booking.scheduledAt >= :dayStart
+              and booking.scheduledAt < :dayEnd
+              and (booking.assignedStaff = :staff or booking.assignedStaff is null)
+              and not exists (
+                    select activeSession.id from WashSession activeSession
+                    where activeSession.booking = booking
+                      and activeSession.status in :activeStatuses
+              )
+            order by tc.priorityScore desc, booking.scheduledAt asc, booking.createdAt desc
+            """)
+    List<Booking> findEligibleForAssignedStaffOperationsSessionOnDate(
+            @Param("staff") User staff,
+            @Param("statuses") Collection<BookingStatus> statuses,
+            @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
+            @Param("dayStart") Instant dayStart,
+            @Param("dayEnd") Instant dayEnd,
             Pageable pageable
     );
 

@@ -1,5 +1,6 @@
 package com.autowash.service;
 
+import com.autowash.dto.AdjustTotalEarnedPointsResponse;
 import com.autowash.dto.EarnPointsResponse;
 import com.autowash.dto.LoyaltyAccountResponse;
 import com.autowash.dto.PointTransactionResponse;
@@ -13,7 +14,9 @@ public interface LoyaltyService {
     int calculateEarnPoints(UUID sessionId);
     EarnPointsResponse postEarnTransaction(UUID customerId, UUID sessionId);
     int postBonusTransaction(UUID customerId, int points, String reason);
+    int postBonusTransaction(UUID customerId, UUID bookingId, int points, String reason);
     void adjustActivePoints(UUID customerId, int points, String reason);
+    AdjustTotalEarnedPointsResponse adjustTotalEarnedPoints(UUID customerId, int pointsDelta, String reason);
     RedeemPointsResponse redeemOffer(UUID customerId, UUID offerId);
 
     TransactionPage getTransactionHistory(UUID customerId, String type, Instant dateFrom, Instant dateTo, int page, int limit);
