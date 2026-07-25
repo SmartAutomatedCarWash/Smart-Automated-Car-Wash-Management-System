@@ -5,10 +5,22 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
+import { useQuery } from "@tanstack/react-query";
+import { listBookingStaffOptions } from "@/features/bookings/lib/booking-service";
+import { cn } from "@/shared/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/ui/ui/dialog";
 import {
   useAdminBookingDetail,
   useRefundAdminVnpayPayment,
   useUpdateAdminBookingStatus,
+  useUpdateAdminBookingStaff,
   useAdminVehicleDetail,
 } from "../hooks/use-admin-booking-detail";
 import {
@@ -31,7 +43,8 @@ import {
   FileText,
   BadgeAlert,
   ShieldAlert,
-  Info
+  Info,
+  UserRound
 } from "lucide-react";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
@@ -103,8 +116,51 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
   const { data: booking, isPending, isError, error } = useAdminBookingDetail(bookingId);
   const refundVnpayMutation = useRefundAdminVnpayPayment(bookingId);
   const updateStatusMutation = useUpdateAdminBookingStatus(bookingId);
+  const updateStaffMutation = useUpdateAdminBookingStaff(bookingId);
   const [selectedStatus, setSelectedStatus] = useState<BookingStatus | "">("");
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
+  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+  const [selectedStaffId, setSelectedStaffId] = useState<string>("");
+
+  const staffOptionsQuery = useQuery({
+    queryKey: ["booking-staff-options", bookingId],
+    queryFn: () => {
+      const packageDetail = booking?.details.find((detail: any) => detail.itemType === "PACKAGE");
+      const comboDetail = booking?.details.find((detail: any) => detail.itemType === "COMBO");
+      return listBookingStaffOptions({
+        packageId: packageDetail?.refId,
+        comboId: comboDetail?.refId,
+        options: booking?.details
+          .filter((detail: any) => detail.itemType === "ADDON" || detail.itemType === "OPTION")
+          .map((detail: any) => detail.refId) ?? [],
+        bookingDate: booking?.scheduling.bookingDate ?? "",
+        bookingTime: booking?.scheduling.bookingTime ?? "",
+      });
+    },
+    enabled: Boolean(bookingId && booking && booking.status === "CONFIRMED" && isStaffModalOpen),
+  });
+
+  const staffOptions = staffOptionsQuery.data ?? [];
+
+  const handleOpenStaffModal = () => {
+    const currentStaff = booking?.assignedStaff?.[0]?.staffId ?? "";
+    setSelectedStaffId(currentStaff);
+    setIsStaffModalOpen(true);
+  };
+
+  const handleUpdateStaff = async () => {
+    if (!selectedStaffId) {
+      toast.error("Vui lòng chọn nhân viên / Please select a staff member");
+      return;
+    }
+    try {
+      await updateStaffMutation.mutateAsync([selectedStaffId]);
+      toast.success("Cập nhật nhân viên thành công / Staff updated successfully");
+      setIsStaffModalOpen(false);
+    } catch (e) {
+      toast.error(getErrorMessage(e as any));
+    }
+  };
 
   useEffect(() => {
     if (booking?.status) {
@@ -358,23 +414,35 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
 
         {/* Assigned Staff Card */}
         <Card className="border border-slate-100 shadow-sm rounded-2xl bg-white hover:shadow-md transition-shadow">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl shrink-0">
-              <User className="h-6 w-6" />
+          <CardContent className="p-5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl shrink-0">
+                <User className="h-6 w-6" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  {translate(language, "Nhân viên phụ trách", "Assigned Staff")}
+                </p>
+                <p className="text-sm font-bold text-slate-900 mt-1 truncate">
+                  {booking.staffName || translate(language, "Chưa phân công", "Not Assigned")}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {booking.assignedStaff && booking.assignedStaff.length > 0
+                    ? `ID: ST-${booking.assignedStaff[0].staffId.substring(0, 4).toUpperCase()}`
+                    : "--"}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                {translate(language, "Nhân viên phụ trách", "Assigned Staff")}
-              </p>
-              <p className="text-sm font-bold text-slate-900 mt-1 truncate">
-                {booking.staffName || translate(language, "Chưa phân công", "Not Assigned")}
-              </p>
-              <p className="text-xs text-slate-500">
-                {booking.assignedStaff && booking.assignedStaff.length > 0
-                  ? `ID: ST-${booking.assignedStaff[0].staffId.substring(0, 4).toUpperCase()}`
-                  : "--"}
-              </p>
-            </div>
+            {booking.status === "CONFIRMED" && !booking.washSessionId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOpenStaffModal}
+                className="rounded-xl border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-xs font-bold"
+              >
+                {translate(language, "Đổi", "Change")}
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -858,8 +926,106 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
           onClose={() => setIsVehicleModalOpen(false)}
         />
       )}
+
+      {isStaffModalOpen && (
+        <Dialog open={isStaffModalOpen} onOpenChange={setIsStaffModalOpen}>
+          <DialogContent className="sm:max-w-[425px] rounded-2xl bg-white">
+            <DialogHeader>
+              <DialogTitle className="text-slate-900">{translate(language, "Phân công nhân viên", "Assign Staff")}</DialogTitle>
+              <DialogDescription>
+                {translate(
+                  language,
+                  "Chọn một nhân viên khả dụng cho ca rửa này.",
+                  "Select an available staff member for this wash session."
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              {staffOptionsQuery.isPending ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-[#003cff]" />
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {staffOptions.length === 0 ? (
+                    <p className="text-sm text-slate-500 text-center py-4">
+                      {translate(language, "Không có nhân viên nào hoạt động.", "No active staff members.")}
+                    </p>
+                  ) : (
+                    staffOptions.map((staff) => {
+                      const busy = staff.available === false;
+                      const isCurrent = booking?.assignedStaff?.[0]?.staffId === staff.staffId;
+                      return (
+                        <button
+                          key={staff.staffId}
+                          type="button"
+                          disabled={busy}
+                          onClick={() => setSelectedStaffId(staff.staffId)}
+                          className={cn(
+                            "w-full flex items-center justify-between p-3 rounded-xl border text-left transition",
+                            busy
+                              ? "border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed"
+                              : selectedStaffId === staff.staffId
+                              ? "border-[#003cff] bg-[#003cff]/5 ring-1 ring-[#003cff]"
+                              : "border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300"
+                          )}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={cn(
+                              "flex h-8 w-8 items-center justify-center rounded-full shrink-0",
+                              selectedStaffId === staff.staffId ? "bg-[#003cff] text-white" : "bg-slate-100 text-slate-500"
+                            )}>
+                              <UserRound className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-semibold text-sm block text-slate-900 truncate">{staff.staffName}</span>
+                              <span className={cn("text-[10px] font-bold", busy ? "text-amber-600" : "text-emerald-700")}>
+                                {staffAvailabilityLabel(staff)}
+                              </span>
+                            </div>
+                          </div>
+                          {isCurrent && (
+                            <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
+                              {translate(language, "Hiện tại", "Current")}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsStaffModalOpen(false)}
+                className="rounded-xl border-slate-200"
+                disabled={updateStaffMutation.isPending}
+              >
+                {translate(language, "Hủy", "Cancel")}
+              </Button>
+              <Button
+                onClick={handleUpdateStaff}
+                className="rounded-xl bg-[#003cff] hover:bg-[#002fcc] text-white font-bold"
+                disabled={!selectedStaffId || updateStaffMutation.isPending}
+              >
+                {updateStaffMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {translate(language, "Xác nhận", "Confirm")}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
+}
+
+function staffAvailabilityLabel(staff: any) {
+  if (staff.available === false) {
+    return staff.busyUntil ? `Busy until ${staff.busyUntil}` : "Busy";
+  }
+  return "Available";
 }
 
 function VehicleDetailModal({

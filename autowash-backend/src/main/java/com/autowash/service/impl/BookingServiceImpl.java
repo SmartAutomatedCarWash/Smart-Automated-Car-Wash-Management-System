@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import com.autowash.dto.BookingStatusHistoryItem;
 import com.autowash.entity.User;
 import com.autowash.entity.enums.NotificationType;
+import com.autowash.event.WebSocketEventPublisher;
 import com.autowash.dto.BookingListItemResponse;
 import com.autowash.dto.CancelBookingResponse;
 import com.autowash.dto.CreateBookingRequest;
@@ -153,6 +154,7 @@ public class BookingServiceImpl implements BookingService {
     private final BookingResponseAssembler bookingResponseAssembler;
     private final StaffAssignmentService staffAssignmentService;
     private final ObjectProvider<VnpayPaymentService> vnpayPaymentServiceProvider;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     @Value("${autowash.payment.sepay.payment-code-prefix:AU}")
     private String sepayPaymentCodePrefix;
@@ -179,7 +181,8 @@ public class BookingServiceImpl implements BookingService {
             NotificationRepository notificationRepository,
             BookingResponseAssembler bookingResponseAssembler,
             StaffAssignmentService staffAssignmentService,
-            ObjectProvider<VnpayPaymentService> vnpayPaymentServiceProvider
+            ObjectProvider<VnpayPaymentService> vnpayPaymentServiceProvider,
+            WebSocketEventPublisher webSocketEventPublisher
     ) {
         this.currentUserService = currentUserService;
         this.VehicleRepository = VehicleRepository;
@@ -203,6 +206,7 @@ public class BookingServiceImpl implements BookingService {
         this.bookingResponseAssembler = bookingResponseAssembler;
         this.staffAssignmentService = staffAssignmentService;
         this.vnpayPaymentServiceProvider = vnpayPaymentServiceProvider;
+        this.webSocketEventPublisher = webSocketEventPublisher;
     }
 
     @Override
@@ -430,7 +434,7 @@ public class BookingServiceImpl implements BookingService {
         }
         sendBookingConfirmationEmailAfterCommit(booking);
 
-        return new CreateBookingResponse(
+        CreateBookingResponse response = new CreateBookingResponse(
                 booking.getId().toString(),
                 user.getId().toString(),
                 vehicle.getId().toString(),
@@ -463,6 +467,8 @@ public class BookingServiceImpl implements BookingService {
                 booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getId().toString(),
                 booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getFullName()
         );
+        webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), booking.getStatus().name());
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -602,7 +608,7 @@ public class BookingServiceImpl implements BookingService {
         }
 
         recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), cancelReason);
-        return new CancelBookingResponse(
+        CancelBookingResponse cancelResponse = new CancelBookingResponse(
                 booking.getId().toString(),
                 booking.getStatus().name(),
                 booking.getUpdatedAt(),
@@ -611,6 +617,8 @@ public class BookingServiceImpl implements BookingService {
                 voucherRefundStatus,
                 refundMessage
         );
+        webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), booking.getStatus().name());
+        return cancelResponse;
     }
 
     private String sanitizeCancelReason(String reason) {
@@ -670,7 +678,9 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
-        return toPayBookingResponse(booking, payment);
+        PayBookingResponse response = toPayBookingResponse(booking, payment);
+        webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), booking.getStatus().name());
+        return response;
     }
 
     @Override
@@ -764,7 +774,9 @@ public class BookingServiceImpl implements BookingService {
                 .read(false)
                 .createdAt(Instant.now())
                 .build());
-        return toDetailResponse(booking);
+        BookingDetailResponse confirmResponse = toDetailResponse(booking);
+        webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), booking.getStatus().name());
+        return confirmResponse;
     }
 
     @Override
@@ -791,7 +803,9 @@ public class BookingServiceImpl implements BookingService {
             completeAdminManagedWashSession(booking);
         }
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), "Booking status updated by admin");
-        return toDetailResponse(booking);
+        BookingDetailResponse updateStatusResponse = toDetailResponse(booking);
+        webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), status.name());
+        return updateStatusResponse;
     }
 
     private void completeAdminManagedWashSession(Booking booking) {
@@ -848,6 +862,7 @@ public class BookingServiceImpl implements BookingService {
         }
         booking.updateStatus(status);
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), null);
+        webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), status.name());
     }
 
     private void validateBookingTime(LocalDate bookingDate, LocalTime bookingTime, SystemSettings settings) {

@@ -40,6 +40,7 @@ import {
 } from "@/features/operations/lib/operations-service";
 import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
+import { useWebSocket } from "@/shared/hooks/use-web-socket";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type {
   EligibleSessionBooking,
@@ -221,6 +222,8 @@ const sessionTone: Record<WashSessionStatus, { card: string; border: string; sel
 
 export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProps) {
   const queryClient = useQueryClient();
+  // Real-time updates via WebSocket
+  useWebSocket();
   const [selectedSessionId, setSelectedSessionId] = useState(sessionId ?? "");
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);

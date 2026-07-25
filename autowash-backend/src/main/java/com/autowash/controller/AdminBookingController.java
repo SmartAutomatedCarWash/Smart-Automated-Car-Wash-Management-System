@@ -3,6 +3,7 @@ package com.autowash.controller;
 import com.autowash.dto.AdminBookingResponse;
 import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.UpdateBookingStatusRequest;
+import com.autowash.dto.UpdateBookingStaffRequest;
 import com.autowash.service.AdminReportingService;
 import com.autowash.service.BookingService;
 import com.autowash.shared.dto.ApiResponse;
@@ -92,4 +93,15 @@ public class AdminBookingController {
         return ApiResponse.ok("Booking status updated", bookingService.updateBookingStatus(bookingId, request.status()));
     }
 
+    @PostMapping("/{bookingId}/staff")
+    @Operation(summary = "Update assigned staff for a booking (Admin/Manager)")
+    public ApiResponse<BookingDetailResponse> updateBookingStaff(
+            @PathVariable String bookingId,
+            @Valid @RequestBody UpdateBookingStaffRequest request
+    ) {
+        return ApiResponse.ok(
+                "Booking staff updated",
+                bookingService.updateBookingStaff(bookingId, request.staffIds())
+        );
+    }
 }

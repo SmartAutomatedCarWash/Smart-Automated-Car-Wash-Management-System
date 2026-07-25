@@ -40,6 +40,7 @@ import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { apiClient } from "@/shared/lib/api";
 import { formatIntegerRating } from "@/shared/lib/rating-format";
 import type { ApiSuccessResponse } from "@/shared/types/api.types";
+import { useWebSocket } from "@/shared/hooks/use-web-socket";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
 
@@ -70,6 +71,8 @@ function translateStatus(status: string, lang: "vi" | "en") {
 export function AdminBookingsPageContent() {
   const getErrorMessage = useErrorMessage();
   const { language } = useLanguageStore();
+  // Real-time updates via WebSocket
+  useWebSocket();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState({

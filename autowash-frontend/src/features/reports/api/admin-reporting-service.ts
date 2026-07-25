@@ -134,6 +134,14 @@ export async function updateAdminBookingStatus(id: string, status: BookingStatus
   });
 }
 
+export async function updateAdminBookingStaff(id: string, staffIds: string[]): Promise<BookingDetail> {
+  return apiRequest<BookingDetail, { staffIds: string[] }>({
+    method: "POST",
+    url: `/admin/bookings/${id}/staff`,
+    data: { staffIds },
+  });
+}
+
 export async function refundAdminVnpayPayment(id: string, amount?: number): Promise<VnpayPaymentResultResponse> {
   return apiRequest<VnpayPaymentResultResponse, { amount?: number }>({
     method: "POST",

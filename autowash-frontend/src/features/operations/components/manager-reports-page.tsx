@@ -33,6 +33,7 @@ import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/ui/dialog";
 import { listAdminBookings } from "@/features/reports/api/admin-reporting-service";
+import { exportManagerReport, sendManagerReport } from "@/features/operations/lib/operations-service";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useWorkspaceHeader } from "@/shared/ui/workspace/workspace-header-context";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
@@ -107,12 +108,42 @@ export function ManagerReportsPage() {
   const trendRows = useMemo(() => buildTrendRows(filteredSessions, periodMode, fromDate, toDate), [filteredSessions, fromDate, periodMode, toDate]);
   const atRiskStaff = staffRows.filter((staff) => staff.status === "SUPPORT").length;
   const feedbackToReview = 0;
+
+  const handleExportExcel = async () => {
+    try {
+      const res = await exportManagerReport("xlsx");
+      toast.success(res.message || "Excel report generated.");
+    } catch (e) {
+      toast.error(getErrorMessage(e as unknown as ApiErrorResponse));
+    }
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      const res = await exportManagerReport("pdf");
+      toast.success(res.message || "PDF report generated.");
+    } catch (e) {
+      toast.error(getErrorMessage(e as unknown as ApiErrorResponse));
+    }
+  };
+
+  const handleSendReport = async () => {
+    const email = window.prompt(t("Nhập email nhận báo cáo:", "Enter email to receive report:"));
+    if (!email) return;
+    try {
+      const res = await sendManagerReport(email, "xlsx");
+      toast.success(res.message || "Report email sent.");
+    } catch (e) {
+      toast.error(getErrorMessage(e as unknown as ApiErrorResponse));
+    }
+  };
+
   const headerToolbar = useMemo(
     () => (
       <div className="ml-auto flex flex-wrap gap-2">
-        <HeaderAction icon={Download} label={t("Xuất Excel", "Export Excel")} onClick={() => toast.info(t("Tính năng xuất Excel chưa được backend hỗ trợ.", "Excel export is not supported by the backend yet."))} />
-        <HeaderAction icon={FileText} label={t("Xuất PDF", "Export PDF")} onClick={() => toast.info(t("Tính năng xuất PDF chưa được backend hỗ trợ.", "PDF export is not supported by the backend yet."))} />
-        <HeaderAction icon={Send} label={t("Gửi báo cáo", "Send report")} onClick={() => toast.success(t("Yêu cầu gửi báo cáo đã được ghi nhận.", "Report send request recorded."))} />
+        <HeaderAction icon={Download} label={t("Xuất Excel", "Export Excel")} onClick={handleExportExcel} />
+        <HeaderAction icon={FileText} label={t("Xuất PDF", "Export PDF")} onClick={handleExportPdf} />
+        <HeaderAction icon={Send} label={t("Gửi báo cáo", "Send report")} onClick={handleSendReport} />
         <Button variant="outline" className="h-10 rounded-xl border-slate-200 bg-white px-4 text-xs font-black shadow-sm" onClick={() => query.refetch()} disabled={query.isFetching}>
           <RefreshCcw className={`h-4 w-4 ${query.isFetching ? "animate-spin" : ""}`} />
         </Button>
