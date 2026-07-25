@@ -18,6 +18,7 @@ import {
   Star,
   Timer,
   Trash2,
+  X,
   UserRound,
   Users,
 } from "lucide-react";
@@ -421,6 +422,7 @@ export function ManagerStaffPage() {
                 const row = staffRows.find((item) => item.staffId === staffId);
                 if (row) openAssignmentForRow(row);
               }}
+              onOpenBooking={(session) => setBookingDialogSession(session)}
               onOpenAssignmentForSession={(session) => {
                 setAssignmentDialog({
                   sessionId: session.sessionId,
@@ -658,6 +660,7 @@ function QuickDetailPanel({
   onViewProfile,
   onEditProfile,
   onOpenAssignment,
+  onOpenBooking,
   onOpenAssignmentForSession,
   onDeleteStaff,
   isFetching,
@@ -668,6 +671,7 @@ function QuickDetailPanel({
   onViewProfile: (staffId: string) => void;
   onEditProfile: (staffId: string) => void;
   onOpenAssignment: (staffId: string) => void;
+  onOpenBooking: (session: OperationsQueueSession) => void;
   onOpenAssignmentForSession: (session: OperationsQueueSession) => void;
   onDeleteStaff: (staffId: string) => void;
   isFetching: boolean;
@@ -734,7 +738,7 @@ function QuickDetailPanel({
         {bookings.map((session) => (
           <div
             key={session.sessionId}
-            onClick={() => setBookingDialogSession(session)}
+            onClick={() => onOpenBooking(session)}
             role="button"
             tabIndex={0}
             className="w-full rounded-lg border border-slate-100 bg-white px-3 py-3 text-left shadow-sm transition hover:border-cyan-200 hover:shadow-md"
