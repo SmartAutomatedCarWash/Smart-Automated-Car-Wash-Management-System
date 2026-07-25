@@ -51,7 +51,8 @@ export function buildCreateBookingPayload(draft: BookingDraft): CreateBookingReq
 
   const staffIds = (draft.staffIds ?? [])
     .map((staffId) => normalizeOptionalText(staffId))
-    .filter((staffId): staffId is string => Boolean(staffId));
+    .filter((staffId): staffId is string => Boolean(staffId))
+    .slice(0, 1);
   if (staffIds.length > 0) {
     payload.staffIds = staffIds;
     payload.staffId = staffIds[0];

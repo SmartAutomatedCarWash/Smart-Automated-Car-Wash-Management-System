@@ -198,10 +198,10 @@ export function BookingConfirmPage() {
     [staffOptions],
   );
   const selectedStaffIds = useMemo(
-    () => (draft.staffIds && draft.staffIds.length > 0 ? draft.staffIds : draft.staffId ? [draft.staffId] : []).slice(0, 3),
+    () => (draft.staffIds && draft.staffIds.length > 0 ? draft.staffIds : draft.staffId ? [draft.staffId] : []).slice(0, 1),
     [draft.staffId, draft.staffIds],
   );
-  const staffUnavailable = staffOptionsQuery.isSuccess && availableStaffOptions.length < 3;
+  const staffUnavailable = staffOptionsQuery.isSuccess && availableStaffOptions.length < 1;
 
   const redirectToLastCreatedBooking = useCallback(
     (bookingId?: string) => {
@@ -233,7 +233,7 @@ export function BookingConfirmPage() {
     const availableIds = new Set(availableStaffOptions.map((staff) => staff.staffId));
     const nextStaffIds = selectedStaffIds.filter((staffId) => availableIds.has(staffId));
     for (const staff of availableStaffOptions) {
-      if (nextStaffIds.length >= 3) break;
+      if (nextStaffIds.length >= 1) break;
       if (!nextStaffIds.includes(staff.staffId)) {
         nextStaffIds.push(staff.staffId);
       }
@@ -334,6 +334,7 @@ export function BookingConfirmPage() {
   }, [router, sepayPaymentBooking]);
 
   const isComboBooking = draft.mode === "COMBO" && Boolean(selectedCustomerCombo);
+  const isCashPaymentLocked = paymentMethod === "CASH_AT_COUNTER";
 
   const handleConfirm = async () => {
     setShowPaymentError(true);
@@ -341,8 +342,8 @@ export function BookingConfirmPage() {
       toast.error("No staff is available for this service window.");
       return;
     }
-    if (selectedStaffIds.length < 3) {
-      toast.error("Please select 3 available staff.");
+    if (selectedStaffIds.length < 1) {
+      toast.error("Please select an available staff.");
       return;
     }
     const selectedPaymentMethod = paymentMethod ?? draft.paymentMethod;
@@ -539,11 +540,14 @@ export function BookingConfirmPage() {
               <div className="grid gap-3 sm:grid-cols-3">
                 {PAYMENT_OPTIONS.map(({ method, label, description, icon: Icon, badge }) => {
                   const active = paymentMethod === method;
+                  const disabled = isCashPaymentLocked && method !== "CASH_AT_COUNTER";
                   return (
                     <button
                       key={method}
                       type="button"
+                      disabled={disabled}
                       onClick={() => {
+                        if (disabled) return;
                         setPaymentMethod(method);
                         updateDraft({ paymentMethod: method });
                         setShowPaymentError(false);
@@ -551,6 +555,8 @@ export function BookingConfirmPage() {
                       className={`relative flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                         active
                           ? "border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary)/0.3)]"
+                          : disabled
+                            ? "cursor-not-allowed border-border bg-muted/40 opacity-50"
                           : "border-border bg-card hover:border-primary/40 hover:bg-muted/30"
                       }`}
                     >
@@ -589,6 +595,11 @@ export function BookingConfirmPage() {
                   Please select a payment method to continue.
                 </p>
               )}
+              {isCashPaymentLocked ? (
+                <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+                  Cash at counter is locked for this booking. Manager/Admin will confirm the payment at the counter.
+                </p>
+              ) : null}
             </CardContent>
           </Card>
           )}
@@ -608,7 +619,7 @@ export function BookingConfirmPage() {
             <Button
               type="button"
               onClick={() => void handleConfirm()}
-              disabled={createBookingMutation.isPending || createVnpayCheckoutMutation.isPending || isReleasing || staffOptionsQuery.isPending || staffUnavailable || selectedStaffIds.length < 3}
+              disabled={createBookingMutation.isPending || createVnpayCheckoutMutation.isPending || isReleasing || staffOptionsQuery.isPending || staffUnavailable || selectedStaffIds.length < 1}
               className="rounded-xl gap-2 px-8 font-bold"
             >
               {createBookingMutation.isPending || createVnpayCheckoutMutation.isPending ? (

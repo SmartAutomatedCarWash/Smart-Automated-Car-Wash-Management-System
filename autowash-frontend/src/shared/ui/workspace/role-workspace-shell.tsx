@@ -30,7 +30,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { useCustomerLogout } from "@/features/auth/hooks/use-auth";
@@ -147,6 +147,8 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     title: string;
     message: string;
   }>({ show: false, title: "", message: "" });
+  const seenCustomerNotificationIds = useRef<Set<string>>(new Set());
+  const pendingTierUpgradePopup = useRef<{ title: string; message: string } | null>(null);
   const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
 
   const isStaff = requiredRole === "STAFF";
@@ -177,32 +179,68 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     return customerNotificationsQuery.data.filter((n) => !n.read).length;
   }, [isCustomer, customerNotificationsQuery.data]);
 
-  const [prevUnreadCount, setPrevUnreadCount] = useState<number | null>(null);
+  const showTierUpgradeNotification = useCallback((popup: { title: string; message: string }) => {
+    if (typeof document !== "undefined" && document.querySelector('[role="dialog"]')) {
+      pendingTierUpgradePopup.current = popup;
+      return;
+    }
+    setTierUpgradePopup({ show: true, ...popup });
+  }, []);
+
+  useEffect(() => {
+    if (!isCustomer || !isMounted) return;
+    const intervalId = window.setInterval(() => {
+      if (!pendingTierUpgradePopup.current) return;
+      if (document.querySelector('[role="dialog"]')) return;
+      const popup = pendingTierUpgradePopup.current;
+      pendingTierUpgradePopup.current = null;
+      setTierUpgradePopup({ show: true, ...popup });
+    }, 500);
+
+    return () => window.clearInterval(intervalId);
+  }, [isCustomer, isMounted]);
+
   const [selectedManagerNotificationId, setSelectedManagerNotificationId] = useState<string | null>(null);
 
   // Monitor customer notifications for toast alerts
   useEffect(() => {
     if (!isCustomer || !isMounted || !customerNotificationsQuery.data) return;
-    const currentUnread = unreadCustomerNotifications;
-    if (prevUnreadCount !== null && currentUnread > prevUnreadCount) {
-      // Find the latest unread notification
-      const latestUnread = customerNotificationsQuery.data.find(n => !n.read);
-      if (latestUnread) {
-        const title = translateNotificationField(latestUnread.title, language);
-        const message = translateNotificationField(latestUnread.message, language);
-        if (isTierUpgradeNotification(latestUnread)) {
-          setTierUpgradePopup({ show: true, title, message });
-        } else {
-          toast.info(title, {
-            description: message,
-            position: "bottom-right",
-            duration: 5000,
-          });
-        }
+    const currentIds = seenCustomerNotificationIds.current;
+    if (currentIds.size === 0) {
+      const freshTierUpgrade = customerNotificationsQuery.data
+        .filter((notification) => !notification.read && isTierUpgradeNotification(notification) && isRecentNotification(notification.createdAt))
+        .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0];
+      customerNotificationsQuery.data.forEach((notification) => currentIds.add(notification.notificationId));
+      if (freshTierUpgrade) {
+        showTierUpgradeNotification({
+          title: translateNotificationField(freshTierUpgrade.title, language),
+          message: translateNotificationField(freshTierUpgrade.message, language),
+        });
+      }
+      return;
+    }
+
+    const newUnreadNotifications = customerNotificationsQuery.data
+      .filter((notification) => !notification.read && !currentIds.has(notification.notificationId))
+      .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
+
+    customerNotificationsQuery.data.forEach((notification) => currentIds.add(notification.notificationId));
+
+    const latestUnread = newUnreadNotifications[0];
+    if (latestUnread) {
+      const title = translateNotificationField(latestUnread.title, language);
+      const message = translateNotificationField(latestUnread.message, language);
+      if (isTierUpgradeNotification(latestUnread)) {
+        showTierUpgradeNotification({ title, message });
+      } else {
+        toast.info(title, {
+          description: message,
+          position: "bottom-right",
+          duration: 5000,
+        });
       }
     }
-    setPrevUnreadCount(currentUnread);
-  }, [unreadCustomerNotifications, customerNotificationsQuery.data, isCustomer, isMounted, prevUnreadCount, language]);
+  }, [customerNotificationsQuery.data, isCustomer, isMounted, language, showTierUpgradeNotification]);
 
   const eligibleCount = eligibleQuery.data?.length ?? 0;
   const pendingSessions = useMemo(() => {
@@ -1201,6 +1239,12 @@ function isTierUpgradeNotification(notification: { type?: string; title: string;
     || text.includes("lên hạng")
     || text.includes("upgraded")
     || text.includes("upgrade");
+}
+
+function isRecentNotification(createdAt: string) {
+  const createdTime = new Date(createdAt).getTime();
+  if (!Number.isFinite(createdTime)) return false;
+  return Date.now() - createdTime <= 15 * 60 * 1000;
 }
 
 function ManagerNotificationPopup({

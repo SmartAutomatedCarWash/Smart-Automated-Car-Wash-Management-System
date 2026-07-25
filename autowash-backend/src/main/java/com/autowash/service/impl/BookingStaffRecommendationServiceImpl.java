@@ -76,7 +76,7 @@ public class BookingStaffRecommendationServiceImpl implements BookingStaffRecomm
     @Transactional(readOnly = true)
     public List<BookingStaffOptionResponse> recommendStaffOptions(BookingStaffOptionsRequest request) {
         BookingDraft draft = buildDraftBooking(request);
-        List<User> recommendedStaff = staffAssignmentService.rankAvailableStaffForBooking(draft.booking(), 3);
+        List<User> recommendedStaff = staffAssignmentService.rankAvailableStaffForBooking(draft.booking(), 1);
 
         return staffAssignmentService.rankActiveStaffForBooking(draft.booking()).stream()
                 .map(staff -> {
@@ -105,6 +105,7 @@ public class BookingStaffRecommendationServiceImpl implements BookingStaffRecomm
         Optional<Instant> sessionBusyUntil = washSessionRepository.findByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES)
                 .stream()
                 .map(WashSession::getBooking)
+                .filter(booking -> !booking.getId().equals(targetBooking.getId()))
                 .filter(booking -> overlaps(targetStart, targetEnd, booking.getScheduledAt(), endAt(booking)))
                 .map(this::endAt)
                 .min(Instant::compareTo);
@@ -112,6 +113,7 @@ public class BookingStaffRecommendationServiceImpl implements BookingStaffRecomm
         Optional<Instant> multiSessionBusyUntil = washSessionStaffAssignmentRepository.findByStaffAndSession_StatusIn(staff, BUSY_SESSION_STATUSES)
                 .stream()
                 .map(assignment -> assignment.getSession().getBooking())
+                .filter(booking -> !booking.getId().equals(targetBooking.getId()))
                 .filter(booking -> overlaps(targetStart, targetEnd, booking.getScheduledAt(), endAt(booking)))
                 .map(this::endAt)
                 .min(Instant::compareTo);
@@ -149,7 +151,7 @@ public class BookingStaffRecommendationServiceImpl implements BookingStaffRecomm
     private BookingDraft buildDraftBooking(BookingStaffOptionsRequest request) {
         LocalTime bookingTime = LocalTime.parse(request.bookingTime());
         Booking booking = new Booking(
-                UUID.randomUUID(),
+                resolveDraftBookingId(request.bookingId()),
                 currentUserService.getCurrentUser(),
                 null,
                 request.bookingDate().atTime(bookingTime).atZone(ZoneId.systemDefault()).toInstant()
@@ -201,6 +203,17 @@ public class BookingStaffRecommendationServiceImpl implements BookingStaffRecomm
         }
 
         return new BookingDraft(booking, serviceName);
+    }
+
+    private UUID resolveDraftBookingId(String bookingId) {
+        if (bookingId == null || bookingId.isBlank()) {
+            return UUID.randomUUID();
+        }
+        try {
+            return UUID.fromString(bookingId.trim());
+        } catch (IllegalArgumentException exception) {
+            return UUID.randomUUID();
+        }
     }
 
     private record BookingDraft(Booking booking, String serviceName) {
