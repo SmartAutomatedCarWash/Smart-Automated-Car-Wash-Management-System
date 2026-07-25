@@ -794,20 +794,14 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 </div>
               ) : null}
 
-              {canChoosePendingPaymentAction ? (
+              {canChoosePendingPaymentAction && paymentMethod !== "CASH_AT_COUNTER" ? (
                 <div className="space-y-2 rounded-2xl border border-sky-100 bg-sky-50 p-3">
                   <p className="text-xs font-semibold text-sky-900">
-                    {paymentMethod === "CASH_AT_COUNTER"
-                      ? translate(
-                          language,
-                          "Lịch đặt đang chờ Manager/Admin xác nhận tiền mặt tại quầy.",
-                          "This booking is waiting for Manager/Admin to confirm cash payment at the counter.",
-                        )
-                      : translate(
-                          language,
-                          "Lịch đặt đang chờ xác nhận. Bạn có thể đổi giữa SePay/VNPay, đổi sang tiền mặt hoặc huỷ lịch.",
-                          "This booking is pending. You can switch between SePay/VNPay, switch to cash, or cancel it.",
-                        )}
+                    {translate(
+                      language,
+                      "Lịch đặt đang chờ xác nhận. Bạn có thể đổi giữa SePay/VNPay, đổi sang tiền mặt hoặc huỷ lịch.",
+                      "This booking is pending. You can switch between SePay/VNPay, switch to cash, or cancel it.",
+                    )}
                   </p>
                   {canShowSepayInstructions ? (
                     <div className="rounded-xl border border-cyan-100 bg-white p-3 text-xs text-slate-700">
@@ -896,16 +890,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 </div>
               ) : null}
 
-              {showCashConfirmationNote ? (
-                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
-                  {translate(
-                    language,
-                    "Đơn trả tại quầy đang chờ Manager/Admin xác nhận.",
-                    "Cash booking is waiting for Manager/Admin confirmation.",
-                  )}
-                </div>
-              ) : null}
-
               {/* Review section — chỉ hiện khi COMPLETED */}
               {(booking.status === "COMPLETED" || booking.washStatus === "COMPLETED") && (
                 <>
@@ -976,6 +960,16 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                     </div>
                   ) : null}
                 </>
+              ) : null}
+
+              {showCashConfirmationNote ? (
+                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+                  {translate(
+                    language,
+                    "Đơn trả tại quầy đang chờ Manager/Admin xác nhận.",
+                    "Cash booking is waiting for Manager/Admin confirmation.",
+                  )}
+                </div>
               ) : null}
             </CardContent>
           </Card>
