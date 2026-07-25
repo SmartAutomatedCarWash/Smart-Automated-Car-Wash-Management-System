@@ -242,3 +242,42 @@ export function getAdminSessionHistory(params: AdminSessionHistoryParams = {}) {
     },
   });
 }
+
+export function sendOperationsNotice(payload: { recipient: string; noticeType: string; priority: string; message: string }) {
+  return apiRequest<void, typeof payload>({
+    method: "POST",
+    url: "/manager/operations/notices",
+    data: payload,
+  });
+}
+
+export function exportManagerReport(format: string = "xlsx") {
+  return apiRequest<{ format: string; message: string }>({
+    method: "GET",
+    url: "/manager/reports/export",
+    params: { format },
+  });
+}
+
+export function sendManagerReport(email: string, format: string = "xlsx") {
+  return apiRequest<{ format: string; message: string }, { email: string; format: string }>({
+    method: "POST",
+    url: "/manager/reports/send",
+    data: { email, format },
+  });
+}
+
+export function getManagerReportsDashboard(params: {
+  rangeType: string;
+  fromDate?: string;
+  toDate?: string;
+  comparePrevious?: boolean;
+  staffId?: string;
+  serviceId?: string;
+}) {
+  return apiRequest<any>({
+    method: "GET",
+    url: "/manager/reports/dashboard",
+    params,
+  });
+}
