@@ -196,19 +196,17 @@ public class BookingServiceImpl implements BookingService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher code is required", ErrorCode.INVALID_DISCOUNT);
         }
 
-        Discount discount = discountRepository.findByCodeIgnoreCase(code)
-                .orElseThrow(() -> new ApiException(
-                        HttpStatus.NOT_FOUND,
-                        "Voucher code does not exist",
-                        ErrorCode.INVALID_DISCOUNT
-                ));
-
-        UserDiscount userDiscount = userDiscountRepository.findByUserIdAndDiscountCodeIgnoreCase(user.getId(), code)
-                .orElseThrow(() -> new ApiException(
-                        HttpStatus.BAD_REQUEST,
-                        "This voucher is not available in your account",
-                        ErrorCode.INVALID_DISCOUNT
-                ));
+        Discount discount = discountRepository.findByCodeIgnoreCase(code).orElse(null);
+        UserDiscount userDiscount = null;
+        if (discount == null) {
+            userDiscount = userDiscountRepository.findByUserIdAndVoucherCodeIgnoreCase(user.getId(), code)
+                    .orElseThrow(() -> new ApiException(
+                            HttpStatus.BAD_REQUEST,
+                            "This voucher is not available in your account",
+                            ErrorCode.INVALID_DISCOUNT
+                    ));
+            discount = userDiscount.getDiscount();
+        }
 
         Instant now = Instant.now();
         if (discount.getStatus() != ActiveStatus.ACTIVE) {
@@ -220,10 +218,10 @@ public class BookingServiceImpl implements BookingService {
         if (discount.getEndAt() != null && discount.getEndAt().isBefore(now)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher has expired", ErrorCode.INVALID_DISCOUNT);
         }
-        if (userDiscount.getStatus() != UserDiscountStatus.AVAILABLE) {
+        if (userDiscount != null && userDiscount.getStatus() != UserDiscountStatus.AVAILABLE) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher has already been used or is unavailable", ErrorCode.INVALID_DISCOUNT);
         }
-        if (userDiscount.getExpiresAt() != null && userDiscount.getExpiresAt().isBefore(now)) {
+        if (userDiscount != null && userDiscount.getExpiresAt() != null && userDiscount.getExpiresAt().isBefore(now)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher has expired in your wallet", ErrorCode.INVALID_DISCOUNT);
         }
         if (discount.getUsageLimit() != null && discount.getUsedCount() >= discount.getUsageLimit()) {
@@ -241,13 +239,13 @@ public class BookingServiceImpl implements BookingService {
 
         long discountAmount = calculateDiscountAmount(amount, discount);
         return new DiscountValidationResponse(
-                discount.getCode(),
+                userDiscount != null ? userDiscount.getVoucherCode() : discount.getCode(),
                 true,
                 discount.getDiscountType().name(),
                 discount.getDiscountValue(),
                 discountAmount,
                 Math.max(0, amount - discountAmount),
-                userDiscount.getExpiresAt() != null ? userDiscount.getExpiresAt() : discount.getEndAt()
+                userDiscount != null && userDiscount.getExpiresAt() != null ? userDiscount.getExpiresAt() : discount.getEndAt()
         );
     }
 
@@ -367,12 +365,9 @@ public class BookingServiceImpl implements BookingService {
             if (discount != null) {
                 discountRedemptionService.redeemDiscount(booking, discount);
             } else {
-                // Check user discount
-                UserDiscount ud = null;
-                try {
-                    UUID udId = UUID.fromString(request.discountCode());
-                    ud = userDiscountRepository.findById(udId).orElse(null);
-                } catch(Exception ignored) {}
+                UserDiscount ud = userDiscountRepository
+                        .findByUserIdAndVoucherCodeIgnoreCase(user.getId(), request.discountCode().trim())
+                        .orElse(null);
                 
                 if (ud != null && ud.getUser().getId().equals(user.getId())) {
                     discountRedemptionService.redeemUserDiscount(booking, ud);

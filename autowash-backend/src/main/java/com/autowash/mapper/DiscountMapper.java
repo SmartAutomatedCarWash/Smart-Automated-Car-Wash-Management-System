@@ -18,6 +18,7 @@ public interface DiscountMapper {
     DiscountResponse toResponse(Discount discount, List<String> applicableTierIds, List<UUID> applicableServiceIds);
 
     @Mapping(target = "id", source = "userDiscount.id")
+    @Mapping(target = "voucherCode", source = "userDiscount.voucherCode")
     @Mapping(target = "discount", source = "discount")
     @Mapping(target = "acquisitionMethod", source = "userDiscount.acquisitionMethod")
     @Mapping(target = "pointsSpent", source = "userDiscount.pointsSpent")
