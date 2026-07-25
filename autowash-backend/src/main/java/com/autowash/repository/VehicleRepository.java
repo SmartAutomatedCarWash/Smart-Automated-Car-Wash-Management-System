@@ -8,6 +8,8 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 public interface VehicleRepository extends JpaRepository<Vehicle, UUID> {
 
@@ -20,6 +22,17 @@ public interface VehicleRepository extends JpaRepository<Vehicle, UUID> {
     Optional<Vehicle> findFirstByOwnerAndStatusAndPrimaryTrue(User owner, VehicleStatus status);
 
     Optional<Vehicle> findFirstByOwnerAndStatusOrderByCreatedAtAsc(User owner, VehicleStatus status);
+
+    @Modifying
+    @Query("""
+            update Vehicle vehicle
+            set vehicle.primary = false
+            where vehicle.owner = :owner
+              and vehicle.status = :status
+              and vehicle.id <> :excludedVehicleId
+              and vehicle.primary = true
+            """)
+    int clearOtherPrimaryVehicles(User owner, VehicleStatus status, UUID excludedVehicleId);
 
     long countByOwnerAndStatus(User owner, VehicleStatus status);
 
