@@ -64,7 +64,7 @@ function translateStatus(status: string, lang: "vi" | "en") {
     ACTIVE: { vi: "Hoạt động", en: "Active" },
     BLOCKED: { vi: "Đã khóa", en: "Blocked" },
     SUSPENDED: { vi: "Tạm ngưng", en: "Suspended" },
-    DELETED: { vi: "Đã xóa", en: "Deleted" },
+    INACTIVE: { vi: "Không hoạt động", en: "Inactive" },
   };
   return map[status]?.[lang] || status;
 }
@@ -653,6 +653,6 @@ const STATUS_TONE: Record<AdminAccount["status"], string> = {
   ACTIVE: "border-emerald-300 bg-emerald-100 text-emerald-800",
   BLOCKED: "border-rose-300 bg-rose-100 text-rose-800",
   SUSPENDED: "border-slate-400 bg-slate-200 text-slate-800",
-  DELETED: "border-zinc-400 bg-zinc-200 text-zinc-800",
+  INACTIVE: "border-zinc-400 bg-zinc-200 text-zinc-800",
 };
 
