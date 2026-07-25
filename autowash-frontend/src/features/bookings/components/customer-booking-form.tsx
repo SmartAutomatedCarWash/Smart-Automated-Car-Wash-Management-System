@@ -669,7 +669,7 @@ function DiscountSection({
           <div className="flex flex-wrap gap-2">
             {customerDiscounts.map((voucher) => {
               const discountText =
-                voucher.discountType === "PERCENTAGE"
+                voucher.discountType === "PERCENT"
                   ? `${voucher.discountValue}% OFF`
                   : `${voucher.discountValue.toLocaleString("vi-VN")}đ`;
               return (
@@ -1676,7 +1676,7 @@ export function CustomerBookingForm() {
               summary={summary}
               validatedDiscount={validatedDiscount}
               discountMutation={discountMutation}
-              customerDiscounts={(customerDiscountsQuery.data?.items ?? []).filter((item) => Boolean(item.discount?.code)).map((item) => ({ code: item.discount.code ?? "", name: item.discount.name, discountType: item.discount.discountType, discountValue: item.discount.discountValue }))}
+              customerDiscounts={(customerDiscountsQuery.data?.items ?? []).filter((item) => Boolean(item.voucherCode)).map((item) => ({ code: item.voucherCode ?? "", name: item.discount.name, discountType: item.discount.discountType, discountValue: item.discount.discountValue }))}
               onApply={(code) => void validateDiscount(code)}
               onClear={clearDiscount}
               onCodeChange={handleDiscountCodeChange}

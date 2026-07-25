@@ -90,6 +90,7 @@ export function useCustomerRedeemPoints() {
     mutationFn: redeemCustomerLoyaltyPoints,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: customerLoyaltyScope(userId) });
+      await queryClient.invalidateQueries({ queryKey: ["customer-discounts"] });
     },
   });
 }

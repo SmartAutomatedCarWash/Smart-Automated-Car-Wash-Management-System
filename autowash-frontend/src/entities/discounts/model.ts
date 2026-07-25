@@ -4,7 +4,7 @@ export enum DiscountKind {
 }
 
 export enum DiscountType {
-  PERCENTAGE = 'PERCENTAGE',
+  PERCENT = 'PERCENT',
   FIXED_AMOUNT = 'FIXED_AMOUNT'
 }
 
@@ -53,6 +53,7 @@ export interface Discount {
 
 export interface UserDiscount {
   id: string;
+  voucherCode: string | null;
   discount: Discount;
   acquisitionMethod: DiscountAcquisitionMethod;
   pointsSpent: number;
