@@ -244,7 +244,7 @@ export function CustomerWashTrackingPage() {
         <BookingCompletionPopup
           bookingId={activeSession.bookingId}
           vehiclePlate={activeSession.vehiclePlate}
-          pointsEarned={activeSession.awardedLoyaltyPoints ?? 10}
+          pointsEarned={activeSession.awardedLoyaltyPoints}
           isOpen={showCompletion}
           onClose={() => setShowCompletion(false)}
           onSubmitReview={async (stars, comment, images) => {
