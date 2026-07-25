@@ -129,10 +129,20 @@ export type StaffKpiItem = {
   isOnline: boolean;
 };
 
+type StaffKpiPageResponse = {
+  items?: StaffKpiItem[];
+};
+
+function normalizeStaffKpi(data: StaffKpiItem[] | StaffKpiPageResponse | null | undefined): StaffKpiItem[] {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
+}
+
 export async function fetchStaffKpi(range: StaffKpiRange = "TODAY"): Promise<StaffKpiItem[]> {
-  const response = await apiClient.get<ApiSuccessResponse<StaffKpiItem[]>>(
+  const response = await apiClient.get<ApiSuccessResponse<StaffKpiItem[] | StaffKpiPageResponse>>(
     "/admin/staff/kpi",
-    { params: { range } }
+    { params: { range, page: 1, limit: 100 } }
   );
-  return response.data.data;
+  return normalizeStaffKpi(response.data.data);
 }
