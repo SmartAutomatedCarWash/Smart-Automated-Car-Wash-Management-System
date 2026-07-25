@@ -195,7 +195,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
             return 0;
         }
         
-        account.addPoints(actualPoints);
+        account.addActivePoints(actualPoints);
         pointTransactionRepository.save(new PointTransaction(
                 account,
                 booking,
@@ -204,7 +204,6 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 account.getCurrentPoints(),
                 reason
         ));
-        recalculateTierFromTotalEarnedPoints(account);
         return actualPoints;
     }
 

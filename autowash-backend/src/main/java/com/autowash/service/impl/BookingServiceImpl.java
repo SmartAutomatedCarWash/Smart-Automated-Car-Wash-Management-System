@@ -2,7 +2,6 @@ package com.autowash.service.impl;
 
 import com.autowash.entity.WashSession;
 import com.autowash.assembler.BookingResponseAssembler;
-import com.autowash.service.LoyaltyService;
 import com.autowash.entity.Notification;
 import com.autowash.entity.SystemSettings;
 import com.autowash.repository.NotificationRepository;
@@ -118,7 +117,6 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository BookingRepository;
     private final CatalogService catalogService;
     private final WashSessionRepository washSessionRepository;
-    private final LoyaltyService loyaltyService;
     private final CustomerComboService customerComboService;
     private final BookingDetailRepository bookingDetailRepository;
     private final PaymentRepository paymentRepository;
@@ -145,7 +143,6 @@ public class BookingServiceImpl implements BookingService {
             BookingRepository BookingRepository,
             CatalogService catalogService,
             WashSessionRepository washSessionRepository,
-            LoyaltyService loyaltyService,
             CustomerComboService customerComboService,
             BookingDetailRepository bookingDetailRepository,
             PaymentRepository paymentRepository,
@@ -168,7 +165,6 @@ public class BookingServiceImpl implements BookingService {
         this.BookingRepository = BookingRepository;
         this.catalogService = catalogService;
         this.washSessionRepository = washSessionRepository;
-        this.loyaltyService = loyaltyService;
         this.customerComboService = customerComboService;
         this.bookingDetailRepository = bookingDetailRepository;
         this.paymentRepository = paymentRepository;
@@ -377,11 +373,6 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
-        long totalBookings = BookingRepository.countByCustomer(user);
-        if (totalBookings == 1) {
-            loyaltyService.postBonusTransaction(user.getId(), booking.getId(), 30, "First booking bonus");
-        }
-        
         Payment payment = new Payment(
                 booking,
                 request.paymentMethod(),

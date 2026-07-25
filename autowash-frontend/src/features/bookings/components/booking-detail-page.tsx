@@ -1000,7 +1000,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
             <BookingCompletionPopup
               bookingId={bookingId}
               vehiclePlate={booking.vehiclePlate}
-              pointsEarned={10}
               isOpen={showReviewPopup}
               onClose={() => setShowReviewPopup(false)}
               onSubmitReview={handleSubmitReview}
