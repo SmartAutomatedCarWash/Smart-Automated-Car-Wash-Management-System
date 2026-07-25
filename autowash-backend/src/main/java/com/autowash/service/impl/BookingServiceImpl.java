@@ -2,6 +2,7 @@ package com.autowash.service.impl;
 
 import com.autowash.entity.WashSession;
 import com.autowash.assembler.BookingResponseAssembler;
+import com.autowash.dto.EarnPointsResponse;
 import com.autowash.entity.Notification;
 import com.autowash.entity.SystemSettings;
 import com.autowash.repository.NotificationRepository;
@@ -47,6 +48,7 @@ import com.autowash.entity.Payment;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.entity.enums.UserDiscountStatus;
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.BookingDetailRepository;
 import com.autowash.repository.BookingStaffAssignmentRepository;
@@ -63,6 +65,7 @@ import com.autowash.service.BookingService;
 import com.autowash.service.CatalogService;
 import com.autowash.service.CustomerComboService;
 import com.autowash.service.DiscountRedemptionService;
+import com.autowash.service.LoyaltyService;
 import com.autowash.service.StaffAssignmentService;
 import com.autowash.service.VnpayPaymentService;
 import com.autowash.shared.dto.PaginationMeta;
@@ -111,12 +114,29 @@ public class BookingServiceImpl implements BookingService {
             BookingStatus.PENDING,
             BookingStatus.CONFIRMED
     );
+    private static final List<BookingStatus> MAIN_BOOKING_STATUS_FLOW = List.of(
+            BookingStatus.PENDING,
+            BookingStatus.CONFIRMED,
+            BookingStatus.CHECKED_IN,
+            BookingStatus.IN_PROGRESS,
+            BookingStatus.COMPLETED
+    );
+    private static final Set<BookingStatus> TERMINAL_BOOKING_STATUSES = Set.of(
+            BookingStatus.COMPLETED,
+            BookingStatus.CANCELLED,
+            BookingStatus.NO_SHOW
+    );
+    private static final Set<BookingStatus> SIDE_BOOKING_STATUSES = Set.of(
+            BookingStatus.CANCELLED,
+            BookingStatus.NO_SHOW
+    );
 
     private final CurrentUserService currentUserService;
     private final VehicleRepository VehicleRepository;
     private final BookingRepository BookingRepository;
     private final CatalogService catalogService;
     private final WashSessionRepository washSessionRepository;
+    private final LoyaltyService loyaltyService;
     private final CustomerComboService customerComboService;
     private final BookingDetailRepository bookingDetailRepository;
     private final PaymentRepository paymentRepository;
@@ -143,6 +163,7 @@ public class BookingServiceImpl implements BookingService {
             BookingRepository BookingRepository,
             CatalogService catalogService,
             WashSessionRepository washSessionRepository,
+            LoyaltyService loyaltyService,
             CustomerComboService customerComboService,
             BookingDetailRepository bookingDetailRepository,
             PaymentRepository paymentRepository,
@@ -165,6 +186,7 @@ public class BookingServiceImpl implements BookingService {
         this.BookingRepository = BookingRepository;
         this.catalogService = catalogService;
         this.washSessionRepository = washSessionRepository;
+        this.loyaltyService = loyaltyService;
         this.customerComboService = customerComboService;
         this.bookingDetailRepository = bookingDetailRepository;
         this.paymentRepository = paymentRepository;
@@ -756,15 +778,60 @@ public class BookingServiceImpl implements BookingService {
         if (oldStatus == status) {
             return toDetailResponse(booking);
         }
-        if (oldStatus == BookingStatus.PENDING && status != BookingStatus.CANCELLED) {
+        validateAdminBookingStatusTransition(oldStatus, status);
+        if (oldStatus == BookingStatus.PENDING && !SIDE_BOOKING_STATUSES.contains(status)) {
             ensurePendingBookingHoldOpen(booking);
         }
         booking.updateStatus(status);
         if (status == BookingStatus.CONFIRMED) {
             assignSingleStaffOnConfirmation(booking);
         }
+        if (status == BookingStatus.COMPLETED) {
+            markBookingPaidForOperations(booking.getId().toString(), null);
+            completeAdminManagedWashSession(booking);
+        }
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), "Booking status updated by admin");
         return toDetailResponse(booking);
+    }
+
+    private void completeAdminManagedWashSession(Booking booking) {
+        WashSession session = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
+                .orElseGet(() -> washSessionRepository.save(WashSession.create(booking, "Completed from admin booking status", booking.getAssignedStaff())));
+
+        if (session.getStatus() != WashSessionStatus.COMPLETED) {
+            session.complete(Instant.now());
+        }
+        washSessionRepository.saveAndFlush(session);
+
+        EarnPointsResponse earnResult = loyaltyService.postEarnTransaction(
+                booking.getCustomer().getId(),
+                session.getId()
+        );
+        session.recordAwardedPoints(earnResult.pointsAwarded());
+        washSessionRepository.save(session);
+    }
+
+    private void validateAdminBookingStatusTransition(BookingStatus oldStatus, BookingStatus newStatus) {
+        if (TERMINAL_BOOKING_STATUSES.contains(oldStatus)) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Booking status is locked after " + oldStatus,
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
+        if (SIDE_BOOKING_STATUSES.contains(newStatus)) {
+            return;
+        }
+
+        int oldIndex = MAIN_BOOKING_STATUS_FLOW.indexOf(oldStatus);
+        int newIndex = MAIN_BOOKING_STATUS_FLOW.indexOf(newStatus);
+        if (oldIndex < 0 || newIndex < 0 || newIndex <= oldIndex) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Booking status cannot move backward",
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
     }
 
     @Transactional(readOnly = true)
