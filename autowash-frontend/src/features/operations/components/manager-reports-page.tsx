@@ -266,7 +266,7 @@ export function ManagerReportsPage() {
             ))}
             {attentionModal === "revenue" && unrecordedRevenue === 0 && <p className="text-sm text-slate-500 text-center py-8">Tất cả booking hoàn thành đều đã ghi nhận doanh thu đầy đủ.</p>}
 
-            {attentionModal === "rating" && filteredSessions.filter(s => s.rating !== null && s.rating <= 3).map(session => (
+            {attentionModal === "rating" && filteredSessions.filter((session) => session.rating != null && session.rating <= 3).map((session) => (
               <div key={session.bookingId} className="flex flex-col gap-2 p-4 border border-rose-100 rounded-xl bg-rose-50/50">
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-slate-900">{session.customerName} - {session.vehiclePlate}</span>
@@ -275,7 +275,7 @@ export function ManagerReportsPage() {
                 <span className="text-xs font-medium text-slate-600">Gói: {session.servicePackage} | Hoàn thành: {session.bookingDate}</span>
               </div>
             ))}
-            {attentionModal === "rating" && filteredSessions.filter(s => s.rating !== null && s.rating <= 3).length === 0 && <p className="text-sm text-slate-500 text-center py-8">Chưa có đánh giá tiêu cực (từ 3 sao trở xuống) trong kỳ này.</p>}
+            {attentionModal === "rating" && filteredSessions.filter((session) => session.rating != null && session.rating <= 3).length === 0 && <p className="text-sm text-slate-500 text-center py-8">Chưa có đánh giá tiêu cực (từ 3 sao trở xuống) trong kỳ này.</p>}
           </div>
         </DialogContent>
       </Dialog>
