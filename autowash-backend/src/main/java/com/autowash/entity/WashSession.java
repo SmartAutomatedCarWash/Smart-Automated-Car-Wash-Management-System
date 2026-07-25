@@ -106,9 +106,12 @@ public class WashSession {
         this.startedAt = startedAt;
     }
 
-    public void complete(Instant completedAt, int awardedPoints) {
+    public void complete(Instant completedAt) {
         this.status = WashSessionStatus.COMPLETED;
         this.completedAt = completedAt;
+    }
+
+    public void recordAwardedPoints(int awardedPoints) {
         this.awardedPoints = awardedPoints;
     }
 

@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record BookingStaffOptionsRequest(
+        String bookingId,
         String packageId,
         String comboId,
         List<String> options,
