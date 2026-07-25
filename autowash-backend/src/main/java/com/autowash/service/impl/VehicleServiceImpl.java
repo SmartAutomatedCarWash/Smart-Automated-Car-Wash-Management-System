@@ -119,10 +119,7 @@ public class VehicleServiceImpl implements VehicleService {
         User user = currentUserService.getCurrentUser();
         Vehicle targetVehicle = findActiveOwnedVehicle(vehicleId);
 
-        VehicleRepository.findFirstByOwnerAndStatusAndPrimaryTrue(user, VehicleStatus.ACTIVE)
-                .filter(existingPrimary -> !existingPrimary.getId().equals(targetVehicle.getId()))
-                .ifPresent(existingPrimary -> existingPrimary.setPrimary(false));
-
+        VehicleRepository.clearOtherPrimaryVehicles(user, VehicleStatus.ACTIVE, targetVehicle.getId());
         targetVehicle.setPrimary(true);
 
         return vehicleMapper.toSetPrimaryResponse(targetVehicle);
