@@ -292,6 +292,14 @@ export function updateAdminCustomerPoints(customerId: string, payload: { points:
   });
 }
 
+export function updateAdminCustomerLifetimePoints(customerId: string, payload: { pointsDelta: number; reason: string }) {
+  return apiRequest<import("@/entities/reports").UpdateAdminCustomerLifetimePointsResult, { pointsDelta: number; reason: string }>({
+    method: "PUT",
+    url: `/admin/customers/${customerId}/lifetime-points`,
+    data: payload,
+  });
+}
+
 export function createAdminStaff(payload: CreateAdminStaffPayload) {
   return apiRequest<AdminAccount, CreateAdminStaffPayload>({
     method: "POST",

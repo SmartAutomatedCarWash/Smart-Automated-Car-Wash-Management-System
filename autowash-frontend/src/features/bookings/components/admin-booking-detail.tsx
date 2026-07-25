@@ -38,6 +38,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
 import { Badge } from "@/shared/ui/ui/badge";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
+import { formatIntegerRating } from "@/shared/lib/rating-format";
 import type { BookingStatus } from "@/entities/bookings";
 
 function translateStatus(st: string, lang: "vi" | "en") {
@@ -760,7 +761,7 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
                     />
                   ))}
                   <span className="text-sm font-bold text-slate-800 ml-1.5">
-                    {booking.review.rating.toFixed(1)}
+                    {formatIntegerRating(booking.review.rating)}
                   </span>
                 </div>
                 {booking.review.comment ? (

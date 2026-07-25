@@ -85,10 +85,10 @@ const DEFAULT_DEMO_TEMPLATES: ManagerNotificationTemplatePayload[] = [
     preview: "Example: Vehicle 51F-456.89 is taking longer than expected.",
   },
   {
-    templateKey: "transfer",
-    displayName: "Staff transfer",
-    description: "Sent when a manager transfers a wash session to another staff member.",
-    message: "A wash session has been reassigned to another staff member. Please continue tracking the handover.",
+    templateKey: "assignStaff",
+    displayName: "Staff assignment",
+    description: "Sent when a manager assigns or reassigns a wash session to a staff member.",
+    message: "A wash session has been assigned to a staff member. Please continue tracking the wash progress.",
     preview: "Example: Vehicle 51F-456.89 has been reassigned to Le Van Hai.",
   },
 ];

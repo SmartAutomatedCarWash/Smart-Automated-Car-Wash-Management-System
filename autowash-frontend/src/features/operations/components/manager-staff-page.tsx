@@ -56,8 +56,9 @@ import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/worksp
 import { useWorkspaceHeader } from "@/shared/ui/workspace/workspace-header-context";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { cn } from "@/shared/lib/utils";
+import { formatIntegerRating } from "@/shared/lib/rating-format";
 import { ManagerStaffAssignmentDialog } from "@/features/operations/components/manager-staff-assignment-dialog";
-import { getActiveStaffOptions, getOperationsQueue, transferWashSession } from "@/features/operations/lib/operations-service";
+import { assignStaffToSession, getActiveStaffOptions, getOperationsQueue } from "@/features/operations/lib/operations-service";
 import { createAdminStaff, deleteAdminStaff, listAdminStaff, listAdminStaffKpi, updateAdminStaff } from "@/features/reports/api/admin-reporting-service";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { OperationsQueueSession, StaffOption, WashSessionStatus } from "@/entities/operations";
@@ -194,10 +195,10 @@ export function ManagerStaffPage() {
   };
 
   const transferMutation = useMutation({
-    mutationFn: ({ sessionId, staffId }: { sessionId: string; staffId: string }) => transferWashSession(sessionId, staffId, "Manager staff quick assignment"),
+    mutationFn: ({ sessionId, staffId }: { sessionId: string; staffId: string }) => assignStaffToSession(sessionId, staffId, "Manager staff quick assignment"),
     onSuccess: () => {
       refresh();
-      toast.success("Booking transferred to the new staff member.");
+      toast.success("Booking assigned to the selected staff member.");
     },
     onError: (error: ApiErrorResponse) => toast.error(getErrorMessage(error)),
   });
@@ -255,7 +256,7 @@ export function ManagerStaffPage() {
   const openAssignmentForRow = (row: StaffRow) => {
     const session = row.activeSessions[0] ?? row.queuedSessions[0];
     if (!session) {
-      toast.info("This staff member has no active booking to transfer.");
+      toast.info("This staff member has no active booking to assign.");
       return;
     }
 
@@ -765,7 +766,7 @@ function QuickDetailPanel({
                 onOpenAssignmentForSession(session);
               }}
             >
-              Transfer to another staff member
+              Assign to another staff member
             </Button>
             <Link
               href="/manager/history"
@@ -869,7 +870,7 @@ function StaffRowActionMenu({
       <DropdownMenuContent align={align} className="w-56">
         <DropdownMenuItem onClick={onTransfer} className="cursor-pointer">
           <UserRound className="mr-2 h-4 w-4" />
-          Transfer shift to another staff member
+          Assign booking to another staff member
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onDelete} className="cursor-pointer text-rose-600 focus:text-rose-600">
@@ -1132,7 +1133,7 @@ function averageKpi(rows: StaffRow[]) {
 }
 
 function formatRating(value: number | null) {
-  return value === null ? "--" : value.toFixed(1);
+  return value === null ? "--" : formatIntegerRating(value);
 }
 
 function BookingDetailDialog({

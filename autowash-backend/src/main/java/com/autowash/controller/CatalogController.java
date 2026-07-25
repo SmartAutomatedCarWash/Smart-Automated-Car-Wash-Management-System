@@ -43,6 +43,12 @@ public class CatalogController {
         return ApiResponse.ok("Services retrieved", catalogService.getServices());
     }
 
+    @GetMapping("/api/v1/services/{serviceId}")
+    @Operation(summary = "Get service detail")
+    public ApiResponse<ServiceResponse> getService(@PathVariable String serviceId) {
+        return ApiResponse.ok("Service retrieved", catalogService.getServiceById(serviceId));
+    }
+
     @GetMapping("/api/v1/combos/available")
     @Operation(summary = "List available combo packages")
     public ApiResponse<List<ComboResponse>> getAvailableCombos() {

@@ -1,24 +1,53 @@
 "use client";
 
 import Link from "next/link";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CarFront, ClipboardCheck, Search, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { Input } from "@/shared/ui/ui/input";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
-
-const MATCHED_BOOKING = {
-  id: "BK-2401",
-  plate: "51H-12345",
-  customer: "Nguyen Van A",
-  service: "Premium Wash",
-  time: "09:30",
-};
+import { checkInWashSession, createWashSession, getEligibleSessionBookings } from "@/features/operations/lib/operations-service";
+import { useErrorMessage } from "@/shared/hooks/use-error-message";
+import type { EligibleSessionBooking } from "@/entities/operations";
 
 export function StaffCheckInView() {
+  const queryClient = useQueryClient();
+  const getErrorMessage = useErrorMessage();
   const [plate, setPlate] = useState("");
-  const hasMatch = plate.trim().length >= 3;
+  const normalizedPlate = plate.trim().toUpperCase();
+
+  const bookingsQuery = useQuery({
+    queryKey: ["staff-check-in-candidates"],
+    queryFn: () => getEligibleSessionBookings(undefined, 50),
+  });
+
+  const matchedBookings = useMemo(() => {
+    const items = bookingsQuery.data ?? [];
+    if (normalizedPlate.length < 3) return [];
+    return items.filter((booking) => booking.vehiclePlate.toUpperCase().includes(normalizedPlate));
+  }, [bookingsQuery.data, normalizedPlate]);
+
+  const selectedBooking = matchedBookings[0] ?? null;
+
+  const checkInMutation = useMutation({
+    mutationFn: async (booking: EligibleSessionBooking) => {
+      const created = await createWashSession(booking.bookingId, "Staff plate check-in");
+      return checkInWashSession(created.sessionId);
+    },
+    onSuccess: async () => {
+      toast.success("Xe đã được check-in và đồng bộ vào phiên rửa.");
+      setPlate("");
+      await queryClient.invalidateQueries({ queryKey: ["staff-check-in-candidates"] });
+      await queryClient.invalidateQueries({ queryKey: ["operations-queue"] });
+      await queryClient.invalidateQueries({ queryKey: ["staff-today"] });
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
+    },
+  });
 
   return (
     <WorkspacePage className="space-y-6">
@@ -38,9 +67,14 @@ export function StaffCheckInView() {
               placeholder="Nhập biển số xe"
               aria-label="Biển số xe"
             />
-            <Button className="w-full" type="button">
+            <Button
+              className="w-full"
+              type="button"
+              disabled={!selectedBooking || checkInMutation.isPending}
+              onClick={() => selectedBooking && checkInMutation.mutate(selectedBooking)}
+            >
               <ClipboardCheck className="h-4 w-4" />
-              Xác nhận check-in
+              {checkInMutation.isPending ? "Đang check-in..." : "Xác nhận check-in"}
             </Button>
           </div>
           <div className="mt-6 rounded-2xl border border-cyan-200 bg-cyan-50/70 p-4 text-sm text-cyan-950">
@@ -55,32 +89,39 @@ export function StaffCheckInView() {
               Thông tin khớp
             </div>
           </div>
-          {hasMatch ? (
+          {selectedBooking ? (
             <div className="space-y-4 p-6">
               <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <div className="text-lg font-black tracking-tight">{plate || MATCHED_BOOKING.plate}</div>
-                    <div className="mt-1 text-sm text-muted-foreground">{MATCHED_BOOKING.customer}</div>
+                    <div className="text-lg font-black tracking-tight">{selectedBooking.vehiclePlate}</div>
+                    <div className="mt-1 text-sm text-muted-foreground">{selectedBooking.customerName}</div>
                   </div>
                   <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-800">
                     Sẵn sàng
                   </span>
                 </div>
                 <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
-                  <Info label="Đặt lịch" value={MATCHED_BOOKING.id} />
-                  <Info label="Dịch vụ" value={MATCHED_BOOKING.service} />
-                  <Info label="Khung giờ" value={MATCHED_BOOKING.time} />
+                  <Info label="Đặt lịch" value={selectedBooking.bookingId} />
+                  <Info label="Dịch vụ" value={selectedBooking.packageId ?? selectedBooking.comboId ?? "Service"} />
+                  <Info label="Khung giờ" value={selectedBooking.bookingTime} />
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button asChild>
                   <Link href="/staff/operations">Chuyển sang vận hành</Link>
                 </Button>
-                <Button variant="outline" asChild>
-                  <Link href="/staff/sessions/WS-01">Mở chi tiết phiên</Link>
-                </Button>
               </div>
+            </div>
+          ) : normalizedPlate.length >= 3 ? (
+            <div className="flex min-h-[280px] flex-col items-center justify-center px-6 py-10 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700">
+                <Search className="h-5 w-5" />
+              </div>
+              <h2 className="mt-4 text-base font-bold">Không tìm thấy booking phù hợp</h2>
+              <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+                Kiểm tra lại biển số hoặc tạo booking trước khi check-in xe.
+              </p>
             </div>
           ) : (
             <div className="flex min-h-[280px] flex-col items-center justify-center px-6 py-10 text-center">
