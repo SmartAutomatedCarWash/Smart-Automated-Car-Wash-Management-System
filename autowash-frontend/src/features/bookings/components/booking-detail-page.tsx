@@ -45,6 +45,7 @@ import {
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
 import { BookingCompletionPopup } from "@/features/bookings/components/booking-completion-popup";
 import { useBookingReviewCheck, useSubmitBookingReview } from "@/features/bookings/hooks/use-reviews";
+import { useCustomerLoyaltyTransactions } from "@/features/loyalty/hooks/use-customer-loyalty";
 import type { BookingAddonSelection, BookingDetail, BookingStaffOption, BookingStaffOptionsRequest } from "@/entities/bookings";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
@@ -243,6 +244,13 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const submitReviewMutation = useSubmitBookingReview();
   const isCompleted = bookingQuery.data?.status === "COMPLETED" || bookingQuery.data?.washStatus === "COMPLETED";
   const reviewCheckQuery = useBookingReviewCheck(bookingId, isCompleted);
+  const loyaltyTransactionsQuery = useCustomerLoyaltyTransactions(1, 100);
+  const earnedPoints = useMemo(() => {
+    const currentBookingId = bookingQuery.data?.bookingId ?? bookingId;
+    return loyaltyTransactionsQuery.data?.items.find(
+      (transaction) => transaction.bookingId === currentBookingId && transaction.points > 0,
+    )?.points ?? null;
+  }, [bookingId, bookingQuery.data?.bookingId, loyaltyTransactionsQuery.data]);
 
   // Auto-show review popup when booking is COMPLETED and not yet reviewed
   useEffect(() => {
@@ -766,6 +774,19 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 ) : null}
                 <SummaryLine label={translate(language, "Tổng cộng", "Total")} value={formatBookingCurrency(booking.pricing.finalAmount)} strong />
               </SidebarBlock>
+
+              {earnedPoints !== null ? (
+                <SidebarBlock icon={<Star className="h-4 w-4" />} title={translate(language, "Điểm cộng", "Points earned")}>
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <div className="text-2xl font-black text-emerald-700">
+                      +{earnedPoints.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} pts
+                    </div>
+                    <p className="mt-1 text-xs font-semibold text-emerald-800">
+                      {translate(language, "Điểm được cộng từ booking này.", "Points awarded from this booking.")}
+                    </p>
+                  </div>
+                </SidebarBlock>
+              ) : null}
             </CardContent>
           </Card>
 

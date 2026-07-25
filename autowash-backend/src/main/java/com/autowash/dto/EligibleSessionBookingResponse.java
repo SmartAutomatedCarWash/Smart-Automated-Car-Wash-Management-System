@@ -6,6 +6,7 @@ import java.util.List;
 
 public record EligibleSessionBookingResponse(
         String bookingId,
+        String status,
         String customerName,
         String customerPhone,
         String vehiclePlate,

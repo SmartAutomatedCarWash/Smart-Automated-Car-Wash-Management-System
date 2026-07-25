@@ -68,6 +68,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class OperationsServiceImpl implements OperationsService {
 
     private static final Set<BookingStatus> ELIGIBLE_BOOKING_STATUSES = Set.of(
+            BookingStatus.PENDING,
             BookingStatus.CONFIRMED
     );
 
@@ -189,18 +190,43 @@ public class OperationsServiceImpl implements OperationsService {
 
     @Transactional(readOnly = true)
     public List<EligibleSessionBookingResponse> listEligibleSessionBookings(int limit) {
+        return listEligibleSessionBookings(limit, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EligibleSessionBookingResponse> listEligibleSessionBookings(int limit, LocalDate date) {
         int safeLimit = Math.max(1, Math.min(limit, 50));
         User currentUser = currentUserService.getCurrentUser();
-        List<Booking> bookings = currentUser.getRole() == UserRole.STAFF
-                ? BookingRepository.findEligibleForAssignedStaffOperationsSession(
-                        currentUser,
-                        ELIGIBLE_BOOKING_STATUSES,
-                        ACTIVE_SESSION_STATUSES,
-                        PageRequest.of(0, safeLimit))
-                : BookingRepository.findEligibleForOperationsSession(
-                        ELIGIBLE_BOOKING_STATUSES,
-                        ACTIVE_SESSION_STATUSES,
-                        PageRequest.of(0, safeLimit));
+        List<Booking> bookings;
+        if (date != null) {
+            Instant dayStart = date.atStartOfDay(ZoneId.systemDefault()).toInstant();
+            Instant dayEnd = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+            bookings = currentUser.getRole() == UserRole.STAFF
+                    ? BookingRepository.findEligibleForAssignedStaffOperationsSessionOnDate(
+                            currentUser,
+                            ELIGIBLE_BOOKING_STATUSES,
+                            ACTIVE_SESSION_STATUSES,
+                            dayStart,
+                            dayEnd,
+                            PageRequest.of(0, safeLimit))
+                    : BookingRepository.findEligibleForOperationsSessionOnDate(
+                            ELIGIBLE_BOOKING_STATUSES,
+                            ACTIVE_SESSION_STATUSES,
+                            dayStart,
+                            dayEnd,
+                            PageRequest.of(0, safeLimit));
+        } else {
+            bookings = currentUser.getRole() == UserRole.STAFF
+                    ? BookingRepository.findEligibleForAssignedStaffOperationsSession(
+                            currentUser,
+                            ELIGIBLE_BOOKING_STATUSES,
+                            ACTIVE_SESSION_STATUSES,
+                            PageRequest.of(0, safeLimit))
+                    : BookingRepository.findEligibleForOperationsSession(
+                            ELIGIBLE_BOOKING_STATUSES,
+                            ACTIVE_SESSION_STATUSES,
+                            PageRequest.of(0, safeLimit));
+        }
         return bookings
                 .stream()
                 .map(this::toEligibleBooking)
@@ -1007,6 +1033,7 @@ public class OperationsServiceImpl implements OperationsService {
         UUID comboId = resolveBookingDetailRefId(booking, BookingItemType.COMBO);
         return new EligibleSessionBookingResponse(
                 booking.getId().toString(),
+                booking.getStatus().name(),
                 booking.getCustomer().getFullName(),
                 booking.getCustomer().getPhone(),
                 booking.getVehicle().getPlate(),

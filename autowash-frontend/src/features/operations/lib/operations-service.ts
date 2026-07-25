@@ -48,6 +48,13 @@ export function createWashSession(bookingId: string, notes?: string) {
   });
 }
 
+export function managerCheckInBooking(bookingId: string) {
+  return apiRequest<{ bookingId: string; sessionId: string; status: string; assignedStaffId: string | null; assignedStaffName: string | null; assignedBay: string | null; checkedInAt: string | null }>({
+    method: "POST",
+    url: `/manager/operations/bookings/${bookingId}/check-in`,
+  });
+}
+
 export function getOperationsQueue() {
   if (isManagerDemoToken(getAccessToken())) {
     return getDemoOperationsQueue();
@@ -77,7 +84,7 @@ export function getActiveStaffOptions() {
   });
 }
 
-export function getEligibleSessionBookings() {
+export function getEligibleSessionBookings(date?: string) {
   if (isManagerDemoToken(getAccessToken())) {
     return getDemoEligibleSessionBookings();
   }
@@ -85,7 +92,7 @@ export function getEligibleSessionBookings() {
   return apiRequest<EligibleSessionBooking[]>({
     method: "GET",
     url: "/operations/bookings/eligible-sessions",
-    params: { limit: 20 },
+    params: { limit: 50, ...(date ? { date } : {}) },
   });
 }
 
@@ -233,5 +240,44 @@ export function getAdminSessionHistory(params: AdminSessionHistoryParams = {}) {
       ...(params.search && { search: params.search }),
       sort: params.sort ?? "COMPLETED_DESC",
     },
+  });
+}
+
+export function sendOperationsNotice(payload: { recipient: string; noticeType: string; priority: string; message: string }) {
+  return apiRequest<void, typeof payload>({
+    method: "POST",
+    url: "/manager/operations/notices",
+    data: payload,
+  });
+}
+
+export function exportManagerReport(format: string = "xlsx") {
+  return apiRequest<{ format: string; message: string }>({
+    method: "GET",
+    url: "/manager/reports/export",
+    params: { format },
+  });
+}
+
+export function sendManagerReport(email: string, format: string = "xlsx") {
+  return apiRequest<{ format: string; message: string }, { email: string; format: string }>({
+    method: "POST",
+    url: "/manager/reports/send",
+    data: { email, format },
+  });
+}
+
+export function getManagerReportsDashboard(params: {
+  rangeType: string;
+  fromDate?: string;
+  toDate?: string;
+  comparePrevious?: boolean;
+  staffId?: string;
+  serviceId?: string;
+}) {
+  return apiRequest<any>({
+    method: "GET",
+    url: "/manager/reports/dashboard",
+    params,
   });
 }

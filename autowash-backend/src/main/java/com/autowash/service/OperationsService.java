@@ -21,6 +21,7 @@ public interface OperationsService {
     CreateWashSessionResponse createSession(CreateWashSessionRequest request);
     OperationsQueueResponse getQueue();
     List<EligibleSessionBookingResponse> listEligibleSessionBookings(int limit);
+    List<EligibleSessionBookingResponse> listEligibleSessionBookings(int limit, LocalDate date);
     QueueWashSessionResponse queueSession(UUID sessionId);
     CheckInWashSessionResponse checkInSession(UUID sessionId);
     StartWashSessionResponse startSession(UUID sessionId);

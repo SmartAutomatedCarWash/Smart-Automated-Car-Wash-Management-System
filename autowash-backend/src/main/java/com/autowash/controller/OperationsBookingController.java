@@ -11,7 +11,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.time.LocalDate;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,11 +42,12 @@ public class OperationsBookingController {
     @GetMapping("/eligible-sessions")
     @Operation(summary = "List confirmed bookings eligible for wash session creation")
     public ApiResponse<List<EligibleSessionBookingResponse>> listEligibleSessionBookings(
-            @RequestParam(defaultValue = "20") int limit
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
         return ApiResponse.ok(
                 "Eligible bookings retrieved",
-                operationsService.listEligibleSessionBookings(limit)
+                operationsService.listEligibleSessionBookings(limit, date)
         );
     }
 
