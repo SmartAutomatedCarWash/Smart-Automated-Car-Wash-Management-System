@@ -29,10 +29,13 @@ public interface AdminReportingService {
     AdminAccountResponse createStaff(CreateAdminStaffRequest request);
     AdminAccountResponse updateStaff(UUID staffId, UpdateAdminStaffRequest request);
     List<AdminAccountResponse> listStaff();
+    AccountPage listStaffPage(int page, int limit);
     AdminAccountResponse updateStaffStatus(UUID staffId, String status);
     AdminAccountResponse deleteStaff(UUID staffId);
     AdminStaffWorkloadResponse getStaffWorkload(UUID staffId);
     List<StaffKpiItem> listStaffKpi(String range);
+    StaffKpiPage listStaffKpiPage(String range, UUID staffId, int page, int limit);
+    ServiceQualityPage listServiceQuality(String range, int page, int limit);
     AdminAccountResponse updateCustomerStatus(UUID customerId, String status);
     AdminOperationsDashboardResponse getOperationsDashboard();
     AccountPage listAccounts(String role, String status, String searchQuery, int page, int limit);
@@ -57,4 +60,8 @@ public interface AdminReportingService {
     record WashHistoryPage(List<AdminWashHistoryResponse> items, PaginationMeta pagination) {}
     record CustomerVehiclePage(List<AdminCustomerVehicleResponse> items, PaginationMeta pagination) {}
     record TierHistoryPage(List<AdminTierHistoryResponse> items, PaginationMeta pagination) {}
+    record StaffKpiPage(List<StaffKpiItem> items, PaginationMeta pagination) {}
+    
+    record ServiceQualityItem(String service, long bookings, long revenue, Double rating) {}
+    record ServiceQualityPage(List<ServiceQualityItem> items, PaginationMeta pagination) {}
 }

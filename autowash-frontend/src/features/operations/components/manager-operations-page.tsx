@@ -91,7 +91,7 @@ const STAFF_OVERLOAD_WAITING_THRESHOLD = 3;
 const STAFF_OVERLOAD_DELAYED_THRESHOLD = 2;
 const CHECKED_IN_DELAY_MINUTES = 12;
 const WAITING_CHECKIN_DELAY_MINUTES = 15;
-const TOP_PANEL_PAGE_SIZE = 3;
+const TOP_PANEL_PAGE_SIZE = 5;
 
 const FOCUS_FILTERS: Array<{ value: FocusFilter; label: string }> = [
   { value: "ALL", label: "All" },

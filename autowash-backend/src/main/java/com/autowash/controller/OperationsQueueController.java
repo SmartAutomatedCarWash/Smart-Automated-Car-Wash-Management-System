@@ -87,7 +87,7 @@ public class OperationsQueueController {
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public ApiResponse<StaffSessionHistoryResponse> getManagerSessionHistory(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "5") int limit,
             @RequestParam(defaultValue = "ALL") String period,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,

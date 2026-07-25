@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 
 import { useEffect, useMemo, useState } from "react";
@@ -283,11 +283,11 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                 {workspaceLabel}
               </div>
               <div className="flex items-start gap-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400 text-white shadow-[0_18px_38px_rgba(249,115,22,0.35)]">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[20px] bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400 text-white shadow-[0_18px_38px_rgba(249,115,22,0.35)]">
                   <Megaphone className="h-6 w-6" />
                 </div>
                 <div className="space-y-2">
-                  <h1 className="text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
+                  <h1 className="text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
                     {isVoucherView
                       ? translate(language, "Voucher", "Vouchers")
                       : translate(language, "Khuyáº¿n mÃ£i", "Promotions")}
@@ -371,7 +371,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                       <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">
                         {card.label}
                       </p>
-                      <p className="mt-1 text-2xl font-black tracking-tight">{card.value}</p>
+                      <p className="mt-1 text-xl font-black tracking-tight">{card.value}</p>
                       <p className="mt-1.5 text-[11px] leading-snug text-white/80 line-clamp-2">{card.description}</p>
                     </div>
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/20 ring-1 ring-white/30">
@@ -498,7 +498,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
         >
           <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-[28px] border border-white/70 bg-white/95 shadow-[0_30px_90px_rgba(15,23,42,0.16)]">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-black tracking-tight text-slate-950">
+              <DialogTitle className="text-xl font-black tracking-tight text-slate-950">
                 {isEditing
                   ? isVoucherView
                     ? translate(language, "Chá»‰nh sá»­a voucher", "Edit voucher")
@@ -754,7 +754,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
           <CardHeader className="border-b border-slate-100 bg-[linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.95))] px-6 py-5">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <CardTitle className="text-xl font-black tracking-tight text-slate-950">
+                <CardTitle className="text-lg font-black tracking-tight text-slate-950">
                   {isVoucherView
                     ? translate(language, "Danh sÃ¡ch voucher", "Voucher list")
                     : translate(language, "Danh sÃ¡ch khuyáº¿n mÃ£i", "Promotion list")}

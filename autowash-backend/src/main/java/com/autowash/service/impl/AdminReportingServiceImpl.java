@@ -51,6 +51,8 @@ import java.util.Arrays;
 import java.util.UUID;
 
 import java.util.Map;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 
 import com.autowash.dto.AdminBookingResponse;
@@ -240,6 +242,9 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         if (request.password() != null && !request.password().isBlank()) {
             staff.setPasswordHash(passwordEncoder.encode(request.password()));
         }
+        if (request.status() != null) {
+            staff.updateStatus(request.status());
+        }
         staff.setUpdatedAt(Instant.now());
         return toAccountResponse(UserRepository.save(staff));
     }
@@ -249,6 +254,27 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         return UserRepository.findByRoleOrderByFullNameAsc(UserRole.STAFF).stream()
                 .map(this::toAccountResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AccountPage listStaffPage(int page, int limit) {
+        PageRequest pageRequest = PageRequest.of(Math.max(0, page - 1), Math.max(1, limit));
+        Page<User> staffPage = UserRepository.findByRoleOrderByFullNameAsc(UserRole.STAFF, pageRequest);
+        
+        List<AdminAccountResponse> items = staffPage.stream()
+                .map(this::toAccountResponse)
+                .toList();
+
+        return new AccountPage(
+                items,
+                new PaginationMeta(
+                        pageRequest.getPageNumber() + 1,
+                        pageRequest.getPageSize(),
+                        staffPage.getTotalElements(),
+                        staffPage.getTotalPages(),
+                        staffPage.hasNext()
+                )
+        );
     }
 
     @Transactional
@@ -274,7 +300,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     }
 
     @Transactional(readOnly = true)
-    public List<StaffKpiItem> listStaffKpi(String range) {
+    public StaffKpiPage listStaffKpiPage(String range, UUID staffId, int page, int limit) {
         ZoneId zone = ZoneId.systemDefault();
         Instant rangeStart = resolveRangeStart(range, zone);
 
@@ -284,44 +310,116 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 WashSessionStatus.CHECKED_IN,
                 WashSessionStatus.IN_PROGRESS
         );
+
+        List<Booking> allBookings = bookingRepository.findAll();
+        List<Booking> rangeBookings = allBookings.stream()
+                .filter(b -> !b.getCreatedAt().isBefore(rangeStart) && b.getCreatedAt().isBefore(Instant.now().plus(1, ChronoUnit.MINUTES)))
+                .toList();
+        List<WashSession> allSessions = washSessionRepository.findAllByOrderByCreatedAtDesc();
+        List<WashSession> rangeSessions = allSessions.stream()
+                .filter(s -> !s.getCreatedAt().isBefore(rangeStart) && s.getCreatedAt().isBefore(Instant.now().plus(1, ChronoUnit.MINUTES)))
+                .toList();
+
+        PageRequest pageRequest = PageRequest.of(Math.max(0, page - 1), Math.max(1, limit));
+        Page<User> staffPage = UserRepository.findByRoleOrderByFullNameAsc(UserRole.STAFF, pageRequest);
+
         long KPI_TARGET = 5_000_000L;
-
-        return UserRepository.findByRoleOrderByFullNameAsc(UserRole.STAFF).stream()
+        List<StaffKpiItem> items = staffPage.stream()
+                .filter(staff -> staffId == null || staff.getId().equals(staffId))
                 .map(staff -> {
-                    // Completed sessions in range
-                    long completedInRange = washSessionRepository.countByAssignedStaffAndStatusAndCompletedAtBetween(
-                            staff, WashSessionStatus.COMPLETED, rangeStart, Instant.now());
-
-                    // Revenue from completed bookings in range
-                    long revenueInRange = bookingRepository
-                            .sumCompletedRevenueByAssignedStaffAndRange(staff, rangeStart, Instant.now());
-
-                    // Currently active sessions
-                    long activeSessions = washSessionRepository.countByAssignedStaffAndStatusIn(staff, ACTIVE_SESSION_STATUSES);
-
-                    // All-time assigned bookings
-                    long totalAssigned = bookingRepository.countByAssignedStaffAndStatusIn(staff, REVENUE_STATUSES);
-
-                    int progress = KPI_TARGET == 0 ? 100
-                            : (int) Math.min(100, Math.round(revenueInRange * 100.0 / KPI_TARGET));
-
-                    boolean isOnline = activeSessions > 0;
-
+                    long completedBookings = rangeSessions.stream()
+                            .filter(s -> s.getStatus() == WashSessionStatus.COMPLETED && s.getAssignedStaff() != null && s.getAssignedStaff().getId().equals(staff.getId()))
+                            .count();
+                    long completedRevenue = rangeBookings.stream()
+                            .filter(b -> b.getStatus() == BookingStatus.COMPLETED && b.getAssignedStaff() != null && b.getAssignedStaff().getId().equals(staff.getId()))
+                            .mapToLong(b -> b.getPricing() != null ? b.getPricing().getFinalAmount() : 0L)
+                            .sum();
+                    long activeSessions = allSessions.stream()
+                            .filter(s -> ACTIVE_SESSION_STATUSES.contains(s.getStatus()) && s.getAssignedStaff() != null && s.getAssignedStaff().getId().equals(staff.getId()))
+                            .count();
+                    long totalAssignedBookings = rangeBookings.stream()
+                            .filter(b -> b.getAssignedStaff() != null && b.getAssignedStaff().getId().equals(staff.getId()))
+                            .count();
+                    int progress = (int) Math.min(100L, Math.round(((double) completedRevenue / Math.max(1, KPI_TARGET)) * 100));
+                    boolean isOnline = staff.getStatus() == UserStatus.ACTIVE;
                     return new StaffKpiItem(
                             staff.getId(),
                             staff.getFullName(),
                             staff.getStatus().name(),
-                            completedInRange,
-                            revenueInRange,
+                            completedBookings,
+                            completedRevenue,
                             activeSessions,
-                            totalAssigned,
+                            totalAssignedBookings,
                             progress,
                             KPI_TARGET,
                             isOnline
                     );
                 })
-                .sorted(Comparator.comparingLong(StaffKpiItem::completedBookings).reversed())
                 .toList();
+
+        return new StaffKpiPage(
+                items,
+                new PaginationMeta(
+                        pageRequest.getPageNumber() + 1,
+                        pageRequest.getPageSize(),
+                        staffPage.getTotalElements(),
+                        staffPage.getTotalPages(),
+                        staffPage.hasNext()
+                )
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<StaffKpiItem> listStaffKpi(String range) {
+        return listStaffKpiPage(range, null, 1, Integer.MAX_VALUE).items();
+    }
+
+    @Transactional(readOnly = true)
+    public ServiceQualityPage listServiceQuality(String range, int page, int limit) {
+        ZoneId zone = ZoneId.systemDefault();
+        Instant rangeStart = resolveRangeStart(range, zone);
+
+        List<Booking> bookings = bookingRepository.findAll().stream()
+                .filter(b -> !b.getCreatedAt().isBefore(rangeStart) && b.getCreatedAt().isBefore(Instant.now().plus(1, ChronoUnit.MINUTES)))
+                .toList();
+        Map<UUID, String> serviceNames = serviceNames(bookings);
+        List<UUID> bookingIds = bookings.stream().map(Booking::getId).toList();
+        
+        List<Review> reviews = bookingIds.isEmpty() ? List.of() : reviewRepository.findByBookingIdIn(bookingIds);
+        Map<UUID, List<Review>> reviewsByService = reviews.stream()
+                .collect(Collectors.groupingBy(r -> serviceId(r.getBooking())));
+
+        Map<String, List<Booking>> grouped = bookings.stream()
+                .filter(booking -> REVENUE_STATUSES.contains(booking.getStatus()))
+                .collect(Collectors.groupingBy(b -> serviceId(b) == null ? "" : serviceId(b).toString()));
+
+        List<ServiceQualityItem> allItems = grouped.entrySet().stream()
+                .map(entry -> {
+                    long revenue = entry.getValue().stream().mapToLong(b -> b.getPricing() != null ? b.getPricing().getFinalAmount() : 0L).sum();
+                    UUID sId = entry.getKey().isBlank() ? null : UUID.fromString(entry.getKey());
+                    String label = serviceNames.getOrDefault(sId, entry.getKey());
+                    
+                    List<Review> sReviews = sId != null ? reviewsByService.getOrDefault(sId, List.of()) : List.of();
+                    Double rating = sReviews.isEmpty() ? null : sReviews.stream().mapToInt(Review::getRating).average().orElse(0.0);
+                    
+                    return new ServiceQualityItem(label, entry.getValue().size(), revenue, rating);
+                })
+                .sorted(Comparator.comparingLong(ServiceQualityItem::bookings).reversed())
+                .toList();
+
+        int fromIndex = Math.min(Math.max(0, (page - 1) * limit), allItems.size());
+        int toIndex = Math.min(fromIndex + limit, allItems.size());
+        List<ServiceQualityItem> pageItems = allItems.subList(fromIndex, toIndex);
+
+        PaginationMeta meta = new PaginationMeta(
+                page,
+                limit,
+                allItems.size(),
+                (int) Math.ceil((double) allItems.size() / limit),
+                toIndex < allItems.size()
+        );
+
+        return new ServiceQualityPage(pageItems, meta);
     }
 
     private Instant resolveRangeStart(String range, ZoneId zone) {
