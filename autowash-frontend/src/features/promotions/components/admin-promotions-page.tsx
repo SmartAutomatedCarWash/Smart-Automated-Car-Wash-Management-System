@@ -37,7 +37,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/ui/table";
 import { Badge } from "@/shared/ui/ui/badge";
 import { cn } from "@/shared/lib/utils";
-import { discountNameFormatMessage, sanitizeDiscountNameInput } from "@/shared/lib/validators";
+import { discountNameFormatMessage, getVoucherCodeFormatError, sanitizeDiscountNameInput, sanitizeVoucherCodeInput } from "@/shared/lib/validators";
 import {
   Dialog,
   DialogContent,
@@ -69,6 +69,7 @@ import type { AdminPromotionKind } from "@/features/promotions/api/admin-promoti
 import { useTierStyle } from "@/shared/lib/tier-styles";
 
 type PromotionFormValues = {
+  code: string;
   name: string;
   description?: string;
   discountType: PromotionDiscountType;
@@ -101,6 +102,7 @@ type PromotionFilters = {
 };
 
 const EMPTY_FORM: PromotionFormValues = {
+  code: "",
   name: "",
   description: "",
   discountType: "NONE",
@@ -540,7 +542,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                   {translate(language, "ThÃ´ng tin cÆ¡ báº£n", "Basic Information")}
                 </p>
                 <FormField label={translate(language, "TÃªn", "Name")} error={displayErrors.name}>
-                                    <Input
+                  <Input
                     value={form.name}
                     onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
                     placeholder={
@@ -552,6 +554,16 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                   />
                   <p className="text-xs text-slate-500">{promotionNameFormatMessage}</p>
                 </FormField>
+
+                {!isVoucherView ? (
+                  <FormField label={translate(language, "MÃ£ khuyáº¿n mÃ£i", "Promotion code")} error={displayErrors.code}>
+                    <Input
+                      value={form.code}
+                      onChange={(event) => setForm((prev) => ({ ...prev, code: sanitizeVoucherCodeInput(event.target.value) }))}
+                      placeholder="SUMMER30"
+                    />
+                  </FormField>
+                ) : null}
 
                 {isVoucherView ? (
                   <FormField label={translate(language, "Số điểm đổi voucher", "Voucher points")} error={displayErrors.pointMultiplier}>
@@ -824,6 +836,11 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
                           <TableRow key={promotion.promotionId} className="group border-slate-100 hover:bg-orange-50/35">
                             <TableCell className="pl-6 py-4">
                               <div className="font-semibold text-slate-900">{promotion.name}</div>
+                              {!isVoucherView && promotion.code ? (
+                                <div className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                                  {promotion.code}
+                                </div>
+                              ) : null}
                             </TableCell>
                             <TableCell>
                               {promotion.discountType === "NONE" ? (
@@ -1050,6 +1067,14 @@ function validatePromotionForm(form: PromotionFormValues, language: "vi" | "en",
   if (!form.name.trim()) {
     errors.name = translate(language, "TÃªn lÃ  báº¯t buá»™c.", "Name is required.");
   }
+  if (!isVoucherView) {
+    const codeError = getVoucherCodeFormatError(form.code);
+    if (!form.code.trim()) {
+      errors.code = translate(language, "MÃ£ khuyáº¿n mÃ£i lÃ  báº¯t buá»™c.", "Promotion code is required.");
+    } else if (codeError) {
+      errors.code = codeError;
+    }
+  }
   if (form.discountType !== "NONE" && (!form.discountValue || Number.isNaN(discountValue) || discountValue < 1)) {
     errors.discountValue = translate(language, "GiÃ¡ trá»‹ giáº£m giÃ¡ pháº£i Ã­t nháº¥t lÃ  1.", "Discount value must be at least 1.");
   } else if (form.discountType === "PERCENT" && discountValue > 100) {
@@ -1125,6 +1150,7 @@ function toRequestPayload(form: PromotionFormValues): PromotionRequest | null {
   }
 
   return {
+    code: form.code.trim() ? sanitizeVoucherCodeInput(form.code.trim()) : null,
     name: sanitizePromotionNameInput(form.name.trim()),
     description: form.description || null,
     discountType: form.discountType,
@@ -1141,6 +1167,7 @@ function toRequestPayload(form: PromotionFormValues): PromotionRequest | null {
 
 function toFormValues(promotion: Promotion): PromotionFormValues {
   return {
+    code: promotion.code ?? "",
     name: sanitizePromotionNameInput(promotion.name),
     description: promotion.description || "",
     discountType: promotion.discountType || "PERCENT",

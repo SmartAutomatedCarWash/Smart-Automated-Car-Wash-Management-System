@@ -44,7 +44,7 @@ import {
   usePublicTierConfigs,
   usePublicTierVoucherOffers,
 } from "@/features/loyalty/hooks/use-customer-loyalty";
-import { useCustomerDiscounts, useClaimCustomerDiscount } from "@/features/discounts/hooks/use-customer-discounts";
+import { useCustomerDiscounts } from "@/features/discounts/hooks/use-customer-discounts";
 import { cn } from "@/shared/lib/utils";
 import type { RedeemPointsResponse, TierVoucherOffer } from "@/entities/loyalty";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
@@ -67,7 +67,7 @@ export function CustomerLoyaltyPageContent() {
   const tiersQuery = usePublicTierConfigs();
   const offersQuery = usePublicTierVoucherOffers();
   const transactionsQuery = useCustomerLoyaltyTransactions(1, 50);
-  const redeemMutation = useClaimCustomerDiscount();
+  const redeemMutation = useCustomerRedeemPoints();
   const [selectedOffer, setSelectedOffer] = useState<VoucherOfferState | null>(null);
   const [isSuccessVoucher, setIsSuccessVoucher] = useState(false);
 
@@ -104,7 +104,7 @@ export function CustomerLoyaltyPageContent() {
 
     setIsSuccessVoucher(false);
     redeemMutation.mutate(
-      selectedOffer.id,
+      { offerId: selectedOffer.id },
       {
         onSuccess: () => {
           setIsSuccessVoucher(true);
@@ -549,6 +549,7 @@ function RuleRow({ label, value }: { label: string; value: string }) {
 function MyVouchersList({ language, locale }: { language: string, locale: string }) {
   const getErrorMessage = useErrorMessage();
   const vouchersQuery = useCustomerDiscounts();
+  const walletVouchers = (vouchersQuery.data?.items ?? []).filter((item) => Boolean(item.voucherCode));
 
   if (vouchersQuery.isPending) {
     return (
@@ -571,7 +572,7 @@ function MyVouchersList({ language, locale }: { language: string, locale: string
     );
   }
 
-  if (!vouchersQuery.data || vouchersQuery.data.items.length === 0) {
+  if (walletVouchers.length === 0) {
     return (
       <Card className="border-slate-200 bg-white">
         <CardHeader>
@@ -590,22 +591,22 @@ function MyVouchersList({ language, locale }: { language: string, locale: string
 
   return (
     <div className="grid gap-6 xl:grid-cols-2 items-start">
-      {vouchersQuery.data.items.map((item) => {
+      {walletVouchers.map((item) => {
         const voucher = item.discount;
         if (!voucher) return null;
         return (
         <LuxuryVoucherCard
-          key={voucher.code ?? item.id}
+          key={item.voucherCode}
           title={voucher.name}
-          amountText={voucher.discountType === "PERCENTAGE" ? `${voucher.discountValue}` : `${voucher.discountValue.toLocaleString(locale)}`}
-          unitText={voucher.discountType === "PERCENTAGE" ? "% OFF" : "VND"}
-          code={voucher.code ?? "NO CODE"}
+          amountText={voucher.discountType === "PERCENT" ? `${voucher.discountValue}` : `${voucher.discountValue.toLocaleString(locale)}`}
+          unitText={voucher.discountType === "PERCENT" ? "% OFF" : "VND"}
+          code={item.voucherCode as string}
           tier={
             voucher.applicableTierIds && voucher.applicableTierIds.length > 0
               ? voucher.applicableTierIds.map(t => formatTierLabel(t as any)).join(", ")
               : translate(language as any, "Táº¥t cáº£ háº¡ng", "All Tiers")
           }
-          validUntil={voucher.endAt ? new Date(voucher.endAt).toLocaleDateString(locale) : "KhÃ´ng giá»›i háº¡n"}
+          validUntil={(item.expiresAt ?? voucher.endAt) ? new Date(item.expiresAt ?? voucher.endAt).toLocaleDateString(locale) : "KhÃ´ng giá»›i háº¡n"}
           minOrder={
             voucher.minOrderAmount && voucher.minOrderAmount > 0
               ? `${voucher.minOrderAmount.toLocaleString(locale)} VND`

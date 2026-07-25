@@ -129,6 +129,7 @@ export type CreateBookingRequest = {
 };
 
 export type BookingStaffOptionsRequest = {
+  bookingId?: string;
   packageId?: string;
   comboId?: string;
   options: string[];

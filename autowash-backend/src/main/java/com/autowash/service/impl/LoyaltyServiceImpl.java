@@ -43,6 +43,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -277,7 +278,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         if (customerRank < minRank) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Your tier is not eligible for this voucher offer", ErrorCode.TIER_NOT_ELIGIBLE);
         }
-        int pointsToRedeem = offer.getPointsCost();
+        int pointsToRedeem = offer.getDiscount().getRequiredPoints();
         LoyaltyAccount account = getOrCreateAccountForUpdate(customer);
         if (account.getCurrentPoints() < pointsToRedeem) {
             throw new ApiException(
@@ -292,9 +293,11 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         if (offer.getDiscount().getValidDaysAfterClaim() != null) {
             expiresAt = Instant.now().plus(offer.getDiscount().getValidDaysAfterClaim(), ChronoUnit.DAYS);
         }
+        String voucherCode = generateVoucherCode();
         UserDiscount userDiscount = userDiscountRepository.save(UserDiscount.builder()
                 .user(customer)
                 .discount(offer.getDiscount())
+                .voucherCode(voucherCode)
                 .acquisitionMethod(DiscountAcquisitionMethod.POINT_REDEEMED)
                 .pointsSpent(pointsToRedeem)
                 .claimedAt(Instant.now())
@@ -307,18 +310,28 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 PointTransactionType.REDEEM,
                 -pointsToRedeem,
                 account.getCurrentPoints(),
-                "Voucher offer redemption: " + offer.getTitle()
+                "Voucher offer redemption: " + offer.getDiscount().getName()
         ));
         
         return new RedeemPointsResponse(
                 transaction.getId(),
                 pointsToRedeem,
                 account.getCurrentPoints(),
-                userDiscount.getId().toString(),
-                offer.getVoucherValue(),
+                userDiscount.getVoucherCode(),
+                (int) offer.getDiscount().getDiscountValue(),
                 expiresAt,
                 "REDEEMED"
         );
+    }
+
+    private String generateVoucherCode() {
+        for (int attempts = 0; attempts < 10; attempts++) {
+            String code = "VC" + String.format("%08d", ThreadLocalRandom.current().nextInt(100_000_000));
+            if (!userDiscountRepository.existsByVoucherCodeIgnoreCase(code)) {
+                return code;
+            }
+        }
+        throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to generate voucher code", ErrorCode.SYSTEM_ERROR);
     }
 
     @Transactional(readOnly = true)

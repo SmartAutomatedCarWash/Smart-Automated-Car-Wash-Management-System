@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public record UserDiscountResponse(
         UUID id,
+        String voucherCode,
         DiscountResponse discount,
         DiscountAcquisitionMethod acquisitionMethod,
         int pointsSpent,
