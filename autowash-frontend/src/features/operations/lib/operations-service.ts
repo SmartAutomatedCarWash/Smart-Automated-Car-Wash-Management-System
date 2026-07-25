@@ -48,6 +48,13 @@ export function createWashSession(bookingId: string, notes?: string) {
   });
 }
 
+export function managerCheckInBooking(bookingId: string) {
+  return apiRequest<{ bookingId: string; sessionId: string; status: string; assignedStaffId: string | null; assignedStaffName: string | null; assignedBay: string | null; checkedInAt: string | null }>({
+    method: "POST",
+    url: `/manager/operations/bookings/${bookingId}/check-in`,
+  });
+}
+
 export function getOperationsQueue() {
   if (isManagerDemoToken(getAccessToken())) {
     return getDemoOperationsQueue();
@@ -77,7 +84,7 @@ export function getActiveStaffOptions() {
   });
 }
 
-export function getEligibleSessionBookings() {
+export function getEligibleSessionBookings(date?: string) {
   if (isManagerDemoToken(getAccessToken())) {
     return getDemoEligibleSessionBookings();
   }
@@ -85,7 +92,7 @@ export function getEligibleSessionBookings() {
   return apiRequest<EligibleSessionBooking[]>({
     method: "GET",
     url: "/operations/bookings/eligible-sessions",
-    params: { limit: 20 },
+    params: { limit: 50, ...(date ? { date } : {}) },
   });
 }
 

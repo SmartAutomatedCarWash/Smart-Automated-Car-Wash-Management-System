@@ -14,6 +14,7 @@ public interface LoyaltyService {
     int calculateEarnPoints(UUID sessionId);
     EarnPointsResponse postEarnTransaction(UUID customerId, UUID sessionId);
     int postBonusTransaction(UUID customerId, int points, String reason);
+    int postBonusTransaction(UUID customerId, UUID bookingId, int points, String reason);
     void adjustActivePoints(UUID customerId, int points, String reason);
     AdjustTotalEarnedPointsResponse adjustTotalEarnedPoints(UUID customerId, int pointsDelta, String reason);
     RedeemPointsResponse redeemOffer(UUID customerId, UUID offerId);

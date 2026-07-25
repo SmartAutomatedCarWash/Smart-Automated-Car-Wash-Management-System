@@ -8,6 +8,7 @@ import com.autowash.dto.RedeemPointsResponse;
 import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.Notification;
 import com.autowash.entity.PointTransaction;
+import com.autowash.entity.Booking;
 import com.autowash.entity.SystemSettings;
 import com.autowash.entity.TierConfig;
 import com.autowash.entity.TierHistory;
@@ -22,6 +23,7 @@ import com.autowash.entity.enums.UserDiscountStatus;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.LoyaltyAccountRepository;
+import com.autowash.repository.BookingRepository;
 import com.autowash.repository.NotificationRepository;
 import com.autowash.repository.PointTransactionRepository;
 import com.autowash.repository.SystemSettingsRepository;
@@ -56,6 +58,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     private static final Logger log = LoggerFactory.getLogger(LoyaltyService.class);
 
     private final UserRepository UserRepository;
+    private final BookingRepository bookingRepository;
     private final WashSessionRepository washSessionRepository;
     private final LoyaltyAccountRepository loyaltyAccountRepository;
 
@@ -69,6 +72,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
 
     public LoyaltyServiceImpl(
             UserRepository UserRepository,
+            BookingRepository bookingRepository,
             WashSessionRepository washSessionRepository,
             LoyaltyAccountRepository loyaltyAccountRepository,
 
@@ -81,6 +85,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
             UserDiscountRepository userDiscountRepository
     ) {
         this.UserRepository = UserRepository;
+        this.bookingRepository = bookingRepository;
         this.washSessionRepository = washSessionRepository;
         this.loyaltyAccountRepository = loyaltyAccountRepository;
 
@@ -162,9 +167,24 @@ public class LoyaltyServiceImpl implements LoyaltyService {
 
     @Transactional
     public int postBonusTransaction(UUID customerId, int points, String reason) {
+        return postBonusTransaction(customerId, null, points, reason);
+    }
+
+    @Transactional
+    public int postBonusTransaction(UUID customerId, UUID bookingId, int points, String reason) {
         if (points == 0) return 0;
         User customer = requireCustomer(customerId);
         LoyaltyAccount account = getOrCreateAccountForUpdate(customer);
+        Booking booking = resolveOptionalBooking(bookingId, customer);
+
+        if (booking != null) {
+            PointTransaction existing = pointTransactionRepository
+                    .findByTypeAndBookingIdAndReason(PointTransactionType.ADJUST, booking.getId(), reason)
+                    .orElse(null);
+            if (existing != null) {
+                return 0;
+            }
+        }
         
         int actualPoints = points;
         if (points < 0) {
@@ -177,7 +197,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         account.addPoints(actualPoints);
         pointTransactionRepository.save(new PointTransaction(
                 account,
-                null,
+                booking,
                 PointTransactionType.ADJUST,
                 actualPoints,
                 account.getCurrentPoints(),
@@ -500,9 +520,28 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 transaction.getPoints(),
                 transaction.getBalanceAfter(),
                 transaction.getReason(),
-                transaction.getBooking() != null ? transaction.getBooking().getId().toString() : null,
+                resolveReferenceBookingId(transaction),
                 transaction.getCreatedAt()
         );
+    }
+
+    private Booking resolveOptionalBooking(UUID bookingId, User customer) {
+        if (bookingId == null) {
+            return null;
+        }
+        return bookingRepository.findByCustomerAndId(customer, bookingId).orElse(null);
+    }
+
+    private String resolveReferenceBookingId(PointTransaction transaction) {
+        if (transaction.getBooking() != null) {
+            return transaction.getBooking().getId().toString();
+        }
+        if ("First booking bonus".equalsIgnoreCase(transaction.getReason())) {
+            return bookingRepository.findFirstByCustomerOrderByCreatedAtAsc(transaction.getLoyaltyAccount().getCustomer())
+                    .map(booking -> booking.getId().toString())
+                    .orElse(null);
+        }
+        return null;
     }
 }
 

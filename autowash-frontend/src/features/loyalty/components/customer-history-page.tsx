@@ -384,6 +384,7 @@ function PointTransactionRow({
   language: string;
   locale: string;
 }) {
+  const bookingHref = item.bookingId ? `/customer/bookings/${item.bookingId}?from=history` : null;
   const content = (
     <>
       <div>
@@ -399,10 +400,10 @@ function PointTransactionRow({
         </div>
       </div>
       <div className="flex items-center justify-end gap-3">
-        <div className={item.points >= 0 ? "text-right text-lg font-bold text-emerald-600" : "text-right text-lg font-bold text-rose-600"}>
+        <div className={cnPointValue(item.points, Boolean(bookingHref))}>
           {item.points >= 0 ? "+" : ""}{item.points.toLocaleString(locale)} pts
         </div>
-        {item.bookingId ? <ArrowRight className="h-4 w-4 text-slate-300" /> : null}
+        {bookingHref ? <ArrowRight className="h-4 w-4 text-slate-300" /> : null}
       </div>
     </>
   );
@@ -410,15 +411,21 @@ function PointTransactionRow({
   const className =
     "flex flex-col gap-4 p-5 transition-colors sm:flex-row sm:items-center sm:justify-between hover:bg-slate-50";
 
-  if (!item.bookingId) {
+  if (!bookingHref) {
     return <div className={className}>{content}</div>;
   }
 
   return (
-    <NextLink href={`/customer/bookings/${item.bookingId}`} className={className}>
+    <NextLink href={bookingHref} className={className}>
       {content}
     </NextLink>
   );
+}
+
+function cnPointValue(points: number, linked: boolean) {
+  const tone = points >= 0 ? "text-emerald-600" : "text-rose-600";
+  const linkedStyle = linked ? "rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200" : "";
+  return `text-right text-lg font-bold ${tone} ${linkedStyle}`;
 }
 
 function BookingRow({ booking, language, locale }: { booking: BookingListItem; language: string; locale: string }) {
@@ -450,7 +457,7 @@ function BookingRow({ booking, language, locale }: { booking: BookingListItem; l
   } catch(e) {}
 
   return (
-    <NextLink href={`/customer/bookings/${booking.bookingId}`} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between hover:bg-slate-50 transition-colors">
+    <NextLink href={`/customer/bookings/${booking.bookingId}?from=history`} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between hover:bg-slate-50 transition-colors">
       <div className="flex flex-1 items-center gap-8">
         
         <div className="w-[180px]">

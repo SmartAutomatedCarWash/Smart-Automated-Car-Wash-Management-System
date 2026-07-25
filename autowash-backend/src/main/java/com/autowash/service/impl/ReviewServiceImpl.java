@@ -69,7 +69,7 @@ public class ReviewServiceImpl implements ReviewService {
                 request.beforeImageUrl(),
                 request.afterImageUrl()
         ));
-        loyaltyService.postBonusTransaction(customer.getId(), 10, "Review bonus");
+        loyaltyService.postBonusTransaction(customer.getId(), booking.getId(), 10, "Review bonus");
         return toResponse(review);
     }
 

@@ -384,7 +384,7 @@ public class BookingServiceImpl implements BookingService {
 
         long totalBookings = BookingRepository.countByCustomer(user);
         if (totalBookings == 1) {
-            loyaltyService.postBonusTransaction(user.getId(), 30, "First booking bonus");
+            loyaltyService.postBonusTransaction(user.getId(), booking.getId(), 30, "First booking bonus");
         }
         
         Payment payment = new Payment(
@@ -678,7 +678,6 @@ public class BookingServiceImpl implements BookingService {
         if (payment.getStatus() == PaymentStatus.PAID) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Paid booking cannot change payment method", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
-
         if (paymentMethod == PaymentMethod.CASH_AT_COUNTER) {
             payment.changeToCashAtCounter();
         } else if (paymentMethod == PaymentMethod.BANK_TRANSFER) {
