@@ -102,4 +102,25 @@ public class OperationsQueueController {
                 operationsService.getManagerSessionHistory(page, limit, period, date, servicePackage, rating, search, sort, staffId)
         );
     }
+
+    @GetMapping("/admin/session-history")
+    @Operation(summary = "Get completed session history for admin operations")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ApiResponse<StaffSessionHistoryResponse> getAdminSessionHistory(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "ALL") String period,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) String servicePackage,
+            @RequestParam(defaultValue = "ALL") String rating,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "COMPLETED_DESC") String sort,
+            @RequestParam(required = false) UUID staffId
+    ) {
+        return ApiResponse.ok(
+                "Admin completed session history retrieved",
+                operationsService.getManagerSessionHistory(page, limit, period, date, servicePackage, rating, search, sort, staffId)
+        );
+    }
 }

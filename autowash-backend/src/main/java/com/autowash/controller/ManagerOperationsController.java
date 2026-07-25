@@ -6,6 +6,7 @@ import com.autowash.dto.CreateWashSessionResponse;
 import com.autowash.dto.EligibleSessionBookingResponse;
 import com.autowash.dto.OperationsQueueResponse;
 import com.autowash.dto.StaffOptionResponse;
+import com.autowash.entity.Notification;
 import com.autowash.entity.User;
 import com.autowash.entity.WashSession;
 import com.autowash.entity.enums.UserRole;
@@ -52,15 +53,18 @@ public class ManagerOperationsController {
     private final OperationsService operationsService;
     private final WashSessionRepository washSessionRepository;
     private final UserRepository userRepository;
+    private final com.autowash.repository.NotificationRepository notificationRepository;
 
     public ManagerOperationsController(
             OperationsService operationsService,
             WashSessionRepository washSessionRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            com.autowash.repository.NotificationRepository notificationRepository
     ) {
         this.operationsService = operationsService;
         this.washSessionRepository = washSessionRepository;
         this.userRepository = userRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     @GetMapping("/command-center")
@@ -409,4 +413,51 @@ public class ManagerOperationsController {
     public record BookingCheckInResponse(String bookingId, UUID sessionId, String status, UUID assignedStaffId, String assignedStaffName, String assignedBay, Instant checkedInAt) {}
     public record TransferSessionRequest(UUID toStaffId, String reason) {}
     public record TransferSessionResponse(UUID auditId, UUID sessionId, String bookingId, UUID fromStaffId, String fromStaffName, UUID toStaffId, String toStaffName, String reason, Instant transferredAt) {}
+
+    @PostMapping("/notices")
+    @Operation(summary = "Send operational notice/alert to staff")
+    public ApiResponse<Void> sendNotice(@Valid @RequestBody SendNoticeRequest request) {
+        String recipient = request.recipient();
+        String title = "Manager Notice (" + request.noticeType() + " - " + request.priority() + ")";
+        String message = request.message();
+
+        if ("ALL".equalsIgnoreCase(recipient)) {
+            List<User> activeStaff = userRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE);
+            for (User staff : activeStaff) {
+                Notification notification = Notification.builder()
+                        .id(UUID.randomUUID())
+                        .user(staff)
+                        .title(title)
+                        .message(message)
+                        .type(com.autowash.entity.enums.NotificationType.SYSTEM)
+                        .read(false)
+                        .createdAt(Instant.now())
+                        .build();
+                notificationRepository.save(notification);
+            }
+        } else {
+            UUID staffId = UUID.fromString(recipient);
+            User staff = userRepository.findById(staffId)
+                    .orElseThrow(() -> new ApiException(org.springframework.http.HttpStatus.NOT_FOUND, "Staff member not found", com.autowash.shared.exception.ErrorCode.RESOURCE_NOT_FOUND));
+            Notification notification = Notification.builder()
+                    .id(UUID.randomUUID())
+                    .user(staff)
+                    .title(title)
+                    .message(message)
+                    .type(com.autowash.entity.enums.NotificationType.SYSTEM)
+                    .read(false)
+                    .createdAt(Instant.now())
+                    .build();
+            notificationRepository.save(notification);
+        }
+
+        return ApiResponse.ok("Notice sent successfully", null);
+    }
+
+    public record SendNoticeRequest(
+            String recipient,
+            String noticeType,
+            String priority,
+            String message
+    ) {}
 }

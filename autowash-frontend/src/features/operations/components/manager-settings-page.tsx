@@ -8,11 +8,12 @@ import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
-import { getActiveStaffOptions, getOperationsQueue } from "@/features/operations/lib/operations-service";
+import { getActiveStaffOptions, getOperationsQueue, sendOperationsNotice } from "@/features/operations/lib/operations-service";
 import {
   getManagerSettings,
   updateManagerSettings,
   type ManagerOperationSettingsPayload,
+  type ManagerNotificationTemplatePayload,
 } from "@/features/operations/lib/manager-settings-service";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 
@@ -38,13 +39,16 @@ const DEFAULT_SETTINGS: ManagerOperationSettingsPayload = {
   notifyCompletion: false,
 };
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/ui/ui/dialog";
+
 const quickTemplates = ["Vehicle check reminder", "Booking waiting too long", "Incident warning"];
-const templateRows = [
-  { tone: "info", label: "Reminder", title: "Ask staff to inspect vehicle" },
-  { tone: "warn", label: "Warning", title: "Booking has waited too long" },
-  { tone: "priority", label: "Priority", title: "Vehicle needs urgent handoff" },
-  { tone: "danger", label: "Incident", title: "Report an incident at a bay" },
-] as const;
 
 export function ManagerSettingsPage() {
   const getErrorMessage = useErrorMessage();
@@ -56,6 +60,9 @@ export function ManagerSettingsPage() {
   const [message, setMessage] = useState("Inspect the interior carefully and update the booking status after completion.");
   const [priorityReason, setPriorityReason] = useState("Customer has waited too long");
   const [notifyTarget, setNotifyTarget] = useState("Assigned staff");
+
+  const [editingTemplate, setEditingTemplate] = useState<ManagerNotificationTemplatePayload | null>(null);
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
 
   const settingsQuery = useQuery({
     queryKey: ["manager-settings", "config"],
@@ -88,6 +95,14 @@ export function ManagerSettingsPage() {
     onError: (error) => toast.error(getErrorMessage(error as unknown as ApiErrorResponse)),
   });
 
+  const sendNoticeMutation = useMutation({
+    mutationFn: sendOperationsNotice,
+    onSuccess: () => {
+      toast.success("Operations notice sent.");
+    },
+    onError: (error) => toast.error(getErrorMessage(error as unknown as ApiErrorResponse)),
+  });
+
   const staffOptions = staffQuery.data ?? [];
   const sessions = useMemo(() => queueQuery.data?.columns.flatMap((column) => column.sessions) ?? [], [queueQuery.data]);
   const activeSessions = sessions.filter((session) => ["QUEUED", "CHECKED_IN", "IN_PROGRESS"].includes(session.status));
@@ -102,8 +117,11 @@ export function ManagerSettingsPage() {
   };
 
   const sendNotice = () => {
-    toast.success("Operations notice sent.", {
-      description: `${noticeType} · ${recipient === "ALL" ? "All staff" : recipient} · ${priorityLabel(priority)}`,
+    sendNoticeMutation.mutate({
+      recipient,
+      noticeType,
+      priority,
+      message,
     });
   };
 
@@ -112,6 +130,19 @@ export function ManagerSettingsPage() {
     toast.success("Booking marked as priority.", {
       description: selectedSession ? `${selectedSession.customerName} · ${selectedSession.servicePackage ?? "Service"} · ${priorityReason}` : priorityReason,
     });
+  };
+
+  const handleSaveTemplate = (updatedTemplate: ManagerNotificationTemplatePayload) => {
+    const currentTemplates = settingsQuery.data?.templates ?? [];
+    const nextTemplates = currentTemplates.map((t) =>
+      t.templateKey === updatedTemplate.templateKey ? updatedTemplate : t
+    );
+    saveMutation.mutate({
+      settings,
+      templates: nextTemplates,
+    });
+    setIsTemplateDialogOpen(false);
+    setEditingTemplate(null);
   };
 
   return (
@@ -131,7 +162,7 @@ export function ManagerSettingsPage() {
             <Field label="Recipient">
               <select value={recipient} onChange={(event) => setRecipient(event.target.value)} className={inputClassName}>
                 <option value="ALL">All staff</option>
-                {staffOptions.map((staff) => <option key={staff.staffId} value={staff.staffName}>{staff.staffName}</option>)}
+                {staffOptions.map((staff) => <option key={staff.staffId} value={staff.staffId}>{staff.staffName}</option>)}
               </select>
             </Field>
           </div>
@@ -165,8 +196,8 @@ export function ManagerSettingsPage() {
             </div>
           </div>
 
-          <Button className="mt-4 h-11 w-full rounded-lg bg-[#0587a5] font-black text-white hover:bg-[#04738d]" onClick={sendNotice}>
-            Send notice
+          <Button className="mt-4 h-11 w-full rounded-lg bg-[#0587a5] font-black text-white hover:bg-[#04738d]" onClick={sendNotice} disabled={sendNoticeMutation.isPending}>
+            {sendNoticeMutation.isPending ? "Sending..." : "Send notice"}
           </Button>
         </Card>
 
@@ -210,23 +241,84 @@ export function ManagerSettingsPage() {
         <Card className="rounded-lg border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <CardTitle icon={<FileWarning className="h-6 w-6" />} title="Operations notice templates" tone="slate" />
-            <Button variant="outline" className="h-9 rounded-lg border-cyan-200 text-sm font-black text-cyan-700" onClick={() => toast.info("Template created.")}>
-              <Plus className="h-4 w-4" />
-              Create template
-            </Button>
           </div>
           <div className="mt-4 divide-y divide-slate-100">
-            {templateRows.map((row) => (
-              <div key={row.title} className="grid grid-cols-[6rem_1fr_auto_auto] items-center gap-4 py-3">
-                <TemplateBadge tone={row.tone}>{row.label}</TemplateBadge>
-                <p className="text-sm font-black text-slate-950">{row.title}</p>
-                <button className="rounded-md p-2 text-slate-600 hover:bg-slate-50" title="Edit template"><Edit3 className="h-4 w-4" /></button>
+            {(settingsQuery.data?.templates ?? []).map((row) => (
+              <div key={row.templateKey} className="grid grid-cols-[8rem_1fr_auto_auto] items-center gap-4 py-3">
+                <TemplateBadge tone={row.templateKey === "newBooking" ? "info" : row.templateKey === "delay" ? "warn" : "priority"}>
+                  {row.displayName}
+                </TemplateBadge>
+                <div>
+                  <p className="text-sm font-black text-slate-950">{row.description}</p>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5 max-w-[350px] truncate">{row.message}</p>
+                </div>
+                <button
+                  className="rounded-md p-2 text-slate-600 hover:bg-slate-50"
+                  title="Edit template"
+                  onClick={() => {
+                    setEditingTemplate(row);
+                    setIsTemplateDialogOpen(true);
+                  }}
+                >
+                  <Edit3 className="h-4 w-4" />
+                </button>
                 <button className="rounded-md p-2 text-slate-600 hover:bg-slate-50" title="More options"><MoreVertical className="h-4 w-4" /></button>
               </div>
             ))}
           </div>
         </Card>
       </section>
+
+      {isTemplateDialogOpen && editingTemplate && (
+        <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+          <DialogContent className="sm:max-w-[500px] rounded-2xl bg-white">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-black text-slate-900">Edit Template: {editingTemplate.displayName}</DialogTitle>
+              <DialogDescription className="text-sm font-medium text-slate-500">Modify template key message and previews.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <Field label="Display Name">
+                <input
+                  type="text"
+                  value={editingTemplate.displayName}
+                  onChange={(e) => setEditingTemplate({ ...editingTemplate, displayName: e.target.value })}
+                  className={inputClassName}
+                />
+              </Field>
+              <Field label="Description">
+                <input
+                  type="text"
+                  value={editingTemplate.description}
+                  onChange={(e) => setEditingTemplate({ ...editingTemplate, description: e.target.value })}
+                  className={inputClassName}
+                />
+              </Field>
+              <Field label="Message Template">
+                <textarea
+                  value={editingTemplate.message}
+                  onChange={(e) => setEditingTemplate({ ...editingTemplate, message: e.target.value })}
+                  className="min-h-20 w-full resize-y rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
+                />
+              </Field>
+              <Field label="Preview Text">
+                <textarea
+                  value={editingTemplate.preview}
+                  onChange={(e) => setEditingTemplate({ ...editingTemplate, preview: e.target.value })}
+                  className="min-h-16 w-full resize-y rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
+                />
+              </Field>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" className="rounded-xl" onClick={() => setIsTemplateDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button className="rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white" onClick={() => handleSaveTemplate(editingTemplate)} disabled={saveMutation.isPending}>
+                {saveMutation.isPending ? "Saving..." : "Save changes"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </WorkspacePage>
   );
 }
