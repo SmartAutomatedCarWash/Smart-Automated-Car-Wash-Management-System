@@ -44,6 +44,7 @@ export type OperationsQueueSession = {
   startedAt?: string | null;
   completedAt?: string | null;
   notes?: string | null;
+  rating?: number | null;
 };
 
 export type OperationsQueueColumn = {

@@ -28,7 +28,7 @@ type PeriodFilter = "ALL" | "TODAY" | "7DAYS" | "MONTH";
 type RatingFilter = "ALL" | "5" | "4" | "LOW" | "NONE";
 type SortMode = "COMPLETED_DESC" | "COMPLETED_ASC" | "DURATION_DESC" | "RATING_ASC";
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 5;
 const ALL_STAFF = "ALL";
 
 export function ManagerHistoryView() {

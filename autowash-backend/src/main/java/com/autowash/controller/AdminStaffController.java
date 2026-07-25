@@ -59,8 +59,11 @@ public class AdminStaffController {
 
     @GetMapping
     @Operation(summary = "List staff accounts")
-    public ApiResponse<List<AdminAccountResponse>> listStaff() {
-        return ApiResponse.ok("Staff retrieved", adminReportingService.listStaff());
+    public ApiResponse<AdminReportingService.AccountPage> listStaff(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        return ApiResponse.ok("Staff retrieved", adminReportingService.listStaffPage(page, limit));
     }
 
     @PutMapping("/{staffId}/status")
@@ -86,9 +89,12 @@ public class AdminStaffController {
 
     @GetMapping("/kpi")
     @Operation(summary = "List all staff KPI for admin dashboard")
-    public ApiResponse<List<StaffKpiItem>> listStaffKpi(
-            @RequestParam(defaultValue = "TODAY") String range
+    public ApiResponse<AdminReportingService.StaffKpiPage> listStaffKpi(
+            @RequestParam(defaultValue = "TODAY") String range,
+            @RequestParam(required = false) UUID staffId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int limit
     ) {
-        return ApiResponse.ok("Staff KPI retrieved", adminReportingService.listStaffKpi(range));
+        return ApiResponse.ok("Staff KPI retrieved", adminReportingService.listStaffKpiPage(range, staffId, page, limit));
     }
 }

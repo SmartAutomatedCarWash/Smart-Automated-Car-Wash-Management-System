@@ -38,7 +38,7 @@ const PAGE_LIMIT = 20;
 const STAFF_CLIENT_FILTER_LIMIT = 100;
 const ROLE_OPTIONS: AdminAccountRole[] = ["CUSTOMER", "STAFF", "MANAGER", "ADMIN", "GUEST"];
 const STAFF_ROLE_OPTIONS: AdminAccountRole[] = ["STAFF", "MANAGER", "ADMIN"];
-const STATUS_OPTIONS: AdminAccountStatus[] = ["PENDING", "ACTIVE", "BLOCKED", "SUSPENDED", "DELETED"];
+const STATUS_OPTIONS: AdminAccountStatus[] = ["PENDING", "ACTIVE", "BLOCKED", "SUSPENDED", "INACTIVE"];
 const EMPTY_STAFF_FORM: CreateAdminStaffPayload = {
   fullName: "",
   phone: "",

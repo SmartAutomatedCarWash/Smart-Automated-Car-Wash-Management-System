@@ -50,6 +50,8 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
 public class ManagerOperationsController {
 
+    private static final int PAGE_SIZE = 5;
+
     private final OperationsService operationsService;
     private final WashSessionRepository washSessionRepository;
     private final UserRepository userRepository;
@@ -75,7 +77,7 @@ public class ManagerOperationsController {
             @RequestParam(defaultValue = "ALL") String staffId,
             @RequestParam(defaultValue = "ALL") String focus
     ) {
-        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(50), date, search);
+        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(PAGE_SIZE), date, search);
         List<OperationsQueueResponse.WashSessionCard> sessions = filterSessions(flattenSessions(operationsService.getQueue()), date, search, staffId, focus);
         List<StaffOptionResponse> staff = operationsService.listActiveStaff();
         MetricsResponse metrics = buildMetrics(candidates, sessions);
@@ -106,7 +108,7 @@ public class ManagerOperationsController {
     public ApiResponse<MetricsResponse> getMetrics(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(50), date, null);
+        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(PAGE_SIZE), date, null);
         List<OperationsQueueResponse.WashSessionCard> sessions = filterSessions(flattenSessions(operationsService.getQueue()), date, null, "ALL", "ALL");
         return ApiResponse.ok("Manager operations metrics retrieved", buildMetrics(candidates, sessions));
     }
@@ -116,7 +118,7 @@ public class ManagerOperationsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) String search
     ) {
-        return ApiResponse.ok("Manager check-in candidates retrieved", filterBookings(operationsService.listEligibleSessionBookings(50), date, search));
+        return ApiResponse.ok("Manager check-in candidates retrieved", filterBookings(operationsService.listEligibleSessionBookings(PAGE_SIZE), date, search));
     }
 
     @GetMapping("/interventions")
@@ -142,7 +144,7 @@ public class ManagerOperationsController {
             @RequestParam(defaultValue = "ALL") String staffId,
             @RequestParam(defaultValue = "ALL") String focus
     ) {
-        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(50), date, search);
+        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(PAGE_SIZE), date, search);
         List<OperationsQueueResponse.WashSessionCard> sessions = filterSessions(flattenSessions(operationsService.getQueue()), date, search, staffId, focus);
         return ApiResponse.ok("Manager operations board retrieved", buildBoard(candidates, sessions));
     }

@@ -128,7 +128,7 @@ export type AdminBusinessHealthReport = {
 export type AdminAccountRole = "CUSTOMER" | "STAFF" | "MANAGER" | "ADMIN" | "GUEST";
 export type AdminEditableAccountRole = "CUSTOMER" | "STAFF" | "MANAGER" | "ADMIN";
 
-export type AdminAccountStatus = "PENDING" | "ACTIVE" | "BLOCKED" | "SUSPENDED" | "DELETED";
+export type AdminAccountStatus = "PENDING" | "ACTIVE" | "BLOCKED" | "SUSPENDED" | "INACTIVE";
 
 export type AdminAccount = {
   accountId: string;
@@ -166,6 +166,7 @@ export type UpdateAdminStaffPayload = {
   phone?: string;
   email?: string;
   password?: string;
+  status?: AdminAccountStatus;
 };
 
 export type StaffKpiItem = {
@@ -179,6 +180,23 @@ export type StaffKpiItem = {
   kpiProgressPercent: number;
   kpiTargetRevenue: number;
   isOnline: boolean;
+};
+
+export type StaffKpiPage = {
+  items: StaffKpiItem[];
+  pagination: PaginationMeta;
+};
+
+export type ServiceQualityItem = {
+  service: string;
+  bookings: number;
+  revenue: number;
+  rating: number | null;
+};
+
+export type ServiceQualityPage = {
+  items: ServiceQualityItem[];
+  pagination: PaginationMeta;
 };
 
 export type AdminCustomerDetail = {

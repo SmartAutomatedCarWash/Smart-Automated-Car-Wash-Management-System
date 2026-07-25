@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import Link from "next/link";
@@ -1178,7 +1178,7 @@ function CategorySelectField({
       <span className="text-sm font-semibold text-slate-800">{label}</span>
       {!showInput ? (
         <select
-          value={existingCategories.includes(value) ? value : value ? ADD_NEW : ""}
+          value={value}
           onChange={(e) => handleSelect(e.target.value)}
           onBlur={onBlur}
           className={cn(

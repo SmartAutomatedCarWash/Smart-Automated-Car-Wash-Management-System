@@ -21,6 +21,8 @@ import type {
   ReportAnalysisGroup,
   ReportRangeKey,
   StaffKpiItem,
+  StaffKpiPage,
+  ServiceQualityPage,
   UpdateAdminStaffPayload,
   UpdateAdminCustomerRolePayload,
   UpdateAdminCustomerRoleResult,
@@ -48,14 +50,23 @@ export async function listAdminAccounts(
   };
 }
 
-export async function listAdminStaff(): Promise<AdminAccount[]> {
-  const response = await apiClient.get<ApiSuccessResponse<AdminAccount[]>>("/admin/staff");
+export async function listAdminStaff(page = 1, limit = 100): Promise<AdminAccountsPage> {
+  const response = await apiClient.get<ApiSuccessResponse<AdminAccountsPage>>("/admin/staff", {
+    params: { page, limit },
+  });
   return response.data.data;
 }
 
-export async function listAdminStaffKpi(range = "WEEK"): Promise<StaffKpiItem[]> {
-  const response = await apiClient.get<ApiSuccessResponse<StaffKpiItem[]>>("/admin/staff/kpi", {
-    params: { range },
+export async function listAdminStaffKpi(range = "WEEK", page = 1, limit = 5): Promise<StaffKpiPage> {
+  const response = await apiClient.get<ApiSuccessResponse<StaffKpiPage>>("/admin/staff/kpi", {
+    params: { range, page, limit },
+  });
+  return response.data.data;
+}
+
+export async function listAdminServiceQuality(range = "WEEK", page = 1, limit = 5): Promise<ServiceQualityPage> {
+  const response = await apiClient.get<ApiSuccessResponse<ServiceQualityPage>>("/admin/reports/service-quality", {
+    params: { range, page, limit },
   });
   return response.data.data;
 }

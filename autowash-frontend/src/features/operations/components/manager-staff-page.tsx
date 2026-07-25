@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ComponentType } from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BadgeCheck,
@@ -59,7 +60,7 @@ import { getActiveStaffOptions, getOperationsQueue, transferWashSession } from "
 import { createAdminStaff, deleteAdminStaff, listAdminStaff, listAdminStaffKpi, updateAdminStaff } from "@/features/reports/api/admin-reporting-service";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { OperationsQueueSession, StaffOption, WashSessionStatus } from "@/entities/operations";
-import type { AdminAccount, CreateAdminStaffPayload, StaffKpiItem, UpdateAdminStaffPayload } from "@/entities/reports";
+import type { AdminAccount, AdminAccountStatus, CreateAdminStaffPayload, StaffKpiItem, UpdateAdminStaffPayload } from "@/entities/reports";
 
 type StaffStatus = "available" | "busy" | "overloaded" | "offline";
 type StaffRole = string;
@@ -79,6 +80,7 @@ type StaffRow = {
   reviewCount: number;
   kpiPercent: number;
   avatarUrl?: string;
+  accountStatus: AdminAccountStatus | "UNKNOWN";
 };
 
 type StaffDialogMode = "view" | "edit";
@@ -88,6 +90,7 @@ type StaffFormState = {
   phone: string;
   email: string;
   password: string;
+  status: AdminAccountStatus | "UNKNOWN";
 };
 
 const EMPTY_CREATE_FORM: CreateAdminStaffPayload = {
@@ -104,6 +107,7 @@ const EMPTY_STAFF_FORM: StaffFormState = {
   phone: "",
   email: "",
   password: "",
+  status: "UNKNOWN",
 };
 const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -115,10 +119,13 @@ export function ManagerStaffPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [performanceStaffId, setPerformanceStaffId] = useState("ALL");
+  const [performancePeriod, setPerformancePeriod] = useState<"DAY" | "WEEK" | "MONTH">("WEEK");
+  const [detailsExpanded, setDetailsExpanded] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createForm, setCreateForm] = useState<CreateAdminStaffPayload>(EMPTY_CREATE_FORM);
   const [profileDialog, setProfileDialog] = useState<{ mode: StaffDialogMode; staffId: string } | null>(null);
   const [assignmentDialog, setAssignmentDialog] = useState<{ sessionId: string; currentStaffId?: string | null } | null>(null);
+  const [bookingDialogSession, setBookingDialogSession] = useState<OperationsQueueSession | null>(null);
   const [deleteStaffId, setDeleteStaffId] = useState<string | null>(null);
 
   const staffQuery = useQuery({
@@ -133,20 +140,20 @@ export function ManagerStaffPage() {
   });
   const staffAccountsQuery = useQuery({
     queryKey: ["manager-staff", "accounts"],
-    queryFn: listAdminStaff,
+    queryFn: () => listAdminStaff(1, 100),
     refetchInterval: 30_000,
     retry: 1,
   });
   const staffKpiQuery = useQuery({
-    queryKey: ["manager-staff", "kpi", "WEEK"],
-    queryFn: () => listAdminStaffKpi("WEEK"),
+    queryKey: ["manager-staff", "kpi", performancePeriod],
+    queryFn: () => listAdminStaffKpi(performancePeriod),
     refetchInterval: 30_000,
     retry: 1,
   });
 
   const sessions = useMemo(() => queueQuery.data?.columns.flatMap((column) => column.sessions) ?? [], [queueQuery.data]);
   const staffRows = useMemo(
-    () => buildStaffRows(staffQuery.data ?? [], sessions, staffAccountsQuery.data ?? [], staffKpiQuery.data ?? []),
+    () => buildStaffRows(staffQuery.data ?? [], sessions, staffAccountsQuery.data?.items ?? [], staffKpiQuery.data?.items ?? []),
     [sessions, staffAccountsQuery.data, staffKpiQuery.data, staffQuery.data],
   );
   const filteredRows = useMemo(
@@ -165,8 +172,16 @@ export function ManagerStaffPage() {
     () => sessions.filter((session) => performanceStaffId === "ALL" || session.assignedStaffId === performanceStaffId),
     [performanceStaffId, sessions],
   );
-  const performanceCompletedBookings = performanceSessions.filter((session) => session.status === "COMPLETED").length;
-  const performanceRevenue = performanceSessions.reduce((sum, session) => sum + (session.feeAmount ?? 0), 0);
+  
+  const kpiData = staffKpiQuery.data?.items ?? [];
+  const performanceKpi = performanceStaffId === "ALL"
+    ? kpiData
+    : kpiData.filter((k) => k.staffId === performanceStaffId);
+
+  const performanceCompletedBookings = performanceKpi.reduce((sum, k) => sum + k.completedBookings, 0);
+  const performanceRevenue = performanceKpi.reduce((sum, k) => sum + k.completedRevenue, 0);
+  const performanceOnTimeRate = performanceKpi.length ? Math.round(performanceKpi.reduce((sum, k) => sum + k.kpiProgressPercent, 0) / performanceKpi.length) : 0;
+  
   const performanceStaff = performanceStaffId === "ALL" ? null : staffRows.find((row) => row.staffId === performanceStaffId) ?? null;
   const performanceChartData = useMemo(() => buildPerformanceChartData(performanceSessions), [performanceSessions]);
   const isFetching = staffQuery.isFetching || queueQuery.isFetching || staffAccountsQuery.isFetching || staffKpiQuery.isFetching;
@@ -273,10 +288,10 @@ export function ManagerStaffPage() {
         <WorkspaceEmptyState title="Unable to load staff data" description={getErrorMessage((staffQuery.error ?? queueQuery.error) as unknown as ApiErrorResponse)} />
       ) : (
         <section>
-          <div className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
-            <div className="space-y-4">
+          <div className={cn("grid items-stretch gap-4 transition-[grid-template-columns] duration-300", detailsExpanded ? "xl:grid-cols-[minmax(0,1fr)_22rem]" : "xl:grid-cols-[minmax(0,1fr)_3rem]")}>
+            <div className="space-y-4 min-w-0">
             {showCreateForm ? (
-              <Card className="rounded-lg border-slate-200 bg-white p-5 shadow-sm">
+              <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <h2 className="text-lg font-black text-slate-950">Add staff</h2>
                   <button className="text-sm font-bold text-slate-500" onClick={() => setShowCreateForm(false)}>Close</button>
@@ -306,8 +321,8 @@ export function ManagerStaffPage() {
               <MetricCard icon={Timer} label="Busy" value={busyCount} detail="In service" tone="amber" />
             </div>
 
-            <Card className="rounded-lg border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-lg font-black text-slate-950">Team performance</h2>
                 <select
                   value={performanceStaffId}
@@ -323,17 +338,17 @@ export function ManagerStaffPage() {
               <div className="grid gap-5 xl:grid-cols-[1.15fr_1fr] xl:items-center">
                 <div>
                   <div className="mb-6 inline-flex rounded-lg border border-slate-100 bg-slate-50 p-1">
-                    {["Day", "Week", "Month"].map((item) => (
-                      <button key={item} className={`h-9 rounded-md px-6 text-sm font-bold ${item === "Week" ? "bg-[#00236f] text-white shadow-sm" : "text-slate-600"}`}>
-                        {item}
+                    {[ { label: "Day", value: "DAY" }, { label: "Week", value: "WEEK" }, { label: "Month", value: "MONTH" } ].map((item) => (
+                      <button key={item.value} onClick={() => setPerformancePeriod(item.value as any)} className={`h-9 rounded-md px-6 text-sm font-bold ${item.value === performancePeriod ? "bg-[#00236f] text-white shadow-sm" : "text-slate-600"}`}>
+                        {item.label}
                       </button>
                     ))}
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <PerformanceItem icon={CalendarClock} label="Completed bookings" value={performanceCompletedBookings || (performanceStaff ? performanceStaff.completedSessions.length : completedBookings)} change="" />
+                    <PerformanceItem icon={CalendarClock} label="Completed bookings" value={performanceCompletedBookings} change="" />
                     <PerformanceItem icon={CheckCircle2} label="Revenue" value={formatCompactRevenue(performanceRevenue)} change="" />
                     <PerformanceItem icon={Star} label="Average rating" value={formatRating(performanceStaff?.rating ?? averageRating(staffRows))} change="" />
-                    <PerformanceItem icon={Timer} label="On-time rate" value={`${performanceStaff?.kpiPercent ?? averageKpi(staffRows)}%`} change="" />
+                    <PerformanceItem icon={Timer} label="On-time rate" value={`${performanceOnTimeRate}%`} change="" />
                   </div>
                 </div>
                 <div className="h-44">
@@ -352,8 +367,8 @@ export function ManagerStaffPage() {
               </div>
             </Card>
 
-            <Card className="overflow-hidden rounded-lg border-slate-200 bg-white shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
                 <h2 className="text-lg font-black text-slate-950">Staff list</h2>
                 <div className="flex flex-wrap gap-2">
                   <div className="relative">
@@ -398,6 +413,8 @@ export function ManagerStaffPage() {
 
             <QuickDetailPanel
               staff={selectedStaff}
+              expanded={detailsExpanded}
+              onToggle={() => setDetailsExpanded((prev) => !prev)}
               onViewProfile={(staffId) => openStaffProfile(staffId, "view")}
               onEditProfile={(staffId) => openStaffProfile(staffId, "edit")}
               onOpenAssignment={(staffId) => {
@@ -430,6 +447,13 @@ export function ManagerStaffPage() {
         }}
         submitting={updateStaffMutation.isPending}
       />
+      <Dialog open={Boolean(bookingDialogSession)} onOpenChange={(open) => { if (!open) setBookingDialogSession(null); }}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[760px]">
+          {bookingDialogSession ? (
+            <BookingDetailDialog session={bookingDialogSession} onClose={() => setBookingDialogSession(null)} />
+          ) : null}
+        </DialogContent>
+      </Dialog>
       <ManagerStaffAssignmentDialog
         open={Boolean(assignmentDialog)}
         onOpenChange={(open) => {
@@ -469,28 +493,44 @@ export function ManagerStaffPage() {
   );
 }
 
-function MetricCard({ icon: Icon, label, value, detail, tone }: { icon: ComponentType<{ className?: string }>; label: string; value: number; detail: string; tone: "blue" | "green" | "amber" }) {
-  const color = {
-    blue: "bg-blue-50 text-blue-700",
-    green: "bg-emerald-50 text-emerald-700",
-    amber: "bg-amber-50 text-amber-700",
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: string | number;
+  detail: string;
+  tone: "blue" | "green" | "amber";
+}) {
+  const colors = {
+    blue: "bg-blue-50 text-blue-600",
+    green: "bg-emerald-50 text-emerald-600",
+    amber: "bg-amber-50 text-amber-600",
   }[tone];
+  
   const dot = {
     blue: "bg-slate-300",
     green: "bg-emerald-500",
-    amber: "bg-orange-400",
+    amber: "bg-amber-500",
   }[tone];
 
   return (
-    <Card className="rounded-lg border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center gap-4">
-        <div className={`flex h-16 w-16 items-center justify-center rounded-full ${color}`}>
-          <Icon className="h-7 w-7" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-slate-500">{label}</p>
-          <p className="mt-1 text-4xl font-black leading-none text-slate-950">{value}</p>
-          <p className="mt-4 flex items-center gap-2 text-sm text-slate-500"><span className={`h-2 w-2 rounded-full ${dot}`} />{detail}</p>
+    <Card className="rounded-2xl border-slate-200 bg-white p-3 shadow-sm">
+      <div className="flex items-start gap-3">
+        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${colors}`}>
+          <Icon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold text-slate-500">{label}</p>
+          <p className="mt-1 truncate text-2xl font-black text-slate-950">{value}</p>
+          <p className="mt-1 flex items-center gap-1.5 truncate text-[11px] font-semibold text-slate-500">
+            <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+            {detail}
+          </p>
         </div>
       </div>
     </Card>
@@ -500,11 +540,11 @@ function MetricCard({ icon: Icon, label, value, detail, tone }: { icon: Componen
 function PerformanceItem({ icon: Icon, label, value, change }: { icon: ComponentType<{ className?: string }>; label: string; value: string | number; change: string }) {
   return (
     <div>
-      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-blue-700"><Icon className="h-4 w-4" /></span>
+      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-700"><Icon className="h-3.5 w-3.5" /></span>
         {label}
       </div>
-      <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
+      <p className="mt-2 text-xl font-black text-slate-950">{value}</p>
       {change ? <p className="mt-1 text-xs font-bold text-emerald-600">{change}</p> : null}
     </div>
   );
@@ -530,7 +570,7 @@ function StaffTable({
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[920px] text-left">
+        <table className="w-full min-w-[920px] text-left text-xs">
           <colgroup>
             <col className="w-[22%]" />
             <col className="w-[24%]" />
@@ -542,48 +582,48 @@ function StaffTable({
           </colgroup>
           <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500">
             <tr>
-              <th className="px-4 py-3">Staff</th>
-              <th className="px-4 py-3">Contact & account</th>
-              <th className="px-4 py-3">Current status</th>
-              <th className="px-4 py-3">Booking</th>
-              <th className="px-4 py-3">Weekly KPI</th>
-              <th className="px-4 py-3">Rating</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+              <th className="px-4 py-2">Staff</th>
+              <th className="px-4 py-2">Contact & account</th>
+              <th className="px-4 py-2">Current status</th>
+              <th className="px-4 py-2">Booking</th>
+              <th className="px-4 py-2">Weekly KPI</th>
+              <th className="px-4 py-2">Rating</th>
+              <th className="px-4 py-2 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => {
               return (
                 <tr key={row.staffId} className={`border-t border-slate-100 ${selectedStaffId === row.staffId ? "bg-cyan-50/35" : "bg-white"}`}>
-                  <td className="px-5 py-3.5">
-                    <button type="button" onClick={() => onSelect(row.staffId)} className="flex items-center gap-3 text-left">
+                  <td className="px-4 py-2.5">
+                    <button type="button" onClick={() => onSelect(row.staffId)} className="flex items-center gap-2 text-left">
                       <Avatar name={row.staffName} src={row.avatarUrl} />
-                      <span className="text-sm font-black text-slate-950">{row.staffName}</span>
+                      <span className="text-xs font-black text-slate-950">{row.staffName}</span>
                     </button>
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-600">
+                  <td className="px-4 py-2.5 text-xs text-slate-600">
                     <p>{row.email}</p>
-                    <p className="mt-1">{row.phone}</p>
+                    <p className="mt-0.5">{row.phone}</p>
                   </td>
-                  <td className="px-5 py-3.5"><StatusBadge status={row.status} /></td>
-                  <td className="px-5 py-3.5 text-sm">
+                  <td className="px-4 py-2.5"><StatusBadge status={row.status} /></td>
+                  <td className="px-4 py-2.5 text-xs">
                     <span className="font-black text-[#0067a8]">{row.activeSessions.length}</span>
                     <span className="text-slate-500"> active</span>
                   </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <span className="w-9 text-sm font-black text-slate-900">{row.kpiPercent}%</span>
-                      <Progress value={row.kpiPercent} className="h-2 w-28 bg-slate-100" />
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-8 text-xs font-black text-slate-900">{row.kpiPercent}%</span>
+                      <Progress value={row.kpiPercent} className="h-1.5 w-24 bg-slate-100" />
                     </div>
                   </td>
-                  <td className="px-5 py-3.5">
-                    <span className="inline-flex items-center gap-1 text-sm font-black text-slate-900">
-                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  <td className="px-4 py-2.5">
+                    <span className="inline-flex items-center gap-1 text-xs font-black text-slate-900">
+                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                       {formatRating(row.rating)}
                       <span className="font-normal text-slate-500">({row.reviewCount})</span>
                     </span>
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-2.5 text-right">
                     <div className="flex justify-end gap-1.5">
                       <IconButton icon={Eye} label="View profile" onClick={() => onViewProfile(row.staffId)} />
                       <IconButton icon={Edit3} label="Edit profile" onClick={() => onEditProfile(row.staffId)} />
@@ -613,6 +653,8 @@ function StaffTable({
 
 function QuickDetailPanel({
   staff,
+  expanded,
+  onToggle,
   onViewProfile,
   onEditProfile,
   onOpenAssignment,
@@ -621,6 +663,8 @@ function QuickDetailPanel({
   isFetching,
 }: {
   staff: StaffRow | null;
+  expanded: boolean;
+  onToggle: () => void;
   onViewProfile: (staffId: string) => void;
   onEditProfile: (staffId: string) => void;
   onOpenAssignment: (staffId: string) => void;
@@ -628,12 +672,24 @@ function QuickDetailPanel({
   onDeleteStaff: (staffId: string) => void;
   isFetching: boolean;
 }) {
-  const [expanded, setExpanded] = useState(true);
 
   if (!staff) {
     return <Card className="rounded-lg border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">Select a staff member to view details.</Card>;
   }
   const bookings = [...staff.activeSessions, ...staff.queuedSessions].slice(0, 2);
+
+  if (!expanded) {
+    return (
+      <Button
+        variant="outline"
+        className="flex h-full min-h-[43rem] w-12 flex-col items-center justify-start gap-4 rounded-lg border-slate-200 bg-white py-6 text-slate-500 hover:text-slate-900 shadow-sm transition-all"
+        onClick={onToggle}
+      >
+        <ChevronDown className="h-5 w-5 rotate-90 shrink-0" />
+        <span className="writing-vertical-rl font-black tracking-widest" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>Quick details</span>
+      </Button>
+    );
+  }
 
   return (
     <Card className={cn("flex flex-col rounded-lg border-slate-200 bg-white p-6 shadow-sm", expanded ? "h-full min-h-[43rem]" : "h-fit")}>
@@ -642,29 +698,21 @@ function QuickDetailPanel({
         <Button
           type="button"
           variant="outline"
-          className="h-9 rounded-lg border-slate-200 bg-white px-3 text-xs font-black"
-          onClick={() => setExpanded((current) => !current)}
+          className="h-9 rounded-lg border-slate-200 bg-white px-3 text-xs font-black shrink-0"
+          onClick={onToggle}
         >
-          <ChevronDown className={cn("h-4 w-4 transition-transform", expanded ? "rotate-180" : "")} />
-          {expanded ? "Collapse" : "Expand"}
+          <ChevronDown className="h-4 w-4 -rotate-90" />
+          Collapse
         </Button>
       </div>
       <div className="mt-5 flex items-center gap-4">
         <Avatar name={staff.staffName} src={staff.avatarUrl} size="lg" />
-        <div>
-          <p className="font-black text-slate-950">{staff.staffName}</p>
+        <div className="min-w-0">
+          <p className="font-black text-slate-950 truncate">{staff.staffName}</p>
           <StatusBadge status={staff.status} />
         </div>
       </div>
-      {!expanded ? (
-        <div className="mt-5 grid grid-cols-3 gap-2 rounded-lg bg-slate-50 p-3 text-center">
-          <MiniCount label="Queued" value={staff.queuedSessions.length} />
-          <MiniCount label="Active" value={staff.activeSessions.length} />
-          <MiniCount label="Done" value={staff.completedSessions.length} />
-        </div>
-      ) : null}
-      {expanded ? (
-        <>
+
       <div className="mt-5 flex gap-2">
         <Button variant="outline" className="h-10 flex-1 rounded-lg border-slate-200 bg-white text-sm font-bold" onClick={() => onViewProfile(staff.staffId)}>
           <UserRound className="h-4 w-4" />
@@ -684,26 +732,51 @@ function QuickDetailPanel({
       <h3 className="font-black text-slate-950">Assigned bookings</h3>
       <div className="mt-3 space-y-3">
         {bookings.map((session) => (
-          <div key={session.sessionId} className="rounded-lg border border-slate-100 bg-white px-3 py-3 shadow-sm">
+          <div
+            key={session.sessionId}
+            onClick={() => setBookingDialogSession(session)}
+            role="button"
+            tabIndex={0}
+            className="w-full rounded-lg border border-slate-100 bg-white px-3 py-3 text-left shadow-sm transition hover:border-cyan-200 hover:shadow-md"
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-black text-slate-950">#{session.vehiclePlate}</p>
                 <p className="mt-1 text-xs text-slate-500">Customer: {session.customerName}</p>
               </div>
-              <span className="rounded-md bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">{getStatusLabel(session.status)}</span>
+              <span className={cn(
+                "rounded-md px-2 py-1 text-[11px] font-black",
+                session.status === "IN_PROGRESS" || session.status === "CHECKED_IN"
+                  ? "bg-amber-50 text-amber-700"
+                  : "bg-blue-50 text-blue-700",
+              )}>
+                {getStatusLabel(session.status)}
+              </span>
             </div>
             <Button
               variant="outline"
               className="mt-3 h-9 w-full rounded-lg border-slate-200 bg-white text-xs font-bold text-slate-700"
-              onClick={() => onOpenAssignmentForSession(session)}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenAssignmentForSession(session);
+              }}
             >
               Transfer to another staff member
             </Button>
+            <Link
+              href="/manager/history"
+              onClick={(event) => event.stopPropagation()}
+              className="mt-2 inline-flex h-9 w-full items-center justify-center rounded-lg border border-cyan-100 bg-cyan-50 text-xs font-black text-cyan-800 transition hover:bg-cyan-100"
+            >
+              Open booking history
+            </Link>
           </div>
         ))}
         {bookings.length === 0 ? <div className="rounded-lg border border-dashed border-slate-200 py-8 text-center text-xs font-semibold text-slate-400">No assigned bookings.</div> : null}
       </div>
-      <button className="mt-3 text-sm font-bold text-[#0067a8]">View all ({staff.activeSessions.length + staff.queuedSessions.length}) ›</button>
+      <Link href="/manager/history" className="mt-3 inline-flex text-sm font-bold text-[#0067a8]">
+        View all ({staff.activeSessions.length + staff.queuedSessions.length}) ›
+      </Link>
 
       <div className="my-5 border-t border-slate-100" />
       <h3 className="font-black text-slate-950">Recent reviews</h3>
@@ -729,8 +802,6 @@ function QuickDetailPanel({
         {isFetching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
         {isFetching ? "Syncing backend" : "Backend data"}
       </div>
-        </>
-      ) : null}
     </Card>
   );
 }
@@ -834,6 +905,7 @@ function StaffProfileDialog({
       phone: staff.phone,
       email: staff.email,
       password: "",
+      status: staff.accountStatus,
     });
   }, [staff, open, mode]);
 
@@ -850,6 +922,10 @@ function StaffProfileDialog({
 
     if (form.password.trim()) {
       payload.password = form.password.trim();
+    }
+    
+    if (form.status && form.status !== "UNKNOWN") {
+      payload.status = form.status as AdminAccountStatus;
     }
 
     onSubmit(payload);
@@ -917,9 +993,24 @@ function StaffProfileDialog({
                   placeholder="staff@auracar.vn"
                 />
               </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-bold text-slate-700">Account status</label>
+                <select
+                  value={form.status}
+                  onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as AdminAccountStatus | "UNKNOWN" }))}
+                  className="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-cyan-300"
+                >
+                  <option value="UNKNOWN" disabled>Select status</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="BLOCKED">Blocked</option>
+                  <option value="SUSPENDED">Suspended</option>
+                  <option value="INACTIVE">Inactive</option>
+                </select>
+              </div>
             </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-bold text-slate-700">New password</label>
+            <div className="mt-2 grid gap-2">
+              <label className="text-sm font-bold text-slate-700">New Password (optional)</label>
               <input
                 type="password"
                 value={form.password}
@@ -977,14 +1068,14 @@ function buildStaffRows(staffOptions: StaffOption[], sessions: OperationsQueueSe
   return baseStaff.map((staff) => {
     const account = accountMap.get(staff.staffId);
     const kpi = kpiMap.get(staff.staffId);
-    const totalSessions = sessions.filter((session) => session.assignedStaffId === staff.staffId);
+    const totalSessions = sessions.filter((session) => session.assignedStaffId === staff.staffId || session.assignedStaff?.some(s => s.staffId === staff.staffId));
     const activeSessions = totalSessions.filter((session) => session.status === "CHECKED_IN" || session.status === "IN_PROGRESS");
     const queuedSessions = totalSessions.filter((session) => session.status === "QUEUED");
     const completedSessions = totalSessions.filter((session) => session.status === "COMPLETED");
     const role = account?.role ?? "Staff";
-    const activeCount = Math.max(Number(kpi?.activeSessions ?? 0), activeSessions.length + queuedSessions.length);
+    const activeCount = activeSessions.length + queuedSessions.length;
     const isInactive = account?.status && account.status !== "ACTIVE";
-    const status: StaffStatus = isInactive ? "offline" : activeCount >= 4 ? "overloaded" : activeCount > 0 || kpi?.isOnline ? "busy" : "available";
+    const status: StaffStatus = isInactive ? "offline" : activeCount >= 4 ? "overloaded" : activeCount > 0 ? "busy" : "available";
     return {
       staffId: staff.staffId,
       staffName: account?.fullName ?? staff.staffName,
@@ -999,6 +1090,7 @@ function buildStaffRows(staffOptions: StaffOption[], sessions: OperationsQueueSe
       rating: null,
       reviewCount: 0,
       kpiPercent: clampPercent(kpi?.kpiProgressPercent ?? 0),
+      accountStatus: account?.status ?? "UNKNOWN",
     };
   });
 }
@@ -1037,6 +1129,69 @@ function averageKpi(rows: StaffRow[]) {
 
 function formatRating(value: number | null) {
   return value === null ? "--" : value.toFixed(1);
+}
+
+function BookingDetailDialog({
+  session,
+  onClose,
+}: {
+  session: OperationsQueueSession;
+  onClose: () => void;
+}) {
+  const serviceName = session.servicePackage ?? session.packageId ?? "Wash package";
+
+  return (
+    <div className="bg-white p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wider text-cyan-700">Wash session history</p>
+          <h2 className="mt-1 text-3xl font-black text-slate-950">#{session.vehiclePlate}</h2>
+          <p className="mt-2 text-sm font-semibold text-slate-500">
+            {session.customerName} · {session.assignedStaffName ?? "Unassigned"}
+          </p>
+        </div>
+        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full" onClick={onClose}>
+          <X className="h-5 w-5" />
+        </Button>
+      </div>
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <InfoCard label="Service" value={serviceName} />
+        <InfoCard label="Phone" value={session.customerPhone || "Not available"} />
+        <InfoCard label="Appointment" value={`${session.bookingDate} ${session.bookingTime}`} />
+        <InfoCard label="Duration" value={session.estimatedDurationMinutes != null ? `${session.estimatedDurationMinutes} min` : "--"} />
+        <InfoCard label="Check-in" value={formatDateTime(session.checkedInAt)} />
+        <InfoCard label="Completed" value={formatDateTime(session.completedAt)} />
+      </div>
+
+      <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-700">
+        <span className="font-black text-slate-900">{getStatusLabel(session.status)}</span>
+        {session.rating != null ? ` · Rating ${session.rating}/5` : ""}
+      </div>
+
+      <div className="mt-5 flex justify-end">
+        <Link
+          href="/manager/history"
+          className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50"
+        >
+          Open booking history
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function InfoCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-slate-50 px-4 py-4">
+      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="mt-1 break-words text-sm font-bold text-slate-800">{value}</p>
+    </div>
+  );
+}
+
+function formatDateTime(value?: string | null) {
+  return value ? new Date(value).toLocaleString("en-US") : "Not available";
 }
 
 function matchesStaff(row: StaffRow, search: string, statusFilter: string, roleFilter: string) {
