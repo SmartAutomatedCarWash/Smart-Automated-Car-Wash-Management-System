@@ -36,10 +36,10 @@ public class PublicLoyaltyController {
     private TierVoucherOfferResponse mapToOfferResponse(TierVoucherOffer offer) {
         return new TierVoucherOfferResponse(
                 offer.getId().toString(),
-                offer.getTitle(),
+                offer.getDiscount().getName(),
                 offer.getMinTier().getTier(),
-                offer.getPointsCost(),
-                offer.getVoucherValue(),
+                offer.getDiscount().getRequiredPoints(),
+                (int) offer.getDiscount().getDiscountValue(),
                 offer.getAccent(),
                 offer.getBadge()
         );

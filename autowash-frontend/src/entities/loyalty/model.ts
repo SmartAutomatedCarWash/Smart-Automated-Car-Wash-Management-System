@@ -31,8 +31,7 @@ export type LoyaltyTransaction = {
 };
 
 export type RedeemPointsRequest = {
-  pointsToRedeem: number;
-  referenceId?: string;
+  offerId: string;
 };
 
 export type RedeemPointsResponse = {

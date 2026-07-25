@@ -807,15 +807,7 @@ function VehicleQuickActionsCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 p-6">
-        {vehicle.isPrimary ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            {translate(
-              language,
-              "Xe nay dang la primary. Booking moi se uu tien chon xe nay.",
-              "This vehicle is currently primary. New bookings will prefer this vehicle.",
-            )}
-          </div>
-        ) : (
+        {!vehicle.isPrimary ? (
           <Button
             type="button"
             variant="outline"
@@ -835,7 +827,7 @@ function VehicleQuickActionsCard({
               </>
             )}
           </Button>
-        )}
+        ) : null}
 
         <Button
           type="button"

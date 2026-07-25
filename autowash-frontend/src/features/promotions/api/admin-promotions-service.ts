@@ -103,6 +103,7 @@ export async function deleteAdminPromotion(promotionId: string) {
 function toPromotion(discount: DiscountResponse): Promotion {
   return {
     promotionId: discount.id,
+    code: discount.code,
     name: discount.name,
     description: discount.description,
     discountType: discount.discountType === "FREE_SERVICE" ? "NONE" : discount.discountType,
@@ -122,7 +123,7 @@ function toPromotion(discount: DiscountResponse): Promotion {
 function toDiscountRequest(payload: PromotionRequest, kind: AdminPromotionKind): DiscountRequest {
   return {
     type: kind,
-    code: null,
+    code: kind === "PROMOTION" ? payload.code ?? null : null,
     name: payload.name,
     description: payload.description,
     discountType: payload.discountType ?? "NONE",

@@ -6,6 +6,7 @@ export type PromotionStatus = "ACTIVE" | "INACTIVE";
 
 export type Promotion = {
   promotionId: string;
+  code: string | null;
   name: string;
   description: string | null;
   discountType?: PromotionDiscountType;
@@ -33,6 +34,7 @@ export type PromotionListPage = {
 };
 
 export type PromotionRequest = {
+  code?: string | null;
   name: string;
   description: string | null;
   discountType: PromotionDiscountType;

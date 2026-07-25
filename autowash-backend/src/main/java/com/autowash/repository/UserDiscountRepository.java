@@ -25,6 +25,10 @@ public interface UserDiscountRepository extends JpaRepository<UserDiscount, UUID
 
     java.util.Optional<UserDiscount> findByUsedInBookingId(UUID bookingId);
 
+    boolean existsByVoucherCodeIgnoreCase(String voucherCode);
+
+    Optional<UserDiscount> findByUserIdAndVoucherCodeIgnoreCase(UUID userId, String voucherCode);
+
     @Query("""
             select userDiscount
             from UserDiscount userDiscount

@@ -41,6 +41,9 @@ public class UserDiscount {
     @JoinColumn(name = "discount_id", nullable = false)
     private Discount discount;
 
+    @Column(name = "voucher_code", unique = true, length = 50)
+    private String voucherCode;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "acquisition_method", nullable = false, length = 20)
     private DiscountAcquisitionMethod acquisitionMethod;

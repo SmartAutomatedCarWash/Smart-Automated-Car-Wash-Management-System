@@ -15,7 +15,7 @@ public interface TierVoucherOfferRepository extends JpaRepository<TierVoucherOff
             join fetch offer.discount discount
             join fetch offer.minTier tier
             where discount.status = com.autowash.entity.enums.ActiveStatus.ACTIVE
-            order by tier.rankOrder asc, offer.pointsCost asc
+            order by tier.rankOrder asc, discount.requiredPoints asc
             """)
     List<TierVoucherOffer> findActiveOffersWithDiscountAndTier();
 }
