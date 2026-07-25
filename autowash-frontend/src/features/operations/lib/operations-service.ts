@@ -59,11 +59,11 @@ export function getActiveStaffOptions() {
   });
 }
 
-export function getEligibleSessionBookings(date?: string) {
+export function getEligibleSessionBookings(date?: string, limit = 5) {
   return apiRequest<EligibleSessionBooking[]>({
     method: "GET",
     url: "/operations/bookings/eligible-sessions",
-    params: { limit: 5, ...(date ? { date } : {}) },
+    params: { limit, ...(date ? { date } : {}) },
   });
 }
 
@@ -103,13 +103,15 @@ export function cancelWashSession(sessionId: string, reason: string, faultType?:
   });
 }
 
-export function transferWashSession(sessionId: string, toStaffId: string, reason?: string) {
+export function assignStaffToSession(sessionId: string, toStaffId: string, reason?: string) {
   return apiRequest<TransferWashSessionResponse, { toStaffId: string; reason?: string }>({
     method: "POST",
-    url: `${SESSION_BASE_URL}/${sessionId}/transfer`,
+    url: `/manager/operations/sessions/${sessionId}/assign-staff`,
     data: { toStaffId, reason },
   });
 }
+
+export const transferWashSession = assignStaffToSession;
 
 // â”€â”€â”€ Staff Today (My Sessions) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 

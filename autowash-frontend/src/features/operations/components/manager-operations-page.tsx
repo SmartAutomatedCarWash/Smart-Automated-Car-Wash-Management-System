@@ -29,12 +29,12 @@ import {
   cancelWashSession,
   checkInWashSession,
   completeWashSession,
+  assignStaffToSession,
   getActiveStaffOptions,
   getEligibleSessionBookings,
   getOperationsQueue,
   managerCheckInBooking,
   startWashSession,
-  transferWashSession,
 } from "@/features/operations/lib/operations-service";
 import { useManagerNotificationStore } from "@/features/operations/store/manager-notification.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
@@ -285,9 +285,9 @@ export function ManagerOperationsPage() {
   });
 
   const transferMutation = useMutation({
-    mutationFn: ({ sessionId, toStaffId }: { sessionId: string; toStaffId: string }) => transferWashSession(sessionId, toStaffId, "Manager workload reassignment"),
+    mutationFn: ({ sessionId, toStaffId }: { sessionId: string; toStaffId: string }) => assignStaffToSession(sessionId, toStaffId, "Manager assigned staff"),
     onSuccess: () => handleActionSuccess("Assigned staff updated."),
-    onError: (actionError: ApiErrorResponse) => handleActionError("Unable to transfer staff", actionError),
+    onError: (actionError: ApiErrorResponse) => handleActionError("Unable to assign staff", actionError),
   });
 
   const runPrimaryAction = (row: OperationRow) => {
@@ -304,7 +304,7 @@ export function ManagerOperationsPage() {
 
   const transferSelectedRow = (toStaffId: string) => {
     if (!selectedRow?.sessionId || selectedRow.status === "COMPLETED" || selectedRow.status === "CANCELLED") {
-      toast.info("Completed or cancelled bookings cannot be transferred.");
+      toast.info("Completed or cancelled bookings cannot be assigned.");
       return;
     }
     transferMutation.mutate({ sessionId: selectedRow.sessionId, toStaffId });
@@ -899,7 +899,7 @@ function SessionDetailPanel({
 
           {canTransfer ? (
             <div>
-              <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">Staff transfer suggestions</p>
+              <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">Staff assignment suggestions</p>
               <div className="space-y-2">
                 {transferOptions.slice(0, 4).map((staff) => {
                   const workload = staffWorkload.find((item) => item.staffId === staff.staffId);
@@ -916,7 +916,7 @@ function SessionDetailPanel({
                     >
                       <input
                         type="radio"
-                        name="transfer-staff"
+                        name="assign-staff"
                         checked={selectedStaffId === staff.staffId}
                         onChange={() => setSelectedStaffId(staff.staffId)}
                         className="h-4 w-4 accent-[#00236f]"
@@ -938,7 +938,7 @@ function SessionDetailPanel({
             </div>
           ) : (
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-xs font-bold leading-5 text-emerald-700">
-              Completed bookings cannot be handed off or transferred to another staff member.
+              Completed bookings cannot be reassigned to another staff member.
             </div>
           )}
 
@@ -955,7 +955,7 @@ function SessionDetailPanel({
                 disabled={transferLoading}
               >
                 {transferLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Transfer staff
+                Assign staff
               </Button>
             ) : null}
             {row.sessionId && row.status !== "COMPLETED" && row.status !== "CANCELLED" ? (
@@ -1123,7 +1123,7 @@ function buildInterventions(rows: OperationRow[], staffWorkload: StaffWorkloadIt
         rowId: row.id,
         severity: "HIGH",
         message: `Vehicle #${row.vehiclePlate} has dispatch note: ${row.notes?.trim()}`,
-        actionLabel: "Transfer staff",
+        actionLabel: "Assign staff",
       });
     });
 

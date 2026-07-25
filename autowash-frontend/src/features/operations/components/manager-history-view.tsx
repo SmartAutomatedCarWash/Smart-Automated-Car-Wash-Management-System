@@ -20,6 +20,7 @@ import { Dialog, DialogContent } from "@/shared/ui/ui/dialog";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { cn } from "@/shared/lib/utils";
+import { formatIntegerRating, formatRatingOutOfFive } from "@/shared/lib/rating-format";
 import { getActiveStaffOptions, getManagerSessionHistory } from "@/features/operations/lib/operations-service";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { StaffSessionHistoryItem, StaffSessionHistoryParams } from "@/entities/operations";
@@ -93,7 +94,7 @@ export function ManagerHistoryView() {
         <Metric icon={CheckCircle2} label="Completed sessions" value={summary?.completedTotal ?? "--"} detail="Current filters" tone="emerald" />
         <Metric icon={CalendarCheck2} label="Completed today" value={summary?.completedToday ?? "--"} detail={new Date().toLocaleDateString("en-US")} tone="cyan" />
         <Metric icon={Clock3} label="Average time" value={summary?.averageDurationMinutes != null ? `${summary.averageDurationMinutes} min` : "--"} detail="From start to completion" tone="amber" />
-        <Metric icon={Star} label="Average rating" value={summary?.averageRating != null ? `${summary.averageRating.toFixed(1)}/5` : "--/5"} detail={`${summary?.reviewedCount ?? 0} reviews`} tone="yellow" />
+        <Metric icon={Star} label="Average rating" value={formatRatingOutOfFive(summary?.averageRating)} detail={`${summary?.reviewedCount ?? 0} reviews`} tone="yellow" />
       </div>
 
       <Card className="rounded-xl border-slate-200 bg-white p-3 shadow-sm">
@@ -263,7 +264,7 @@ function RatingCell({ review }: { review: StaffSessionHistoryItem["review"] }) {
   return (
     <div className="flex items-center gap-1">
       <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-      <span className="text-xs font-black text-slate-900">{review.rating.toFixed(1)}</span>
+      <span className="text-xs font-black text-slate-900">{formatIntegerRating(review.rating)}</span>
     </div>
   );
 }

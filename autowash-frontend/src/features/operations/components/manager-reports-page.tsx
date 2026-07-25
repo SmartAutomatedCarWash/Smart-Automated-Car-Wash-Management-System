@@ -37,6 +37,7 @@ import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/worksp
 import { useWorkspaceHeader } from "@/shared/ui/workspace/workspace-header-context";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { translate, useLanguageStore, type Language } from "@/shared/store/language.store";
+import { formatIntegerRating } from "@/shared/lib/rating-format";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { OperationsQueueSession, WashSessionStatus } from "@/entities/operations";
 import type { AdminBooking } from "@/entities/reports";
@@ -484,7 +485,7 @@ function StaffKpiTable({ rows, locale, language }: { rows: StaffRow[]; locale: s
                     </span>
                   </div>
                 </td>
-                <td className="px-3 py-3 font-black text-slate-700">{staff.rating ? `${staff.rating.toFixed(1)} ★` : "—"}</td>
+                <td className="px-3 py-3 font-black text-slate-700">{staff.rating ? `${formatIntegerRating(staff.rating)} ★` : "—"}</td>
                 <td className="px-3 py-3 font-black text-slate-950">{formatCurrency(staff.revenue, locale)}</td>
                 <td className="px-3 py-3">
                   <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${staff.status === "GOOD" ? "bg-emerald-50 text-emerald-700" : staff.status === "SUPPORT" ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-500"}`}>
@@ -661,7 +662,7 @@ function averageServiceRating(rows: ServiceRow[]) {
 }
 
 function formatNullableRating(value: number | null) {
-  return value === null ? "--" : value.toFixed(1);
+  return value === null ? "--" : formatIntegerRating(value);
 }
 
 function buildFunnelRows(sessions: OperationsQueueSession[], language: Language): FunnelRow[] {

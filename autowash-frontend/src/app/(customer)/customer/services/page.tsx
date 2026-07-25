@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   CheckCircle2,
@@ -25,7 +26,9 @@ import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
 import { cn } from "@/shared/lib/utils";
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
+import { getCatalogService, listCatalogServices } from "@/features/bookings/lib/booking-service";
 import type { BookingCombo, CustomerCombo } from "@/entities/bookings";
+import type { AdminCatalogService } from "@/entities/management";
 
 type ComboCardModel = BookingCombo & {
   imageUrls: string[];
@@ -53,10 +56,21 @@ export default function ServiceCatalogPage() {
 
   const combosQuery = useBookingCombos();
   const ownedCombosQuery = useActiveCustomerCombos();
+  const servicesQuery = useQuery({
+    queryKey: ["customer-catalog-services"],
+    queryFn: listCatalogServices,
+  });
 
   const [selectedCombo, setSelectedCombo] = useState<ComboCardModel | null>(null);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showOwnedCombos, setShowOwnedCombos] = useState(false);
+
+  const serviceDetailQuery = useQuery({
+    queryKey: ["customer-catalog-service-detail", selectedServiceId],
+    queryFn: () => getCatalogService(selectedServiceId!),
+    enabled: Boolean(selectedServiceId),
+  });
 
   const combos = useMemo<ComboCardModel[]>(
     () =>
@@ -172,6 +186,26 @@ export default function ServiceCatalogPage() {
             ))}
           </section>
         )}
+
+        <section className="space-y-4">
+          <div>
+            <Badge className="rounded-full border border-slate-200 bg-white px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-600">
+              {t("Individual services", "Individual services")}
+            </Badge>
+            <h2 className="mt-3 text-2xl font-black text-slate-950">{t("Service details", "Service details")}</h2>
+          </div>
+          {servicesQuery.isLoading ? (
+            <Card className="rounded-2xl border-slate-200 bg-white p-6 text-sm font-semibold text-slate-500">
+              {t("Loading services...", "Loading services...")}
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {(servicesQuery.data ?? []).map((service) => (
+                <ServiceGridCard key={service.serviceId} service={service} onOpen={() => setSelectedServiceId(service.serviceId)} t={t} />
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
       <Dialog
@@ -391,6 +425,84 @@ export default function ServiceCatalogPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={Boolean(selectedServiceId)} onOpenChange={(open) => !open && setSelectedServiceId(null)}>
+        <DialogContent className="max-w-2xl rounded-[2rem] border-0 bg-white p-0 shadow-[0_30px_100px_rgba(15,23,42,0.35)]">
+          <div className="p-6">
+            <DialogTitle className="text-2xl font-black text-slate-950">
+              {serviceDetailQuery.data?.name ?? t("Service detail", "Service detail")}
+            </DialogTitle>
+            {serviceDetailQuery.isLoading ? (
+              <div className="mt-6 flex items-center gap-3 text-sm font-semibold text-slate-500">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t("Loading detail...", "Loading detail...")}
+              </div>
+            ) : serviceDetailQuery.data ? (
+              <ServiceDetail service={serviceDetailQuery.data} t={t} />
+            ) : (
+              <p className="mt-6 rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
+                {t("Không tải được chi tiết dịch vụ.", "Unable to load service detail.")}
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function ServiceGridCard({
+  service,
+  onOpen,
+  t,
+}: {
+  service: AdminCatalogService;
+  onOpen: () => void;
+  t: (vi: string, en: string) => string;
+}) {
+  return (
+    <Card className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h3 className="truncate text-lg font-black text-slate-950">{service.name}</h3>
+          <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{service.description}</p>
+        </div>
+        <Badge className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-black text-cyan-700">
+          {service.duration}m
+        </Badge>
+      </div>
+      <div className="mt-5 flex items-center justify-between gap-3">
+        <span className="text-lg font-black text-[#0566D9]">{formatBookingCurrency(service.price)}</span>
+        <Button type="button" variant="outline" className="rounded-xl" onClick={onOpen}>
+          {t("Xem chi tiết", "View detail")}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+function ServiceDetail({ service, t }: { service: AdminCatalogService; t: (vi: string, en: string) => string }) {
+  return (
+    <div className="mt-6 space-y-5">
+      {(service.imageUrls ?? []).length > 0 ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={service.imageUrls?.[0]} alt={service.name} className="h-56 w-full rounded-2xl object-cover" />
+      ) : null}
+      <p className="text-sm leading-7 text-slate-600">{service.description}</p>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <InfoPill label={t("Giá", "Price")} value={formatBookingCurrency(service.price)} />
+        <InfoPill label={t("Thời lượng", "Duration")} value={`${service.duration} min`} />
+        <InfoPill label={t("Trạng thái", "Status")} value={service.status} />
+      </div>
+    </div>
+  );
+}
+
+function InfoPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+      <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+      <p className="mt-1 text-sm font-black text-slate-950">{value}</p>
     </div>
   );
 }

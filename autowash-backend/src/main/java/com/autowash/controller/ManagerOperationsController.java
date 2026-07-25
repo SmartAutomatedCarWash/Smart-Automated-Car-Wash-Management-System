@@ -158,11 +158,11 @@ public class ManagerOperationsController {
         return ApiResponse.ok("Manager session detail retrieved", toSessionDetail(session));
     }
 
-    @GetMapping("/sessions/{sessionId}/transfer-options")
-    public ApiResponse<List<TransferOptionResponse>> getTransferOptions(@PathVariable UUID sessionId) {
+    @GetMapping({"/sessions/{sessionId}/assign-options", "/sessions/{sessionId}/transfer-options"})
+    public ApiResponse<List<TransferOptionResponse>> getAssignOptions(@PathVariable UUID sessionId) {
         List<OperationsQueueResponse.WashSessionCard> sessions = flattenSessions(operationsService.getQueue());
         return ApiResponse.ok(
-                "Manager transfer options retrieved",
+                "Manager assign staff options retrieved",
                 buildStaffWorkload(operationsService.listActiveStaff(), sessions).stream()
                         .map(staff -> new TransferOptionResponse(
                                 staff.staffId(),
@@ -197,9 +197,9 @@ public class ManagerOperationsController {
         );
     }
 
-    @PostMapping("/sessions/{sessionId}/transfer")
+    @PostMapping({"/sessions/{sessionId}/assign-staff", "/sessions/{sessionId}/transfer"})
     @Transactional
-    public ApiResponse<TransferSessionResponse> transferSession(
+    public ApiResponse<TransferSessionResponse> assignStaff(
             @PathVariable UUID sessionId,
             @Valid @RequestBody TransferSessionRequest request
     ) {
@@ -217,7 +217,7 @@ public class ManagerOperationsController {
         washSessionRepository.save(session);
 
         return ApiResponse.ok(
-                "Manager session transferred",
+                "Manager session staff assigned",
                 new TransferSessionResponse(
                         UUID.randomUUID(),
                         sessionId,
@@ -318,7 +318,7 @@ public class ManagerOperationsController {
         List<InterventionResponse> interventions = new ArrayList<>();
         for (OperationsQueueResponse.WashSessionCard session : sessions) {
             if (session.assignedStaffId() == null && !"COMPLETED".equals(session.status())) {
-                interventions.add(new InterventionResponse("unassigned-" + session.sessionId(), "MEDIUM", "UNASSIGNED_SESSION", session.vehiclePlate() + " has no assigned staff.", session.bookingId(), session.sessionId(), "TRANSFER_STAFF", "Transfer staff"));
+                interventions.add(new InterventionResponse("unassigned-" + session.sessionId(), "MEDIUM", "UNASSIGNED_SESSION", session.vehiclePlate() + " has no assigned staff.", session.bookingId(), session.sessionId(), "ASSIGN_STAFF", "Assign staff"));
             }
             if (isOverdue(session)) {
                 interventions.add(new InterventionResponse("overdue-" + session.sessionId(), "HIGH", "SESSION_DELAYED", session.vehiclePlate() + " is taking longer than expected.", session.bookingId(), session.sessionId(), "OPEN_SESSION", "View detail"));

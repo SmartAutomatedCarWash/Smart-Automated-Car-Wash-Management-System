@@ -30,7 +30,7 @@ import {
   DialogTitle,
 } from "@/shared/ui/ui/dialog";
 import { Input } from "@/shared/ui/ui/input";
-import { getFieldErrorMessage } from "@/shared/lib/api-errors";
+import { getApiErrorCode, getFieldErrorMessage } from "@/shared/lib/api-errors";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
   EMPTY_CUSTOMER_VEHICLE_FORM,
@@ -1088,6 +1088,7 @@ function getSubmitErrors(
   showValidation: boolean,
 ) {
   const mergedErrors: CustomerVehicleFormErrors = {};
+  const apiCode = getApiErrorCode(apiError);
 
   for (const fieldName of Object.keys(EMPTY_CUSTOMER_VEHICLE_FORM) as (keyof CustomerVehicleFormValues)[]) {
     const clientError = clientErrors[fieldName] ?? null;
@@ -1101,6 +1102,10 @@ function getSubmitErrors(
     if (apiFieldError) {
       mergedErrors[fieldName] = apiFieldError;
     }
+  }
+
+  if (apiCode === "DUPLICATE_PLATE" && !mergedErrors.plate) {
+    mergedErrors.plate = "This license plate already exists. Please check the plate or choose another vehicle.";
   }
 
   return mergedErrors;

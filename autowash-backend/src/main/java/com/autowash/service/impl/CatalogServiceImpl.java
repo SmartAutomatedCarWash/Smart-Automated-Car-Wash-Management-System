@@ -102,6 +102,18 @@ public class CatalogServiceImpl implements CatalogService {
     }
 
     @Transactional(readOnly = true)
+    public ServiceResponse getServiceById(String serviceId) {
+        try {
+            UUID id = UUID.fromString(serviceId);
+            return serviceRepository.findByIdAndStatus(id, ActiveStatus.ACTIVE)
+                    .map(this::toServiceResponse)
+                    .orElseThrow(() -> ApiException.notFound("Service not found"));
+        } catch (IllegalArgumentException exception) {
+            throw ApiException.notFound("Service not found");
+        }
+    }
+
+    @Transactional(readOnly = true)
     public List<ComboResponse> getAvailableCombos() {
         return ComboRepository.findByActiveTrueOrderByIdAsc().stream()
                 .map(this::toComboResponse)

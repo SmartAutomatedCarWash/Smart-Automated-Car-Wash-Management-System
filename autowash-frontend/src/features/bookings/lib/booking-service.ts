@@ -61,6 +61,16 @@ export async function listBookingAddons(): Promise<BookingAddon[]> {
     }));
 }
 
+export async function listCatalogServices(): Promise<AdminCatalogService[]> {
+  const response = await apiClient.get<ApiSuccessResponse<AdminCatalogService[]>>("/services");
+  return response.data.data.filter((service) => service.status === "ACTIVE");
+}
+
+export async function getCatalogService(serviceId: string): Promise<AdminCatalogService> {
+  const response = await apiClient.get<ApiSuccessResponse<AdminCatalogService>>(`/services/${serviceId}`);
+  return response.data.data;
+}
+
 export async function listBookingCombos(): Promise<BookingCombo[]> {
   const response = await apiClient.get("/combos/available");
   return response.data.data as BookingCombo[];

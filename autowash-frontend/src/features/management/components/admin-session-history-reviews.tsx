@@ -27,6 +27,7 @@ import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { getAdminSessionHistory } from "@/features/operations/lib/operations-service";
 import { useAdminStaffList } from "@/features/management/hooks/use-admin-staff";
 import { cn } from "@/shared/lib/utils";
+import { formatIntegerRating, formatRatingOutOfFive } from "@/shared/lib/rating-format";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { AdminSessionHistoryParams, StaffSessionHistoryItem } from "@/entities/operations";
 
@@ -119,7 +120,7 @@ export function AdminSessionHistoryReviews() {
             <div className="min-w-0">
               <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Average Rating</span>
               <div className="text-xl font-black text-slate-900 leading-tight">
-                {reviewStats?.averageRating ? reviewStats.averageRating.toFixed(1) : "0.0"}/5.0
+                {formatRatingOutOfFive(reviewStats?.averageRating, "0/5")}
               </div>
               <div className="flex gap-0.5 mt-0.5">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -198,7 +199,7 @@ export function AdminSessionHistoryReviews() {
                 Average Rating
               </div>
               <span className="text-xs font-black text-slate-900">
-                {summary?.averageRating != null ? `${summary.averageRating.toFixed(1)}/5` : "--"}
+                {formatRatingOutOfFive(summary?.averageRating, "--")}
               </span>
             </div>
           </div>
@@ -501,7 +502,7 @@ function SessionDetailDialog({ item, onClose }: { item: StaffSessionHistoryItem;
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star key={i} className={cn("h-5 w-5", i < item.review.rating! ? "fill-amber-400 text-amber-400" : "text-slate-200")} />
                 ))}
-                <span className="ml-1 text-base font-black text-slate-900">{item.review.rating.toFixed(1)}</span>
+                <span className="ml-1 text-base font-black text-slate-900">{formatIntegerRating(item.review.rating)}</span>
               </div>
               {item.review.comment && (
                 <div className="flex items-start gap-2">
@@ -568,7 +569,7 @@ function RatingCell({ review }: { review: StaffSessionHistoryItem["review"] }) {
     <div>
       <div className="flex items-center gap-0.5">
         <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-        <span className="ml-1 text-xs font-black text-slate-900">{review.rating.toFixed(1)}</span>
+        <span className="ml-1 text-xs font-black text-slate-900">{formatIntegerRating(review.rating)}</span>
       </div>
       {review.comment && (
         <span className={cn("mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold", review.rating < 4 ? "bg-orange-50 text-orange-700" : "bg-cyan-50 text-cyan-700")}>

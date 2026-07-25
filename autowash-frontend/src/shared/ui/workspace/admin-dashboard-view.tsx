@@ -20,6 +20,7 @@ import { useAdminDashboardFull, useStaffKpi } from "@/features/dashboard/hooks/u
 import { useAdminDiscountRedemptions } from "@/features/discounts/hooks/use-admin-discount-redemptions";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
+import { formatIntegerRating } from "@/shared/lib/rating-format";
 import type {
   NoShowAlert, RecentBooking, TierBucket, ServiceItem,
 } from "@/features/dashboard/api/admin-dashboard-service";
@@ -547,7 +548,7 @@ export function AdminDashboardView() {
               {isLoading ? <Skeleton className="h-40" /> : !reviews ? null : (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-4xl font-black text-slate-900">{reviews.averageRating.toFixed(1)}</span>
+                    <span className="text-4xl font-black text-slate-900">{formatIntegerRating(reviews.averageRating)}</span>
                     <div>
                       <div className="flex gap-0.5">
                         {[1,2,3,4,5].map((s) => (

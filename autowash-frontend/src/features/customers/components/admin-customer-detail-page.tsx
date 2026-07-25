@@ -38,6 +38,7 @@ import {
   useUpdateAdminCustomerStatus,
   useUpdateAdminCustomerTier,
   useUpdateAdminCustomerPoints,
+  useUpdateAdminCustomerLifetimePoints,
 } from "@/features/reports/hooks/use-admin-reporting";
 import { useTierConfigs } from "@/features/settings/hooks/use-admin-tiers";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
@@ -118,6 +119,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
   const [pointsFeedback, setPointsFeedback] = useState<string | null>(null);
   const [tierDraft, setTierDraft] = useState<string>("BRONZE");
   const [tierFeedback, setTierFeedback] = useState<string | null>(null);
+  const [tierTopUpFeedback, setTierTopUpFeedback] = useState<string | null>(null);
 
   const [washDateDraft, setWashDateDraft] = useState<DateRangeDraft>({ dateFrom: "", dateTo: "" });
   const [washDateRange, setWashDateRange] = useState<DateRangeDraft>({ dateFrom: "", dateTo: "" });
@@ -171,6 +173,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
   const updateStatusMutation = useUpdateAdminCustomerStatus(customerId);
   const updatePointsMutation = useUpdateAdminCustomerPoints(customerId);
   const updateTierMutation = useUpdateAdminCustomerTier(customerId);
+  const updateLifetimePointsMutation = useUpdateAdminCustomerLifetimePoints(customerId);
   const tiersQuery = useTierConfigs();
   const profile = detailQuery.data?.profile;
   const loyalty = detailQuery.data?.loyalty;
@@ -360,6 +363,23 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
                     isUpdatingTier={updateTierMutation.isPending}
                     tierFeedback={tierFeedback}
                     tierOptions={tiersQuery.data ?? []}
+                    totalEarnedPoints={detailQuery.data?.summary.totalPointsEarned ?? 0}
+                    onTopUpNextTier={async (pointsDelta, nextTier) => {
+                      setTierTopUpFeedback(null);
+                      try {
+                        const result = await updateLifetimePointsMutation.mutateAsync({
+                          pointsDelta,
+                          reason: `Admin top-up ${pointsDelta} points to reach ${nextTier}`,
+                        });
+                        setTierTopUpFeedback(result.message);
+                        await detailQuery.refetch();
+                        await tierHistoryQuery.refetch();
+                      } catch (error) {
+                        setTierTopUpFeedback(getErrorMessage(error));
+                      }
+                    }}
+                    isTopUpNextTierPending={updateLifetimePointsMutation.isPending}
+                    tierTopUpFeedback={tierTopUpFeedback}
                   />
                 ) : null}
               </div>
@@ -513,7 +533,11 @@ type ManagementTabProps = {
   onSubmitTier: () => Promise<void>;
   isUpdatingTier: boolean;
   tierFeedback: string | null;
-  tierOptions: { tier: string; name?: string | null; active?: boolean }[];
+  tierOptions: { tier: string; name?: string | null; active?: boolean; minPoints?: number; rankOrder?: number }[];
+  totalEarnedPoints: number;
+  onTopUpNextTier: (pointsDelta: number, nextTier: string) => Promise<void>;
+  isTopUpNextTierPending: boolean;
+  tierTopUpFeedback: string | null;
 };
 
 function ManagementTab({
@@ -539,7 +563,22 @@ function ManagementTab({
   isUpdatingTier,
   tierFeedback,
   tierOptions,
+  totalEarnedPoints,
+  onTopUpNextTier,
+  isTopUpNextTierPending,
+  tierTopUpFeedback,
 }: ManagementTabProps) {
+  const activeTiers = (tierOptions.length ? tierOptions.filter((tier) => tier.active !== false) : [
+    { tier: "BRONZE", name: translateEnumLabel("BRONZE", language), minPoints: 0, rankOrder: 1 },
+    { tier: "SILVER", name: translateEnumLabel("SILVER", language), minPoints: 500, rankOrder: 2 },
+    { tier: "GOLD", name: translateEnumLabel("GOLD", language), minPoints: 1500, rankOrder: 3 },
+    { tier: "PLATINUM", name: translateEnumLabel("PLATINUM", language), minPoints: 4000, rankOrder: 4 },
+    { tier: "DIAMOND", name: translateEnumLabel("DIAMOND", language), minPoints: 10000, rankOrder: 5 },
+  ]).slice().sort((left, right) => (left.rankOrder ?? 0) - (right.rankOrder ?? 0));
+  const currentTierIndex = activeTiers.findIndex((tier) => tier.tier === tierDraft);
+  const nextTier = currentTierIndex >= 0 ? activeTiers[currentTierIndex + 1] : null;
+  const pointsToNextTier = nextTier?.minPoints == null ? null : Math.max(nextTier.minPoints - totalEarnedPoints, 0);
+
   return (
     <div className="grid gap-5 md:grid-cols-2">
       <Card className="rounded-md border-slate-200 bg-white shadow-sm">
@@ -584,23 +623,36 @@ function ManagementTab({
                 value={tierDraft}
                 onChange={(event) => onTierDraftChange(event.target.value)}
               >
-                {(tierOptions.length ? tierOptions.filter((tier) => tier.active !== false) : [
-                  { tier: "BRONZE", name: translateEnumLabel("BRONZE", language) },
-                  { tier: "SILVER", name: translateEnumLabel("SILVER", language) },
-                  { tier: "GOLD", name: translateEnumLabel("GOLD", language) },
-                  { tier: "PLATINUM", name: translateEnumLabel("PLATINUM", language) },
-                  { tier: "DIAMOND", name: translateEnumLabel("DIAMOND", language) },
-                ]).map((tier) => (
+                {activeTiers.map((tier) => (
                   <option key={tier.tier} value={tier.tier}>
                     {tier.name || translateEnumLabel(tier.tier, language)}
                   </option>
                 ))}
               </select>
             </label>
+            {nextTier && pointsToNextTier !== null ? (
+              <div className="rounded-md border border-cyan-100 bg-cyan-50/70 p-3 text-xs font-semibold text-cyan-800">
+                {pointsToNextTier > 0
+                  ? translate(language, `Còn ${pointsToNextTier} điểm để lên ${nextTier.name ?? nextTier.tier}.`, `${pointsToNextTier} pts to reach ${nextTier.name ?? nextTier.tier}.`)
+                  : translate(language, `Đủ điểm để lên ${nextTier.name ?? nextTier.tier}.`, `Ready to upgrade to ${nextTier.name ?? nextTier.tier}.`)}
+                <Button
+                  type="button"
+                  className="mt-3 w-full"
+                  variant="outline"
+                  disabled={isTopUpNextTierPending || pointsToNextTier <= 0}
+                  onClick={() => void onTopUpNextTier(pointsToNextTier, nextTier.tier)}
+                >
+                  {isTopUpNextTierPending
+                    ? translate(language, "Đang cộng điểm...", "Adding points...")
+                    : translate(language, "Cộng điểm xét hạng còn thiếu", "Top up tier progress")}
+                </Button>
+              </div>
+            ) : null}
             <Button type="button" className="w-full" variant="outline" onClick={() => void onSubmitTier()} disabled={isUpdatingTier}>
               {isUpdatingTier ? translate(language, "Đang cập nhật...", "Updating...") : translate(language, "Cập nhật hạng", "Update tier")}
             </Button>
             {tierFeedback ? <p className="text-xs text-slate-600">{tierFeedback}</p> : null}
+            {tierTopUpFeedback ? <p className="text-xs text-slate-600">{tierTopUpFeedback}</p> : null}
           </div>
         </CardContent>
       </Card>

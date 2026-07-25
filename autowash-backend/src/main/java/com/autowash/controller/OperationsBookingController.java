@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/operations/bookings")
 @Tag(name = "Operations")
 @SecurityRequirement(name = "bearerAuth")
-@PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+@PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
 public class OperationsBookingController {
 
     private final OperationsService operationsService;
@@ -53,6 +53,7 @@ public class OperationsBookingController {
 
     @PostMapping("/{bookingId}/pay")
     @Operation(summary = "Mark booking payment as paid")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public ApiResponse<PayBookingResponse> markBookingPaid(
             @PathVariable String bookingId,
             @Valid @RequestBody(required = false) PayBookingRequest request
