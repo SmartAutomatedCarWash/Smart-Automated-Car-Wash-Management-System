@@ -31,7 +31,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
-import { getOperationsQueue } from "@/features/operations/lib/operations-service";
+import { getOperationsQueue, getManagerReportsDashboard, exportManagerReport, sendManagerReport } from "@/features/operations/lib/operations-service";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useWorkspaceHeader } from "@/shared/ui/workspace/workspace-header-context";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
@@ -71,44 +71,133 @@ export function ManagerReportsPage() {
   const [serviceFilter, setServiceFilter] = useState("ALL");
   const [comparePrevious, setComparePrevious] = useState(false);
 
-  const query = useQuery({
-    queryKey: ["manager-reports", "queue"],
+  // Fetch report options (staff, service) from queue to keep dropdowns functional
+  const queueQuery = useQuery({
+    queryKey: ["manager-reports-options"],
     queryFn: getOperationsQueue,
-    refetchInterval: 15_000,
+    staleTime: 5 * 60_000,
   });
 
-  const sessions = useMemo(() => query.data?.columns.flatMap((column) => column.sessions) ?? [], [query.data]);
+  const sessions = useMemo(() => queueQuery.data?.columns.flatMap((column) => column.sessions) ?? [], [queueQuery.data]);
   const staffOptions = useMemo(() => buildStaffOptions(sessions), [sessions]);
   const serviceOptions = useMemo(() => buildServiceOptions(sessions), [sessions]);
-  const filteredSessions = useMemo(
-    () => sessions.filter((session) => matchesFilters(session, fromDate, toDate, bayFilter, staffFilter, serviceFilter)),
-    [bayFilter, fromDate, serviceFilter, sessions, staffFilter, toDate],
-  );
 
-  const completedSessions = filteredSessions.filter((session) => session.status === "COMPLETED");
-  const revenue = sumRevenue(completedSessions);
-  const totalBookings = filteredSessions.length;
-  const completedBookings = completedSessions.length;
-  const activeBookings = filteredSessions.filter((session) => ACTIVE_STATUSES.includes(session.status)).length;
-  const cancelledBookings = filteredSessions.filter((session) => session.status === "CANCELLED").length;
-  const unfinishedBookings = filteredSessions.filter((session) => session.status !== "COMPLETED" && session.status !== "CANCELLED").length;
-  const completionRate = totalBookings ? Math.round((completedBookings / totalBookings) * 100) : 0;
-  const averageTicket = completedBookings ? Math.round(revenue / completedBookings) : 0;
-  const reviewCount = 0;
-  const unrecordedRevenue = filteredSessions.filter((session) => session.status === "COMPLETED" && !session.feeAmount).length;
-  const staffRows = useMemo(() => buildStaffRows(filteredSessions, 2), [filteredSessions]);
-  const serviceRows = useMemo(() => buildServiceRows(filteredSessions), [filteredSessions]);
-  const averageRating = useMemo<number | null>(() => averageServiceRating(serviceRows), [serviceRows]);
-  const funnelRows = useMemo(() => buildFunnelRows(filteredSessions, language), [filteredSessions, language]);
-  const trendRows = useMemo(() => buildTrendRows(filteredSessions, periodMode, fromDate, toDate), [filteredSessions, fromDate, periodMode, toDate]);
-  const atRiskStaff = staffRows.filter((staff) => staff.status === "SUPPORT").length;
-  const feedbackToReview = 0;
+  // Main Report Query from BE
+  const query = useQuery({
+    queryKey: ["manager-reports-dashboard", periodMode, fromDate, toDate, comparePrevious, staffFilter, serviceFilter],
+    queryFn: () => getManagerReportsDashboard({
+      rangeType: periodMode.toUpperCase(),
+      fromDate,
+      toDate,
+      comparePrevious,
+      staffId: staffFilter,
+      serviceId: serviceFilter,
+    }),
+    refetchInterval: 60_000,
+  });
+
+  const revenue = query.data?.summary.recordedRevenue ?? 0;
+  const completedBookings = query.data?.summary.completedBookings ?? 0;
+  const totalBookings = query.data?.summary.totalBookings ?? 0;
+  const completionRate = query.data?.summary.completionRate ?? 0;
+  const averageTicket = query.data?.summary.averageTicket ?? 0;
+  const averageRating = query.data?.summary.averageRating > 0 ? query.data.summary.averageRating : null;
+  const reviewCount = query.data?.summary.reviewCount ?? 0;
+  const atRiskStaff = query.data?.staffKpis?.filter((staff: any) => staff.status === "SUPPORT").length ?? 0;
+  const feedbackToReview = query.data?.serviceQuality?.pendingFeedbackCount ?? 0;
+  const unfinishedBookings = totalBookings - completedBookings;
+  const unrecordedRevenue = 0;
+
+  const funnelRows = useMemo<FunnelRow[]>(() => {
+    if (!query.data?.funnel) return [];
+    const colors: Record<string, string> = {
+      total: "bg-[#1687ee]",
+      "checked-in": "bg-[#3098f2]",
+      washing: "bg-[#5ab0f4]",
+      completed: "bg-[#98cff8]",
+      cancelled: "bg-[#ef3f5b]"
+    };
+    return query.data.funnel.map((item: any) => ({
+      key: item.stage,
+      label: item.label,
+      count: item.count,
+      rate: item.rate,
+      barPercent: item.rate,
+      helper: item.stage === "checked-in" ? "Check-in rate" : item.stage === "washing" ? "Start rate" : item.stage === "completed" ? "Completion rate" : "",
+      color: colors[item.stage] || "bg-[#1687ee]",
+    }));
+  }, [query.data]);
+
+  const trendRows = useMemo<TrendRow[]>(() => {
+    if (!query.data?.trend?.points) return [];
+    return query.data.trend.points.map((p: any) => ({
+      key: p.label,
+      label: p.label,
+      revenue: p.revenue,
+      bookings: p.bookingCount,
+      completed: p.bookingCount
+    }));
+  }, [query.data]);
+
+  const staffRows = useMemo<StaffRow[]>(() => {
+    if (!query.data?.staffKpis) return [];
+    return query.data.staffKpis.map((s: any) => ({
+      staffId: s.staffId,
+      staffName: s.fullName,
+      completed: s.completedBookings,
+      target: s.kpiTarget,
+      progress: s.kpiPercent,
+      rating: s.rating > 0 ? s.rating : null,
+      revenue: s.revenue,
+      status: s.status,
+    }));
+  }, [query.data]);
+
+  const serviceRows = useMemo<ServiceRow[]>(() => {
+    if (!query.data?.serviceQuality?.services) return [];
+    return query.data.serviceQuality.services.map((item: any) => ({
+      service: item.serviceName,
+      bookings: item.bookingCount,
+      revenue: item.revenue,
+      rating: item.averageRating > 0 ? item.averageRating : null,
+    }));
+  }, [query.data]);
+
+  const handleExportExcel = async () => {
+    try {
+      const res = await exportManagerReport("xlsx");
+      toast.success(res.message || "Excel report generated.");
+    } catch (e) {
+      toast.error(getErrorMessage(e as unknown as ApiErrorResponse));
+    }
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      const res = await exportManagerReport("pdf");
+      toast.success(res.message || "PDF report generated.");
+    } catch (e) {
+      toast.error(getErrorMessage(e as unknown as ApiErrorResponse));
+    }
+  };
+
+  const handleSendReport = async () => {
+    const email = window.prompt(t("Nhập email nhận báo cáo:", "Enter email to receive report:"));
+    if (!email) return;
+    try {
+      const res = await sendManagerReport(email, "xlsx");
+      toast.success(res.message || "Report email sent.");
+    } catch (e) {
+      toast.error(getErrorMessage(e as unknown as ApiErrorResponse));
+    }
+  };
+
   const headerToolbar = useMemo(
     () => (
       <div className="ml-auto flex flex-wrap gap-2">
-        <HeaderAction icon={Download} label={t("Xuất Excel", "Export Excel")} onClick={() => toast.info(t("Tính năng xuất Excel chưa được backend hỗ trợ.", "Excel export is not supported by the backend yet."))} />
-        <HeaderAction icon={FileText} label={t("Xuất PDF", "Export PDF")} onClick={() => toast.info(t("Tính năng xuất PDF chưa được backend hỗ trợ.", "PDF export is not supported by the backend yet."))} />
-        <HeaderAction icon={Send} label={t("Gửi báo cáo", "Send report")} onClick={() => toast.success(t("Yêu cầu gửi báo cáo đã được ghi nhận.", "Report send request recorded."))} />
+        <HeaderAction icon={Download} label={t("Xuất Excel", "Export Excel")} onClick={handleExportExcel} />
+        <HeaderAction icon={FileText} label={t("Xuất PDF", "Export PDF")} onClick={handleExportPdf} />
+        <HeaderAction icon={Send} label={t("Gửi báo cáo", "Send report")} onClick={handleSendReport} />
         <Button variant="outline" className="h-10 rounded-xl border-slate-200 bg-white px-4 text-xs font-black shadow-sm" onClick={() => query.refetch()} disabled={query.isFetching}>
           <RefreshCcw className={`h-4 w-4 ${query.isFetching ? "animate-spin" : ""}`} />
         </Button>
