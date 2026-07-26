@@ -21,7 +21,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
-import { getTodayInputValue } from "@/shared/ui/date-picker-button";
+import { DatePickerButton, getTodayInputValue } from "@/shared/ui/date-picker-button";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useWorkspaceHeader } from "@/shared/ui/workspace/workspace-header-context";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
@@ -42,7 +42,7 @@ import type { BookingStatus, EligibleSessionBooking, OperationStaffAssignment, O
 import { useWebSocket } from "@/shared/hooks/use-web-socket";
 
 type FocusFilter = "ALL" | "NEEDS_ACTION" | "DELAYED" | "UNASSIGNED";
-type BoardStage = "WAITING_CUSTOMER" | "CHECKED_IN" | "WAITING_START" | "IN_PROGRESS" | "INSPECTION" | "COMPLETED";
+type BoardStage = "PENDING" | "CONFIRMED" | "CHECKED_IN" | "IN_PROGRESS" | "COMPLETED";
 
 type OperationRow = {
   id: string;
@@ -101,18 +101,11 @@ const FOCUS_FILTERS: Array<{ value: FocusFilter; label: string }> = [
   { value: "UNASSIGNED", label: "Unassigned" },
 ];
 
-const BAY_FILTERS: Array<{ value: string; label: string }> = [
-  { value: "ALL", label: "All bays" },
-  { value: "Assigned", label: "Assigned" },
-  { value: "Open", label: "Open" },
-];
-
 const BOARD_COLUMNS: Array<{ stage: BoardStage; title: string; tint: string; rail: string }> = [
-  { stage: "WAITING_CUSTOMER", title: "Waiting customer", tint: "bg-blue-50/45", rail: "border-l-blue-500" },
-  { stage: "CHECKED_IN", title: "Check-in", tint: "bg-emerald-50/45", rail: "border-l-emerald-500" },
-  { stage: "WAITING_START", title: "Waiting start", tint: "bg-amber-50/55", rail: "border-l-amber-500" },
-  { stage: "IN_PROGRESS", title: "Washing", tint: "bg-cyan-50/45", rail: "border-l-cyan-500" },
-  { stage: "INSPECTION", title: "Inspection", tint: "bg-slate-50", rail: "border-l-slate-400" },
+  { stage: "PENDING", title: "Pending", tint: "bg-blue-50/45", rail: "border-l-blue-500" },
+  { stage: "CONFIRMED", title: "Confirmed", tint: "bg-emerald-50/45", rail: "border-l-emerald-500" },
+  { stage: "CHECKED_IN", title: "Checked In", tint: "bg-amber-50/55", rail: "border-l-amber-500" },
+  { stage: "IN_PROGRESS", title: "In Progress", tint: "bg-cyan-50/45", rail: "border-l-cyan-500" },
   { stage: "COMPLETED", title: "Completed", tint: "bg-orange-50/45", rail: "border-l-orange-400" },
 ];
 
@@ -124,11 +117,11 @@ export function ManagerOperationsPage() {
   const pushManagerNotification = useManagerNotificationStore((state) => state.push);
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState(getTodayInputValue());
-  const [bayFilter, setBayFilter] = useState("ALL");
   const [staffFilter, setStaffFilter] = useState("ALL");
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("ALL");
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [optimisticSessionRows, setOptimisticSessionRows] = useState<Record<string, OperationRow>>({});
 
   const handleSelectRow = (id: string | null) => {
     setSelectedRowId(id);
@@ -159,10 +152,11 @@ export function ManagerOperationsPage() {
   const eligibleBookings = eligibleQuery.data ?? [];
   const staffOptions = staffQuery.data ?? [];
   const rows = useMemo(() => buildRows(eligibleBookings, sessions), [eligibleBookings, sessions]);
-  const rowsForSelectedDate = useMemo(() => rows.filter((row) => isSameDate(row.bookingDate, selectedDate)), [rows, selectedDate]);
+  const rowsWithOptimisticUpdates = useMemo(() => applyOptimisticSessionRows(rows, optimisticSessionRows), [optimisticSessionRows, rows]);
+  const rowsForSelectedDate = useMemo(() => rowsWithOptimisticUpdates.filter((row) => isSameDate(row.bookingDate, selectedDate)), [rowsWithOptimisticUpdates, selectedDate]);
   const filteredRows = useMemo(
-    () => applyCommandFilters(rowsForSelectedDate, search, bayFilter, staffFilter, focusFilter),
-    [bayFilter, focusFilter, rowsForSelectedDate, search, staffFilter],
+    () => applyCommandFilters(rowsForSelectedDate, search, staffFilter, focusFilter),
+    [focusFilter, rowsForSelectedDate, search, staffFilter],
   );
   const selectedRow = useMemo(() => {
     if (selectedRowId === null) return null;
@@ -194,7 +188,22 @@ export function ManagerOperationsPage() {
   useEffect(() => {
     setCheckInPage(1);
     setInterventionPage(1);
-  }, [selectedDate, search, bayFilter, staffFilter, focusFilter]);
+  }, [selectedDate, search, staffFilter, focusFilter]);
+
+  useEffect(() => {
+    setOptimisticSessionRows((current) => {
+      const next = { ...current };
+      let changed = false;
+      for (const [bookingId, optimisticRow] of Object.entries(current)) {
+        const synced = rows.some((row) => row.type === "session" && row.bookingId === bookingId && row.status === optimisticRow.status);
+        if (synced) {
+          delete next[bookingId];
+          changed = true;
+        }
+      }
+      return changed ? next : current;
+    });
+  }, [rows]);
 
   const waitingCustomerCount = rowsForSelectedDate.filter((row) => row.type === "booking" && row.status === "PENDING").length;
   const waitingCheckIn = rowsForSelectedDate.filter((row) => row.type === "booking" && row.status === "CONFIRMED").length;
@@ -248,7 +257,36 @@ export function ManagerOperationsPage() {
 
   const createMutation = useMutation({
     mutationFn: (bookingId: string) => managerCheckInBooking(bookingId),
+    onMutate: (bookingId) => {
+      const booking = eligibleBookings.find((item) => item.bookingId === bookingId);
+      if (booking) {
+        const now = new Date().toISOString();
+        setOptimisticSessionRows((current) => ({
+          ...current,
+          [bookingId]: buildOptimisticSessionRowFromBooking(booking, `optimistic-${bookingId}`, "CHECKED_IN", {
+            checkedInAt: now,
+            notes: "Manager check-in",
+          }),
+        }));
+      }
+    },
     onSuccess: (_data, bookingId) => {
+      setOptimisticSessionRows((current) => {
+        const existing = current[bookingId];
+        if (!existing) return current;
+        return {
+          ...current,
+          [bookingId]: {
+            ...existing,
+            id: `session-${_data.sessionId}`,
+            sessionId: _data.sessionId,
+            status: _data.status as WashSessionStatus,
+            assignedStaffId: _data.assignedStaffId,
+            assignedStaffName: _data.assignedStaffName,
+            checkedInAt: _data.checkedInAt ?? existing.checkedInAt,
+          },
+        };
+      });
       handleActionSuccess("Vehicle checked in and moved to waiting start.");
       const booking = eligibleBookings.find((item) => item.bookingId === bookingId);
       pushManagerNotification({
@@ -260,25 +298,79 @@ export function ManagerOperationsPage() {
         href: "/manager/operations",
       });
     },
-    onError: (actionError: ApiErrorResponse) => handleActionError("Unable to create session", actionError),
+    onError: (actionError: ApiErrorResponse, bookingId) => {
+      setOptimisticSessionRows((current) => removeOptimisticSessionRow(current, bookingId));
+      handleActionError("Unable to create session", actionError);
+    },
   });
 
   const checkInMutation = useMutation({
     mutationFn: (sessionId: string) => checkInWashSession(sessionId),
+    onMutate: (sessionId) => {
+      const row = rowsWithOptimisticUpdates.find((item) => item.sessionId === sessionId);
+      if (row) {
+        setOptimisticSessionRows((current) => ({
+          ...current,
+          [row.bookingId]: {
+            ...row,
+            status: "CHECKED_IN",
+            checkedInAt: row.checkedInAt ?? new Date().toISOString(),
+          },
+        }));
+      }
+    },
     onSuccess: () => handleActionSuccess("Vehicle checked in. Staff can start washing."),
-    onError: (actionError: ApiErrorResponse) => handleActionError("Unable to check in session", actionError),
+    onError: (actionError: ApiErrorResponse, sessionId) => {
+      const row = rowsWithOptimisticUpdates.find((item) => item.sessionId === sessionId);
+      if (row) setOptimisticSessionRows((current) => removeOptimisticSessionRow(current, row.bookingId));
+      handleActionError("Unable to check in session", actionError);
+    },
   });
 
   const startMutation = useMutation({
     mutationFn: (sessionId: string) => startWashSession(sessionId),
+    onMutate: (sessionId) => {
+      const row = rowsWithOptimisticUpdates.find((item) => item.sessionId === sessionId);
+      if (row) {
+        setOptimisticSessionRows((current) => ({
+          ...current,
+          [row.bookingId]: {
+            ...row,
+            status: "IN_PROGRESS",
+            startedAt: row.startedAt ?? new Date().toISOString(),
+          },
+        }));
+      }
+    },
     onSuccess: () => handleActionSuccess("Session moved to washing."),
-    onError: (actionError: ApiErrorResponse) => handleActionError("Unable to start wash", actionError),
+    onError: (actionError: ApiErrorResponse, sessionId) => {
+      const row = rowsWithOptimisticUpdates.find((item) => item.sessionId === sessionId);
+      if (row) setOptimisticSessionRows((current) => removeOptimisticSessionRow(current, row.bookingId));
+      handleActionError("Unable to start wash", actionError);
+    },
   });
 
   const completeMutation = useMutation({
     mutationFn: (sessionId: string) => completeWashSession(sessionId),
+    onMutate: (sessionId) => {
+      const row = rowsWithOptimisticUpdates.find((item) => item.sessionId === sessionId);
+      if (row) {
+        setOptimisticSessionRows((current) => ({
+          ...current,
+          [row.bookingId]: {
+            ...row,
+            status: "COMPLETED",
+            completedAt: row.completedAt ?? new Date().toISOString(),
+          },
+        }));
+      }
+    },
     onSuccess: () => handleActionSuccess("Wash session completed."),
-    onError: (actionError: ApiErrorResponse) => handleActionError("Unable to complete wash", actionError),
+    onError: (actionError: ApiErrorResponse, sessionId) => {
+      const row = rowsWithOptimisticUpdates.find((item) => item.sessionId === sessionId);
+      if (row) setOptimisticSessionRows((current) => removeOptimisticSessionRow(current, row.bookingId));
+      handleActionError("Unable to complete wash", actionError);
+    },
   });
 
   const cancelMutation = useMutation({
@@ -328,11 +420,11 @@ export function ManagerOperationsPage() {
                   className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-2 focus:ring-cyan-100"
                 />
               </label>
-              <SelectBox
-                value={bayFilter}
-                onChange={setBayFilter}
-                options={BAY_FILTERS.map((item) => item.value)}
-                labels={Object.fromEntries(BAY_FILTERS.map((item) => [item.value, item.label]))}
+              <DatePickerButton
+                value={selectedDate}
+                onChange={setSelectedDate}
+                label="Select date"
+                buttonClassName="w-full justify-start"
               />
               <SelectBox value={staffFilter} onChange={setStaffFilter} options={["ALL", ...staffOptions.map((staff) => staff.staffId)]} labels={{ ALL: "All staff", ...Object.fromEntries(staffOptions.map((staff) => [staff.staffId, staff.staffName])) }} />
               <div className="flex flex-wrap gap-2">
@@ -399,6 +491,10 @@ export function ManagerOperationsPage() {
                     intervention={intervention}
                     onSelect={() => handleSelectRow(intervention.rowId)}
                     onAction={() => {
+                      if (intervention.actionLabel === "View details") {
+                        handleSelectRow(intervention.rowId);
+                        return;
+                      }
                       const target = rowsForSelectedDate.find((row) => row.id === intervention.rowId);
                       if (target) runPrimaryAction(target);
                     }}
@@ -421,10 +517,10 @@ export function ManagerOperationsPage() {
           </section>
 
           <section className="grid grid-cols-2 gap-3 xl:grid-cols-5">
-            <MetricCard icon={Users} label="Waiting customer" value={waitingCustomerCount} tone="blue" />
-            <MetricCard icon={Clock3} label="Check-in" value={waitingCheckIn} tone="cyan" />
-            <MetricCard icon={Check} label="Waiting start" value={waitingStartCount} tone="cyan" />
-            <MetricCard icon={Car} label="Washing" value={washingCount} tone="emerald" />
+            <MetricCard icon={Users} label="Pending" value={waitingCustomerCount} tone="blue" />
+            <MetricCard icon={Clock3} label="Confirmed" value={waitingCheckIn} tone="cyan" />
+            <MetricCard icon={Check} label="Checked In" value={waitingStartCount} tone="cyan" />
+            <MetricCard icon={Car} label="In Progress" value={washingCount} tone="emerald" />
             <MetricCard icon={AlertTriangle} label="Overdue" value={overdueCount} tone="rose" />
           </section>
 
@@ -448,16 +544,16 @@ export function ManagerOperationsPage() {
             </div>
 
             <div className="overflow-x-auto pb-2">
-              <div className="grid min-w-[1180px] grid-cols-6 gap-3">
+              <div className="grid min-w-[980px] grid-cols-5 gap-3">
                 {BOARD_COLUMNS.map((column) => {
-                  const columnRows = filteredRows.filter((row) => getBoardStage(row) === column.stage);
+                  const columnRows = sortRowsNewestFirst(filteredRows.filter((row) => getBoardStage(row) === column.stage));
                   return (
                     <div key={column.stage} className={`min-h-[380px] rounded-2xl border border-slate-200 ${column.tint} p-2.5`}>
                       <div className="mb-2 flex items-center justify-between px-1">
                         <h3 className="text-[0.72rem] font-black text-slate-700">{column.title}</h3>
                         <span className="rounded-full bg-white px-2 py-0.5 text-xs font-black text-slate-500 shadow-sm">{columnRows.length}</span>
                       </div>
-                      <div className="space-y-2">
+                      <div className="max-h-[21rem] space-y-2 overflow-y-auto pb-2 pr-1">
                         {columnRows.map((row) => (
                           <BoardCard
                             key={row.id}
@@ -517,8 +613,7 @@ function CheckInCandidateRow({
   return (
     <div className="grid min-h-14 grid-cols-[48px_minmax(82px,0.85fr)_minmax(92px,1fr)_minmax(82px,0.75fr)_34px_minmax(78px,0.9fr)_94px] items-center gap-2 border-b border-slate-100 px-2 py-2 last:border-b-0">
       <button type="button" onClick={onSelect} className="text-left leading-tight">
-        <p className="text-sm font-black text-slate-950">{row.bookingTime}</p>
-        <p className="text-[10px] font-bold text-slate-400">Today</p>
+        <p className="text-sm font-black text-slate-950">{formatBookingTime(row.bookingTime)}</p>
       </button>
       <button type="button" onClick={onSelect} className="min-w-0 text-left">
         <p className="truncate font-mono text-sm font-black text-slate-950">{row.vehiclePlate}</p>
@@ -858,7 +953,7 @@ function SessionDetailPanel({
           <div className="grid grid-cols-2 gap-2">
             <MiniInfo label="Status" value={getStatusLabel(row.status)} />
             <MiniInfo label="ETA" value={row.estimatedDurationMinutes ? `${row.estimatedDurationMinutes} min` : "—"} />
-            <MiniInfo label="Schedule" value={row.bookingTime} />
+            <MiniInfo label="Schedule" value={formatBookingTime(row.bookingTime)} />
             <MiniInfo label="Payment" value={row.amount ? formatCurrency(row.amount) : "Not calculated"} />
           </div>
 
@@ -1026,6 +1121,65 @@ function MiniInfo({ label, value }: { label: string; value: string }) {
   );
 }
 
+function applyOptimisticSessionRows(rows: OperationRow[], optimisticSessionRows: Record<string, OperationRow>) {
+  const optimisticEntries = Object.entries(optimisticSessionRows);
+  if (optimisticEntries.length === 0) return rows;
+
+  const optimisticBookingIds = new Set(optimisticEntries.map(([bookingId]) => bookingId));
+  const mergedRows = rows
+    .filter((row) => !(row.type === "booking" && optimisticBookingIds.has(row.bookingId)))
+    .map((row) => {
+      const optimisticRow = optimisticSessionRows[row.bookingId];
+      return optimisticRow && row.type === "session" ? { ...row, ...optimisticRow } : row;
+    });
+
+  const existingSessionBookingIds = new Set(mergedRows.filter((row) => row.type === "session").map((row) => row.bookingId));
+  const pendingOptimisticRows = optimisticEntries
+    .filter(([bookingId]) => !existingSessionBookingIds.has(bookingId))
+    .map(([, row]) => row);
+
+  return [...mergedRows, ...pendingOptimisticRows];
+}
+
+function buildOptimisticSessionRowFromBooking(
+  booking: EligibleSessionBooking,
+  sessionId: string,
+  status: WashSessionStatus,
+  patch: Partial<Pick<OperationRow, "checkedInAt" | "startedAt" | "completedAt" | "notes">> = {},
+): OperationRow {
+  const assignedStaff = normalizeAssignedStaff(booking.assignedStaff, booking.assignedStaffId, booking.assignedStaffName);
+  return {
+    id: `session-${sessionId}`,
+    type: "session",
+    bookingId: booking.bookingId,
+    sessionId,
+    customerName: booking.customerName,
+    customerPhone: booking.customerPhone,
+    vehiclePlate: booking.vehiclePlate,
+    servicePackage: getServiceName(booking.packageId),
+    bookingDate: booking.bookingDate,
+    bookingTime: booking.bookingTime,
+    status,
+    assignedStaffId: booking.assignedStaffId,
+    assignedStaffName: booking.assignedStaffName,
+    assignedStaff,
+    amount: booking.finalAmount,
+    estimatedDurationMinutes: booking.estimatedDurationMinutes,
+    notes: patch.notes ?? null,
+    queuedAt: null,
+    checkedInAt: patch.checkedInAt ?? null,
+    startedAt: patch.startedAt ?? null,
+    completedAt: patch.completedAt ?? null,
+  };
+}
+
+function removeOptimisticSessionRow(current: Record<string, OperationRow>, bookingId: string) {
+  if (!(bookingId in current)) return current;
+  const next = { ...current };
+  delete next[bookingId];
+  return next;
+}
+
 function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueueSession[]): OperationRow[] {
   const sessionBookingIds = new Set(sessions.map((session) => session.bookingId));
   const bookingRows: OperationRow[] = bookings
@@ -1119,14 +1273,14 @@ function buildStaffWorkload(staffOptions: StaffOption[], rows: OperationRow[]): 
 function buildInterventions(rows: OperationRow[], staffWorkload: StaffWorkloadItem[]): Intervention[] {
   const items: Intervention[] = [];
   rows
-    .filter((row) => row.notes?.trim())
+    .filter((row) => isActionableDispatchNote(row.notes))
     .forEach((row) => {
       items.push({
         id: `note-${row.id}`,
         rowId: row.id,
-        severity: "HIGH",
-        message: `Vehicle #${row.vehiclePlate} has dispatch note: ${row.notes?.trim()}`,
-        actionLabel: "Assign staff",
+        severity: "INFO",
+        message: `Vehicle #${row.vehiclePlate} has note: ${row.notes?.trim()}`,
+        actionLabel: "View details",
       });
     });
 
@@ -1159,7 +1313,13 @@ function buildInterventions(rows: OperationRow[], staffWorkload: StaffWorkloadIt
   return items;
 }
 
-function applyCommandFilters(rows: OperationRow[], search: string, bayFilter: string, staffFilter: string, focusFilter: FocusFilter) {
+function isActionableDispatchNote(note: string | null | undefined) {
+  const normalized = note?.trim().toLowerCase();
+  if (!normalized) return false;
+  return !["manager check-in", "completed from admin booking status"].includes(normalized);
+}
+
+function applyCommandFilters(rows: OperationRow[], search: string, staffFilter: string, focusFilter: FocusFilter) {
   const normalizedSearch = search.trim().toLowerCase();
   return rows.filter((row) => {
     const matchesSearch =
@@ -1168,7 +1328,6 @@ function applyCommandFilters(rows: OperationRow[], search: string, bayFilter: st
         .join(" ")
         .toLowerCase()
         .includes(normalizedSearch);
-    const matchesBay = bayFilter === "ALL" || getBayForRow(row) === bayFilter;
     const matchesStaff = staffFilter === "ALL" || rowHasStaff(row, staffFilter);
     const matchesFocus =
       focusFilter === "ALL" ||
@@ -1176,7 +1335,7 @@ function applyCommandFilters(rows: OperationRow[], search: string, bayFilter: st
       (focusFilter === "DELAYED" && isDelayed(row)) ||
       (focusFilter === "UNASSIGNED" && !hasAssignedStaff(row) && row.status !== "COMPLETED");
 
-    return matchesSearch && matchesBay && matchesStaff && matchesFocus;
+    return matchesSearch && matchesStaff && matchesFocus;
   });
 }
 
@@ -1189,40 +1348,56 @@ function paginateItems<T>(items: T[], page: number, pageSize: number) {
   return items.slice(start, start + pageSize);
 }
 
+function sortRowsNewestFirst(rows: OperationRow[]) {
+  return [...rows].sort((left, right) => getRowLatestTimestamp(right) - getRowLatestTimestamp(left));
+}
+
+function getRowLatestTimestamp(row: OperationRow) {
+  const latestIso = row.completedAt ?? row.startedAt ?? row.checkedInAt ?? row.queuedAt;
+  if (latestIso) {
+    const timestamp = new Date(latestIso).getTime();
+    if (!Number.isNaN(timestamp)) return timestamp;
+  }
+  const scheduledTimestamp = new Date(`${row.bookingDate.slice(0, 10)}T${formatBookingTime(row.bookingTime)}:00`).getTime();
+  return Number.isNaN(scheduledTimestamp) ? 0 : scheduledTimestamp;
+}
+
 function getBoardStage(row: OperationRow): BoardStage {
-  if (row.type === "booking" && row.status === "PENDING") return "WAITING_CUSTOMER";
-  if (row.type === "booking" && row.status === "CONFIRMED") return "CHECKED_IN";
-  if (row.type === "booking") return "WAITING_CUSTOMER";
-  if (row.status === "PENDING" || row.status === "QUEUED" || row.status === "CHECKED_IN") return "WAITING_START";
+  if (row.type === "booking" && row.status === "PENDING") return "PENDING";
+  if (row.type === "booking" && row.status === "CONFIRMED") return "CONFIRMED";
+  if (row.type === "booking" && row.status === "CHECKED_IN") return "CHECKED_IN";
+  if (row.type === "booking" && row.status === "IN_PROGRESS") return "IN_PROGRESS";
+  if (row.type === "booking" && row.status === "COMPLETED") return "COMPLETED";
+  if (row.type === "session" && (row.status === "PENDING" || row.status === "QUEUED")) return "CONFIRMED";
+  if (row.status === "CHECKED_IN") return "CHECKED_IN";
   if (row.status === "IN_PROGRESS") return "IN_PROGRESS";
   if (row.status === "COMPLETED") return "COMPLETED";
-  return "INSPECTION";
+  return "PENDING";
 }
 
 function buildTimeline(row: OperationRow) {
   const stage = getBoardStage(row);
-  const bookingNote = `${row.bookingTime} · ${formatDate(row.bookingDate)}`;
+  const bookingNote = `${formatBookingTime(row.bookingTime)} · ${formatDate(row.bookingDate)}`;
   const checkedInNote = row.checkedInAt ? `${formatClockTime(row.checkedInAt)} · ${formatDate(row.bookingDate)}` : undefined;
   const startedNote = row.startedAt ? `${formatClockTime(row.startedAt)} · ${formatDate(row.bookingDate)}` : undefined;
   const completedNote = row.completedAt ? `${formatClockTime(row.completedAt)} · ${formatDate(row.bookingDate)}` : undefined;
   return [
-    { label: "Booking created", done: true, note: bookingNote },
-    { label: "Customer arrived", done: stage !== "WAITING_CUSTOMER" || row.type === "session", note: row.type === "booking" ? "Waiting for customer" : checkedInNote },
-    { label: "Check-in", done: ["CHECKED_IN", "WAITING_START", "IN_PROGRESS", "INSPECTION", "COMPLETED"].includes(stage), current: stage === "CHECKED_IN", note: checkedInNote },
-    { label: "Start wash", done: ["IN_PROGRESS", "INSPECTION", "COMPLETED"].includes(stage), current: stage === "WAITING_START" || stage === "IN_PROGRESS", note: stage === "WAITING_START" ? getWaitLabel(row) : startedNote },
-    { label: "Inspection", done: ["INSPECTION", "COMPLETED"].includes(stage), current: stage === "INSPECTION" },
-    { label: "Complete", done: stage === "COMPLETED", note: completedNote },
+    { label: "Pending", done: true, current: stage === "PENDING", note: bookingNote },
+    { label: "Confirmed", done: ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED"].includes(stage), current: stage === "CONFIRMED", note: stage === "CONFIRMED" ? "Ready for check-in" : undefined },
+    { label: "Checked In", done: ["CHECKED_IN", "IN_PROGRESS", "COMPLETED"].includes(stage), current: stage === "CHECKED_IN", note: checkedInNote },
+    { label: "In Progress", done: ["IN_PROGRESS", "COMPLETED"].includes(stage), current: stage === "IN_PROGRESS", note: stage === "CHECKED_IN" ? getWaitLabel(row) : startedNote },
+    { label: "Completed", done: stage === "COMPLETED", current: stage === "COMPLETED", note: completedNote },
   ];
 }
 
 function getStatusLabel(status: BookingStatus | WashSessionStatus) {
   const labels: Record<BookingStatus | WashSessionStatus, string> = {
     PENDING: "Pending",
-    CONFIRMED: "Ready for check-in",
+    CONFIRMED: "Confirmed",
     QUEUED: "Queued",
-    CHECKED_IN: "Checked in",
-    IN_PROGRESS: "Washing",
-    COMPLETED: "Complete",
+    CHECKED_IN: "Checked In",
+    IN_PROGRESS: "In Progress",
+    COMPLETED: "Completed",
     CANCELLED: "Cancelled",
     NO_SHOW: "No show",
   };
@@ -1313,22 +1488,18 @@ function isDelayed(row: OperationRow) {
 function getWaitLabel(row: OperationRow) {
   if (row.status === "IN_PROGRESS") {
     const startedMinutes = getElapsedMinutes(row.startedAt);
-    return startedMinutes !== null ? formatMinutesDuration(startedMinutes) : row.bookingTime;
+    return startedMinutes !== null ? formatMinutesDuration(startedMinutes) : formatBookingTime(row.bookingTime);
   }
   if (row.status === "CHECKED_IN") {
     const checkedInMinutes = getElapsedMinutes(row.checkedInAt);
-    return checkedInMinutes !== null ? `${checkedInMinutes} minutes waiting to start` : row.bookingTime;
+    return checkedInMinutes !== null ? `${checkedInMinutes} minutes waiting to start` : formatBookingTime(row.bookingTime);
   }
   if (row.status === "PENDING" || row.status === "QUEUED") {
     const bookingMinutes = getElapsedMinutesFromBooking(row.bookingDate, row.bookingTime);
-    return bookingMinutes !== null && bookingMinutes > 0 ? `${bookingMinutes} minutes waiting for customer` : row.bookingTime;
+    return bookingMinutes !== null && bookingMinutes > 0 ? `${bookingMinutes} minutes waiting for customer` : formatBookingTime(row.bookingTime);
   }
-  if (row.status === "COMPLETED") return row.completedAt ? formatClockTime(row.completedAt) : row.bookingTime;
-  return row.bookingTime;
-}
-
-function getBayForRow(row: OperationRow) {
-  return hasAssignedStaff(row) ? "Assigned" : "Open";
+  if (row.status === "COMPLETED") return row.completedAt ? formatClockTime(row.completedAt) : formatBookingTime(row.bookingTime);
+  return formatBookingTime(row.bookingTime);
 }
 
 function normalizeAssignedStaff(
@@ -1392,10 +1563,17 @@ function getElapsedMinutes(value: string | null) {
 }
 
 function getElapsedMinutesFromBooking(date: string, time: string) {
-  const bookingTime = new Date(`${date.slice(0, 10)}T${time.padStart(5, "0")}:00`);
+  const bookingTime = new Date(`${date.slice(0, 10)}T${formatBookingTime(time)}:00`);
   if (Number.isNaN(bookingTime.getTime())) return null;
   const diffMs = Date.now() - bookingTime.getTime();
   return diffMs >= 0 ? Math.floor(diffMs / 60000) : null;
+}
+
+function formatBookingTime(value: string | null | undefined) {
+  if (!value) return "—";
+  const match = value.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return value;
+  return `${match[1].padStart(2, "0")}:${match[2]}`;
 }
 
 function formatMinutesDuration(totalMinutes: number) {
