@@ -108,9 +108,6 @@ export function CustomerVehiclesListClientPage() {
       }
       return 0;
     });
-  const activeCount = vehicles.filter((vehicle) => vehicle.status.toUpperCase() === "ACTIVE").length;
-  const primaryCount = vehicles.filter((vehicle) => vehicle.isPrimary).length;
-
   return (
     <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-[#f7fbff] px-4 py-6 sm:px-6 lg:px-8">
       <div className="pointer-events-none absolute inset-0">
@@ -128,14 +125,9 @@ export function CustomerVehiclesListClientPage() {
                 <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
                   {translate(language, "Tat ca xe", "All vehicles")}
                 </h1>
-                <p className="mt-2 text-sm text-slate-500">
-                  {translate(language, "Quan ly xe da luu va mo ho so chi tiet cua tung xe.", "Manage your saved vehicles and open each full vehicle profile.")}
-                </p>
               </div>
-              <div className="grid max-w-2xl gap-3 sm:grid-cols-3">
+              <div className="grid max-w-[14rem] gap-3">
                 <VehicleStatCard icon={CarFront} value={vehicles.length} label={translate(language, "Tong so xe", "Total vehicles")} tone="sky" />
-                <VehicleStatCard icon={ShieldCheck} value={activeCount} label={translate(language, "Xe dang hoat dong", "Active vehicles")} tone="emerald" />
-                <VehicleStatCard icon={Star} value={primaryCount} label={translate(language, "Xe uu tien", "Primary vehicles")} tone="amber" />
               </div>
             </div>
 
