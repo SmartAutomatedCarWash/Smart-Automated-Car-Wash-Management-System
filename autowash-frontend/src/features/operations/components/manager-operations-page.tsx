@@ -224,16 +224,9 @@ export function ManagerOperationsPage() {
           <AlertTriangle className="h-4 w-4" />
           {alertCount} alerts need action
         </span>
-        <Button
-          variant="outline"
-          className="h-9 text-xs font-black shadow-sm"
-          onClick={() => setIsSidebarOpen((prev) => !prev)}
-        >
-          {isSidebarOpen ? "Collapse panel" : "Expand panel"}
-        </Button>
       </div>
     ),
-    [alertCount, isSidebarOpen],
+    [alertCount],
   );
 
   useWorkspaceHeader({ toolbar: headerToolbar });
