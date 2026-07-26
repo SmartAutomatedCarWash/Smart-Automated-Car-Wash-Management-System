@@ -515,8 +515,9 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                   <div className="absolute left-0 right-0 top-5 h-0.5 bg-slate-200 mx-6 hidden sm:block" />
                   {TIMELINE_STEPS.map((step, idx) => {
                     const currentIdx = getStepIndex(booking.washStatus ?? booking.status);
-                    const isDone = idx < currentIdx;
-                    const isActive = idx === currentIdx;
+                    const isCompleted = currentIdx === STATUS_ORDER.length - 1;
+                    const isDone = isCompleted || idx < currentIdx;
+                    const isActive = !isCompleted && idx === currentIdx;
                     const Icon = step.icon;
                     return (
                       <div key={step.key} className="relative z-10 flex min-w-[80px] flex-1 flex-col items-center gap-2 text-center">

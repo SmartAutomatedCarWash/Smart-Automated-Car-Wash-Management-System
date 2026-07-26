@@ -911,6 +911,7 @@ public class OperationsServiceImpl implements OperationsService {
 
     private void normalizeSingleBookingStaffAssignment(Booking booking, User staff) {
         bookingStaffAssignmentRepository.deleteByBooking(booking);
+        bookingStaffAssignmentRepository.flush();
         bookingStaffAssignmentRepository.save(new BookingStaffAssignment(booking, staff, 1));
         booking.assignStaff(staff);
     }

@@ -246,7 +246,7 @@ export function useCreateCustomerBooking() {
 
   return useMutation<CreateBookingResponse, ApiErrorResponse, BookingDraft>({
     mutationFn: createCustomerBooking,
-    onSuccess: async (createdBooking) => {
+    onSuccess: (createdBooking) => {
       const newListItem: BookingListItem = {
         bookingId: createdBooking.bookingId,
         vehiclePlate: createdBooking.vehiclePlate,
@@ -284,7 +284,7 @@ export function useCreateCustomerBooking() {
         },
       );
 
-      await Promise.all([
+      void Promise.all([
         queryClient.invalidateQueries({ queryKey: bookingDetailQueryKey(userId, createdBooking.bookingId) }),
         queryClient.invalidateQueries({ queryKey: washTrackingActiveQueryKey(userId) }),
         queryClient.invalidateQueries({ queryKey: customerLoyaltyScope(userId) }),
