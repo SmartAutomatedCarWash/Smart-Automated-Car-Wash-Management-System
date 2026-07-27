@@ -15,10 +15,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -92,9 +94,12 @@ public class AdminStaffController {
     public ApiResponse<AdminReportingService.StaffKpiPage> listStaffKpi(
             @RequestParam(defaultValue = "TODAY") String range,
             @RequestParam(required = false) UUID staffId,
+            @RequestParam(required = false) String serviceName,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int limit
     ) {
-        return ApiResponse.ok("Staff KPI retrieved", adminReportingService.listStaffKpiPage(range, staffId, page, limit));
+        return ApiResponse.ok("Staff KPI retrieved", adminReportingService.listStaffKpiPage(range, staffId, serviceName, dateFrom, dateTo, page, limit));
     }
 }

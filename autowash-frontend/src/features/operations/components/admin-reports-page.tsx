@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { getOperationsQueue } from "@/features/operations/lib/operations-service";
+import { getManagerSettings } from "@/features/operations/lib/manager-settings-service";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useWorkspaceHeader } from "@/shared/ui/workspace/workspace-header-context";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
@@ -77,6 +78,11 @@ export function AdminReportsPage() {
     queryFn: getOperationsQueue,
     refetchInterval: 15_000,
   });
+  const settingsQuery = useQuery({
+    queryKey: ["admin-reports", "manager-settings"],
+    queryFn: getManagerSettings,
+    refetchInterval: 30_000,
+  });
 
   const sessions = useMemo(() => query.data?.columns.flatMap((column) => column.sessions) ?? [], [query.data]);
   const staffOptions = useMemo(() => buildStaffOptions(sessions), [sessions]);
@@ -97,7 +103,8 @@ export function AdminReportsPage() {
   const averageTicket = completedBookings ? Math.round(revenue / completedBookings) : 0;
   const reviewCount = 0;
   const unrecordedRevenue = filteredSessions.filter((session) => session.status === "COMPLETED" && !session.feeAmount).length;
-  const staffRows = useMemo(() => buildStaffRows(filteredSessions, 2), [filteredSessions]);
+  const weeklyStaffKpiTarget = settingsQuery.data?.settings.weeklyStaffKpiTarget ?? 40;
+  const staffRows = useMemo(() => buildStaffRows(filteredSessions, weeklyStaffKpiTarget), [filteredSessions, weeklyStaffKpiTarget]);
   const serviceRows = useMemo(() => buildServiceRows(filteredSessions), [filteredSessions]);
   const averageRating = useMemo<number | null>(() => averageServiceRating(serviceRows), [serviceRows]);
   const funnelRows = useMemo(() => buildFunnelRows(filteredSessions, language), [filteredSessions, language]);
@@ -398,39 +405,44 @@ function RevenuePanel({ rows, language, locale }: { rows: TrendRow[]; language: 
 
 function StaffKpiTable({ rows, locale, language }: { rows: StaffRow[]; locale: string; language: Language }) {
   return (
-    <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="text-sm font-black text-slate-950">{translate(language, "KPI nhân viên hệ thống", "System Staff KPI")}</h2>
-      <div className="mt-4 overflow-x-auto">
+    <Card className="flex h-full flex-col rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-black text-slate-950">{translate(language, "KPI nhân viên hệ thống", "System Staff KPI")}</h2>
+        {rows.length > 0 && (
+          <div className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600">
+            KPI Target: <span className="text-slate-900">{rows[0].target}</span>
+          </div>
+        )}
+      </div>
+      <div className="mt-4 flex-1 overflow-x-auto">
         <table className="w-full min-w-[640px] text-left text-xs">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500">
-              <th className="px-3 py-3">Staff</th>
-              <th className="px-3 py-3">{translate(language, "Hoàn thành", "Done")}</th>
-              <th className="px-3 py-3">KPI target</th>
-              <th className="px-3 py-3">KPI %</th>
-              <th className="px-3 py-3">Rating</th>
-              <th className="px-3 py-3">{translate(language, "Doanh thu", "Revenue")}</th>
-              <th className="px-3 py-3">{translate(language, "Trạng thái", "Status")}</th>
+              <th className="whitespace-nowrap px-3 py-3">Staff</th>
+              <th className="whitespace-nowrap px-3 py-3">{translate(language, "Hoàn thành", "Done")}</th>
+              <th className="whitespace-nowrap px-3 py-3">KPI %</th>
+              <th className="whitespace-nowrap px-3 py-3">Rating</th>
+              <th className="whitespace-nowrap px-3 py-3">{translate(language, "Doanh thu", "Revenue")}</th>
+              <th className="whitespace-nowrap px-3 py-3">{translate(language, "Trạng thái", "Status")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rows.map((staff) => (
               <tr key={staff.staffId}>
-                <td className="px-3 py-3 font-black text-slate-950">{staff.staffName}</td>
-                <td className="px-3 py-3 font-bold text-slate-700">{staff.completed}</td>
-                <td className="px-3 py-3 font-bold text-slate-700">{staff.target}</td>
-                <td className="px-3 py-3">
+                <td className="whitespace-nowrap px-3 py-3 font-black text-slate-950">{staff.staffName}</td>
+                <td className="whitespace-nowrap px-3 py-3 font-bold text-slate-700">{staff.completed}</td>
+                <td className="whitespace-nowrap px-3 py-3">
                   <div className="flex items-center gap-2">
                     <span className="w-8 font-black text-slate-950">{staff.progress}%</span>
                     <span className="h-2 w-16 rounded-full bg-slate-100">
-                      <span className="block h-2 rounded-full bg-blue-500" style={{ width: `${staff.progress}%` }} />
+                      <span className="block h-2 rounded-full bg-blue-500" style={{ width: `${Math.min(100, staff.progress)}%` }} />
                     </span>
                   </div>
                 </td>
-                <td className="px-3 py-3 font-black text-slate-700">{staff.rating ? `${formatIntegerRating(staff.rating)} ★` : "—"}</td>
-                <td className="px-3 py-3 font-black text-slate-950">{formatCurrency(staff.revenue, locale)}</td>
-                <td className="px-3 py-3">
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${staff.status === "GOOD" ? "bg-emerald-50 text-emerald-700" : staff.status === "SUPPORT" ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-500"}`}>
+                <td className="whitespace-nowrap px-3 py-3 font-black text-slate-700">{staff.rating ? `${formatIntegerRating(staff.rating)} ★` : "—"}</td>
+                <td className="whitespace-nowrap px-3 py-3 font-black text-slate-950">{formatCurrency(staff.revenue, locale)}</td>
+                <td className="whitespace-nowrap px-3 py-3">
+                  <span className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-black ${staff.status === "GOOD" ? "bg-emerald-50 text-emerald-700" : staff.status === "SUPPORT" ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-500"}`}>
                     {staff.status === "GOOD" ? translate(language, "Đạt tiến độ", "On track") : staff.status === "SUPPORT" ? translate(language, "Cần hỗ trợ", "Needs support") : translate(language, "Làm quá ít", "Low load")}
                   </span>
                 </td>
@@ -438,7 +450,7 @@ function StaffKpiTable({ rows, locale, language }: { rows: StaffRow[]; locale: s
             ))}
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-3 py-8 text-center font-semibold text-slate-400">{translate(language, "Chưa có dữ liệu staff.", "No staff data.")}</td>
+                <td colSpan={6} className="px-3 py-8 text-center font-semibold text-slate-400">{translate(language, "Chưa có dữ liệu staff.", "No staff data.")}</td>
               </tr>
             ) : null}
           </tbody>
@@ -562,7 +574,7 @@ function buildStaffRows(sessions: OperationsQueueSession[], target: number): Sta
       });
       const completed = staffSessions.filter((session) => session.status === "COMPLETED");
       const completedCount = completed.length;
-      const progress = Math.min(100, Math.round((completedCount / Math.max(target, 1)) * 100));
+      const progress = Math.round((completedCount / Math.max(target, 1)) * 100);
       return {
         staffId,
         staffName: staffId === "unassigned" ? "Unassigned" : getAssignedStaff(staffSessions[0]!).find((staff) => staff.staffId === staffId)?.staffName ?? "Unassigned",

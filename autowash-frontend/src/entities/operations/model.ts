@@ -6,6 +6,31 @@ export type WashSessionStatus =
   | "COMPLETED"
   | "CANCELLED";
 
+export type ManagerReportsDashboardResponse = {
+  summary: {
+    revenue: number;
+    sessions: number;
+    avgRating: number;
+  };
+  charts: {
+    revenueByDay: Array<{ date: string; value: number }>;
+    sessionsByDay: Array<{ date: string; value: number }>;
+  };
+};
+
+export type PaginatedResponse<T> = {
+  data: T[];
+  totalPages: number;
+  totalElements: number;
+};
+
+export type InterventionResponse = {
+  rowId: string;
+  severity: "HIGH" | "MEDIUM" | "INFO";
+  message: string;
+  actionLabel: string;
+};
+
 export type OperationsQueueSummary = {
   total: number;
   pending: number;
@@ -74,6 +99,23 @@ export type StaffDashboardSummary = {
 export type StaffOption = {
   staffId: string;
   staffName: string;
+};
+
+export type StaffWorkloadItem = {
+  staffId: string;
+  staffName: string;
+  activeCount: number;
+  waitingCount: number;
+  completedCount: number;
+  delayedCount: number;
+  openCount: number;
+  status: "AVAILABLE" | "BUSY" | "OVERLOADED";
+};
+
+export type StaffWorkloadResponse = {
+  data: StaffWorkloadItem[];
+  totalPages: number;
+  totalElements: number;
 };
 
 export type EligibleSessionBooking = {
@@ -219,6 +261,12 @@ export type StaffSessionHistoryReview = {
   createdAt?: string | null;
 };
 
+export type StaffSessionHistoryServiceItem = {
+  snapshotName: string;
+  quantity: number;
+  subtotal: number;
+};
+
 export type StaffSessionHistoryItem = {
   sessionId: string;
   bookingId: string;
@@ -240,6 +288,8 @@ export type StaffSessionHistoryItem = {
   managerNotes?: string | null;
   customerNotes?: string | null;
   review: StaffSessionHistoryReview;
+  totalPrice?: number | null;
+  services?: StaffSessionHistoryServiceItem[] | null;
 };
 
 export type StaffSessionHistorySummary = {

@@ -12,6 +12,8 @@ import com.autowash.dto.OperationsQueueResponse;
 import com.autowash.dto.QueueWashSessionResponse;
 import com.autowash.dto.StartWashSessionResponse;
 import com.autowash.dto.StaffDashboardSummaryResponse;
+import com.autowash.dto.StaffWorkloadItemResponse;
+import com.autowash.dto.StaffWorkloadResponse;
 import com.autowash.dto.StaffOptionResponse;
 import com.autowash.dto.StaffSessionHistoryResponse;
 import com.autowash.dto.StaffTodayResponse;
@@ -28,11 +30,13 @@ import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.CancelFaultType;
 import com.autowash.entity.enums.NotificationType;
 import com.autowash.entity.enums.UserRole;
+import com.autowash.entity.enums.UserStatus;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.BookingStaffAssignmentRepository;
 import com.autowash.repository.NotificationRepository;
 import com.autowash.repository.ReviewRepository;
+import com.autowash.repository.UserRepository;
 import com.autowash.repository.WashSessionStaffAssignmentRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.BookingService;
@@ -60,7 +64,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import com.autowash.shared.dto.PaginatedResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -85,6 +91,7 @@ public class OperationsServiceImpl implements OperationsService {
     private final WashSessionRepository washSessionRepository;
     private final BookingStaffAssignmentRepository bookingStaffAssignmentRepository;
     private final WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository;
+    private final UserRepository userRepository;
     private final LoyaltyService loyaltyService;
     private final CurrentUserService currentUserService;
     private final StaffAssignmentService staffAssignmentService;
@@ -100,6 +107,7 @@ public class OperationsServiceImpl implements OperationsService {
             WashSessionRepository washSessionRepository,
             BookingStaffAssignmentRepository bookingStaffAssignmentRepository,
             WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository,
+            UserRepository userRepository,
             LoyaltyService loyaltyService,
             CurrentUserService currentUserService,
             StaffAssignmentService staffAssignmentService,
@@ -114,6 +122,7 @@ public class OperationsServiceImpl implements OperationsService {
         this.washSessionRepository = washSessionRepository;
         this.bookingStaffAssignmentRepository = bookingStaffAssignmentRepository;
         this.washSessionStaffAssignmentRepository = washSessionStaffAssignmentRepository;
+        this.userRepository = userRepository;
         this.loyaltyService = loyaltyService;
         this.currentUserService = currentUserService;
         this.staffAssignmentService = staffAssignmentService;
@@ -195,48 +204,50 @@ public class OperationsServiceImpl implements OperationsService {
     }
 
     @Transactional(readOnly = true)
-    public List<EligibleSessionBookingResponse> listEligibleSessionBookings(int limit) {
-        return listEligibleSessionBookings(limit, null);
+    public PaginatedResponse<EligibleSessionBookingResponse> listEligibleSessionBookings(int page, int limit) {
+        return listEligibleSessionBookings(page, limit, null);
     }
 
     @Transactional(readOnly = true)
-    public List<EligibleSessionBookingResponse> listEligibleSessionBookings(int limit, LocalDate date) {
+    public PaginatedResponse<EligibleSessionBookingResponse> listEligibleSessionBookings(int page, int limit, LocalDate date) {
+        int safePage = Math.max(1, page);
         int safeLimit = Math.max(1, Math.min(limit, 50));
         User currentUser = currentUserService.getCurrentUser();
-        List<Booking> bookings;
+        Page<Booking> bookingsPage;
         if (date != null) {
             Instant dayStart = date.atStartOfDay(ZoneId.systemDefault()).toInstant();
             Instant dayEnd = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
-            bookings = currentUser.getRole() == UserRole.STAFF
+            bookingsPage = currentUser.getRole() == UserRole.STAFF
                     ? BookingRepository.findEligibleForAssignedStaffOperationsSessionOnDate(
                             currentUser,
                             ELIGIBLE_BOOKING_STATUSES,
                             ACTIVE_SESSION_STATUSES,
                             dayStart,
                             dayEnd,
-                            PageRequest.of(0, safeLimit))
+                            PageRequest.of(safePage - 1, safeLimit))
                     : BookingRepository.findEligibleForOperationsSessionOnDate(
                             ELIGIBLE_BOOKING_STATUSES,
                             ACTIVE_SESSION_STATUSES,
                             dayStart,
                             dayEnd,
-                            PageRequest.of(0, safeLimit));
+                            PageRequest.of(safePage - 1, safeLimit));
         } else {
-            bookings = currentUser.getRole() == UserRole.STAFF
+            bookingsPage = currentUser.getRole() == UserRole.STAFF
                     ? BookingRepository.findEligibleForAssignedStaffOperationsSession(
                             currentUser,
                             ELIGIBLE_BOOKING_STATUSES,
                             ACTIVE_SESSION_STATUSES,
-                            PageRequest.of(0, safeLimit))
+                            PageRequest.of(safePage - 1, safeLimit))
                     : BookingRepository.findEligibleForOperationsSession(
                             ELIGIBLE_BOOKING_STATUSES,
                             ACTIVE_SESSION_STATUSES,
-                            PageRequest.of(0, safeLimit));
+                            PageRequest.of(safePage - 1, safeLimit));
         }
-        return bookings
+        List<EligibleSessionBookingResponse> data = bookingsPage.getContent()
                 .stream()
                 .map(this::toEligibleBooking)
                 .toList();
+        return new PaginatedResponse<>(data, bookingsPage.getTotalPages(), bookingsPage.getTotalElements());
     }
 
     @Transactional
@@ -422,8 +433,8 @@ public class OperationsServiceImpl implements OperationsService {
     }
 
     @Transactional(readOnly = true)
-    public List<EligibleSessionBookingResponse> getEligibleSessionBookings(int limit) {
-        return listEligibleSessionBookings(limit);
+    public PaginatedResponse<EligibleSessionBookingResponse> getEligibleSessionBookings(int page, int limit) {
+        return listEligibleSessionBookings(page, limit);
     }
 
     @Transactional(readOnly = true)
@@ -662,6 +673,21 @@ public class OperationsServiceImpl implements OperationsService {
         List<BookingDetailResponse.StaffAssignment> assignedStaffList = sessionStaffAssignments(session);
         UUID packageId = resolveBookingDetailRefId(booking, BookingItemType.PACKAGE);
 
+        List<com.autowash.dto.BookingDetailDto> services = session.getBooking().getDetails().stream()
+                .map(detail -> new com.autowash.dto.BookingDetailDto(
+                        detail.getId(),
+                        detail.getItemType().name(),
+                        detail.getRefId(),
+                        detail.getSnapshotName(),
+                        detail.getSnapshotPrice(),
+                        detail.getQuantity(),
+                        detail.getSubtotal(),
+                        detail.getDurationMinutes()
+                ))
+                .toList();
+
+        Long totalPrice = session.getBooking().getPricing() != null ? session.getBooking().getPricing().getFinalAmount() : null;
+
         return StaffSessionHistoryResponse.Item.builder()
                 .sessionId(session.getId())
                 .bookingId(booking.getId().toString())
@@ -683,6 +709,8 @@ public class OperationsServiceImpl implements OperationsService {
                 .managerNotes(session.getNotes())
                 .customerNotes(booking.getNote())
                 .review(toHistoryReview(review))
+                .totalPrice(totalPrice)
+                .services(services)
                 .build();
     }
 
@@ -1155,6 +1183,112 @@ public class OperationsServiceImpl implements OperationsService {
         return (int) sessions.stream()
                 .filter(session -> session.getStatus() == status)
                 .count();
+    }
+
+    @Override
+    public StaffWorkloadResponse getStaffWorkloads(int page, int limit, LocalDate date) {
+        int safePage = Math.max(1, page);
+        int safeLimit = Math.max(1, Math.min(limit, 50));
+        User currentUser = currentUserService.getCurrentUser();
+
+        List<WashSession> sessions = currentUser.getRole() == UserRole.STAFF
+                ? washSessionRepository.findByAssignedStaffOrderByCreatedAtDesc(currentUser)
+                : washSessionRepository.findAllByOrderByCreatedAtDesc();
+
+        List<WashSession> sessionsForDate = sessions.stream()
+                .filter(session -> date == null || date.equals(session.getBooking().getBookingDate()))
+                .toList();
+
+        List<Booking> eligibleBookings = listEligibleSessionBookings(1, 1000, date).data().stream()
+                .map(item -> BookingRepository.findById(UUID.fromString(item.bookingId())).orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
+        List<User> activeStaff = userRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE);
+        List<StaffWorkloadItemResponse> workload = activeStaff.stream()
+                .map(staff -> toStaffWorkloadItem(staff, sessionsForDate, eligibleBookings))
+                .sorted(Comparator
+                        .comparingInt((StaffWorkloadItemResponse item) -> workloadStatusRank(item.status()))
+                        .thenComparing(Comparator.comparingInt(StaffWorkloadItemResponse::openCount).reversed())
+                        .thenComparing(StaffWorkloadItemResponse::staffName))
+                .toList();
+
+        int totalElements = workload.size();
+        int totalPages = totalElements == 0 ? 0 : (int) Math.ceil((double) totalElements / safeLimit);
+        int startIndex = Math.min((safePage - 1) * safeLimit, totalElements);
+        int endIndex = Math.min(startIndex + safeLimit, totalElements);
+        List<StaffWorkloadItemResponse> pageData = workload.subList(startIndex, endIndex);
+        return new StaffWorkloadResponse(pageData, totalPages, totalElements);
+    }
+
+    private StaffWorkloadItemResponse toStaffWorkloadItem(User staff, List<WashSession> sessions, List<Booking> eligibleBookings) {
+        int waitingBookings = (int) eligibleBookings.stream()
+                .filter(booking -> bookingHasStaff(booking, staff.getId()))
+                .count();
+        int waitingSessions = (int) sessions.stream()
+                .filter(session -> hasAssignedStaff(session, staff.getId()))
+                .filter(session -> session.getStatus() == WashSessionStatus.PENDING
+                        || session.getStatus() == WashSessionStatus.QUEUED
+                        || session.getStatus() == WashSessionStatus.CHECKED_IN)
+                .count();
+        int activeCount = (int) sessions.stream()
+                .filter(session -> hasAssignedStaff(session, staff.getId()))
+                .filter(session -> session.getStatus() == WashSessionStatus.IN_PROGRESS)
+                .count();
+        int completedCount = (int) sessions.stream()
+                .filter(session -> hasAssignedStaff(session, staff.getId()))
+                .filter(session -> session.getStatus() == WashSessionStatus.COMPLETED)
+                .count();
+        int delayedCount = (int) sessions.stream()
+                .filter(session -> hasAssignedStaff(session, staff.getId()))
+                .filter(this::isDelayedForStaffWorkload)
+                .count();
+        int openCount = waitingBookings + waitingSessions + activeCount;
+        String status = openCount >= 4 || waitingBookings + waitingSessions >= 3 || delayedCount >= 2
+                ? "OVERLOADED"
+                : openCount > 0
+                ? "BUSY"
+                : "AVAILABLE";
+
+        return new StaffWorkloadItemResponse(
+                staff.getId(),
+                staff.getFullName(),
+                activeCount,
+                waitingBookings + waitingSessions,
+                completedCount,
+                delayedCount,
+                openCount,
+                status
+        );
+    }
+
+    private int workloadStatusRank(String status) {
+        return switch (status) {
+            case "OVERLOADED" -> 0;
+            case "BUSY" -> 1;
+            default -> 2;
+        };
+    }
+
+    private boolean bookingHasStaff(Booking booking, UUID staffId) {
+        return bookingStaffAssignments(booking).stream()
+                .anyMatch(staff -> staffId.toString().equals(staff.staffId()));
+    }
+
+    private boolean isDelayedForStaffWorkload(WashSession session) {
+        Instant now = Instant.now();
+        if (session.getStatus() == WashSessionStatus.CHECKED_IN && session.getCheckedInAt() != null) {
+            return session.getCheckedInAt().plus(12, ChronoUnit.MINUTES).isBefore(now);
+        }
+        if (session.getStatus() == WashSessionStatus.IN_PROGRESS && session.getStartedAt() != null) {
+            long expectedMinutes = resolveEstimatedDurationMinutes(session.getBooking()) + 10L;
+            return session.getStartedAt().plus(expectedMinutes, ChronoUnit.MINUTES).isBefore(now);
+        }
+        if ((session.getStatus() == WashSessionStatus.PENDING || session.getStatus() == WashSessionStatus.QUEUED)
+                && session.getBooking().getScheduledAt() != null) {
+            return session.getBooking().getScheduledAt().plus(15, ChronoUnit.MINUTES).isBefore(now);
+        }
+        return false;
     }
 }
 

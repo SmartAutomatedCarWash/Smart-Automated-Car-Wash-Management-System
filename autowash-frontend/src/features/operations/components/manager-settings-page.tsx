@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Edit3, FileWarning, MoreVertical, Plus, Send, Star } from "lucide-react";
+import { Edit3, FileWarning, MoreVertical, Plus, Send, Star, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
@@ -12,6 +12,7 @@ import { getActiveStaffOptions, getOperationsQueue, sendOperationsNotice } from 
 import {
   getManagerSettings,
   updateManagerSettings,
+  updateWeeklyStaffKpiTarget,
   type ManagerOperationSettingsPayload,
   type ManagerNotificationTemplatePayload,
 } from "@/features/operations/lib/manager-settings-service";
@@ -24,6 +25,7 @@ const DEFAULT_SETTINGS: ManagerOperationSettingsPayload = {
   leastBusyStaffFirst: true,
   respectStaffCapacity: true,
   maxActiveSessionsPerStaff: 4,
+  weeklyStaffKpiTarget: 40,
   paidBookingPriority: true,
   tierPriorityEnabled: true,
   primaryVehiclePriority: true,
@@ -90,7 +92,38 @@ export function ManagerSettingsPage() {
     mutationFn: updateManagerSettings,
     onSuccess: (data) => {
       queryClient.setQueryData(["manager-settings", "config"], data);
+      void queryClient.invalidateQueries({ queryKey: ["manager-reports", "manager-settings"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-reports", "manager-settings"] });
       toast.success("Operations settings saved.");
+    },
+    onError: (error) => toast.error(getErrorMessage(error as unknown as ApiErrorResponse)),
+  });
+
+  const saveWeeklyKpiMutation = useMutation({
+    mutationFn: async ({ weeklyStaffKpiTarget }: { weeklyStaffKpiTarget: number }) => {
+      try {
+        return await updateWeeklyStaffKpiTarget({ weeklyStaffKpiTarget });
+      } catch (error) {
+        const apiError = error as ApiErrorResponse;
+        if (apiError.statusCode !== 404) {
+          throw error;
+        }
+
+        return updateManagerSettings({
+          settings: {
+            ...settings,
+            weeklyStaffKpiTarget,
+          },
+          templates: settingsQuery.data?.templates ?? [],
+        });
+      }
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["manager-settings", "config"], data);
+      void queryClient.invalidateQueries({ queryKey: ["manager-reports", "manager-settings"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-reports", "manager-settings"] });
+      setSettings(data.settings);
+      toast.success("Weekly KPI target saved.");
     },
     onError: (error) => toast.error(getErrorMessage(error as unknown as ApiErrorResponse)),
   });
@@ -113,6 +146,12 @@ export function ManagerSettingsPage() {
     saveMutation.mutate({
       settings: nextSettings,
       templates: settingsQuery.data?.templates ?? [],
+    });
+  };
+
+  const saveWeeklyKpiTarget = () => {
+    saveWeeklyKpiMutation.mutate({
+      weeklyStaffKpiTarget: settings.weeklyStaffKpiTarget,
     });
   };
 
@@ -198,6 +237,37 @@ export function ManagerSettingsPage() {
 
           <Button className="mt-4 h-11 w-full rounded-lg bg-[#0587a5] font-black text-white hover:bg-[#04738d]" onClick={sendNotice} disabled={sendNoticeMutation.isPending}>
             {sendNoticeMutation.isPending ? "Sending..." : "Send notice"}
+          </Button>
+        </Card>
+
+        <Card className="rounded-lg border-slate-200 bg-white p-5 shadow-sm">
+          <CardTitle icon={<Timer className="h-6 w-6" />} title="Staff weekly KPI" subtitle="Set the weekly booking target used by manager dashboards." tone="slate" />
+          <div className="mt-5 space-y-3">
+            <Field label="Weekly completed sessions target">
+              <input
+                type="number"
+                min={1}
+                max={200}
+                step={1}
+                value={settings.weeklyStaffKpiTarget}
+                onChange={(event) =>
+                  setSettings((current) => ({
+                    ...current,
+                    weeklyStaffKpiTarget: clampNumber(event.target.value, 1, 200, current.weeklyStaffKpiTarget),
+                  }))
+                }
+                className={inputClassName}
+              />
+            </Field>
+            <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              <p className="font-semibold">This value becomes the source of truth for weekly KPI calculations.</p>
+              <p className="mt-1 text-xs font-medium text-slate-500">
+                Manager workload views derive the daily target from this weekly number, so updating it here keeps reports consistent.
+              </p>
+            </div>
+          </div>
+          <Button className="mt-4 h-11 w-full rounded-lg bg-[#00236f] font-black text-white hover:bg-[#001a55]" onClick={saveWeeklyKpiTarget} disabled={saveWeeklyKpiMutation.isPending}>
+            {saveWeeklyKpiMutation.isPending ? "Saving..." : "Save KPI target"}
           </Button>
         </Card>
 
@@ -354,6 +424,12 @@ function PriorityButton({ active, tone, onClick, children }: { active: boolean; 
     urgent: active ? "border-rose-300 bg-rose-50 text-rose-700" : "border-rose-200 text-rose-700",
   }[tone];
   return <button className={`h-10 rounded-lg border text-sm font-black ${styles}`} onClick={onClick}>{children}</button>;
+}
+
+function clampNumber(raw: string, min: number, max: number, fallback: number) {
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, Math.trunc(parsed)));
 }
 
 function TemplateBadge({ tone, children }: { tone: "info" | "warn" | "priority" | "danger"; children: ReactNode }) {

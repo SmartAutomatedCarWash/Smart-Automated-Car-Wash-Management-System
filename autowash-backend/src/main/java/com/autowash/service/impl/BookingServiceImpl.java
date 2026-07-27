@@ -3,6 +3,7 @@ package com.autowash.service.impl;
 import com.autowash.entity.WashSession;
 import com.autowash.assembler.BookingResponseAssembler;
 import com.autowash.dto.EarnPointsResponse;
+import com.autowash.dto.BookingPaymentInfo;
 import com.autowash.entity.Notification;
 import com.autowash.entity.SystemSettings;
 import com.autowash.repository.NotificationRepository;
@@ -582,7 +583,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingDetailResponse toDetailResponse(Booking booking) {
         WashSession washSession = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
                 .orElse(null);
-        BookingResponseAssembler.PaymentInfo payment = resolvePaymentInfo(booking);
+        BookingPaymentInfo payment = resolvePaymentInfo(booking);
         List<BookingStatusHistoryItem> statusHistory = bookingStatusHistoryRepository
                 .findByBooking_IdOrderByChangedAtAsc(booking.getId())
                 .stream()
@@ -1124,16 +1125,16 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private BookingResponseAssembler.PaymentInfo resolvePaymentInfo(Booking booking) {
+    private BookingPaymentInfo resolvePaymentInfo(Booking booking) {
         return paymentRepository.findFirstByBookingOrderByCreatedAtDesc(booking)
-                .map(payment -> new BookingResponseAssembler.PaymentInfo(
+                .map(payment -> new BookingPaymentInfo(
                         payment.getMethod() == null ? PaymentMethod.CASH_AT_COUNTER : payment.getMethod(),
                         payment.getStatus() == null ? PaymentStatus.UNPAID : payment.getStatus(),
                         payment.getAmount(),
                         payment.getTransactionRef(),
                         payment.getPaidAt()
                 ))
-                .orElseGet(() -> new BookingResponseAssembler.PaymentInfo(PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, 0L, null, null));
+                .orElseGet(() -> new BookingPaymentInfo(PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, 0L, null, null));
     }
 
     private String resolveTransactionRef(Booking booking, String transactionRef) {

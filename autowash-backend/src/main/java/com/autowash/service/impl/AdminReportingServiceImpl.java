@@ -21,6 +21,7 @@ import com.autowash.dto.UpdateAdminCustomerRoleResponse;
 import com.autowash.dto.BookingDetailDto;
 
 import com.autowash.dto.BookingDetailResponse;
+import com.autowash.dto.BookingPaymentInfo;
 
 import com.autowash.dto.StaffKpiItem;
 
@@ -258,7 +259,9 @@ public class AdminReportingServiceImpl implements AdminReportingService {
 
     @Transactional(readOnly = true)
     public AccountPage listStaffPage(int page, int limit) {
-        PageRequest pageRequest = PageRequest.of(Math.max(0, page - 1), Math.max(1, limit));
+        int sanitizedPage = Math.max(1, page);
+        int sanitizedLimit = Math.min(Math.max(1, limit), 50);
+        PageRequest pageRequest = PageRequest.of(sanitizedPage - 1, sanitizedLimit);
         Page<User> staffPage = UserRepository.findByRoleOrderByFullNameAsc(UserRole.STAFF, pageRequest);
         
         List<AdminAccountResponse> items = staffPage.stream()
@@ -300,9 +303,9 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     }
 
     @Transactional(readOnly = true)
-    public StaffKpiPage listStaffKpiPage(String range, UUID staffId, int page, int limit) {
+    public StaffKpiPage listStaffKpiPage(String range, UUID staffId, String serviceName, LocalDate dateFrom, LocalDate dateTo, int page, int limit) {
         ZoneId zone = ZoneId.systemDefault();
-        Instant rangeStart = resolveRangeStart(range, zone);
+        DateRange rangeWindow = resolveRangeWindow(range, zone, dateFrom, dateTo);
 
         Set<WashSessionStatus> ACTIVE_SESSION_STATUSES = Set.of(
                 WashSessionStatus.PENDING,
@@ -313,19 +316,24 @@ public class AdminReportingServiceImpl implements AdminReportingService {
 
         List<Booking> allBookings = bookingRepository.findAll();
         List<Booking> rangeBookings = allBookings.stream()
-                .filter(b -> !b.getCreatedAt().isBefore(rangeStart) && b.getCreatedAt().isBefore(Instant.now().plus(1, ChronoUnit.MINUTES)))
+                .filter(b -> isWithinRange(b.getCreatedAt(), rangeWindow))
+                .filter(b -> matchesServiceName(b, serviceName))
                 .toList();
         List<WashSession> allSessions = washSessionRepository.findAllByOrderByCreatedAtDesc();
         List<WashSession> rangeSessions = allSessions.stream()
-                .filter(s -> !s.getCreatedAt().isBefore(rangeStart) && s.getCreatedAt().isBefore(Instant.now().plus(1, ChronoUnit.MINUTES)))
+                .filter(s -> isWithinRange(s.getCreatedAt(), rangeWindow))
+                .filter(s -> matchesStaff(s.getAssignedStaff(), staffId))
+                .filter(s -> matchesServiceName(s.getBooking(), serviceName))
                 .toList();
 
-        PageRequest pageRequest = PageRequest.of(Math.max(0, page - 1), Math.max(1, limit));
-        Page<User> staffPage = UserRepository.findByRoleOrderByFullNameAsc(UserRole.STAFF, pageRequest);
+        int safePage = Math.max(1, page);
+        int safeLimit = Math.max(1, limit);
+        List<User> filteredStaff = UserRepository.findByRoleOrderByFullNameAsc(UserRole.STAFF).stream()
+                .filter(staff -> staffId == null || staff.getId().equals(staffId))
+                .toList();
 
         long KPI_TARGET = 5_000_000L;
-        List<StaffKpiItem> items = staffPage.stream()
-                .filter(staff -> staffId == null || staff.getId().equals(staffId))
+        List<StaffKpiItem> allItems = filteredStaff.stream()
                 .map(staff -> {
                     long completedBookings = rangeSessions.stream()
                             .filter(s -> s.getStatus() == WashSessionStatus.COMPLETED && s.getAssignedStaff() != null && s.getAssignedStaff().getId().equals(staff.getId()))
@@ -340,7 +348,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                     long totalAssignedBookings = rangeBookings.stream()
                             .filter(b -> b.getAssignedStaff() != null && b.getAssignedStaff().getId().equals(staff.getId()))
                             .count();
-                    int progress = (int) Math.min(100L, Math.round(((double) completedRevenue / Math.max(1, KPI_TARGET)) * 100));
+                    int progress = (int) Math.round(((double) completedRevenue / Math.max(1, KPI_TARGET)) * 100);
                     boolean isOnline = staff.getStatus() == UserStatus.ACTIVE;
                     return new StaffKpiItem(
                             staff.getId(),
@@ -355,32 +363,41 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                             isOnline
                     );
                 })
+                .sorted(Comparator.comparingInt(StaffKpiItem::kpiProgressPercent).reversed()
+                        .thenComparingLong(StaffKpiItem::completedBookings).reversed()
+                        .thenComparing(StaffKpiItem::staffName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
+
+        int fromIndex = Math.min((safePage - 1) * safeLimit, allItems.size());
+        int toIndex = Math.min(fromIndex + safeLimit, allItems.size());
+        List<StaffKpiItem> items = allItems.subList(fromIndex, toIndex);
+        int totalPages = allItems.isEmpty() ? 0 : (int) Math.ceil((double) allItems.size() / safeLimit);
 
         return new StaffKpiPage(
                 items,
                 new PaginationMeta(
-                        pageRequest.getPageNumber() + 1,
-                        pageRequest.getPageSize(),
-                        staffPage.getTotalElements(),
-                        staffPage.getTotalPages(),
-                        staffPage.hasNext()
+                        safePage,
+                        safeLimit,
+                        allItems.size(),
+                        totalPages,
+                        toIndex < allItems.size()
                 )
         );
     }
 
     @Transactional(readOnly = true)
     public List<StaffKpiItem> listStaffKpi(String range) {
-        return listStaffKpiPage(range, null, 1, Integer.MAX_VALUE).items();
+        return listStaffKpiPage(range, null, null, null, null, 1, Integer.MAX_VALUE).items();
     }
 
     @Transactional(readOnly = true)
-    public ServiceQualityPage listServiceQuality(String range, int page, int limit) {
+    public ServiceQualityPage listServiceQuality(String range, String serviceName, LocalDate dateFrom, LocalDate dateTo, int page, int limit) {
         ZoneId zone = ZoneId.systemDefault();
-        Instant rangeStart = resolveRangeStart(range, zone);
+        DateRange rangeWindow = resolveRangeWindow(range, zone, dateFrom, dateTo);
 
         List<Booking> bookings = bookingRepository.findAll().stream()
-                .filter(b -> !b.getCreatedAt().isBefore(rangeStart) && b.getCreatedAt().isBefore(Instant.now().plus(1, ChronoUnit.MINUTES)))
+                .filter(b -> isWithinRange(b.getScheduledAt(), rangeWindow))
+                .filter(b -> matchesServiceName(b, serviceName))
                 .toList();
         Map<UUID, String> serviceNames = serviceNames(bookings);
         List<UUID> bookingIds = bookings.stream().map(Booking::getId).toList();
@@ -407,28 +424,80 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 .sorted(Comparator.comparingLong(ServiceQualityItem::bookings).reversed())
                 .toList();
 
-        int fromIndex = Math.min(Math.max(0, (page - 1) * limit), allItems.size());
-        int toIndex = Math.min(fromIndex + limit, allItems.size());
+        int safePage = Math.max(1, page);
+        int safeLimit = Math.max(1, limit);
+        int fromIndex = Math.min((safePage - 1) * safeLimit, allItems.size());
+        int toIndex = Math.min(fromIndex + safeLimit, allItems.size());
         List<ServiceQualityItem> pageItems = allItems.subList(fromIndex, toIndex);
+        int totalPages = allItems.isEmpty() ? 0 : (int) Math.ceil((double) allItems.size() / safeLimit);
 
         PaginationMeta meta = new PaginationMeta(
-                page,
-                limit,
+                safePage,
+                safeLimit,
                 allItems.size(),
-                (int) Math.ceil((double) allItems.size() / limit),
+                totalPages,
                 toIndex < allItems.size()
         );
 
         return new ServiceQualityPage(pageItems, meta);
     }
 
-    private Instant resolveRangeStart(String range, ZoneId zone) {
-        return switch (range == null ? "TODAY" : range.toUpperCase()) {
-            case "WEEK" -> LocalDate.now(zone).with(DayOfWeek.MONDAY).atStartOfDay(zone).toInstant();
-            case "MONTH" -> LocalDate.now(zone).withDayOfMonth(1).atStartOfDay(zone).toInstant();
-            default -> LocalDate.now(zone).atStartOfDay(zone).toInstant(); // TODAY
-        };
+    private DateRange resolveRangeWindow(String range, ZoneId zone, LocalDate dateFrom, LocalDate dateTo) {
+        LocalDate today = LocalDate.now(zone);
+        LocalDate startDate = dateFrom;
+        LocalDate endDate = dateTo;
+
+        if (startDate == null || endDate == null) {
+            switch (range == null ? "TODAY" : range.toUpperCase()) {
+                case "WEEK", "LAST_7_DAYS" -> {
+                    if (startDate == null) startDate = today.with(DayOfWeek.MONDAY);
+                    if (endDate == null) endDate = today;
+                }
+                case "MONTH", "LAST_30_DAYS", "THIS_MONTH" -> {
+                    if (startDate == null) startDate = today.withDayOfMonth(1);
+                    if (endDate == null) endDate = today;
+                }
+                case "YEAR", "THIS_QUARTER" -> {
+                    if (startDate == null) startDate = today.withDayOfYear(1);
+                    if (endDate == null) endDate = today;
+                }
+                case "ALL" -> {
+                    if (startDate == null) startDate = LocalDate.of(2020, 1, 1);
+                    if (endDate == null) endDate = today;
+                }
+                default -> {
+                    if (startDate == null) startDate = today;
+                    if (endDate == null) endDate = today;
+                }
+            }
+        }
+
+        if (endDate.isBefore(startDate)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "dateTo must be on or after dateFrom", ErrorCode.VALIDATION_ERROR);
+        }
+
+        return new DateRange(
+                startDate.atStartOfDay(zone).toInstant(),
+                endDate.plusDays(1).atStartOfDay(zone).toInstant()
+        );
     }
+
+    private boolean isWithinRange(Instant createdAt, DateRange rangeWindow) {
+        return !createdAt.isBefore(rangeWindow.startInclusive()) && createdAt.isBefore(rangeWindow.endExclusive());
+    }
+
+    private boolean matchesStaff(User assignedStaff, UUID staffId) {
+        return staffId == null || (assignedStaff != null && assignedStaff.getId().equals(staffId));
+    }
+
+    private boolean matchesServiceName(Booking booking, String serviceName) {
+        if (serviceName == null || serviceName.isBlank() || "ALL".equalsIgnoreCase(serviceName)) {
+            return true;
+        }
+        return serviceName.equalsIgnoreCase(primaryServiceName(booking));
+    }
+
+    private record DateRange(Instant startInclusive, Instant endExclusive) {}
 
     @Transactional(readOnly = true)
     public AdminStaffWorkloadResponse getStaffWorkload(UUID staffId) {
@@ -719,7 +788,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 ),
                 bookingResponseAssembler.toPaymentResponse(
                         booking,
-                        new BookingResponseAssembler.PaymentInfo(
+                        new BookingPaymentInfo(
                                 PaymentMethod.valueOf(payment.method()),
                                 PaymentStatus.valueOf(payment.status()),
                                 payment.amount(),

@@ -664,6 +664,7 @@ CREATE TABLE manager_operation_settings (
     least_busy_staff_first boolean NOT NULL DEFAULT true,
     respect_staff_capacity boolean NOT NULL DEFAULT true,
     max_active_sessions_per_staff integer NOT NULL DEFAULT 4 CHECK (max_active_sessions_per_staff BETWEEN 1 AND 12),
+    weekly_staff_kpi_target integer NOT NULL DEFAULT 40 CHECK (weekly_staff_kpi_target BETWEEN 1 AND 200),
     paid_booking_priority boolean NOT NULL DEFAULT true,
     tier_priority_enabled boolean NOT NULL DEFAULT true,
     primary_vehicle_priority boolean NOT NULL DEFAULT true,

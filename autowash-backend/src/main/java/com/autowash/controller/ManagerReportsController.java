@@ -1,6 +1,7 @@
 package com.autowash.controller;
 
 import com.autowash.dto.OperationsQueueResponse;
+import com.autowash.service.ManagerSettingsService;
 import com.autowash.service.OperationsService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,9 +29,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class ManagerReportsController {
 
     private final OperationsService operationsService;
+    private final ManagerSettingsService managerSettingsService;
 
-    public ManagerReportsController(OperationsService operationsService) {
+    public ManagerReportsController(OperationsService operationsService, ManagerSettingsService managerSettingsService) {
         this.operationsService = operationsService;
+        this.managerSettingsService = managerSettingsService;
     }
 
     @GetMapping("/dashboard")
@@ -152,6 +155,7 @@ public class ManagerReportsController {
     }
 
     private List<StaffKpiResponse> buildStaffKpis(List<OperationsQueueResponse.WashSessionCard> sessions) {
+        int weeklyTarget = managerSettingsService.getOperationSettings().weeklyStaffKpiTarget();
         return sessions.stream()
                 .filter(session -> session.assignedStaffId() != null)
                 .collect(Collectors.groupingBy(OperationsQueueResponse.WashSessionCard::assignedStaffId))
@@ -161,8 +165,8 @@ public class ManagerReportsController {
                     List<OperationsQueueResponse.WashSessionCard> staffSessions = entry.getValue();
                     long completed = staffSessions.stream().filter(session -> "COMPLETED".equals(session.status())).count();
                     long revenue = staffSessions.stream().filter(session -> "COMPLETED".equals(session.status())).mapToLong(session -> session.feeAmount() == null ? 0L : session.feeAmount()).sum();
-                    int target = 8;
-                    return new StaffKpiResponse(entry.getKey().toString(), staffSessions.get(0).assignedStaffName(), completed, staffSessions.size(), target, Math.min(100, Math.round(completed * 100f / target)), 4.8, revenue, completed >= target ? "ON_TRACK" : "NEEDS_SUPPORT");
+                    int target = weeklyTarget;
+                    return new StaffKpiResponse(entry.getKey().toString(), staffSessions.get(0).assignedStaffName(), completed, staffSessions.size(), target, Math.min(100, Math.round(completed * 100f / Math.max(1, target))), 4.8, revenue, completed >= target ? "ON_TRACK" : "NEEDS_SUPPORT");
                 })
                 .toList();
     }

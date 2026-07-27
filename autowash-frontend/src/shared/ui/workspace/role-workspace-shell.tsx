@@ -599,17 +599,16 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               </button>
 
               <div className="min-w-0 flex-1">
-                <h1 className="truncate text-xl font-bold tracking-tight lg:text-2xl">
-                  {headerTitle}
-                </h1>
-                {headerConfig?.toolbar ? (
-                  <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-                    <div />
-                    <div className="shrink-0">
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                  <h1 className="truncate text-xl font-bold tracking-tight lg:text-2xl">
+                    {headerTitle}
+                  </h1>
+                  {headerConfig?.toolbar ? (
+                    <div className="min-w-0 shrink-0">
                       {headerConfig.toolbar}
                     </div>
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
             </div>
 

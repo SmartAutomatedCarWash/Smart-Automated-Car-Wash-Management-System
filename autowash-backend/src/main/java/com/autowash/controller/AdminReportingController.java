@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/admin")
 @Tag(name = "Admin Reporting")
 @SecurityRequirement(name = "bearerAuth")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
 public class AdminReportingController {
 
     private final AdminReportingService adminReportingService;
@@ -48,10 +48,13 @@ public class AdminReportingController {
     @Operation(summary = "Get service quality report")
     public ApiResponse<AdminReportingService.ServiceQualityPage> getServiceQualityReport(
             @RequestParam(defaultValue = "LAST_30_DAYS") String range,
+            @RequestParam(required = false) String serviceName,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int limit
     ) {
-        return ApiResponse.ok("Service quality report retrieved", adminReportingService.listServiceQuality(range, page, limit));
+        return ApiResponse.ok("Service quality report retrieved", adminReportingService.listServiceQuality(range, serviceName, dateFrom, dateTo, page, limit));
     }
 
     @GetMapping("/operations/dashboard")

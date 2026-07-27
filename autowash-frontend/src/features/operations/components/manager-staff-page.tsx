@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useState, useRef, type ComponentType } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -62,7 +62,7 @@ import { assignStaffToSession, getActiveStaffOptions, getOperationsQueue } from 
 import { createAdminStaff, deleteAdminStaff, listAdminStaff, listAdminStaffKpi, updateAdminStaff } from "@/features/reports/api/admin-reporting-service";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { OperationsQueueSession, StaffOption, WashSessionStatus } from "@/entities/operations";
-import type { AdminAccount, AdminAccountStatus, CreateAdminStaffPayload, StaffKpiItem, UpdateAdminStaffPayload } from "@/entities/reports";
+import type { AdminAccount, AdminAccountStatus, CreateAdminStaffPayload, PaginationMeta, StaffKpiItem, UpdateAdminStaffPayload } from "@/entities/reports";
 
 type StaffStatus = "available" | "busy" | "overloaded" | "offline";
 type StaffRole = string;
@@ -111,18 +111,21 @@ const EMPTY_STAFF_FORM: StaffFormState = {
   password: "",
   status: "UNKNOWN",
 };
+const STAFF_PAGE_SIZE = 5;
 const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function ManagerStaffPage() {
   const getErrorMessage = useErrorMessage();
   const queryClient = useQueryClient();
+  const [clientReady, setClientReady] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [roleFilter, setRoleFilter] = useState("ALL");
+  const [accountStatusFilter, setAccountStatusFilter] = useState("ALL");
   const [performanceStaffId, setPerformanceStaffId] = useState("ALL");
   const [performancePeriod, setPerformancePeriod] = useState<"DAY" | "WEEK" | "MONTH">("WEEK");
   const [detailsExpanded, setDetailsExpanded] = useState(true);
+  const [staffPage, setStaffPage] = useState(1);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createForm, setCreateForm] = useState<CreateAdminStaffPayload>(EMPTY_CREATE_FORM);
   const [profileDialog, setProfileDialog] = useState<{ mode: StaffDialogMode; staffId: string } | null>(null);
@@ -130,25 +133,33 @@ export function ManagerStaffPage() {
   const [bookingDialogSession, setBookingDialogSession] = useState<OperationsQueueSession | null>(null);
   const [deleteStaffId, setDeleteStaffId] = useState<string | null>(null);
 
+  useEffect(() => {
+    setClientReady(true);
+  }, []);
+
   const staffQuery = useQuery({
     queryKey: ["manager-staff", "active-staff"],
     queryFn: getActiveStaffOptions,
+    enabled: clientReady,
     refetchInterval: 30_000,
   });
   const queueQuery = useQuery({
     queryKey: ["manager-staff", "queue"],
     queryFn: getOperationsQueue,
+    enabled: clientReady,
     refetchInterval: 15_000,
   });
   const staffAccountsQuery = useQuery({
-    queryKey: ["manager-staff", "accounts"],
-    queryFn: () => listAdminStaff(1, 100),
+    queryKey: ["manager-staff", "accounts", staffPage],
+    queryFn: () => listAdminStaff(staffPage, STAFF_PAGE_SIZE),
+    enabled: clientReady,
     refetchInterval: 30_000,
     retry: 1,
   });
   const staffKpiQuery = useQuery({
     queryKey: ["manager-staff", "kpi", performancePeriod],
     queryFn: () => listAdminStaffKpi(performancePeriod),
+    enabled: clientReady,
     refetchInterval: 30_000,
     retry: 1,
   });
@@ -159,13 +170,14 @@ export function ManagerStaffPage() {
     [sessions, staffAccountsQuery.data, staffKpiQuery.data, staffQuery.data],
   );
   const filteredRows = useMemo(
-    () => staffRows.filter((row) => matchesStaff(row, search, statusFilter, roleFilter)),
-    [roleFilter, search, staffRows, statusFilter],
+    () => staffRows.filter((row) => matchesStaff(row, search, statusFilter, accountStatusFilter)),
+    [accountStatusFilter, search, staffRows, statusFilter],
   );
+  const staffPagination = staffAccountsQuery.data?.pagination;
   const selectedStaff = staffRows.find((row) => row.staffId === selectedStaffId) ?? filteredRows[0] ?? staffRows[0] ?? null;
   const profileStaff = profileDialog ? staffRows.find((row) => row.staffId === profileDialog.staffId) ?? null : null;
   const deleteTargetStaff = deleteStaffId ? staffRows.find((row) => row.staffId === deleteStaffId) ?? null : null;
-  const totalDisplay = staffRows.length;
+  const totalDisplay = staffPagination?.total ?? staffRows.length;
   const busyCount = staffRows.filter((row) => row.status === "busy" || row.status === "overloaded").length;
   const availableCount = staffRows.filter((row) => row.status === "available").length;
   const completedBookings = sessions.filter((session) => session.status === "COMPLETED").length;
@@ -188,6 +200,12 @@ export function ManagerStaffPage() {
   const performanceChartData = useMemo(() => buildPerformanceChartData(performanceSessions), [performanceSessions]);
   const isFetching = staffQuery.isFetching || queueQuery.isFetching || staffAccountsQuery.isFetching || staffKpiQuery.isFetching;
   const hasError = staffQuery.isError || queueQuery.isError;
+
+  useEffect(() => {
+    if (staffPagination && staffPagination.totalPages > 0 && staffPage > staffPagination.totalPages) {
+      setStaffPage(staffPagination.totalPages);
+    }
+  }, [staffPage, staffPagination]);
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["manager-staff"] });
@@ -268,15 +286,17 @@ export function ManagerStaffPage() {
 
   const headerToolbar = useMemo(
     () => (
-      <div className="ml-auto flex flex-wrap gap-3">
-        <Button className="h-12 rounded-lg bg-[#00236f] px-8 text-sm font-black text-white shadow-sm hover:bg-[#001a55]" onClick={() => setShowCreateForm(true)}>
-          <Plus className="h-5 w-5" />
+      <div className="flex w-full justify-start lg:justify-end">
+        <div className="flex flex-wrap justify-end gap-2">
+        <Button className="h-9 rounded-lg bg-[#00236f] px-4 text-xs font-black text-white shadow-sm hover:bg-[#001a55]" onClick={() => setShowCreateForm(true)}>
+          <Plus className="h-4 w-4" />
           Add staff
         </Button>
-        <Button variant="outline" className="h-12 rounded-lg border-slate-200 bg-white px-8 text-sm font-black text-slate-900 shadow-sm" onClick={exportReport}>
-          <Download className="h-5 w-5" />
+        <Button variant="outline" className="h-9 rounded-lg border-slate-200 bg-white px-4 text-xs font-black text-slate-900 shadow-sm" onClick={exportReport}>
+          <Download className="h-4 w-4" />
           Export report
         </Button>
+        </div>
       </div>
     ),
     [exportReport],
@@ -377,28 +397,41 @@ export function ManagerStaffPage() {
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       value={search}
-                      onChange={(event) => setSearch(event.target.value)}
+                      onChange={(event) => {
+                        setSearch(event.target.value);
+                        setStaffPage(1);
+                      }}
                       placeholder="Search name, phone, email..."
                       className="h-9 w-64 rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-cyan-300"
                     />
                   </div>
-                  <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-sm outline-none">
+                  <select value={statusFilter} onChange={(event) => {
+                    setStatusFilter(event.target.value);
+                    setStaffPage(1);
+                  }} className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-sm outline-none">
                     <option value="ALL">All statuses</option>
                     <option value="available">Available</option>
                     <option value="busy">Busy</option>
                     <option value="overloaded">Overloaded</option>
                     <option value="offline">Offline</option>
                   </select>
-                  <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-sm outline-none">
-                    <option value="ALL">All roles</option>
-                    <option value="Wash Specialist">Wash Specialist</option>
-                    <option value="Interior Specialist">Interior Specialist</option>
-                    <option value="Quick Wash Tech">Quick Wash Tech</option>
+                  <select value={accountStatusFilter} onChange={(event) => {
+                    setAccountStatusFilter(event.target.value);
+                    setStaffPage(1);
+                  }} className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-sm outline-none">
+                    <option value="ALL">All accounts</option>
+                    <option value="ACTIVE">Active accounts</option>
+                    <option value="BLOCKED">Blocked accounts</option>
+                    <option value="INACTIVE">Inactive accounts</option>
+                    <option value="UNKNOWN">Unknown status</option>
                   </select>
                 </div>
               </div>
               <StaffTable
                 rows={filteredRows}
+                pagination={staffPagination}
+                currentPage={staffPage}
+                onPageChange={setStaffPage}
                 selectedStaffId={selectedStaff?.staffId}
                 onSelect={setSelectedStaffId}
                 onViewProfile={(staffId) => openStaffProfile(staffId, "view")}
@@ -417,6 +450,7 @@ export function ManagerStaffPage() {
               staff={selectedStaff}
               expanded={detailsExpanded}
               onToggle={() => setDetailsExpanded((prev) => !prev)}
+              onClose={() => setDetailsExpanded(false)}
               onViewProfile={(staffId) => openStaffProfile(staffId, "view")}
               onEditProfile={(staffId) => openStaffProfile(staffId, "edit")}
               onOpenAssignment={(staffId) => {
@@ -555,6 +589,9 @@ function PerformanceItem({ icon: Icon, label, value, change }: { icon: Component
 
 function StaffTable({
   rows,
+  pagination,
+  currentPage,
+  onPageChange,
   selectedStaffId,
   onSelect,
   onViewProfile,
@@ -563,6 +600,9 @@ function StaffTable({
   onDeleteStaff,
 }: {
   rows: StaffRow[];
+  pagination?: PaginationMeta;
+  currentPage: number;
+  onPageChange: (page: number) => void;
   selectedStaffId?: string;
   onSelect: (staffId: string) => void;
   onViewProfile: (staffId: string) => void;
@@ -570,6 +610,12 @@ function StaffTable({
   onOpenAssignment: (staffId: string) => void;
   onDeleteStaff: (staffId: string) => void;
 }) {
+  const total = pagination?.total ?? rows.length;
+  const pageSize = pagination?.limit ?? rows.length;
+  const totalPages = pagination?.totalPages ?? (rows.length > 0 ? 1 : 0);
+  const start = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const end = total === 0 ? 0 : start + rows.length - 1;
+
   return (
     <div>
       <div className="overflow-x-auto">
@@ -643,8 +689,29 @@ function StaffTable({
         </table>
       </div>
       <div className="flex items-center justify-between border-t border-slate-100 px-5 py-4 text-sm text-slate-500">
-        <span>{rows.length > 0 ? `1-${rows.length} of ${rows.length} staff` : "0 staff"}</span>
+        <span>{total > 0 ? `${start}-${end} of ${total} staff` : "0 staff"}</span>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+            disabled={currentPage <= 1}
+            className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-sm font-black text-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {"<"}
+          </button>
+          <button type="button" className="h-8 min-w-8 rounded-lg border bg-[#00236f] px-3 text-sm font-black text-white">
+            {currentPage}
+          </button>
+          <button
+            type="button"
+            onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+            disabled={totalPages === 0 || currentPage >= totalPages}
+            className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-sm font-black text-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {">"}
+          </button>
+        </div>
+        <div className="hidden items-center gap-2">
           <button className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-sm font-black text-slate-400">‹</button>
           <button className="h-8 w-8 rounded-lg border bg-[#00236f] text-sm font-black text-white">1</button>
           <button className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-sm font-black text-slate-400">›</button>
@@ -658,6 +725,7 @@ function QuickDetailPanel({
   staff,
   expanded,
   onToggle,
+  onClose,
   onViewProfile,
   onEditProfile,
   onOpenAssignment,
@@ -669,6 +737,7 @@ function QuickDetailPanel({
   staff: StaffRow | null;
   expanded: boolean;
   onToggle: () => void;
+  onClose?: () => void;
   onViewProfile: (staffId: string) => void;
   onEditProfile: (staffId: string) => void;
   onOpenAssignment: (staffId: string) => void;
@@ -677,6 +746,25 @@ function QuickDetailPanel({
   onDeleteStaff: (staffId: string) => void;
   isFetching: boolean;
 }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!expanded) return;
+
+    function handleClickOutside(event: MouseEvent) {
+      if (document.querySelector('[role="dialog"], [data-radix-popper-content-wrapper]')?.contains(event.target as Node)) {
+        return;
+      }
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        onClose?.();
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [expanded, onClose]);
 
   if (!staff) {
     return <Card className="rounded-lg border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">Select a staff member to view details.</Card>;
@@ -697,7 +785,7 @@ function QuickDetailPanel({
   }
 
   return (
-    <Card className={cn("flex flex-col rounded-lg border-slate-200 bg-white p-6 shadow-sm", expanded ? "h-full min-h-[43rem]" : "h-fit")}>
+    <Card ref={panelRef} className={cn("flex flex-col rounded-lg border-slate-200 bg-white p-6 shadow-sm", expanded ? "h-full min-h-[43rem]" : "h-fit")}>
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-black text-slate-950">Quick details</h2>
         <Button
@@ -1053,39 +1141,25 @@ function ProfileInfoCard({ label, value, className }: { label: string; value: st
 }
 
 function buildStaffRows(staffOptions: StaffOption[], sessions: OperationsQueueSession[], accounts: AdminAccount[], kpis: StaffKpiItem[]): StaffRow[] {
-  const accountMap = new Map(accounts.map((account) => [account.accountId, account]));
   const kpiMap = new Map(kpis.map((kpi) => [kpi.staffId, kpi]));
-  const baseStaffMap = new Map<string, StaffOption>();
-  accounts.forEach((account) => {
-    baseStaffMap.set(account.accountId, { staffId: account.accountId, staffName: account.fullName });
-  });
-  staffOptions.forEach((staff) => {
-    baseStaffMap.set(staff.staffId, staff);
-  });
-  const baseStaff = Array.from(baseStaffMap.values()).sort((left, right) => {
-    const leftAccount = accountMap.get(left.staffId);
-    const rightAccount = accountMap.get(right.staffId);
-    const leftActive = leftAccount?.status === "ACTIVE" ? 0 : 1;
-    const rightActive = rightAccount?.status === "ACTIVE" ? 0 : 1;
-    return leftActive - rightActive || left.staffName.localeCompare(right.staffName, "vi");
-  });
+  const staffOptionMap = new Map(staffOptions.map((staff) => [staff.staffId, staff]));
 
-  return baseStaff.map((staff) => {
-    const account = accountMap.get(staff.staffId);
-    const kpi = kpiMap.get(staff.staffId);
-    const totalSessions = sessions.filter((session) => session.assignedStaffId === staff.staffId || session.assignedStaff?.some(s => s.staffId === staff.staffId));
+  return accounts.map((account) => {
+    const staff = staffOptionMap.get(account.accountId);
+    const kpi = kpiMap.get(account.accountId);
+    const totalSessions = sessions.filter((session) => session.assignedStaffId === account.accountId || session.assignedStaff?.some((s) => s.staffId === account.accountId));
     const activeSessions = totalSessions.filter((session) => session.status === "CHECKED_IN" || session.status === "IN_PROGRESS");
     const queuedSessions = totalSessions.filter((session) => session.status === "QUEUED");
     const completedSessions = totalSessions.filter((session) => session.status === "COMPLETED");
-    const role = account?.role ?? "Staff";
+    const role = account.role;
     const activeCount = activeSessions.length + queuedSessions.length;
-    const isInactive = account?.status && account.status !== "ACTIVE";
+    const isInactive = account.status !== "ACTIVE";
     const status: StaffStatus = isInactive ? "offline" : activeCount >= 4 ? "overloaded" : activeCount > 0 ? "busy" : "available";
     return {
-      staffId: staff.staffId,
-      staffName: account?.fullName ?? staff.staffName,
-      email: account?.email ?? "Not provided",
-      phone: formatPhone(account?.phone) ?? "Not provided",
+      staffId: account.accountId,
+      staffName: account.fullName ?? staff?.staffName ?? "Unknown staff",
+      email: account.email ?? "Not provided",
+      phone: formatPhone(account.phone) ?? "Not provided",
       role,
       status,
       activeSessions,
@@ -1095,7 +1169,7 @@ function buildStaffRows(staffOptions: StaffOption[], sessions: OperationsQueueSe
       rating: null,
       reviewCount: 0,
       kpiPercent: clampPercent(kpi?.kpiProgressPercent ?? 0),
-      accountStatus: account?.status ?? "UNKNOWN",
+      accountStatus: account.status ?? "UNKNOWN",
     };
   });
 }
@@ -1199,12 +1273,12 @@ function formatDateTime(value?: string | null) {
   return value ? new Date(value).toLocaleString("en-US") : "Not available";
 }
 
-function matchesStaff(row: StaffRow, search: string, statusFilter: string, roleFilter: string) {
+function matchesStaff(row: StaffRow, search: string, statusFilter: string, accountStatusFilter: string) {
   const normalized = search.trim().toLowerCase();
   const matchesSearch = !normalized || [row.staffName, row.email, row.phone].some((value) => value.toLowerCase().includes(normalized));
   const matchesStatus = statusFilter === "ALL" || row.status === statusFilter;
-  const matchesRole = roleFilter === "ALL" || row.role === roleFilter;
-  return matchesSearch && matchesStatus && matchesRole;
+  const matchesAccountStatus = accountStatusFilter === "ALL" || row.accountStatus === accountStatusFilter;
+  return matchesSearch && matchesStatus && matchesAccountStatus;
 }
 
 function statusLabel(status: StaffStatus) {
