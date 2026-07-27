@@ -20,6 +20,7 @@ import com.autowash.repository.UserRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.StaffAssignmentService;
 import java.time.Instant;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Comparator;
@@ -72,20 +73,12 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
     public Optional<User> tryPickStaffForBookingAssignment() {
         Instant dayStart = startOfToday();
         Instant dayEnd = startOfTomorrow();
+        Instant weekStart = startOfWeek();
+        Instant weekEnd = startOfNextWeek();
         return UserRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE)
                 .stream()
                 .filter(staff -> !washSessionRepository.existsByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES))
-                .min(Comparator
-                        .comparingLong((User staff) -> washSessionRepository.countByAssignedStaffAndStatusAndCompletedAtBetween(
-                                staff,
-                                WashSessionStatus.COMPLETED,
-                                dayStart,
-                                dayEnd
-                        ))
-                        .thenComparingLong((User staff) ->
-                                bookingRepository.countByAssignedStaffAndStatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES))
-                        .thenComparing(User::getFullName)
-                        .thenComparing(User::getId));
+                .min(staffLoadComparator(weekStart, weekEnd, dayStart, dayEnd));
     }
 
     @Override
@@ -124,13 +117,13 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
 
     @Override
     public List<User> rankActiveStaffForBooking(Booking booking) {
+        Instant weekStart = startOfWeek();
+        Instant weekEnd = startOfNextWeek();
+        Instant dayStart = startOfToday();
+        Instant dayEnd = startOfTomorrow();
         return UserRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE)
                 .stream()
-                .sorted(Comparator
-                        .comparingLong((User staff) -> bookingStaffAssignmentRepository.countByStaffAndBooking_StatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES))
-                        .thenComparingLong((User staff) -> washSessionRepository.countByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES))
-                        .thenComparing(User::getFullName)
-                        .thenComparing(User::getId))
+                .sorted(staffLoadComparator(weekStart, weekEnd, dayStart, dayEnd))
                 .toList();
     }
 
@@ -231,7 +224,38 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
         return LocalDate.now(ASSIGNMENT_ZONE).plusDays(1).atStartOfDay(ASSIGNMENT_ZONE).toInstant();
     }
 
+    private static Instant startOfWeek() {
+        return LocalDate.now(ASSIGNMENT_ZONE)
+                .with(DayOfWeek.MONDAY)
+                .atStartOfDay(ASSIGNMENT_ZONE)
+                .toInstant();
+    }
+
+    private static Instant startOfNextWeek() {
+        return LocalDate.now(ASSIGNMENT_ZONE)
+                .with(DayOfWeek.MONDAY)
+                .plusWeeks(1)
+                .atStartOfDay(ASSIGNMENT_ZONE)
+                .toInstant();
+    }
+
     private static boolean overlaps(Instant leftStart, Instant leftEnd, Instant rightStart, Instant rightEnd) {
         return leftStart.isBefore(rightEnd) && rightStart.isBefore(leftEnd);
+    }
+
+    private Comparator<User> staffLoadComparator(Instant weekStart, Instant weekEnd, Instant dayStart, Instant dayEnd) {
+        return Comparator
+                .comparingLong((User staff) -> washSessionRepository.countByAssignedStaffAndStatusAndCompletedAtBetween(
+                        staff,
+                        WashSessionStatus.COMPLETED,
+                        weekStart,
+                        weekEnd
+                ))
+                .thenComparingLong((User staff) -> bookingRepository.findTodayBookingsByAssignedStaff(staff, dayStart, dayEnd).size())
+                .thenComparingLong((User staff) -> washSessionRepository.countByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES))
+                .thenComparingLong((User staff) -> bookingRepository.countByAssignedStaffAndStatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES))
+                .thenComparingLong((User staff) -> bookingStaffAssignmentRepository.countByStaffAndBooking_StatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES))
+                .thenComparing(User::getFullName)
+                .thenComparing(User::getId);
     }
 }

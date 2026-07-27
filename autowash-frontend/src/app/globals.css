@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -211,11 +211,522 @@
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+@keyframes tierUpgradeOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tierUpgradePopupIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(0.75);
+  }
+  64% {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1);
+  }
+}
+
+@keyframes tierUpgradeBadgeDrop {
+  0% {
+    opacity: 0;
+    transform: translateY(-52px) scale(0.72) rotate(-10deg);
+  }
+  72% {
+    opacity: 1;
+    transform: translateY(10px) scale(1.06) rotate(5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes tierUpgradeRaysSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes tierUpgradeHaloPulse {
+  0%, 100% {
+    opacity: 0.55;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes tierUpgradeOrbitFloat {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.06) rotate(180deg);
+    opacity: 0.9;
+  }
+}
+
+@keyframes tierUpgradeFireworkPulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.18);
+  }
+  26% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.22);
+  }
+}
+
+@keyframes tierUpgradeFlashPulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.15);
+  }
+  20% {
+    opacity: 0.95;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes tierUpgradeConfettiFall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -40px, 0) rotate(0deg);
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(20px, 520px, 0) rotate(420deg);
+  }
+}
+
+@keyframes tierUpgradeSparkFloat {
+  0%, 100% {
+    opacity: 0.2;
+    transform: translate3d(0, 0, 0) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translate3d(0, -12px, 0) scale(1.2);
+  }
+}
+
+@keyframes tierUpgradeArrowFlow {
+  0%, 100% {
+    opacity: 0.25;
+    transform: translateX(0) scale(0.96);
+    filter: drop-shadow(0 0 0 rgba(255, 224, 140, 0));
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(8px) scale(1.1);
+    filter: drop-shadow(0 0 16px rgba(255, 224, 140, 0.85));
+  }
+}
+
+@keyframes tierUpgradeBenefitIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes tierUpgradeHighlightPulse {
+  0%, 100% {
+    transform: scale(1.02);
+    box-shadow: 0 0 32px rgba(84, 218, 255, 0.18);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 54px rgba(84, 218, 255, 0.34);
+  }
+}
+
+@keyframes tierUpgradeShimmer {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  16% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(440%);
+    opacity: 0;
+  }
+}
+
+@keyframes tierUpgradeTwinkle {
+  0%, 100% {
+    opacity: 0.22;
+    transform: scale(0.6) rotate(0deg);
+    filter: drop-shadow(0 0 0 rgba(255, 225, 140, 0));
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.15) rotate(45deg);
+    filter: drop-shadow(0 0 14px rgba(255, 225, 140, 0.9));
+  }
+  60% {
+    opacity: 0.55;
+    transform: scale(0.82) rotate(90deg);
+    filter: drop-shadow(0 0 8px rgba(122, 228, 255, 0.55));
+  }
+}
+
+@keyframes tierUpgradeBorderGlow {
+  0%, 100% {
+    opacity: 0.45;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 233, 171, 0.22),
+      0 0 24px rgba(152, 88, 255, 0.18);
+  }
+  50% {
+    opacity: 0.95;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 233, 171, 0.42),
+      0 0 38px rgba(255, 214, 122, 0.22),
+      0 0 78px rgba(116, 92, 255, 0.18);
+  }
+}
+
+@keyframes tierUpgradeLineSweep {
+  0%, 100% {
+    opacity: 0.15;
+    transform: scaleX(0.85);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes tierUpgradeCardSweep {
+  0% {
+    transform: translateX(-140%) skewX(-22deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(360%) skewX(-22deg);
+    opacity: 0;
+  }
+}
+
+@keyframes tierUpgradeBloomPulse {
+  0%, 100% {
+    opacity: 0.22;
+    transform: scale(0.82);
+  }
+  45% {
+    opacity: 0.92;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0.1;
+    transform: scale(1.18);
+  }
+}
+
+.tier-upgrade-overlay {
+  animation: tierUpgradeOverlayIn 250ms ease-out both;
+}
+
+.tier-upgrade-dialog {
+  animation: tierUpgradePopupIn 720ms cubic-bezier(0.2, 0.9, 0.25, 1.18) both;
+}
+
+.tier-upgrade-badge-wrap {
+  animation: tierUpgradeBadgeDrop 900ms cubic-bezier(0.18, 1, 0.22, 1) both;
+}
+
+.tier-upgrade-wing {
+  background:
+    linear-gradient(180deg, rgba(255, 245, 205, 0.9), rgba(255, 197, 83, 0.88) 40%, rgba(176, 99, 22, 0.45) 100%);
+  clip-path: polygon(0 50%, 18% 40%, 34% 28%, 54% 16%, 76% 6%, 100% 0, 86% 20%, 100% 35%, 84% 42%, 96% 58%, 78% 64%, 90% 82%, 66% 74%, 46% 90%, 28% 80%, 12% 100%);
+  filter: drop-shadow(0 0 18px rgba(255, 202, 98, 0.55));
+  opacity: 0.95;
+}
+
+.tier-upgrade-wing-left {
+  transform: scaleX(-1);
+}
+
+.tier-upgrade-crown {
+  animation: tierUpgradeHaloPulse 2s ease-in-out infinite;
+}
+
+.tier-upgrade-badge-rays {
+  animation: tierUpgradeRaysSpin 18s linear infinite;
+}
+
+.tier-upgrade-badge-halo {
+  animation: tierUpgradeHaloPulse 2.6s ease-in-out infinite;
+}
+
+.tier-upgrade-badge-orbit {
+  animation: tierUpgradeOrbitFloat 5.2s ease-in-out infinite;
+}
+
+.tier-upgrade-firework-left,
+.tier-upgrade-firework-right,
+.tier-upgrade-firework-bottom {
+  background:
+    radial-gradient(circle, rgba(255, 243, 196, 0.98) 0 5%, transparent 8%),
+    radial-gradient(circle, rgba(255, 184, 80, 0.85) 0 16%, transparent 17%),
+    radial-gradient(circle, rgba(185, 96, 255, 0.76) 0 30%, transparent 31%),
+    radial-gradient(circle, rgba(96, 208, 255, 0.56) 0 44%, transparent 45%);
+  filter: blur(1px);
+  animation: tierUpgradeFireworkPulse 1.7s ease-out infinite both;
+}
+
+.tier-upgrade-firework-left {
+  animation-delay: 0.3s;
+}
+
+.tier-upgrade-firework-right {
+  animation-delay: 0.42s;
+}
+
+.tier-upgrade-firework-bottom {
+  animation-delay: 0.6s;
+}
+
+.tier-upgrade-flash {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(255, 226, 137, 0.75) 30%, rgba(84, 214, 255, 0.14) 65%, transparent 100%);
+  filter: blur(2px);
+  opacity: 0;
+  animation: tierUpgradeFlashPulse 1.7s ease-out infinite both;
+}
+
+.tier-upgrade-flash-left {
+  animation-delay: 0.18s;
+}
+
+.tier-upgrade-flash-right {
+  animation-delay: 0.34s;
+}
+
+.tier-upgrade-flash-bottom {
+  animation-delay: 0.7s;
+}
+
+.tier-upgrade-bloom {
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.98) 0 5%, rgba(255,216,120,0.7) 12%, rgba(185,96,255,0.34) 28%, rgba(96,208,255,0.18) 48%, transparent 72%);
+  filter: blur(1px) drop-shadow(0 0 18px rgba(255, 206, 92, 0.32));
+  animation: tierUpgradeBloomPulse 1.8s ease-out infinite;
+}
+
+.tier-upgrade-bloom-left {
+  animation-delay: 0.1s;
+}
+
+.tier-upgrade-bloom-right {
+  animation-delay: 0.35s;
+}
+
+.tier-upgrade-bloom-lower {
+  animation-delay: 0.65s;
+}
+
+.tier-upgrade-confetti {
+  opacity: 0;
+  animation: tierUpgradeConfettiFall 4.4s linear infinite both;
+}
+
+.tier-upgrade-spark {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.96) 0%, rgba(255, 221, 131, 0.95) 44%, rgba(255, 221, 131, 0) 100%);
+  box-shadow: 0 0 12px rgba(255, 224, 140, 0.65);
+  animation: tierUpgradeSparkFloat 2.6s ease-in-out infinite;
+}
+
+.tier-upgrade-arrow {
+  animation: tierUpgradeArrowFlow 1s ease-in-out infinite;
+}
+
+.tier-upgrade-benefit-card {
+  opacity: 0;
+  animation: tierUpgradeBenefitIn 560ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.tier-upgrade-tier-highlight {
+  animation: tierUpgradeHighlightPulse 2.4s ease-in-out infinite;
+}
+
+.tier-upgrade-tier-badge {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 24px rgba(84, 218, 255, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.tier-upgrade-primary-btn:hover,
+.tier-upgrade-secondary-btn:hover {
+  transform: translateY(-2px);
+}
+
+.tier-upgrade-btn-shimmer {
+  animation: tierUpgradeShimmer 2.4s ease-in-out infinite;
+}
+
+.tier-upgrade-aurelian-card {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(56, 28, 110, 0.82), rgba(28, 12, 66, 0.88)),
+    rgba(26, 11, 46, 0.8);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 18px 48px rgba(7, 5, 18, 0.34);
+}
+
+.tier-upgrade-aurelian-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1.5px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 222, 132, 0.68), rgba(126, 89, 255, 0.36), rgba(84, 214, 255, 0.4));
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.tier-upgrade-aurelian-card::after {
+  content: "";
+  position: absolute;
+  top: -8%;
+  left: -30%;
+  width: 30%;
+  height: 120%;
+  background: linear-gradient(90deg, transparent, rgba(255, 237, 171, 0.55), transparent);
+  filter: blur(8px);
+  animation: tierUpgradeCardSweep 4.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.tier-upgrade-space-label {
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tier-upgrade-gold-text {
+  background: linear-gradient(180deg, #fff7db 0%, #ffd86e 58%, #b8860b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.tier-upgrade-border-glow {
+  pointer-events: none;
+  animation: tierUpgradeBorderGlow 2.8s ease-in-out infinite;
+}
+
+.tier-upgrade-top-glow,
+.tier-upgrade-side-glow {
+  background: linear-gradient(90deg, transparent, rgba(255, 230, 145, 0.95), rgba(129, 230, 255, 0.55), transparent);
+  box-shadow: 0 0 18px rgba(255, 220, 126, 0.55);
+  animation: tierUpgradeLineSweep 2.6s ease-in-out infinite;
+}
+
+.tier-upgrade-side-glow {
+  background: linear-gradient(180deg, transparent, rgba(255, 230, 145, 0.95), rgba(129, 230, 255, 0.55), transparent);
+}
+
+.tier-upgrade-twinkle {
+  opacity: 0.2;
+  animation: tierUpgradeTwinkle 2.8s ease-in-out infinite;
+}
+
+.tier-upgrade-twinkle::before,
+.tier-upgrade-twinkle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+}
+
+.tier-upgrade-twinkle::before {
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,0.98), transparent);
+}
+
+.tier-upgrade-twinkle::after {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, transparent, rgba(255,241,184,0.95), transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+
+  .tier-upgrade-overlay,
+  .tier-upgrade-dialog,
+  .tier-upgrade-badge-wrap,
+  .tier-upgrade-badge-rays,
+  .tier-upgrade-badge-halo,
+  .tier-upgrade-badge-orbit,
+  .tier-upgrade-firework-left,
+  .tier-upgrade-firework-right,
+  .tier-upgrade-firework-bottom,
+  .tier-upgrade-flash,
+  .tier-upgrade-confetti,
+  .tier-upgrade-spark,
+  .tier-upgrade-arrow,
+  .tier-upgrade-benefit-card,
+  .tier-upgrade-tier-highlight,
+  .tier-upgrade-btn-shimmer {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
   }
 }
 

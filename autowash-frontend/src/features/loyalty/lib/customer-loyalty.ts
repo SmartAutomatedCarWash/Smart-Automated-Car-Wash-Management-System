@@ -68,11 +68,10 @@ export function getTierProgress(tier: LoyaltyTier, currentPoints: number, config
     };
   }
 
-  const baseThreshold = currentConfig ? currentConfig.minPoints : 0;
   const nextThreshold = nextConfig.minPoints;
-  const earnedWithinTier = Math.max(currentPoints - baseThreshold, 0);
-  const tierSpan = Math.max(nextThreshold - baseThreshold, 1);
-  const progressPercent = Math.min(100, Math.round((earnedWithinTier / tierSpan) * 100));
+  const currentThreshold = currentConfig?.minPoints ?? 0;
+  const normalizedPoints = Math.max(currentPoints, currentThreshold);
+  const progressPercent = Math.min(100, Math.round((normalizedPoints / Math.max(nextThreshold, 1)) * 100));
 
   return {
     currentTier: tier,
