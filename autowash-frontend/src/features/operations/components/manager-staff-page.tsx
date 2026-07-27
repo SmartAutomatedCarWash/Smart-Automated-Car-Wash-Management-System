@@ -124,7 +124,7 @@ export function ManagerStaffPage() {
   const [accountStatusFilter, setAccountStatusFilter] = useState("ALL");
   const [performanceStaffId, setPerformanceStaffId] = useState("ALL");
   const [performancePeriod, setPerformancePeriod] = useState<"DAY" | "WEEK" | "MONTH">("WEEK");
-  const [detailsExpanded, setDetailsExpanded] = useState(true);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [staffPage, setStaffPage] = useState(1);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createForm, setCreateForm] = useState<CreateAdminStaffPayload>(EMPTY_CREATE_FORM);
@@ -174,7 +174,7 @@ export function ManagerStaffPage() {
     [accountStatusFilter, search, staffRows, statusFilter],
   );
   const staffPagination = staffAccountsQuery.data?.pagination;
-  const selectedStaff = staffRows.find((row) => row.staffId === selectedStaffId) ?? filteredRows[0] ?? staffRows[0] ?? null;
+  const selectedStaff = staffRows.find((row) => row.staffId === selectedStaffId) ?? null;
   const profileStaff = profileDialog ? staffRows.find((row) => row.staffId === profileDialog.staffId) ?? null : null;
   const deleteTargetStaff = deleteStaffId ? staffRows.find((row) => row.staffId === deleteStaffId) ?? null : null;
   const totalDisplay = staffPagination?.total ?? staffRows.length;
@@ -206,6 +206,17 @@ export function ManagerStaffPage() {
       setStaffPage(staffPagination.totalPages);
     }
   }, [staffPage, staffPagination]);
+
+  useEffect(() => {
+    if (!selectedStaffId) {
+      return;
+    }
+    const stillExists = staffRows.some((row) => row.staffId === selectedStaffId);
+    if (!stillExists) {
+      setSelectedStaffId("");
+      setDetailsExpanded(false);
+    }
+  }, [selectedStaffId, staffRows]);
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["manager-staff"] });
@@ -269,6 +280,11 @@ export function ManagerStaffPage() {
   const openStaffProfile = (staffId: string, mode: StaffDialogMode) => {
     setSelectedStaffId(staffId);
     setProfileDialog({ staffId, mode });
+  };
+
+  const handleSelectStaff = (staffId: string) => {
+    setSelectedStaffId(staffId);
+    setDetailsExpanded(true);
   };
 
   const openAssignmentForRow = (row: StaffRow) => {
@@ -433,7 +449,7 @@ export function ManagerStaffPage() {
                 currentPage={staffPage}
                 onPageChange={setStaffPage}
                 selectedStaffId={selectedStaff?.staffId}
-                onSelect={setSelectedStaffId}
+                onSelect={handleSelectStaff}
                 onViewProfile={(staffId) => openStaffProfile(staffId, "view")}
                 onEditProfile={(staffId) => openStaffProfile(staffId, "edit")}
                 onOpenAssignment={(staffId) => {
