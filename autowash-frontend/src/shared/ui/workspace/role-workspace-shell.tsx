@@ -546,23 +546,6 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               </div>
             </div>
           )}
-
-          {requiredRole !== "CUSTOMER" && !sidebarCollapsed && (
-            <div className="rounded-md border border-cyan-900/10 bg-white/72 p-3 shadow-[0_14px_36px_rgba(6,17,26,0.05)]">
-              <div className="flex items-start gap-3">
-                <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", workspaceTheme.accent)}>
-                  <Phone className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="text-xs font-bold">{t("Hỗ trợ", "Support")}</div>
-                  <div className="mt-0.5 text-sm font-extrabold tracking-tight">1900 1234</div>
-                  <div className="mt-1 text-[10px] text-muted-foreground">
-                    {t("8:00 - 20:00 hằng ngày", "8:00 AM - 8:00 PM daily")}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
           <button
             type="button"
             disabled={logoutMutation.isPending}
