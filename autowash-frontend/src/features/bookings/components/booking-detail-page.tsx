@@ -214,12 +214,14 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const isCompleted = bookingQuery.data?.status === "COMPLETED" || bookingQuery.data?.washStatus === "COMPLETED";
   const reviewCheckQuery = useBookingReviewCheck(bookingId, isCompleted);
   const loyaltyTransactionsQuery = useCustomerLoyaltyTransactions(1, 100);
-  const earnedPoints = useMemo(() => {
+  const bookingPointsEarned = useMemo(() => {
     const currentBookingId = bookingQuery.data?.bookingId ?? bookingId;
-    return loyaltyTransactionsQuery.data?.items.find(
-      (transaction) => transaction.bookingId === currentBookingId && transaction.type === "EARN" && transaction.points > 0,
-    )?.points ?? null;
+    const bookingPoints = loyaltyTransactionsQuery.data?.items
+      .filter((transaction) => transaction.bookingId === currentBookingId && transaction.type === "EARN" && transaction.points > 0)
+      .reduce((sum, transaction) => sum + transaction.points, 0) ?? 0;
+    return bookingPoints > 0 ? bookingPoints : null;
   }, [bookingId, bookingQuery.data?.bookingId, loyaltyTransactionsQuery.data]);
+  const reviewPointsEarned = bookingQuery.data?.review ? 10 : 0;
 
   // Auto-show review popup when booking is COMPLETED and not yet reviewed
   useEffect(() => {
@@ -731,14 +733,14 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 <SummaryLine label={translate(language, "Tổng cộng", "Total")} value={formatBookingCurrency(booking.pricing.finalAmount)} strong />
               </SidebarBlock>
 
-              {earnedPoints !== null ? (
-                <SidebarBlock icon={<Star className="h-4 w-4" />} title={translate(language, "Điểm cộng", "Points earned")}>
+              {bookingPointsEarned !== null ? (
+                <SidebarBlock icon={<Star className="h-4 w-4" />} title={translate(language, "Điểm booking", "Booking points")}>
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
                     <div className="text-2xl font-black text-emerald-700">
-                      +{earnedPoints.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} pts
+                      +{bookingPointsEarned.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} pts
                     </div>
                     <p className="mt-1 text-xs font-semibold text-emerald-800">
-                      {translate(language, "Điểm được cộng từ booking này.", "Points awarded from this booking.")}
+                      {translate(language, "Điểm cộng sau khi rửa xe thành công.", "Points earned after a successful wash.")}
                     </p>
                   </div>
                 </SidebarBlock>
@@ -927,6 +929,21 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 </>
               ) : null}
 
+              {reviewCheckQuery.data?.hasReview ? (
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-700">
+                    <Star className="h-4 w-4" />
+                    {translate(language, "Điểm đánh giá", "Review points")}
+                  </div>
+                  <div className="mt-2 text-2xl font-black text-emerald-700">
+                    +10 pts
+                  </div>
+                  <p className="mt-1 text-xs font-semibold text-emerald-800">
+                    {translate(language, "Điểm thưởng từ đánh giá của booking này.", "Bonus points from this booking's review.")}
+                  </p>
+                </div>
+              ) : null}
+
               {showCashConfirmationNote ? (
                 <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
                   {translate(
@@ -941,10 +958,10 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
 
           {/* Review Popup */}
           {showReviewPopup && (
-            <BookingCompletionPopup
+              <BookingCompletionPopup
               bookingId={bookingId}
               vehiclePlate={booking.vehiclePlate}
-              pointsEarned={earnedPoints}
+              pointsEarned={bookingPointsEarned}
               isOpen={showReviewPopup}
               onClose={() => setShowReviewPopup(false)}
               onSubmitReview={handleSubmitReview}
