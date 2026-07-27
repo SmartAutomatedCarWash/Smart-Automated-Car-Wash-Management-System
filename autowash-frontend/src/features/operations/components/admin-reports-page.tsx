@@ -23,7 +23,6 @@ import {
   CartesianGrid,
   ComposedChart,
   Line,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -31,6 +30,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
+import { StableResponsiveContainer } from "@/shared/ui/ui/stable-responsive-container";
 import { getOperationsQueue } from "@/features/operations/lib/operations-service";
 import { getManagerSettings } from "@/features/operations/lib/manager-settings-service";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
@@ -386,7 +386,7 @@ function RevenuePanel({ rows, language, locale }: { rows: TrendRow[]; language: 
             <p className="mt-1 text-xs font-semibold text-slate-500">{translate(language, "Hoàn thành thêm booking để xem biểu đồ.", "Complete more bookings to see charts.")}</p>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={194}>
+          <StableResponsiveContainer minHeight={194}>
             <ComposedChart data={rows} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="label" tick={{ fill: "#64748b", fontSize: 11, fontWeight: 700 }} tickLine={false} axisLine={false} minTickGap={8} />
@@ -396,7 +396,7 @@ function RevenuePanel({ rows, language, locale }: { rows: TrendRow[]; language: 
               <Bar yAxisId="revenue" dataKey="revenue" fill="#dbeafe" radius={[8, 8, 0, 0]} barSize={18} />
               <Line yAxisId="bookings" type="monotone" dataKey="bookings" stroke="#94a3b8" strokeWidth={2.5} dot={{ r: 4, fill: "#94a3b8" }} />
             </ComposedChart>
-          </ResponsiveContainer>
+          </StableResponsiveContainer>
         )}
       </div>
     </Card>

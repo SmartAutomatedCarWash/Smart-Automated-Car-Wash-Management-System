@@ -22,7 +22,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -52,6 +52,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui/ui/dropdown-menu";
 import { Progress } from "@/shared/ui/ui/progress";
+import { StableResponsiveContainer } from "@/shared/ui/ui/stable-responsive-container";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useWorkspaceHeader } from "@/shared/ui/workspace/workspace-header-context";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
@@ -390,7 +391,7 @@ export function ManagerStaffPage() {
                   </div>
                 </div>
                 <div className="h-44">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={176}>
+                  <StableResponsiveContainer minHeight={176}>
                     <BarChart data={performanceChartData} barGap={8}>
                       <CartesianGrid stroke="#eef2f7" vertical={false} />
                       <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 12, fontWeight: 700 }} tickLine={false} axisLine={false} />
@@ -400,7 +401,7 @@ export function ManagerStaffPage() {
                       <Bar yAxisId="left" dataKey="bookings" fill="#bae6fd" radius={[6, 6, 0, 0]} />
                       <Bar yAxisId="right" dataKey="revenue" fill="#0b2f75" radius={[6, 6, 0, 0]} />
                     </BarChart>
-                  </ResponsiveContainer>
+                  </StableResponsiveContainer>
                 </div>
               </div>
             </Card>

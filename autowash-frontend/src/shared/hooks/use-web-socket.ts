@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Client } from "@stomp/stompjs";
-import { resolveSockJsUrl } from "@/shared/lib/websocket";
+import { isRealtimeEnabled, resolveSockJsUrl } from "@/shared/lib/websocket";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const SockJS = require("sockjs-client") as new (url: string) => WebSocket;
@@ -25,6 +25,9 @@ export function useWebSocket() {
   const clientRef = useRef<Client | null>(null);
 
   useEffect(() => {
+    if (!isRealtimeEnabled()) {
+      return;
+    }
     const wsUrl = resolveSockJsUrl();
     const stompClient = new Client({
       // SockJS transport for maximum browser compatibility
