@@ -102,6 +102,57 @@ export function CustomerHistoryPageContent() {
 
   const totalComboPages = Math.ceil((combosQuery.data?.length ?? 0) / limit);
 
+  const groupedPointTransactions = useMemo(() => {
+    const items = transactionsQuery.data?.items ?? [];
+    const grouped = new Map<string, {
+      bookingId: string;
+      transactionId: string;
+      createdAt: string;
+      description: string;
+      points: number;
+      types: Set<string>;
+    }>();
+    const standalone: typeof items = [];
+
+    for (const item of items) {
+      if (!item.bookingId) {
+        standalone.push(item);
+        continue;
+      }
+      const existing = grouped.get(item.bookingId);
+      if (!existing) {
+        grouped.set(item.bookingId, {
+          bookingId: item.bookingId,
+          transactionId: item.transactionId,
+          createdAt: item.createdAt,
+          description: item.description,
+          points: item.points,
+          types: new Set([item.type]),
+        });
+        continue;
+      }
+      existing.points += item.points;
+      existing.createdAt = existing.createdAt > item.createdAt ? existing.createdAt : item.createdAt;
+      existing.transactionId = `${existing.transactionId}-${item.transactionId}`;
+      existing.types.add(item.type);
+      if (!existing.description.toLowerCase().includes(item.description.toLowerCase())) {
+        existing.description = `${existing.description} + ${item.description}`;
+      }
+    }
+
+    return [
+      ...Array.from(grouped.values()).map((item) => ({
+        transactionId: item.transactionId,
+        bookingId: item.bookingId,
+        createdAt: item.createdAt,
+        description: item.description,
+        points: item.points,
+        type: "EARN" as const,
+      })),
+      ...standalone,
+    ].sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
+  }, [transactionsQuery.data]);
+
   const progressPercent = summary?.progress.progressPercent ?? 0;
   const nextTierLabel = summary?.progress.nextTier ?? translate(language, "Hạng cao nhất", "Top tier");
 
@@ -232,7 +283,7 @@ export function CustomerHistoryPageContent() {
                    </div>
                  ) : (
                    <div className="divide-y divide-slate-100">
-                     {transactionsQuery.data.items.map((item) => (
+                     {groupedPointTransactions.map((item) => (
                        <PointTransactionRow
                          key={item.transactionId}
                          item={item}
@@ -385,10 +436,13 @@ function PointTransactionRow({
   locale: string;
 }) {
   const bookingHref = item.bookingId ? `/customer/bookings/${item.bookingId}?from=history` : null;
+  const title = item.bookingId
+    ? translate(language, "Tổng điểm", "Total points")
+    : formatLoyaltyTransactionType(item.type);
   const content = (
     <>
       <div>
-        <div className="text-sm font-bold text-slate-900">{formatLoyaltyTransactionType(item.type)}</div>
+        <div className="text-sm font-bold text-slate-900">{title}</div>
         <div className="mt-1 text-sm text-slate-500">{item.description}</div>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
           <span>{new Date(item.createdAt).toLocaleString(locale)}</span>
