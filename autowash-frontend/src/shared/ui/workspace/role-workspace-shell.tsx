@@ -266,17 +266,6 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
   const [selectedManagerNotificationId, setSelectedManagerNotificationId] = useState<string | null>(null);
 
-  useEffect(() => {
-    console.log("[workspace-shell]", {
-      requiredRole,
-      pathname,
-      isMounted,
-      authHydrated,
-      hasAccessToken: Boolean(accessToken),
-      userRole: user?.role ?? null,
-    });
-  }, [accessToken, authHydrated, isMounted, pathname, requiredRole, user?.role]);
-
   // Monitor customer notifications for toast alerts
   useEffect(() => {
     if (!isCustomer || !isMounted || !customerNotificationsQuery.data) return;

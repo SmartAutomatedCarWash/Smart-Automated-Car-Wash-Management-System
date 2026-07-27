@@ -1,7 +1,7 @@
 "use client";
 
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   ArrowRight,
   BadgeCheck,
@@ -133,6 +133,16 @@ export function ManagerPromotionsPageContent({ workspaceLabel = "Admin Growth Co
   const [form, setForm] = useState<PromotionFormValues>(EMPTY_FORM);
   const [showValidation, setShowValidation] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const nameFieldId = useId();
+  const codeFieldId = useId();
+  const pointMultiplierFieldId = useId();
+  const discountTypeFieldId = useId();
+  const discountValueFieldId = useId();
+  const startDateFieldId = useId();
+  const endDateFieldId = useId();
+  const targetingModeFieldId = useId();
+  const maxUsageFieldId = useId();
+  const statusFieldId = useId();
 
   const promotionsQuery = useManagerPromotions(1, FETCH_LIMIT, activeKind);
   const tiersQuery = useTierConfigs();
@@ -995,14 +1005,19 @@ function FormField({
   label,
   error,
   children,
+  fieldId,
 }: {
   label: string;
   error?: string;
   children: React.ReactNode;
+  fieldId?: string;
 }) {
+  const autoId = useId();
+  const resolvedFieldId = fieldId ?? autoId;
+
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm font-semibold text-slate-800">{label}</Label>
+      <Label htmlFor={resolvedFieldId} className="text-sm font-semibold text-slate-800">{label}</Label>
       {children}
       {error ? <p className="text-xs text-rose-600">{error}</p> : null}
     </div>
@@ -1297,4 +1312,6 @@ function isPromotionExpiringSoon(promotion: Promotion) {
 
   return daysLeft >= 0 && daysLeft <= 7;
 }
+
+
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef, type ComponentType } from "react";
+import { useEffect, useId, useMemo, useState, useRef, type ComponentType } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1003,6 +1003,11 @@ function StaffProfileDialog({
   submitting: boolean;
 }) {
   const [form, setForm] = useState<StaffFormState>(EMPTY_STAFF_FORM);
+  const fullNameId = useId();
+  const phoneId = useId();
+  const emailId = useId();
+  const statusId = useId();
+  const passwordId = useId();
 
   useEffect(() => {
     if (!staff) {
@@ -1076,8 +1081,10 @@ function StaffProfileDialog({
         ) : (
           <div className="grid gap-4 py-2">
             <div className="grid gap-2">
-              <label className="text-sm font-bold text-slate-700">Full name</label>
+              <label htmlFor={fullNameId} className="text-sm font-bold text-slate-700">Full name</label>
               <input
+                id={fullNameId}
+                name="staffFullName"
                 value={form.fullName}
                 onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
                 className="h-11 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-cyan-300"
@@ -1086,8 +1093,10 @@ function StaffProfileDialog({
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
-                <label className="text-sm font-bold text-slate-700">Phone</label>
+                <label htmlFor={phoneId} className="text-sm font-bold text-slate-700">Phone</label>
                 <input
+                  id={phoneId}
+                  name="staffPhone"
                   value={form.phone}
                   onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
                   className="h-11 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-cyan-300"
@@ -1095,8 +1104,10 @@ function StaffProfileDialog({
                 />
               </div>
               <div className="grid gap-2">
-                <label className="text-sm font-bold text-slate-700">Email</label>
+                <label htmlFor={emailId} className="text-sm font-bold text-slate-700">Email</label>
                 <input
+                  id={emailId}
+                  name="staffEmail"
                   value={form.email}
                   onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
                   className="h-11 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-cyan-300"
@@ -1104,8 +1115,10 @@ function StaffProfileDialog({
                 />
               </div>
               <div className="grid gap-2">
-                <label className="text-sm font-bold text-slate-700">Account status</label>
+                <label htmlFor={statusId} className="text-sm font-bold text-slate-700">Account status</label>
                 <select
+                  id={statusId}
+                  name="staffAccountStatus"
                   value={form.status}
                   onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as AdminAccountStatus | "UNKNOWN" }))}
                   className="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-cyan-300"
@@ -1120,8 +1133,10 @@ function StaffProfileDialog({
               </div>
             </div>
             <div className="mt-2 grid gap-2">
-              <label className="text-sm font-bold text-slate-700">New Password (optional)</label>
+              <label htmlFor={passwordId} className="text-sm font-bold text-slate-700">New Password (optional)</label>
               <input
+                id={passwordId}
+                name="staffPassword"
                 type="password"
                 value={form.password}
                 onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
