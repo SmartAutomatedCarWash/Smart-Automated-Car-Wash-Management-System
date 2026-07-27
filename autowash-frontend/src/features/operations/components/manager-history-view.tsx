@@ -133,10 +133,11 @@ export function ManagerHistoryView() {
         <WorkspaceEmptyState title="No matching sessions" description="Try changing filters or search keywords." />
       ) : (
         <Card className={cn("overflow-hidden rounded-lg border-slate-200 bg-white shadow-sm transition-opacity", historyQuery.isFetching && "opacity-60")}>
-          <div className="hidden grid-cols-[1.05fr_1fr_0.8fr_0.75fr_1.2fr_100px] border-b border-slate-100 px-4 py-3 text-[11px] font-black uppercase text-blue-900 lg:grid">
+          <div className="hidden grid-cols-[1.05fr_1fr_0.8fr_0.8fr_0.75fr_1.1fr_100px] border-b border-slate-100 px-4 py-3 text-[11px] font-black uppercase text-blue-900 lg:grid">
             <span>Vehicle & customer</span>
             <span>Service / Staff</span>
             <span>Time</span>
+            <span>Price</span>
             <span>Rating</span>
             <span>Notes</span>
             <span className="text-right">Status</span>
@@ -173,8 +174,9 @@ export function ManagerHistoryView() {
 
 function HistoryRow({ item, onViewDetails }: { item: StaffSessionHistoryItem; onViewDetails: (item: StaffSessionHistoryItem) => void }) {
   const serviceName = item.servicePackage ?? item.packageId ?? "Wash package";
+  const durationLabel = formatDuration(item.durationMinutes, item.startedAt, item.completedAt);
   return (
-    <div className="grid gap-3 border-b border-slate-100 px-4 py-4 last:border-b-0 lg:grid-cols-[1.05fr_1fr_0.8fr_0.75fr_1.2fr_100px] lg:items-center">
+    <div className="grid gap-3 border-b border-slate-100 px-4 py-4 last:border-b-0 lg:grid-cols-[1.05fr_1fr_0.8fr_0.8fr_0.75fr_1.1fr_100px] lg:items-center">
       <div className="min-w-0">
         <p className="truncate text-base font-black text-slate-950">#{item.vehiclePlate}</p>
         <p className="truncate text-xs font-semibold text-slate-500">{item.customerName} · {item.customerPhone}</p>
@@ -186,9 +188,10 @@ function HistoryRow({ item, onViewDetails }: { item: StaffSessionHistoryItem; on
       </div>
       <div>
         <p className="text-sm font-black text-slate-900">{formatTime(item.startedAt)} {"->"} {formatTime(item.completedAt)}</p>
-        {item.durationMinutes != null && (
-          <p className="text-xs font-semibold text-slate-500">{item.durationMinutes} min</p>
-        )}
+        <p className="text-xs font-semibold text-slate-500">{durationLabel}</p>
+      </div>
+      <div>
+        <p className="text-sm font-black text-slate-900">{formatCurrency(item.totalPrice)}</p>
       </div>
       <RatingCell review={item.review} />
       <div className="min-w-0">
@@ -206,6 +209,7 @@ function HistoryRow({ item, onViewDetails }: { item: StaffSessionHistoryItem; on
 }
 
 function SessionDetailDialog({ item }: { item: StaffSessionHistoryItem }) {
+  const durationLabel = formatDuration(item.durationMinutes, item.startedAt, item.completedAt);
   return (
     <div className="bg-white">
       <div className="border-b border-slate-100 bg-slate-50/50 p-6">
@@ -238,8 +242,8 @@ function SessionDetailDialog({ item }: { item: StaffSessionHistoryItem }) {
           <Info label="Appointment" value={`${item.bookingDate} ${item.bookingTime}`} />
           <Info label="Check-in Time" value={formatDateTime(item.checkedInAt)} />
           <Info label="Completed Time" value={formatDateTime(item.completedAt)} />
-          <Info label="Duration" value={item.durationMinutes != null ? `${item.durationMinutes} mins` : "--"} />
-          <Info label="Total Price" value={item.totalPrice != null ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.totalPrice) : "--"} />
+          <Info label="Duration" value={durationLabel} />
+          <Info label="Total Price" value={formatCurrency(item.totalPrice)} />
         </div>
 
         {item.services && item.services.length > 0 && (
@@ -250,7 +254,7 @@ function SessionDetailDialog({ item }: { item: StaffSessionHistoryItem }) {
                 {item.services.map((service, index) => (
                   <li key={index} className="flex justify-between border-b border-slate-50 pb-2 last:border-0 last:pb-0">
                     <span>{service.snapshotName} x {service.quantity}</span>
-                    <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(service.subtotal)}</span>
+                    <span>{formatCurrency(service.subtotal)}</span>
                   </li>
                 ))}
               </ul>
@@ -353,4 +357,23 @@ function formatTime(value?: string | null) {
 
 function formatDateTime(value?: string | null) {
   return value ? new Date(value).toLocaleString("en-US") : "Not available";
+}
+
+function formatCurrency(value?: number | null) {
+  return value != null ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value) : "--";
+}
+
+function formatDuration(durationMinutes?: number | null, startedAt?: string | null, completedAt?: string | null) {
+  if (durationMinutes != null) {
+    return `${durationMinutes} min`;
+  }
+  if (!startedAt || !completedAt) {
+    return "--";
+  }
+  const start = new Date(startedAt).getTime();
+  const end = new Date(completedAt).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) {
+    return "--";
+  }
+  return `${Math.max(1, Math.round((end - start) / 60000))} min`;
 }
