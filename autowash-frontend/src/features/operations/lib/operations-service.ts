@@ -94,11 +94,11 @@ export function getStaffWorkloads(page: number, limit: number, date?: string) {
 }
 
 export function getEligibleSessionBookings(date?: string, limit = 5) {
-  return apiRequest<EligibleSessionBooking[]>({
+  return apiRequest<PaginatedResponse<EligibleSessionBooking>>({
     method: "GET",
     url: "/operations/bookings/eligible-sessions",
     params: { limit, ...(date ? { date } : {}) },
-  });
+  }).then((response) => response.data);
 }
 
 export function queueWashSession(sessionId: string) {
