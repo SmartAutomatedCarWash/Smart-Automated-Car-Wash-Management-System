@@ -390,7 +390,7 @@ export function ManagerStaffPage() {
                   </div>
                 </div>
                 <div className="h-44">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={176}>
                     <BarChart data={performanceChartData} barGap={8}>
                       <CartesianGrid stroke="#eef2f7" vertical={false} />
                       <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 12, fontWeight: 700 }} tickLine={false} axisLine={false} />
