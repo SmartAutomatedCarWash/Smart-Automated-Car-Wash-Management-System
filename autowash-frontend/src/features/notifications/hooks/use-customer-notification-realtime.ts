@@ -5,11 +5,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Client } from "@stomp/stompjs";
 import { setAuthUser, useAuthStore } from "@/features/auth/store/auth.store";
 import { customerLoyaltyScope } from "@/features/loyalty/hooks/customer-loyalty-query";
+import { isRealtimeEnabled, resolveSockJsUrl } from "@/shared/lib/websocket";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const SockJS = require("sockjs-client") as new (url: string) => WebSocket;
-
-const WS_URL = "http://localhost:8080/ws";
 
 type NotificationSocketMessage = {
   eventType?: string;
@@ -54,9 +53,11 @@ export function useCustomerNotificationRealtime(
 
   useEffect(() => {
     if (!enabled || !accessToken || !userId || !isCustomer) return;
+    if (!isRealtimeEnabled()) return;
 
+    const wsUrl = resolveSockJsUrl();
     const stompClient = new Client({
-      webSocketFactory: () => new SockJS(WS_URL),
+      webSocketFactory: () => new SockJS(wsUrl),
       reconnectDelay: 5000,
       onConnect: () => {
         stompClient.subscribe(`/topic/notifications/${userId}`, (frame) => {

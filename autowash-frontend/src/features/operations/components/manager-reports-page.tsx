@@ -26,7 +26,6 @@ import {
   CartesianGrid,
   ComposedChart,
   Line,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -35,6 +34,7 @@ import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/ui/dialog";
+import { StableResponsiveContainer } from "@/shared/ui/ui/stable-responsive-container";
 import { getManagerSettings } from "@/features/operations/lib/manager-settings-service";
 import { listAdminBookings, listAdminServiceQuality, listAdminStaffKpi } from "@/features/reports/api/admin-reporting-service";
 import { exportManagerReport, sendManagerReport } from "@/features/operations/lib/operations-service";
@@ -489,15 +489,21 @@ function AttentionCard({ icon: Icon, title, value, action, tone, onClick }: { ic
   }[tone];
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3 hover:border-slate-300 transition-colors cursor-default">
-      <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${colors}`}>
+    <div className="flex h-full items-start gap-3 rounded-2xl border border-slate-100 bg-white p-4 transition-colors hover:border-slate-300">
+      <span className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${colors}`}>
         <Icon className="h-5 w-5" />
       </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-xs font-semibold text-slate-500">{title}</p>
-        <p className="truncate text-base font-black text-slate-950">{value}</p>
-        <button type="button" onClick={onClick} className="mt-1 text-[11px] font-black text-[#00236f] hover:underline">
-          {action} →
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-slate-500">{title}</p>
+          <p className="mt-1 text-base font-black leading-tight text-slate-950">{value}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClick}
+          className="inline-flex w-fit items-center rounded-full bg-slate-100 px-3 py-1 text-[11px] font-black text-[#00236f] transition hover:bg-slate-200"
+        >
+          {action}
         </button>
       </div>
     </div>
@@ -512,7 +518,7 @@ function FunnelPanel({ rows, total, language }: { rows: FunnelRow[]; total: numb
         {rows.map((row, index) => {
           const width = total === 0 ? 0 : Math.max(row.count > 0 ? 12 : 0, Math.min(row.barPercent, 100));
           return (
-          <div key={row.key} className="grid grid-cols-[minmax(0,1fr)_44px_52px_120px] items-center gap-2">
+          <div key={row.key} className="grid grid-cols-[minmax(0,1fr)_44px_52px] items-center gap-3">
             <div className="relative h-8 overflow-hidden rounded-md bg-slate-50">
               <div className="absolute inset-y-0 right-0 w-full rounded-md border border-slate-100 bg-white" />
               <div
@@ -527,7 +533,6 @@ function FunnelPanel({ rows, total, language }: { rows: FunnelRow[]; total: numb
             </div>
             <span className="text-right text-sm font-black text-slate-950">{row.count}</span>
             <span className="text-right text-xs font-black text-slate-700">{index === 0 ? "" : `${row.rate}%`}</span>
-            <span className="truncate rounded-md border border-slate-100 bg-white px-2 py-1 text-right text-[10px] font-semibold text-slate-400">{row.helper}</span>
           </div>
         )})}
       </div>
@@ -549,7 +554,7 @@ function RevenuePanel({ rows, language, locale }: { rows: TrendRow[]; language: 
             <p className="mt-1 text-xs font-semibold text-slate-500">{translate(language, "Hoàn thành thêm booking để xem biểu đồ.", "Complete more bookings to see charts.")}</p>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
+          <StableResponsiveContainer minHeight={194}>
             <ComposedChart data={rows} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="label" tick={{ fill: "#64748b", fontSize: 11, fontWeight: 700 }} tickLine={false} axisLine={false} minTickGap={8} />
@@ -559,7 +564,7 @@ function RevenuePanel({ rows, language, locale }: { rows: TrendRow[]; language: 
               <Bar yAxisId="revenue" dataKey="revenue" fill="#dbeafe" radius={[8, 8, 0, 0]} barSize={18} />
               <Line yAxisId="bookings" type="monotone" dataKey="bookings" stroke="#94a3b8" strokeWidth={2.5} dot={{ r: 4, fill: "#94a3b8" }} />
             </ComposedChart>
-          </ResponsiveContainer>
+          </StableResponsiveContainer>
         )}
       </div>
     </Card>

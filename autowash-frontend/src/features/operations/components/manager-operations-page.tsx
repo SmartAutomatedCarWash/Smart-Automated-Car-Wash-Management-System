@@ -436,7 +436,7 @@ export function ManagerOperationsPage() {
       <div className={`grid gap-4 ${isSidebarOpen ? "xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_390px]" : "grid-cols-1"}`}>
         <main className="min-w-0 space-y-3">
           <section className="rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm">
-            <div className="grid items-start gap-2 lg:grid-cols-[minmax(250px,1fr)_132px_168px_auto]">
+            <div className="grid items-start gap-2 lg:grid-cols-[minmax(250px,1fr)_132px_168px_168px]">
               <label className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
@@ -453,22 +453,12 @@ export function ManagerOperationsPage() {
                 buttonClassName="w-full justify-start"
               />
               <SelectBox value={staffFilter} onChange={setStaffFilter} options={["ALL", ...staffOptions.map((staff) => staff.staffId)]} labels={{ ALL: "All staff", ...Object.fromEntries(staffOptions.map((staff) => [staff.staffId, staff.staffName])) }} />
-              <div className="flex flex-wrap gap-2">
-                {FOCUS_FILTERS.map((item) => (
-                  <button
-                    key={item.value}
-                    type="button"
-                    onClick={() => setFocusFilter(item.value)}
-                    className={`h-10 rounded-xl border px-4 text-xs font-black transition ${
-                      focusFilter === item.value
-                        ? "border-[#00236f] bg-[#00236f] text-white shadow-sm"
-                        : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+              <SelectBox
+                value={focusFilter}
+                onChange={(value) => setFocusFilter(value as FocusFilter)}
+                options={FOCUS_FILTERS.map((item) => item.value)}
+                labels={Object.fromEntries(FOCUS_FILTERS.map((item) => [item.value, item.label]))}
+              />
             </div>
           </section>
 

@@ -1,7 +1,7 @@
 "use client";
 
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   ArrowRight,
   BadgeCheck,
@@ -65,6 +65,7 @@ import { useTierConfigs } from "@/features/settings/hooks/use-admin-tiers";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { useTierStore } from "@/shared/store/tier.store";
 import { DynamicTierBadge } from "@/shared/ui/workspace/dynamic-tier-badge";
+import { TierIcon } from "@/shared/ui/workspace/tier-icon";
 import type { ManagerPromotionKind } from "@/features/promotions/api/manager-promotions-service";
 import { useTierStyle } from "@/shared/lib/tier-styles";
 
@@ -132,6 +133,16 @@ export function ManagerPromotionsPageContent({ workspaceLabel = "Admin Growth Co
   const [form, setForm] = useState<PromotionFormValues>(EMPTY_FORM);
   const [showValidation, setShowValidation] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const nameFieldId = useId();
+  const codeFieldId = useId();
+  const pointMultiplierFieldId = useId();
+  const discountTypeFieldId = useId();
+  const discountValueFieldId = useId();
+  const startDateFieldId = useId();
+  const endDateFieldId = useId();
+  const targetingModeFieldId = useId();
+  const maxUsageFieldId = useId();
+  const statusFieldId = useId();
 
   const promotionsQuery = useManagerPromotions(1, FETCH_LIMIT, activeKind);
   const tiersQuery = useTierConfigs();
@@ -994,14 +1005,19 @@ function FormField({
   label,
   error,
   children,
+  fieldId,
 }: {
   label: string;
   error?: string;
   children: React.ReactNode;
+  fieldId?: string;
 }) {
+  const autoId = useId();
+  const resolvedFieldId = fieldId ?? autoId;
+
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm font-semibold text-slate-800">{label}</Label>
+      <Label htmlFor={resolvedFieldId} className="text-sm font-semibold text-slate-800">{label}</Label>
       {children}
       {error ? <p className="text-xs text-rose-600">{error}</p> : null}
     </div>
@@ -1024,7 +1040,7 @@ function TierSelectionOption({
     <label
       className={cn(
         "flex cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 text-sm font-bold transition-all",
-        checked ? "shadow-sm" : "bg-white text-slate-700 hover:bg-slate-50",
+        checked ? "shadow-sm ring-1 ring-current/10" : "bg-white text-slate-700 hover:bg-slate-50",
       )}
       style={
         checked
@@ -1048,11 +1064,20 @@ function TierSelectionOption({
           color: checked ? "#ffffff" : tierColor,
         }}
       />
+      <TierIcon
+        tier={tier}
+        className="h-9 w-9"
+        iconClassName="h-[18px] w-[18px]"
+        style={{
+          color: tierColor,
+          backgroundColor: checked ? `${tierColor}20` : `${tierColor}12`,
+          borderColor: `${tierColor}33`,
+        }}
+      />
       <span
-        className="inline-flex min-w-0 items-center gap-2 truncate"
+        className="inline-flex min-w-0 flex-1 items-center gap-2 truncate"
         style={checked ? undefined : { color: badge.color }}
       >
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: tierColor }} />
         <span className="truncate">{tier}</span>
       </span>
     </label>
@@ -1287,4 +1312,6 @@ function isPromotionExpiringSoon(promotion: Promotion) {
 
   return daysLeft >= 0 && daysLeft <= 7;
 }
+
+
 
