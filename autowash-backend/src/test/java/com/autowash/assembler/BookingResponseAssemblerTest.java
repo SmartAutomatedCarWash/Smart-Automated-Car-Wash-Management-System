@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.autowash.dto.BookingDetailResponse;
+import com.autowash.dto.BookingPaymentInfo;
 import com.autowash.dto.BookingStatusHistoryItem;
 import com.autowash.entity.Booking;
 import com.autowash.entity.BookingDetail;
@@ -69,7 +70,7 @@ class BookingResponseAssemblerTest {
                 .build();
         when(washSessionStaffAssignmentRepository.findBySessionOrderBySortOrderAsc(washSession)).thenReturn(List.of());
         when(bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking)).thenReturn(List.of());
-        var payment = new BookingResponseAssembler.PaymentInfo(
+        var payment = new BookingPaymentInfo(
                 PaymentMethod.BANK_TRANSFER,
                 PaymentStatus.PAID,
                 200_000L,
