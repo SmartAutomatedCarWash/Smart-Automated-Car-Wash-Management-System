@@ -177,7 +177,6 @@ export function CustomerComboCheckoutPage({ comboIds }: CustomerComboCheckoutPag
           transactionRef: result.payment?.transactionId ?? result.customerComboId ?? result.comboId,
           amount: totalPrice,
         });
-        clearCartCheckoutSnapshot();
         notify.info("Redirecting to VNPay payment.");
         window.location.href = checkout.paymentUrl;
         return;

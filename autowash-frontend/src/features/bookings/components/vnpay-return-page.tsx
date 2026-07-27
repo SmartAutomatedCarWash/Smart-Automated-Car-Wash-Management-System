@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, ReceiptText, ShieldAlert, XCircle } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryComboVnpayTransaction, queryVnpayTransaction, verifyVnpayReturn } from "@/features/bookings/lib/booking-service";
+import { clearCartCheckoutSnapshot, getCartCheckoutSnapshot, removeCartItemByItemId } from "@/features/cart/store/cart.store";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
 import { cn } from "@/shared/lib/utils";
@@ -50,6 +51,13 @@ export function VnpayReturnPage() {
     queryKey: ["combo-vnpay-return-sync", vnpayTxnRef, result?.responseCode, result?.transactionStatus],
     queryFn: async () => {
       const synced = await queryComboVnpayTransaction(vnpayTxnRef);
+      if (synced.success) {
+        const checkoutSnapshot = getCartCheckoutSnapshot().filter((item) => item.type === "COMBO");
+        for (const item of checkoutSnapshot) {
+          removeCartItemByItemId(item.itemId, "COMBO");
+        }
+        clearCartCheckoutSnapshot();
+      }
       await queryClient.invalidateQueries({ queryKey: ["booking-catalog", "customer-combos", "active"] });
       return synced;
     },
@@ -152,8 +160,8 @@ export function VnpayReturnPage() {
                 </Button>
               ) : null}
               <Button asChild variant="outline" className="flex-1">
-                <Link href={isComboPayment ? "/customer/member-lounge" : "/customer/bookings"}>
-                  {isComboPayment ? "Back to member lounge" : translate(language, "Về danh sách", "Back to bookings")}
+                <Link href={isComboPayment ? "/customer/services" : "/customer/bookings"}>
+                  {isComboPayment ? "Back to services" : translate(language, "Về danh sách", "Back to bookings")}
                 </Link>
               </Button>
             </div>

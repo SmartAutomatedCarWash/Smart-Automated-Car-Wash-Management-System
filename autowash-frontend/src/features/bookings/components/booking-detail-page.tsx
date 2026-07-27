@@ -296,12 +296,11 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
       setSelectedStaffIds([]);
       return;
     }
-    const autoIds = (staffOptionsQuery.data ?? [])
-      .filter((staff) => staff.available !== false)
-      .slice(0, 1)
-      .map((staff) => staff.staffId);
-    if (autoIds.length > 0) {
-      setSelectedStaffIds(autoIds);
+    const recommendedStaff = (staffOptionsQuery.data ?? []).find((staff) => staff.recommended && staff.available !== false);
+    const fallbackStaff = (staffOptionsQuery.data ?? []).find((staff) => staff.available !== false);
+    const nextStaff = recommendedStaff ?? fallbackStaff;
+    if (nextStaff) {
+      setSelectedStaffIds([nextStaff.staffId]);
     }
   }, [bookingQuery.data, staffOptionsQuery.data]);
 
@@ -361,6 +360,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const originalAssignedStaffIds = assignedStaffList(booking).map((staff) => staff.staffId).slice(0, 1);
   const canEditAssignedStaff = booking.status === "CONFIRMED" && originalAssignedStaffIds.length === 1 && !booking.washSessionId;
   const canSaveAssignedStaff = canEditAssignedStaff && selectedStaffIds.length === 1 && selectedStaffIds[0] !== originalAssignedStaffIds[0];
+  const recommendedStaffId = staffOptions.find((staff) => staff.recommended && staff.available !== false)?.staffId ?? null;
   const customerName = booking.customerName || profileQuery.data?.fullName || translate(language, "Khách hàng", "Customer");
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || translate(language, "Chưa có số điện thoại", "No phone number");
   const customerEmail = booking.confirmationEmail || profileQuery.data?.email || translate(language, "email của bạn", "your email");
@@ -600,8 +600,14 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                           >
                             <StaffSelectLabel
                               staff={staff}
-                              statusLabel={staff.staffId === originalAssignedStaffIds[0] ? translate(language, "Đang được gán", "Current assignment") : undefined}
-                              statusTone={staff.staffId === originalAssignedStaffIds[0] ? "locked" : undefined}
+                              statusLabel={
+                                staff.staffId === originalAssignedStaffIds[0]
+                                  ? translate(language, "Đang được gán", "Current assignment")
+                                  : staff.staffId === recommendedStaffId
+                                    ? translate(language, "Đề xuất", "Recommended")
+                                    : undefined
+                              }
+                              statusTone={staff.staffId === originalAssignedStaffIds[0] ? "locked" : staff.staffId === recommendedStaffId ? "available" : undefined}
                             />
                           </SelectItem>
                         ))}

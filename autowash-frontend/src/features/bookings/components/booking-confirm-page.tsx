@@ -346,7 +346,7 @@ export function BookingConfirmPage() {
     if (!isComboBooking && !selectedPaymentMethod) return;
     if (!expiresAt || expiresAt <= Date.now()) { handleExpired(); return; }
     const effectivePaymentMethod = isComboBooking ? ("CASH_AT_COUNTER" as PaymentMethod) : selectedPaymentMethod!;
-    const nextDraft = { ...sanitizedDraft, paymentMethod: effectivePaymentMethod, staffId: selectedStaffIds[0] ?? "", staffIds: selectedStaffIds };
+    const nextDraft = { ...sanitizedDraft, paymentMethod: effectivePaymentMethod, staffId: "", staffIds: [] };
     const errors = validateBookingDraft(nextDraft, summary, { requirePaymentMethod: !isComboBooking });
     if (Object.keys(errors).length > 0) {
       toast.error(Object.values(errors)[0] ?? "Please complete booking information.");
