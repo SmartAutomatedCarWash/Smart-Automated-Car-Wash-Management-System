@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useState, useRef, type ComponentType } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Car,
   Check,
+  CheckCheck,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -93,6 +94,7 @@ const STAFF_OVERLOAD_DELAYED_THRESHOLD = 2;
 const CHECKED_IN_DELAY_MINUTES = 12;
 const WAITING_CHECKIN_DELAY_MINUTES = 15;
 const TOP_PANEL_PAGE_SIZE = 5;
+const STAFF_WORKLOAD_PAGE_SIZE = 8;
 
 const FOCUS_FILTERS: Array<{ value: FocusFilter; label: string }> = [
   { value: "ALL", label: "All" },
@@ -109,6 +111,14 @@ const BOARD_COLUMNS: Array<{ stage: BoardStage; title: string; tint: string; rai
   { stage: "COMPLETED", title: "Completed", tint: "bg-orange-50/45", rail: "border-l-orange-400" },
 ];
 
+const BOARD_STAGE_LABELS: Record<BoardStage, string> = {
+  PENDING: "Pending",
+  CONFIRMED: "Confirmed",
+  CHECKED_IN: "Checked In",
+  IN_PROGRESS: "In Progress",
+  COMPLETED: "Completed",
+};
+
 export function ManagerOperationsPage() {
   const getErrorMessage = useErrorMessage();
   const queryClient = useQueryClient();
@@ -119,6 +129,7 @@ export function ManagerOperationsPage() {
   const [selectedDate, setSelectedDate] = useState(getTodayInputValue());
   const [staffFilter, setStaffFilter] = useState("ALL");
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("ALL");
+  const [selectedBoardStages, setSelectedBoardStages] = useState<BoardStage[]>(() => BOARD_COLUMNS.map((column) => column.stage));
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [optimisticSessionRows, setOptimisticSessionRows] = useState<Record<string, OperationRow>>({});
@@ -131,6 +142,7 @@ export function ManagerOperationsPage() {
   };
   const [checkInPage, setCheckInPage] = useState(1);
   const [interventionPage, setInterventionPage] = useState(1);
+  const [staffWorkloadPage, setStaffWorkloadPage] = useState(1);
 
   const queueQuery = useQuery({
     queryKey: ["manager-operations", "queue"],
@@ -168,14 +180,20 @@ export function ManagerOperationsPage() {
     () => interventions.filter((intervention) => filteredRows.some((row) => row.id === intervention.rowId)),
     [filteredRows, interventions],
   );
+  const visibleBoardColumns = useMemo(
+    () => BOARD_COLUMNS.filter((column) => selectedBoardStages.includes(column.stage)),
+    [selectedBoardStages],
+  );
   const checkInCandidates = useMemo(
     () => filteredRows.filter((row) => row.type === "booking" && row.status === "CONFIRMED"),
     [filteredRows],
   );
   const checkInPageCount = Math.max(1, Math.ceil(checkInCandidates.length / TOP_PANEL_PAGE_SIZE));
   const interventionPageCount = Math.max(1, Math.ceil(filteredInterventions.length / TOP_PANEL_PAGE_SIZE));
+  const staffWorkloadPageCount = Math.max(1, Math.ceil(staffWorkload.length / STAFF_WORKLOAD_PAGE_SIZE));
   const safeCheckInPage = Math.min(checkInPage, checkInPageCount);
   const safeInterventionPage = Math.min(interventionPage, interventionPageCount);
+  const safeStaffWorkloadPage = Math.min(staffWorkloadPage, staffWorkloadPageCount);
   const pagedCheckInCandidates = useMemo(
     () => paginateItems(checkInCandidates, safeCheckInPage, TOP_PANEL_PAGE_SIZE),
     [checkInCandidates, safeCheckInPage],
@@ -184,10 +202,15 @@ export function ManagerOperationsPage() {
     () => paginateItems(filteredInterventions, safeInterventionPage, TOP_PANEL_PAGE_SIZE),
     [filteredInterventions, safeInterventionPage],
   );
+  const pagedStaffWorkload = useMemo(
+    () => paginateItems(staffWorkload, safeStaffWorkloadPage, STAFF_WORKLOAD_PAGE_SIZE),
+    [safeStaffWorkloadPage, staffWorkload],
+  );
 
   useEffect(() => {
     setCheckInPage(1);
     setInterventionPage(1);
+    setStaffWorkloadPage(1);
   }, [selectedDate, search, staffFilter, focusFilter]);
 
   useEffect(() => {
@@ -398,6 +421,16 @@ export function ManagerOperationsPage() {
     transferMutation.mutate({ sessionId: selectedRow.sessionId, toStaffId });
   };
 
+  const toggleBoardStage = (stage: BoardStage) => {
+    setSelectedBoardStages((current) => {
+      if (current.includes(stage)) {
+        if (current.length === 1) return current;
+        return current.filter((item) => item !== stage);
+      }
+      return BOARD_COLUMNS.map((column) => column.stage).filter((item) => current.includes(item) || item === stage);
+    });
+  };
+
   return (
     <WorkspacePage compact className="max-w-none bg-[#fbfdff] px-4 pb-5 pt-4 lg:px-5">
       <div className={`grid gap-4 ${isSidebarOpen ? "xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_390px]" : "grid-cols-1"}`}>
@@ -478,7 +511,7 @@ export function ManagerOperationsPage() {
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-black text-white">{filteredInterventions.length}</span>
               </div>
               <div className="min-h-[15.5rem] space-y-2">
-                {paginateItems(filteredInterventions, safeInterventionPage, TOP_PANEL_PAGE_SIZE).map((intervention) => (
+                {pagedInterventions.map((intervention) => (
                   <InterventionRow
                     key={`${safeInterventionPage}-${intervention.id}`}
                     intervention={intervention}
@@ -518,27 +551,76 @@ export function ManagerOperationsPage() {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-sm font-black text-slate-950">Staff workload</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-black text-slate-950">Staff workload</h2>
+              <span className="text-xs font-semibold text-slate-500">{staffWorkload.length} staff</span>
+            </div>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {staffWorkload.map((staff) => (
-                <StaffWorkloadCard key={staff.staffId} staff={staff} selected={staffFilter === staff.staffId} onSelect={() => setStaffFilter(staff.staffId)} />
+              {pagedStaffWorkload.map((staff) => (
+                <StaffWorkloadCard key={staff.staffId} staff={staff} selected={staffFilter === staff.staffId} onSelect={() => setStaffFilter(staffFilter === staff.staffId ? "ALL" : staff.staffId)} />
               ))}
             </div>
+            <PanelPagination
+              page={safeStaffWorkloadPage}
+              pageCount={staffWorkloadPageCount}
+              total={staffWorkload.length}
+              onPrevious={() => setStaffWorkloadPage((page) => Math.max(1, page - 1))}
+              onNext={() => setStaffWorkloadPage((page) => Math.min(staffWorkloadPageCount, page + 1))}
+            />
           </section>
 
           {hasError ? <WorkspaceEmptyState title="Unable to load operations queue" description={getErrorMessage(error)} /> : null}
 
           <Card className="rounded-2xl border-slate-200 bg-white p-3 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 space-y-3">
               <div>
                 <h2 className="text-sm font-black text-slate-950">Operations board</h2>
                 <p className="text-xs font-semibold text-slate-500">{filteredRows.length} sessions under current filters</p>
               </div>
+              <div className="flex flex-wrap gap-2">
+                {BOARD_COLUMNS.map((column) => {
+                  const stage = column.stage;
+                  const selected = selectedBoardStages.includes(stage);
+                  return (
+                    <button
+                      key={stage}
+                      type="button"
+                      onClick={() => toggleBoardStage(stage)}
+                      className={`inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-black transition ${
+                        selected
+                          ? "border-[#00236f] bg-[#00236f] text-white shadow-sm"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-4 w-4 items-center justify-center rounded-sm border ${
+                          selected ? "border-white/70 bg-white/15 text-white" : "border-slate-300 bg-white text-transparent"
+                        }`}
+                      >
+                        <CheckCheck className="h-3 w-3" />
+                      </span>
+                      {BOARD_STAGE_LABELS[stage]}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="overflow-x-auto pb-2">
-              <div className="grid min-w-[980px] grid-cols-5 gap-3">
-                {BOARD_COLUMNS.map((column) => {
+              <div
+                className={`grid gap-3 ${
+                  visibleBoardColumns.length >= 5
+                    ? "min-w-[980px] grid-cols-5"
+                    : visibleBoardColumns.length === 4
+                      ? "min-w-[820px] grid-cols-4"
+                      : visibleBoardColumns.length === 3
+                        ? "min-w-[620px] grid-cols-3"
+                        : visibleBoardColumns.length === 2
+                          ? "min-w-[420px] grid-cols-2"
+                          : "min-w-[280px] grid-cols-1"
+                }`}
+              >
+                {visibleBoardColumns.map((column) => {
                   const columnRows = sortRowsNewestFirst(filteredRows.filter((row) => getBoardStage(row) === column.stage));
                   return (
                     <div key={column.stage} className={`min-h-[380px] rounded-2xl border border-slate-200 ${column.tint} p-2.5`}>
@@ -694,11 +776,11 @@ function InterventionRow({
           };
 
   return (
-    <div className={`grid min-h-16 grid-cols-[32px_minmax(0,1fr)_104px_34px] items-center gap-3 rounded-md border border-slate-100 border-l-4 px-3 py-2 ${tone.row}`}>
+    <div className={`grid h-16 grid-cols-[32px_minmax(0,1fr)_104px_34px] items-center gap-3 overflow-hidden rounded-md border border-slate-100 border-l-4 px-3 py-2 ${tone.row}`}>
       <span className={`flex h-6 w-6 items-center justify-center rounded-full ${tone.icon}`}>
         <Icon className="h-3.5 w-3.5" />
       </span>
-      <button type="button" onClick={onSelect} className="min-w-0 text-left text-xs font-bold leading-5 text-slate-800">
+      <button type="button" onClick={onSelect} className="min-w-0 truncate text-left text-xs font-bold leading-5 text-slate-800">
         {intervention.message}
       </button>
       <Button
@@ -904,6 +986,23 @@ function SessionDetailPanel({
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const transferOptions = staffOptions.filter((staff) => !row || !rowHasStaff(row, staff.staffId));
   const canTransfer = Boolean(row?.sessionId) && row?.status !== "COMPLETED" && row?.status !== "CANCELLED";
+  const panelRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (document.querySelector('[role="dialog"], [data-radix-popper-content-wrapper]')?.contains(event.target as Node)) {
+        return;
+      }
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        onClose?.();
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [onClose]);
 
   if (!row) {
     return (
@@ -914,7 +1013,7 @@ function SessionDetailPanel({
   }
 
   return (
-    <aside className="min-w-0">
+    <aside ref={panelRef} className="min-w-0">
       <Card className="sticky top-3 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-2xl border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 p-3.5">
           <div>

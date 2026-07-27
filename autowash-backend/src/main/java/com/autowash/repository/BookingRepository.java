@@ -54,6 +54,47 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             @Param("to") Instant to
     );
 
+    @Query("""
+            select coalesce(sum(booking.pricing.finalAmount), 0) from Booking booking
+            where booking.status = 'COMPLETED'
+              and booking.createdAt >= :from
+              and booking.createdAt < :to
+              and (
+                    booking.assignedStaff = :staff
+                    or exists (
+                        select assignment.id from BookingStaffAssignment assignment
+                        where assignment.booking = booking
+                          and assignment.staff = :staff
+                    )
+              )
+            """)
+    long sumCompletedRevenueForStaffKpiRange(
+            @Param("staff") User staff,
+            @Param("from") Instant from,
+            @Param("to") Instant to
+    );
+
+    @Query("""
+            select count(booking) from Booking booking
+            where booking.scheduledAt >= :dayStart
+              and booking.scheduledAt < :dayEnd
+              and booking.status in :statuses
+              and (
+                    booking.assignedStaff = :staff
+                    or exists (
+                        select assignment.id from BookingStaffAssignment assignment
+                        where assignment.booking = booking
+                          and assignment.staff = :staff
+                    )
+              )
+            """)
+    long countAssignedBookingsForStaffOnDay(
+            @Param("staff") User staff,
+            @Param("dayStart") Instant dayStart,
+            @Param("dayEnd") Instant dayEnd,
+            @Param("statuses") Collection<BookingStatus> statuses
+    );
+
     @EntityGraph(attributePaths = {"customer", "vehicle", "pricing", "details", "assignedStaff"})
     Optional<Booking> findByCustomerAndId(User customer, UUID id);
 
@@ -333,7 +374,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
               )
             order by tc.priorityScore desc, booking.scheduledAt asc, booking.createdAt desc
             """)
-    List<Booking> findEligibleForOperationsSession(
+    Page<Booking> findEligibleForOperationsSession(
             @Param("statuses") Collection<BookingStatus> statuses,
             @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
             Pageable pageable
@@ -354,7 +395,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
               )
             order by tc.priorityScore desc, booking.scheduledAt asc, booking.createdAt desc
             """)
-    List<Booking> findEligibleForOperationsSessionOnDate(
+    Page<Booking> findEligibleForOperationsSessionOnDate(
             @Param("statuses") Collection<BookingStatus> statuses,
             @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
             @Param("dayStart") Instant dayStart,
@@ -376,7 +417,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
               )
             order by tc.priorityScore desc, booking.scheduledAt asc, booking.createdAt desc
             """)
-    List<Booking> findEligibleForAssignedStaffOperationsSession(
+    Page<Booking> findEligibleForAssignedStaffOperationsSession(
             @Param("staff") User staff,
             @Param("statuses") Collection<BookingStatus> statuses,
             @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
@@ -399,7 +440,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
               )
             order by tc.priorityScore desc, booking.scheduledAt asc, booking.createdAt desc
             """)
-    List<Booking> findEligibleForAssignedStaffOperationsSessionOnDate(
+    Page<Booking> findEligibleForAssignedStaffOperationsSessionOnDate(
             @Param("staff") User staff,
             @Param("statuses") Collection<BookingStatus> statuses,
             @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,

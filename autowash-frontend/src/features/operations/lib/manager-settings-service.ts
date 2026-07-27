@@ -6,6 +6,7 @@ export type ManagerOperationSettingsPayload = {
   leastBusyStaffFirst: boolean;
   respectStaffCapacity: boolean;
   maxActiveSessionsPerStaff: number;
+  weeklyStaffKpiTarget: number;
   paidBookingPriority: boolean;
   tierPriorityEnabled: boolean;
   primaryVehiclePriority: boolean;
@@ -49,11 +50,16 @@ export type UpdateManagerSettingsRequest = {
   templates: ManagerNotificationTemplatePayload[];
 };
 
+export type UpdateWeeklyStaffKpiTargetRequest = {
+  weeklyStaffKpiTarget: number;
+};
+
 const DEFAULT_DEMO_SETTINGS: ManagerOperationSettingsPayload = {
   autoAssignEnabled: true,
   leastBusyStaffFirst: true,
   respectStaffCapacity: true,
   maxActiveSessionsPerStaff: 4,
+  weeklyStaffKpiTarget: 40,
   paidBookingPriority: true,
   tierPriorityEnabled: true,
   primaryVehiclePriority: true,
@@ -135,6 +141,37 @@ export function updateManagerSettings(data: UpdateManagerSettingsRequest) {
   return apiRequest<ManagerSettingsResponse, UpdateManagerSettingsRequest>({
     method: "PUT",
     url: "/manager/settings",
+    data,
+  });
+}
+
+export function updateWeeklyStaffKpiTarget(data: UpdateWeeklyStaffKpiTargetRequest) {
+  if (isManagerDemoToken()) {
+    const now = new Date().toISOString();
+    demoSettings = {
+      ...demoSettings,
+      settings: {
+        ...demoSettings.settings,
+        weeklyStaffKpiTarget: data.weeklyStaffKpiTarget,
+      },
+      auditLogs: [
+        {
+          id: `demo-manager-kpi-target-${Date.now()}`,
+          title: "Weekly staff KPI target updated",
+          detail: "Demo manager updated the weekly staff KPI target.",
+          actorName: "Manager Demo",
+          createdAt: now,
+        },
+        ...demoSettings.auditLogs,
+      ].slice(0, 20),
+      updatedAt: now,
+    };
+    return Promise.resolve(demoSettings);
+  }
+
+  return apiRequest<ManagerSettingsResponse, UpdateWeeklyStaffKpiTargetRequest>({
+    method: "PUT",
+    url: "/manager/settings/weekly-staff-kpi-target",
     data,
   });
 }

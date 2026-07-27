@@ -57,16 +57,26 @@ export async function listAdminStaff(page = 1, limit = 100): Promise<AdminAccoun
   return response.data.data;
 }
 
-export async function listAdminStaffKpi(range = "WEEK", page = 1, limit = 5): Promise<StaffKpiPage> {
+export async function listAdminStaffKpi(
+  range = "WEEK",
+  page = 1,
+  limit = 5,
+  filters: { staffId?: string; serviceName?: string; dateFrom?: string; dateTo?: string } = {},
+): Promise<StaffKpiPage> {
   const response = await apiClient.get<ApiSuccessResponse<StaffKpiPage>>("/admin/staff/kpi", {
-    params: { range, page, limit },
+    params: { range, page, limit, ...filters },
   });
   return response.data.data;
 }
 
-export async function listAdminServiceQuality(range = "WEEK", page = 1, limit = 5): Promise<ServiceQualityPage> {
+export async function listAdminServiceQuality(
+  range = "WEEK",
+  page = 1,
+  limit = 5,
+  filters: { serviceName?: string; dateFrom?: string; dateTo?: string } = {},
+): Promise<ServiceQualityPage> {
   const response = await apiClient.get<ApiSuccessResponse<ServiceQualityPage>>("/admin/reports/service-quality", {
-    params: { range, page, limit },
+    params: { range, page, limit, ...filters },
   });
   return response.data.data;
 }

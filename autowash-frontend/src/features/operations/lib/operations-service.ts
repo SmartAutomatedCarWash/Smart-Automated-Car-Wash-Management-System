@@ -14,11 +14,14 @@ import type {
   StaffSessionHistoryParams,
   StaffSessionHistoryResponse,
   StaffTodayResponse,
+  StaffWorkloadResponse,
   StartSessionRequest,
   StartSessionResponse,
   StartWashSessionResponse,
   CancelWashSessionResponse,
   TransferWashSessionResponse,
+  PaginatedResponse,
+  InterventionResponse,
 } from "@/entities/operations";
 
 const SESSION_BASE_URL = "/operations/sessions";
@@ -35,6 +38,29 @@ export function managerCheckInBooking(bookingId: string) {
   return apiRequest<{ bookingId: string; sessionId: string; status: string; assignedStaffId: string | null; assignedStaffName: string | null; assignedBay: string | null; checkedInAt: string | null }>({
     method: "POST",
     url: `/manager/operations/bookings/${bookingId}/check-in`,
+  });
+}
+
+export function getManagerCheckInRecommendation(bookingId: string) {
+  return apiRequest<any>({
+    method: "GET",
+    url: `/manager/operations/bookings/${bookingId}/check-in-preview`,
+  });
+}
+
+export function getManagerCheckInCandidates(page: number, limit: number, date?: string, search?: string) {
+  return apiRequest<PaginatedResponse<EligibleSessionBooking>>({
+    method: "GET",
+    url: "/manager/operations/check-in-candidates",
+    params: { page, limit, ...(date ? { date } : {}), ...(search ? { search } : {}) },
+  });
+}
+
+export function getManagerInterventions(page: number, limit: number, date?: string) {
+  return apiRequest<PaginatedResponse<InterventionResponse>>({
+    method: "GET",
+    url: "/manager/operations/interventions",
+    params: { page, limit, ...(date ? { date } : {}) },
   });
 }
 
@@ -56,6 +82,14 @@ export function getActiveStaffOptions() {
   return apiRequest<StaffOption[]>({
     method: "GET",
     url: "/operations/staff/active",
+  });
+}
+
+export function getStaffWorkloads(page: number, limit: number, date?: string) {
+  return apiRequest<StaffWorkloadResponse>({
+    method: "GET",
+    url: "/operations/staff/workload",
+    params: { page, limit, ...(date ? { date } : {}) },
   });
 }
 

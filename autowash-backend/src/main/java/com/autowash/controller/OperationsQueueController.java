@@ -4,6 +4,7 @@ import com.autowash.dto.OperationsQueueResponse;
 import com.autowash.dto.StaffDashboardSummaryResponse;
 import com.autowash.dto.StaffOptionResponse;
 import com.autowash.dto.StaffSessionHistoryResponse;
+import com.autowash.dto.StaffWorkloadResponse;
 import com.autowash.dto.StaffTodayResponse;
 import com.autowash.service.OperationsService;
 import com.autowash.shared.dto.ApiResponse;
@@ -50,6 +51,16 @@ public class OperationsQueueController {
     @Operation(summary = "List active staff members for assignment")
     public ApiResponse<List<StaffOptionResponse>> listActiveStaff() {
         return ApiResponse.ok("Active staff retrieved", operationsService.listActiveStaff());
+    }
+
+    @GetMapping("/staff/workload")
+    @Operation(summary = "Get paginated staff workload")
+    public ApiResponse<StaffWorkloadResponse> getStaffWorkloads(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "8") int limit,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        return ApiResponse.ok("Staff workloads retrieved", operationsService.getStaffWorkloads(page, limit, date));
     }
 
     @GetMapping("/my-sessions/today")

@@ -1,9 +1,11 @@
 import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin();
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    distDir: isDevelopment ? '.next-dev' : '.next',
     images: {
         unoptimized: true,
         remotePatterns: [

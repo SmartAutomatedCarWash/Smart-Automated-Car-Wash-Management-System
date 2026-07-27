@@ -1,11 +1,14 @@
 "use client";
 
-import { useMemo, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import {
   AlertTriangle,
   BarChart3,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   CheckCircle2,
   Download,
   FileText,
@@ -32,7 +35,8 @@ import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/ui/dialog";
-import { listAdminBookings } from "@/features/reports/api/admin-reporting-service";
+import { getManagerSettings } from "@/features/operations/lib/manager-settings-service";
+import { listAdminBookings, listAdminServiceQuality, listAdminStaffKpi } from "@/features/reports/api/admin-reporting-service";
 import { exportManagerReport, sendManagerReport } from "@/features/operations/lib/operations-service";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useWorkspaceHeader } from "@/shared/ui/workspace/workspace-header-context";
@@ -41,7 +45,7 @@ import { translate, useLanguageStore, type Language } from "@/shared/store/langu
 import { formatIntegerRating } from "@/shared/lib/rating-format";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { OperationsQueueSession, WashSessionStatus } from "@/entities/operations";
-import type { AdminBooking } from "@/entities/reports";
+import type { AdminBooking, PaginationMeta } from "@/entities/reports";
 
 type PeriodMode = "day" | "month" | "year" | "all";
 type TrendRow = { key: string; label: string; revenue: number; bookings: number; completed: number };
@@ -75,10 +79,37 @@ export function ManagerReportsPage() {
   const [serviceFilter, setServiceFilter] = useState("ALL");
   const [comparePrevious, setComparePrevious] = useState(false);
   const [attentionModal, setAttentionModal] = useState<"staff" | "unfinished" | "rating" | "revenue" | null>(null);
+  const [staffKpiPage, setStaffKpiPage] = useState(1);
+  const [serviceQualityPage, setServiceQualityPage] = useState(1);
 
   const query = useQuery({
     queryKey: ["manager-reports", "bookings", fromDate, toDate],
     queryFn: () => listAdminBookings({ dateFrom: fromDate, dateTo: toDate }, 1, 100),
+    refetchInterval: 30_000,
+  });
+  const settingsQuery = useQuery({
+    queryKey: ["manager-reports", "manager-settings"],
+    queryFn: getManagerSettings,
+    refetchInterval: 30_000,
+  });
+  const backendRange = useMemo(() => mapPeriodModeToBackendRange(periodMode), [periodMode]);
+  const staffKpiQuery = useQuery({
+    queryKey: ["manager-reports", "staff-kpi", backendRange, fromDate, toDate, staffFilter, serviceFilter, staffKpiPage],
+    queryFn: () => listAdminStaffKpi(backendRange, staffKpiPage, 5, {
+      dateFrom: fromDate,
+      dateTo: toDate,
+      staffId: staffFilter === "ALL" ? undefined : staffFilter,
+      serviceName: serviceFilter === "ALL" ? undefined : serviceFilter,
+    }),
+    refetchInterval: 30_000,
+  });
+  const serviceQualityQuery = useQuery({
+    queryKey: ["manager-reports", "service-quality", backendRange, fromDate, toDate, serviceFilter, serviceQualityPage],
+    queryFn: () => listAdminServiceQuality(backendRange, serviceQualityPage, 5, {
+      dateFrom: fromDate,
+      dateTo: toDate,
+      serviceName: serviceFilter === "ALL" ? undefined : serviceFilter,
+    }),
     refetchInterval: 30_000,
   });
 
@@ -101,13 +132,45 @@ export function ManagerReportsPage() {
   const averageTicket = completedBookings ? Math.round(revenue / completedBookings) : 0;
   const reviewCount = filteredSessions.filter((session) => session.rating !== null).length;
   const unrecordedRevenue = filteredSessions.filter((session) => session.status === "COMPLETED" && !session.feeAmount).length;
-  const staffRows = useMemo(() => buildStaffRows(filteredSessions, 2), [filteredSessions]);
+  const weeklyStaffKpiTarget = settingsQuery.data?.settings.weeklyStaffKpiTarget ?? 40;
+  const derivedStaffRows = useMemo(() => buildStaffRows(filteredSessions, weeklyStaffKpiTarget), [filteredSessions, weeklyStaffKpiTarget]);
+  const derivedStaffRowMap = useMemo(() => new Map(derivedStaffRows.map((row) => [row.staffId, row])), [derivedStaffRows]);
   const serviceRows = useMemo(() => buildServiceRows(filteredSessions), [filteredSessions]);
   const averageRating = useMemo<number | null>(() => averageServiceRating(serviceRows), [serviceRows]);
+  const pagedStaffRows = useMemo<StaffRow[]>(
+    () => (staffKpiQuery.data?.items ?? []).map((item) => ({
+      staffId: item.staffId,
+      staffName: item.staffName,
+      completed: derivedStaffRowMap.get(item.staffId)?.completed ?? item.completedBookings,
+      target: derivedStaffRowMap.get(item.staffId)?.target ?? weeklyStaffKpiTarget,
+      progress: derivedStaffRowMap.get(item.staffId)?.progress ?? item.kpiProgressPercent,
+      rating: derivedStaffRowMap.get(item.staffId)?.rating ?? null,
+      revenue: derivedStaffRowMap.get(item.staffId)?.revenue ?? item.completedRevenue,
+      status: derivedStaffRowMap.get(item.staffId)?.status ?? (item.kpiProgressPercent >= 100 ? "GOOD" : item.totalAssignedBookings > 0 ? "SUPPORT" : "LOW_LOAD"),
+    })),
+    [derivedStaffRowMap, staffKpiQuery.data, weeklyStaffKpiTarget],
+  );
+  const pagedServiceRows = useMemo<ServiceRow[]>(
+    () => (serviceQualityQuery.data?.items ?? []).map((item) => ({
+      service: item.service,
+      bookings: item.bookings,
+      revenue: item.revenue,
+      rating: item.rating,
+    })),
+    [serviceQualityQuery.data],
+  );
   const funnelRows = useMemo(() => buildFunnelRows(filteredSessions, language), [filteredSessions, language]);
   const trendRows = useMemo(() => buildTrendRows(filteredSessions, periodMode, fromDate, toDate), [filteredSessions, fromDate, periodMode, toDate]);
-  const atRiskStaff = staffRows.filter((staff) => staff.status === "SUPPORT").length;
-  const feedbackToReview = 0;
+  const atRiskStaff = derivedStaffRows.filter((staff) => staff.status === "SUPPORT").length;
+  const feedbackToReview = filteredSessions.filter((session) => session.rating != null && session.rating <= 3).length;
+
+  useEffect(() => {
+    setStaffKpiPage(1);
+  }, [fromDate, toDate, staffFilter, serviceFilter, backendRange]);
+
+  useEffect(() => {
+    setServiceQualityPage(1);
+  }, [fromDate, toDate, serviceFilter, backendRange]);
 
   const handleExportExcel = async () => {
     try {
@@ -241,7 +304,6 @@ export function ManagerReportsPage() {
               <AttentionCard icon={Users} title={t("Staff chưa đạt KPI", "Staff below KPI")} value={`${atRiskStaff} ${t("nhân viên", "staff")}`} action={t("Xem danh sách", "View list")} tone="rose" onClick={() => setAttentionModal("staff")} />
               <AttentionCard icon={CalendarDays} title={t("Booking tồn", "Unfinished bookings")} value={`${unfinishedBookings} ${t("booking chưa hoàn thành", "unfinished bookings")}`} action={t("Kiểm tra ngay", "Review now")} tone="amber" onClick={() => setAttentionModal("unfinished")} />
               <AttentionCard icon={TrendingDown} title={t("Rating giảm", "Rating drop")} value="No backend rating data" action={t("Xem feedback", "View feedback")} tone="rose" onClick={() => setAttentionModal("rating")} />
-              <AttentionCard icon={WalletCards} title={t("Doanh thu chưa ghi nhận", "Unrecorded revenue")} value={`${unrecordedRevenue} booking`} action={t("Đối soát", "Reconcile")} tone="orange" onClick={() => setAttentionModal("revenue")} />
             </div>
           </Card>
 
@@ -251,8 +313,24 @@ export function ManagerReportsPage() {
           </section>
 
           <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <StaffKpiTable rows={staffRows} locale={locale} language={language} />
-            <ServiceQualityPanel rows={serviceRows} averageRating={averageRating} reviewCount={reviewCount} feedbackToReview={feedbackToReview} language={language} />
+            <StaffKpiTable
+              rows={pagedStaffRows}
+              locale={locale}
+              language={language}
+              pagination={staffKpiQuery.data?.pagination}
+              isFetching={staffKpiQuery.isFetching}
+              onPageChange={setStaffKpiPage}
+            />
+            <ServiceQualityPanel
+              rows={pagedServiceRows}
+              averageRating={averageRating}
+              reviewCount={reviewCount}
+              feedbackToReview={feedbackToReview}
+              language={language}
+              pagination={serviceQualityQuery.data?.pagination}
+              isFetching={serviceQualityQuery.isFetching}
+              onPageChange={setServiceQualityPage}
+            />
           </section>
         </>
       )}
@@ -268,7 +346,7 @@ export function ManagerReportsPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="mt-4 space-y-3">
-            {attentionModal === "staff" && staffRows.filter(s => s.status === "SUPPORT").map(staff => (
+            {attentionModal === "staff" && derivedStaffRows.filter((s) => s.status === "SUPPORT").map((staff) => (
               <div key={staff.staffId} className="flex justify-between items-center p-4 border border-rose-100 rounded-xl bg-rose-50/50">
                 <span className="font-bold text-slate-900">{staff.staffName}</span>
                 <span className="text-sm font-semibold text-rose-600">Hoàn thành: {staff.completed}/{staff.target}</span>
@@ -277,37 +355,40 @@ export function ManagerReportsPage() {
             {attentionModal === "staff" && atRiskStaff === 0 && <p className="text-sm text-slate-500 text-center py-8">Không có nhân viên nào dưới KPI.</p>}
 
             {attentionModal === "unfinished" && filteredSessions.filter(s => s.status !== "COMPLETED" && s.status !== "CANCELLED").map(session => (
-              <div key={session.bookingId} className="flex flex-col gap-2 p-4 border border-amber-100 rounded-xl bg-amber-50/50">
+              <Link href={`/admin/bookings/${session.bookingId}`} key={session.bookingId} className="flex flex-col gap-2 rounded-xl border border-amber-100 bg-amber-50/50 p-4 transition hover:border-amber-200 hover:bg-amber-50">
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-slate-900">{session.customerName} - {session.vehiclePlate}</span>
                   <span className="text-[10px] uppercase tracking-wider font-black px-2 py-1 bg-amber-200 text-amber-800 rounded-md">{session.status}</span>
                 </div>
                 <span className="text-xs font-medium text-slate-600">Lịch: {session.bookingDate} {session.bookingTime} | Gói: {session.servicePackage}</span>
-              </div>
+                <span className="text-xs font-medium text-slate-600">Staff: {formatSessionStaffNames(session)}</span>
+              </Link>
             ))}
             {attentionModal === "unfinished" && unfinishedBookings === 0 && <p className="text-sm text-slate-500 text-center py-8">Tuyệt vời! Không có booking tồn.</p>}
 
             {attentionModal === "revenue" && filteredSessions.filter(s => s.status === "COMPLETED" && !s.feeAmount).map(session => (
-              <div key={session.bookingId} className="flex flex-col gap-2 p-4 border border-orange-100 rounded-xl bg-orange-50/50">
+              <Link href={`/admin/bookings/${session.bookingId}`} key={session.bookingId} className="flex flex-col gap-2 rounded-xl border border-orange-100 bg-orange-50/50 p-4 transition hover:border-orange-200 hover:bg-orange-50">
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-slate-900">{session.customerName} - {session.vehiclePlate}</span>
                   <span className="text-xs font-black text-rose-600">Chưa có giá trị hóa đơn</span>
                 </div>
                 <span className="text-xs font-medium text-slate-600">Gói: {session.servicePackage} | Hoàn thành: {session.bookingDate} {session.bookingTime}</span>
-              </div>
+                <span className="text-xs font-medium text-slate-600">Staff: {formatSessionStaffNames(session)}</span>
+              </Link>
             ))}
             {attentionModal === "revenue" && unrecordedRevenue === 0 && <p className="text-sm text-slate-500 text-center py-8">Tất cả booking hoàn thành đều đã ghi nhận doanh thu đầy đủ.</p>}
 
             {attentionModal === "rating" && filteredSessions.filter((session) => session.rating != null && session.rating <= 3).map((session) => (
-              <div key={session.bookingId} className="flex flex-col gap-2 p-4 border border-rose-100 rounded-xl bg-rose-50/50">
+              <Link href={`/admin/bookings/${session.bookingId}`} key={session.bookingId} className="flex flex-col gap-2 rounded-xl border border-rose-100 bg-rose-50/50 p-4 transition hover:border-rose-200 hover:bg-rose-50">
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-slate-900">{session.customerName} - {session.vehiclePlate}</span>
                   <span className="text-xs font-black text-rose-600 flex items-center gap-1"><Star className="w-3 h-3 fill-current" /> {session.rating} sao</span>
                 </div>
                 <span className="text-xs font-medium text-slate-600">Gói: {session.servicePackage} | Hoàn thành: {session.bookingDate}</span>
-              </div>
+                <span className="text-xs font-medium text-slate-600">Staff: {formatSessionStaffNames(session)}</span>
+              </Link>
             ))}
-            {attentionModal === "rating" && filteredSessions.filter((session) => session.rating != null && session.rating <= 3).length === 0 && <p className="text-sm text-slate-500 text-center py-8">Chưa có đánh giá tiêu cực (từ 3 sao trở xuống) trong kỳ này.</p>}
+            {attentionModal === "rating" && filteredSessions.filter((session) => session.rating != null && session.rating <= 3).length === 0 && <p className="text-sm text-slate-500 text-center py-8">No negative ratings (3 stars or below) in this period.</p>}
           </div>
         </DialogContent>
       </Dialog>
@@ -485,41 +566,46 @@ function RevenuePanel({ rows, language, locale }: { rows: TrendRow[]; language: 
   );
 }
 
-function StaffKpiTable({ rows, locale, language }: { rows: StaffRow[]; locale: string; language: Language }) {
+function StaffKpiTable({ rows, locale, language, pagination, isFetching, onPageChange }: { rows: StaffRow[]; locale: string; language: Language; pagination?: PaginationMeta; isFetching: boolean; onPageChange: (page: number) => void }) {
   return (
-    <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="text-sm font-black text-slate-950">{translate(language, "KPI nhân viên", "Staff KPI")}</h2>
-      <div className="mt-4 overflow-x-auto">
+    <Card className="flex h-full flex-col rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-black text-slate-950">{translate(language, "KPI nhân viên", "Staff KPI")}</h2>
+        {rows.length > 0 && (
+          <div className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600">
+            KPI Target: <span className="text-slate-900">{rows[0].target}</span>
+          </div>
+        )}
+      </div>
+      <div className="mt-4 flex-1 overflow-x-auto">
         <table className="w-full min-w-[640px] text-left text-xs">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500">
-              <th className="px-3 py-3">Staff</th>
-              <th className="px-3 py-3">{translate(language, "Hoàn thành", "Done")}</th>
-              <th className="px-3 py-3">KPI target</th>
-              <th className="px-3 py-3">KPI %</th>
-              <th className="px-3 py-3">Rating</th>
-              <th className="px-3 py-3">{translate(language, "Doanh thu", "Revenue")}</th>
-              <th className="px-3 py-3">{translate(language, "Trạng thái", "Status")}</th>
+              <th className="whitespace-nowrap px-3 py-3">Staff</th>
+              <th className="whitespace-nowrap px-3 py-3">{translate(language, "Hoàn thành", "Done")}</th>
+              <th className="whitespace-nowrap px-3 py-3">KPI %</th>
+              <th className="whitespace-nowrap px-3 py-3">Rating</th>
+              <th className="whitespace-nowrap px-3 py-3">{translate(language, "Doanh thu", "Revenue")}</th>
+              <th className="whitespace-nowrap px-3 py-3">{translate(language, "Trạng thái", "Status")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rows.map((staff) => (
               <tr key={staff.staffId}>
-                <td className="px-3 py-3 font-black text-slate-950">{staff.staffName}</td>
-                <td className="px-3 py-3 font-bold text-slate-700">{staff.completed}</td>
-                <td className="px-3 py-3 font-bold text-slate-700">{staff.target}</td>
-                <td className="px-3 py-3">
+                <td className="whitespace-nowrap px-3 py-3 font-black text-slate-950">{staff.staffName}</td>
+                <td className="whitespace-nowrap px-3 py-3 font-bold text-slate-700">{staff.completed}</td>
+                <td className="whitespace-nowrap px-3 py-3">
                   <div className="flex items-center gap-2">
                     <span className="w-8 font-black text-slate-950">{staff.progress}%</span>
                     <span className="h-2 w-16 rounded-full bg-slate-100">
-                      <span className="block h-2 rounded-full bg-blue-500" style={{ width: `${staff.progress}%` }} />
+                      <span className="block h-2 rounded-full bg-blue-500" style={{ width: `${Math.min(100, staff.progress)}%` }} />
                     </span>
                   </div>
                 </td>
-                <td className="px-3 py-3 font-black text-slate-700">{staff.rating ? `${formatIntegerRating(staff.rating)} ★` : "—"}</td>
-                <td className="px-3 py-3 font-black text-slate-950">{formatCurrency(staff.revenue, locale)}</td>
-                <td className="px-3 py-3">
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${staff.status === "GOOD" ? "bg-emerald-50 text-emerald-700" : staff.status === "SUPPORT" ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-500"}`}>
+                <td className="whitespace-nowrap px-3 py-3 font-black text-slate-700">{staff.rating ? `${formatIntegerRating(staff.rating)} ★` : "—"}</td>
+                <td className="whitespace-nowrap px-3 py-3 font-black text-slate-950">{formatCurrency(staff.revenue, locale)}</td>
+                <td className="whitespace-nowrap px-3 py-3">
+                  <span className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-black ${staff.status === "GOOD" ? "bg-emerald-50 text-emerald-700" : staff.status === "SUPPORT" ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-500"}`}>
                     {staff.status === "GOOD" ? translate(language, "Đạt tiến độ", "On track") : staff.status === "SUPPORT" ? translate(language, "Cần hỗ trợ", "Needs support") : translate(language, "Làm quá ít", "Low load")}
                   </span>
                 </td>
@@ -527,17 +613,18 @@ function StaffKpiTable({ rows, locale, language }: { rows: StaffRow[]; locale: s
             ))}
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-3 py-8 text-center font-semibold text-slate-400">{translate(language, "Chưa có dữ liệu staff.", "No staff data.")}</td>
+                <td colSpan={6} className="px-3 py-8 text-center font-semibold text-slate-400">{translate(language, "Chưa có dữ liệu staff.", "No staff data.")}</td>
               </tr>
             ) : null}
           </tbody>
         </table>
       </div>
+      <PanelPagination pagination={pagination} itemLabel={translate(language, "nhân viên", "staff")} onPageChange={onPageChange} />
     </Card>
   );
 }
 
-function ServiceQualityPanel({ rows, averageRating, reviewCount, feedbackToReview, language }: { rows: ServiceRow[]; averageRating: number | null; reviewCount: number; feedbackToReview: number; language: Language }) {
+function ServiceQualityPanel({ rows, averageRating, reviewCount, feedbackToReview, language, pagination, isFetching, onPageChange }: { rows: ServiceRow[]; averageRating: number | null; reviewCount: number; feedbackToReview: number; language: Language; pagination?: PaginationMeta; isFetching: boolean; onPageChange: (page: number) => void }) {
   return (
     <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm">
       <h2 className="text-sm font-black text-slate-950">{translate(language, "Chất lượng dịch vụ", "Service quality")}</h2>
@@ -563,6 +650,32 @@ function ServiceQualityPanel({ rows, averageRating, reviewCount, feedbackToRevie
         {rows.length === 0 ? <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm font-semibold text-slate-400">{translate(language, "Chưa có dữ liệu dịch vụ.", "No service data.")}</div> : null}
       </div>
     </Card>
+  );
+}
+
+function PanelPagination({ pagination, itemLabel, onPageChange }: { pagination?: PaginationMeta; itemLabel: string; onPageChange: (page: number) => void }) {
+  if (!pagination || pagination.totalPages <= 1) {
+    return null;
+  }
+
+  const from = (pagination.page - 1) * pagination.limit + 1;
+  const to = Math.min(pagination.page * pagination.limit, pagination.total);
+
+  return (
+    <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+      <p className="text-xs font-semibold text-slate-500">
+        Showing {from}-{to} / {pagination.total} {itemLabel}
+      </p>
+      <div className="flex items-center gap-1">
+        <Button variant="outline" size="sm" className="h-8 w-8 rounded-md p-0" disabled={pagination.page <= 1} onClick={() => onPageChange(pagination.page - 1)}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <span className="px-2 text-xs font-black text-slate-600">{pagination.page}/{pagination.totalPages}</span>
+        <Button variant="outline" size="sm" className="h-8 w-8 rounded-md p-0" disabled={pagination.page >= pagination.totalPages} onClick={() => onPageChange(pagination.page + 1)}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -605,6 +718,19 @@ function periodOptions(language: Language): Array<{ value: PeriodMode; label: st
     { value: "year", label: translate(language, "Theo năm", "By year") },
     { value: "all", label: translate(language, "Tất cả", "All") },
   ];
+}
+
+function mapPeriodModeToBackendRange(mode: PeriodMode) {
+  switch (mode) {
+    case "day":
+      return "TODAY";
+    case "month":
+      return "MONTH";
+    case "year":
+      return "YEAR";
+    default:
+      return "ALL";
+  }
 }
 
 function buildStaffOptions(sessions: OperationsQueueSession[]) {
@@ -651,7 +777,7 @@ function buildStaffRows(sessions: OperationsQueueSession[], target: number): Sta
       });
       const completed = staffSessions.filter((session) => session.status === "COMPLETED");
       const completedCount = completed.length;
-      const progress = Math.min(100, Math.round((completedCount / Math.max(target, 1)) * 100));
+      const progress = Math.round((completedCount / Math.max(target, 1)) * 100);
       const ratedSessions = completed.filter((session) => session.rating !== null);
       const rating = ratedSessions.length > 0 ? ratedSessions.reduce((sum, s) => sum + (s.rating ?? 0), 0) / ratedSessions.length : null;
       return {
@@ -764,6 +890,11 @@ function getAssignedStaff(session: OperationsQueueSession) {
 
 function sessionHasStaff(session: OperationsQueueSession, staffId: string) {
   return getAssignedStaff(session).some((staff) => staff.staffId === staffId);
+}
+
+function formatSessionStaffNames(session: OperationsQueueSession) {
+  const names = getAssignedStaff(session).map((staff) => staff.staffName.trim()).filter(Boolean);
+  return names.length > 0 ? names.join(", ") : "Unassigned";
 }
 
 function sumRevenue(sessions: OperationsQueueSession[]) {

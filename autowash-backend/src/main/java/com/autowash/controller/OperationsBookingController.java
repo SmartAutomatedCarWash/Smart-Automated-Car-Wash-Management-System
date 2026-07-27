@@ -1,6 +1,7 @@
 package com.autowash.controller;
 
 import com.autowash.dto.EligibleSessionBookingResponse;
+import com.autowash.shared.dto.PaginatedResponse;
 import com.autowash.dto.PayBookingRequest;
 import com.autowash.dto.PayBookingResponse;
 import com.autowash.service.BookingService;
@@ -41,13 +42,14 @@ public class OperationsBookingController {
 
     @GetMapping("/eligible-sessions")
     @Operation(summary = "List confirmed bookings eligible for wash session creation")
-    public ApiResponse<List<EligibleSessionBookingResponse>> listEligibleSessionBookings(
+    public ApiResponse<PaginatedResponse<EligibleSessionBookingResponse>> listEligibleSessionBookings(
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
         return ApiResponse.ok(
                 "Eligible bookings retrieved",
-                operationsService.listEligibleSessionBookings(limit, date)
+                operationsService.listEligibleSessionBookings(page, limit, date)
         );
     }
 
