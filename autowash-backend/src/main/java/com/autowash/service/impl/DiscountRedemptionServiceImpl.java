@@ -10,18 +10,23 @@ import com.autowash.entity.BookingPricing;
 import com.autowash.entity.Discount;
 import com.autowash.entity.DiscountApplicableService;
 import com.autowash.entity.UserDiscount;
+import com.autowash.entity.enums.BookingItemType;
 import com.autowash.entity.enums.BookingDiscountType;
 import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.enums.UserDiscountStatus;
 import org.springframework.http.HttpStatus;
 import com.autowash.repository.BookingPricingRepository;
+import com.autowash.repository.ComboServiceRepository;
 import com.autowash.repository.DiscountApplicableServiceRepository;
 import com.autowash.repository.DiscountRepository;
+import com.autowash.repository.PackageServiceRepository;
 import com.autowash.repository.UserDiscountRepository;
 import com.autowash.service.DiscountRedemptionService;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +39,8 @@ public class DiscountRedemptionServiceImpl implements DiscountRedemptionService 
     private final UserDiscountRepository userDiscountRepository;
     private final DiscountApplicableServiceRepository discountApplicableServiceRepository;
     private final BookingPricingRepository bookingPricingRepository;
+    private final PackageServiceRepository packageServiceRepository;
+    private final ComboServiceRepository comboServiceRepository;
 
     @Override
     public long calculateDiscountAmount(Booking booking, Discount discount) {
@@ -53,8 +60,9 @@ public class DiscountRedemptionServiceImpl implements DiscountRedemptionService 
             List<UUID> validServiceIds = applicableServices.stream()
                     .map(das -> das.getService().getId())
                     .toList();
+            Set<UUID> validServiceIdSet = Set.copyOf(validServiceIds);
             for (BookingDetail detail : booking.getDetails()) {
-                if (validServiceIds.contains(detail.getRefId())) {
+                if (isApplicableDetail(detail, validServiceIdSet)) {
                     applicableSubtotal += detail.getSubtotal();
                 }
             }
@@ -76,6 +84,23 @@ public class DiscountRedemptionServiceImpl implements DiscountRedemptionService 
         
         // Cannot discount more than applicable subtotal
         return Math.min(calculatedDiscount, applicableSubtotal);
+    }
+
+    private boolean isApplicableDetail(BookingDetail detail, Set<UUID> validServiceIds) {
+        if (detail.getItemType() == BookingItemType.ADDON) {
+            return validServiceIds.contains(detail.getRefId());
+        }
+        if (detail.getItemType() == BookingItemType.PACKAGE) {
+            return packageServiceRepository.findByPackageIdOrderBySortOrderAsc(detail.getRefId())
+                    .stream()
+                    .anyMatch(service -> validServiceIds.contains(service.getOptionId()));
+        }
+        if (detail.getItemType() == BookingItemType.COMBO) {
+            return comboServiceRepository.findByComboIdOrderBySortOrderAsc(detail.getRefId())
+                    .stream()
+                    .anyMatch(service -> validServiceIds.contains(service.getOptionId()));
+        }
+        return false;
     }
 
     @Override

@@ -1130,6 +1130,8 @@ export function CustomerBookingForm() {
       const result = await discountMutation.mutateAsync({
         discountCode: normalizedCode,
         packageId: draft.mode === "PACKAGE" ? draft.packageId : undefined,
+        comboId: draft.mode === "COMBO" ? draft.comboId : undefined,
+        options: draft.addonIds,
         amount: summary.subtotal,
       });
       setValidatedDiscount(result);

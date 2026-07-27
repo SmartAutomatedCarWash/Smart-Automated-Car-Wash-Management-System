@@ -55,7 +55,10 @@ import com.autowash.repository.BookingDetailRepository;
 import com.autowash.repository.BookingStaffAssignmentRepository;
 import com.autowash.repository.BookingStatusHistoryRepository;
 import com.autowash.repository.PaymentRepository;
+import com.autowash.repository.ComboServiceRepository;
+import com.autowash.repository.DiscountApplicableServiceRepository;
 import com.autowash.repository.DiscountRepository;
+import com.autowash.repository.PackageServiceRepository;
 import com.autowash.repository.UserDiscountRepository;
 import com.autowash.entity.Combo;
 import com.autowash.entity.Package;
@@ -145,6 +148,9 @@ public class BookingServiceImpl implements BookingService {
     private final DiscountRedemptionService discountRedemptionService;
     private final DiscountRepository discountRepository;
     private final UserDiscountRepository userDiscountRepository;
+    private final DiscountApplicableServiceRepository discountApplicableServiceRepository;
+    private final PackageServiceRepository packageServiceRepository;
+    private final ComboServiceRepository comboServiceRepository;
     private final SystemSettingsRepository systemSettingsRepository;
     private final SlotHoldRepository slotHoldRepository;
     private final ViolationRecordRepository violationRecordRepository;
@@ -172,6 +178,9 @@ public class BookingServiceImpl implements BookingService {
             DiscountRedemptionService discountRedemptionService,
             DiscountRepository discountRepository,
             UserDiscountRepository userDiscountRepository,
+            DiscountApplicableServiceRepository discountApplicableServiceRepository,
+            PackageServiceRepository packageServiceRepository,
+            ComboServiceRepository comboServiceRepository,
             SystemSettingsRepository systemSettingsRepository,
             SlotHoldRepository slotHoldRepository,
             ViolationRecordRepository violationRecordRepository,
@@ -195,6 +204,9 @@ public class BookingServiceImpl implements BookingService {
         this.discountRedemptionService = discountRedemptionService;
         this.discountRepository = discountRepository;
         this.userDiscountRepository = userDiscountRepository;
+        this.discountApplicableServiceRepository = discountApplicableServiceRepository;
+        this.packageServiceRepository = packageServiceRepository;
+        this.comboServiceRepository = comboServiceRepository;
         this.systemSettingsRepository = systemSettingsRepository;
         this.slotHoldRepository = slotHoldRepository;
         this.violationRecordRepository = violationRecordRepository;
@@ -213,19 +225,53 @@ public class BookingServiceImpl implements BookingService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher code is required", ErrorCode.INVALID_DISCOUNT);
         }
 
-        Discount discount = discountRepository.findByCodeIgnoreCase(code).orElse(null);
-        UserDiscount userDiscount = null;
-        if (discount == null) {
-            userDiscount = userDiscountRepository.findByUserIdAndVoucherCodeIgnoreCase(user.getId(), code)
-                    .orElseThrow(() -> new ApiException(
-                            HttpStatus.BAD_REQUEST,
-                            "This voucher is not available in your account",
-                            ErrorCode.INVALID_DISCOUNT
-                    ));
-            discount = userDiscount.getDiscount();
-        }
+        ResolvedBookingDiscount resolvedDiscount = resolveBookingDiscount(user, code);
+        Discount discount = resolvedDiscount.discount();
+        UserDiscount userDiscount = resolvedDiscount.userDiscount();
 
         Instant now = Instant.now();
+        validateBookingDiscountAvailability(discount, userDiscount, now);
+
+        long amount = Math.max(0, request.amount());
+        if (discount.getMinOrderAmount() > 0 && amount < discount.getMinOrderAmount()) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Order amount does not meet the minimum requirement for this voucher",
+                    ErrorCode.INVALID_DISCOUNT
+            );
+        }
+
+        long applicableAmount = calculateApplicableValidationAmount(discount, request, amount);
+        long discountAmount = calculateDiscountAmount(applicableAmount, discount);
+        return new DiscountValidationResponse(
+                userDiscount != null && userDiscount.getVoucherCode() != null ? userDiscount.getVoucherCode() : discount.getCode(),
+                true,
+                discount.getDiscountType().name(),
+                discount.getDiscountValue(),
+                discountAmount,
+                Math.max(0, amount - discountAmount),
+                userDiscount != null && userDiscount.getExpiresAt() != null ? userDiscount.getExpiresAt() : discount.getEndAt()
+        );
+    }
+
+    private ResolvedBookingDiscount resolveBookingDiscount(User user, String code) {
+        UserDiscount userDiscount = userDiscountRepository.findByUserIdAndVoucherCodeIgnoreCase(user.getId(), code)
+                .or(() -> userDiscountRepository.findByUserIdAndDiscountCodeIgnoreCase(user.getId(), code))
+                .orElse(null);
+        if (userDiscount != null) {
+            return new ResolvedBookingDiscount(userDiscount.getDiscount(), userDiscount);
+        }
+
+        Discount discount = discountRepository.findByCodeIgnoreCase(code)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.BAD_REQUEST,
+                        "This voucher is not available in your account",
+                        ErrorCode.INVALID_DISCOUNT
+                ));
+        return new ResolvedBookingDiscount(discount, null);
+    }
+
+    private void validateBookingDiscountAvailability(Discount discount, UserDiscount userDiscount, Instant now) {
         if (discount.getStatus() != ActiveStatus.ACTIVE) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher is inactive", ErrorCode.INVALID_DISCOUNT);
         }
@@ -244,26 +290,58 @@ public class BookingServiceImpl implements BookingService {
         if (discount.getUsageLimit() != null && discount.getUsedCount() >= discount.getUsageLimit()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher usage limit has been reached", ErrorCode.INVALID_DISCOUNT);
         }
+    }
 
-        long amount = Math.max(0, request.amount());
-        if (discount.getMinOrderAmount() > 0 && amount < discount.getMinOrderAmount()) {
-            throw new ApiException(
-                    HttpStatus.BAD_REQUEST,
-                    "Order amount does not meet the minimum requirement for this voucher",
-                    ErrorCode.INVALID_DISCOUNT
-            );
+    private long calculateApplicableValidationAmount(Discount discount, DiscountValidationRequest request, long amount) {
+        List<UUID> applicableServiceIds = discountApplicableServiceRepository.findByDiscountId(discount.getId())
+                .stream()
+                .map(applicableService -> applicableService.getService().getId())
+                .toList();
+        if (applicableServiceIds.isEmpty()) {
+            return amount;
         }
 
-        long discountAmount = calculateDiscountAmount(amount, discount);
-        return new DiscountValidationResponse(
-                userDiscount != null ? userDiscount.getVoucherCode() : discount.getCode(),
-                true,
-                discount.getDiscountType().name(),
-                discount.getDiscountValue(),
-                discountAmount,
-                Math.max(0, amount - discountAmount),
-                userDiscount != null && userDiscount.getExpiresAt() != null ? userDiscount.getExpiresAt() : discount.getEndAt()
-        );
+        Set<UUID> applicableServiceIdSet = Set.copyOf(applicableServiceIds);
+        long applicableAmount = 0;
+        boolean hasSelectionContext = false;
+
+        if (request.packageId() != null && !request.packageId().isBlank()) {
+            hasSelectionContext = true;
+            Package selectedPackage = catalogService.requireActivePackage(request.packageId());
+            boolean packageMatches = packageServiceRepository.findByPackageIdOrderBySortOrderAsc(selectedPackage.getId())
+                    .stream()
+                    .anyMatch(service -> applicableServiceIdSet.contains(service.getOptionId()));
+            if (packageMatches) {
+                applicableAmount += selectedPackage.getBasePrice();
+            }
+            applicableAmount += catalogService.requireActivePackageOptions(selectedPackage, request.options())
+                    .stream()
+                    .filter(option -> applicableServiceIdSet.contains(option.optionId()))
+                    .mapToLong(CatalogService.CatalogOption::price)
+                    .sum();
+        } else if (request.comboId() != null && !request.comboId().isBlank()) {
+            hasSelectionContext = true;
+            Combo selectedCombo = catalogService.requireActiveCombo(request.comboId());
+            boolean comboMatches = comboServiceRepository.findByComboIdOrderBySortOrderAsc(selectedCombo.getId())
+                    .stream()
+                    .anyMatch(service -> applicableServiceIdSet.contains(service.getOptionId()));
+            if (comboMatches) {
+                applicableAmount += selectedCombo.getPrice();
+            }
+            applicableAmount += catalogService.requireActiveComboOptions(selectedCombo, request.options())
+                    .stream()
+                    .filter(option -> applicableServiceIdSet.contains(option.optionId()))
+                    .mapToLong(CatalogService.CatalogOption::price)
+                    .sum();
+        }
+
+        if (!hasSelectionContext) {
+            return amount;
+        }
+        if (applicableAmount <= 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher does not apply to selected services", ErrorCode.INVALID_DISCOUNT);
+        }
+        return Math.min(applicableAmount, amount);
     }
 
     @Override
@@ -378,19 +456,12 @@ public class BookingServiceImpl implements BookingService {
 
         // Apply discount if provided
         if (request.discountCode() != null && !request.discountCode().isBlank()) {
-            Discount discount = discountRepository.findByCodeIgnoreCase(request.discountCode()).orElse(null);
-            if (discount != null) {
-                discountRedemptionService.redeemDiscount(booking, discount);
+            ResolvedBookingDiscount resolvedDiscount = resolveBookingDiscount(user, request.discountCode().trim());
+            validateBookingDiscountAvailability(resolvedDiscount.discount(), resolvedDiscount.userDiscount(), Instant.now());
+            if (resolvedDiscount.userDiscount() != null) {
+                discountRedemptionService.redeemUserDiscount(booking, resolvedDiscount.userDiscount());
             } else {
-                UserDiscount ud = userDiscountRepository
-                        .findByUserIdAndVoucherCodeIgnoreCase(user.getId(), request.discountCode().trim())
-                        .orElse(null);
-                
-                if (ud != null && ud.getUser().getId().equals(user.getId())) {
-                    discountRedemptionService.redeemUserDiscount(booking, ud);
-                } else {
-                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid discount code", ErrorCode.INVALID_DISCOUNT);
-                }
+                discountRedemptionService.redeemDiscount(booking, resolvedDiscount.discount());
             }
         }
 
@@ -1109,6 +1180,9 @@ public class BookingServiceImpl implements BookingService {
             discountAmount = Math.min(discountAmount, discount.getMaxDiscountAmount());
         }
         return Math.min(discountAmount, amount);
+    }
+
+    private record ResolvedBookingDiscount(Discount discount, UserDiscount userDiscount) {
     }
 
     private void recordStatusHistory(

@@ -101,6 +101,8 @@ export type CustomerComboPaymentStatus = {
 export type DiscountValidationRequest = {
   discountCode: string;
   packageId?: string;
+  comboId?: string;
+  options?: string[];
   amount: number;
 };
 
