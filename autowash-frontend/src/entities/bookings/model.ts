@@ -273,6 +273,7 @@ export type BookingListItem = {
   createdAt: string;
   confirmationExpiresAt: string | null;
   completedAt: string | null;
+  staffName?: string | null;
 };
 
 export type BookingDetailDto = {

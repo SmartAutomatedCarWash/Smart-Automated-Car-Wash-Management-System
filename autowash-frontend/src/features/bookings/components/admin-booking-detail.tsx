@@ -77,7 +77,13 @@ function getAllowedNextStatuses(currentStatus: BookingStatus): BookingStatus[] {
 
   const currentIndex = MAIN_BOOKING_STATUS_FLOW.indexOf(currentStatus);
   const nextMainStatuses = currentIndex >= 0 ? MAIN_BOOKING_STATUS_FLOW.slice(currentIndex + 1) : [];
-  return [...nextMainStatuses, ...SIDE_BOOKING_STATUSES];
+  
+  // Do not allow NO_SHOW if vehicle is already checked in or wash is in progress
+  const allowedSideStatuses = (currentStatus === "CHECKED_IN" || currentStatus === "IN_PROGRESS")
+    ? SIDE_BOOKING_STATUSES.filter((s) => s !== "NO_SHOW")
+    : SIDE_BOOKING_STATUSES;
+
+  return [...nextMainStatuses, ...allowedSideStatuses];
 }
 
 function translatePaymentMethod(method: string, lang: "vi" | "en") {
@@ -144,12 +150,12 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
 
   const handleUpdateStaff = async () => {
     if (!selectedStaffId) {
-      toast.error("Vui lòng chọn nhân viên / Please select a staff member");
+      toast.error(translate(language, "Vui lòng chọn nhân viên.", "Please select a staff member."));
       return;
     }
     try {
       await updateStaffMutation.mutateAsync([selectedStaffId]);
-      toast.success("Cập nhật nhân viên thành công / Staff updated successfully");
+      toast.success(translate(language, "Cập nhật nhân viên thành công.", "Staff updated successfully."));
       setIsStaffModalOpen(false);
     } catch (e) {
       toast.error(getErrorMessage(e as any));

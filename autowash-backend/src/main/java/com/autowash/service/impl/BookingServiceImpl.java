@@ -158,10 +158,6 @@ public class BookingServiceImpl implements BookingService {
     private final NotificationRepository notificationRepository;
     private final BookingResponseAssembler bookingResponseAssembler;
     private final StaffAssignmentService staffAssignmentService;
-<<<<<<< HEAD
-    private final ObjectProvider<VnpayPaymentService> vnpayPaymentServiceProvider;
-=======
->>>>>>> origin/dev
     private final WebSocketEventPublisher webSocketEventPublisher;
 
     @Value("${autowash.payment.sepay.payment-code-prefix:AU}")
@@ -192,10 +188,6 @@ public class BookingServiceImpl implements BookingService {
             NotificationRepository notificationRepository,
             BookingResponseAssembler bookingResponseAssembler,
             StaffAssignmentService staffAssignmentService,
-<<<<<<< HEAD
-            ObjectProvider<VnpayPaymentService> vnpayPaymentServiceProvider,
-=======
->>>>>>> origin/dev
             WebSocketEventPublisher webSocketEventPublisher
     ) {
         this.currentUserService = currentUserService;
@@ -222,10 +214,6 @@ public class BookingServiceImpl implements BookingService {
         this.notificationRepository = notificationRepository;
         this.bookingResponseAssembler = bookingResponseAssembler;
         this.staffAssignmentService = staffAssignmentService;
-<<<<<<< HEAD
-        this.vnpayPaymentServiceProvider = vnpayPaymentServiceProvider;
-=======
->>>>>>> origin/dev
         this.webSocketEventPublisher = webSocketEventPublisher;
     }
 
@@ -846,15 +834,38 @@ public class BookingServiceImpl implements BookingService {
         booking.updateStatus(status);
         if (status == BookingStatus.CONFIRMED) {
             assignSingleStaffOnConfirmation(booking);
-        }
-        if (status == BookingStatus.COMPLETED) {
+            sendAdminStatusNotification(booking, "Booking Confirmed!", "Your booking " + booking.getId() + " has been confirmed.", NotificationType.BOOKING_CONFIRMED);
+        } else if (status == BookingStatus.CHECKED_IN) {
+            sendAdminStatusNotification(booking, "Car Wash Checked-In", "Your vehicle (" + (booking.getVehicle() != null ? booking.getVehicle().getPlate() : "") + ") has been checked in.", NotificationType.WASH_CHECKED_IN);
+        } else if (status == BookingStatus.IN_PROGRESS) {
+            sendAdminStatusNotification(booking, "Car Wash in Progress", "Your car wash session for vehicle (" + (booking.getVehicle() != null ? booking.getVehicle().getPlate() : "") + ") is now in progress.", NotificationType.WASH_CHECKED_IN);
+        } else if (status == BookingStatus.COMPLETED) {
             markBookingPaidForOperations(booking.getId().toString(), null);
             completeAdminManagedWashSession(booking);
+            sendAdminStatusNotification(booking, "Car Wash Completed", "Your car wash session for vehicle (" + (booking.getVehicle() != null ? booking.getVehicle().getPlate() : "") + ") is completed. Thank you!", NotificationType.WASH_COMPLETED);
+        } else if (status == BookingStatus.CANCELLED) {
+            sendAdminStatusNotification(booking, "Booking Cancelled", "Your booking " + booking.getId() + " has been cancelled.", NotificationType.SYSTEM);
+        } else if (status == BookingStatus.NO_SHOW) {
+            sendAdminStatusNotification(booking, "Booking Marked No-Show", "Your booking " + booking.getId() + " was marked no-show.", NotificationType.NO_SHOW);
         }
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), "Booking status updated by admin");
         BookingDetailResponse updateStatusResponse = toDetailResponse(booking);
         webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), status.name());
         return updateStatusResponse;
+    }
+
+    private void sendAdminStatusNotification(Booking booking, String title, String message, NotificationType type) {
+        if (booking != null && booking.getCustomer() != null) {
+            notificationRepository.save(Notification.builder()
+                    .id(UUID.randomUUID())
+                    .user(booking.getCustomer())
+                    .title(title)
+                    .message(message)
+                    .type(type)
+                    .read(false)
+                    .createdAt(Instant.now())
+                    .build());
+        }
     }
 
     private void completeAdminManagedWashSession(Booking booking) {
@@ -879,6 +890,13 @@ public class BookingServiceImpl implements BookingService {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Booking status is locked after " + oldStatus,
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
+        if ((oldStatus == BookingStatus.CHECKED_IN || oldStatus == BookingStatus.IN_PROGRESS) && newStatus == BookingStatus.NO_SHOW) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Booking cannot be marked as NO_SHOW after vehicle check-in",
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }

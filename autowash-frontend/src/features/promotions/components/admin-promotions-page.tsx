@@ -18,6 +18,11 @@ import {
   Search,
   Ticket,
   X,
+  Award,
+  Medal,
+  Trophy,
+  Crown,
+  Gem,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
@@ -1009,6 +1014,83 @@ function FormField({
   );
 }
 
+const TIER_DESIGNS: Record<LoyaltyTier, {
+  icon: React.ComponentType<any>;
+  colors: {
+    main: string;
+    light: string;
+    bright: string;
+    gradient: string;
+  };
+}> = {
+  BRONZE: {
+    icon: Award,
+    colors: {
+      main: "#b45309", // amber-700
+      light: "rgba(180, 83, 9, 0.08)",
+      bright: "#f59e0b", // amber-500
+      gradient: "linear-gradient(135deg, #d97706, #b45309, #78350f)",
+    }
+  },
+  SILVER: {
+    icon: Medal,
+    colors: {
+      main: "#4b5563", // gray-600
+      light: "rgba(75, 85, 99, 0.08)",
+      bright: "#9ca3af", // gray-400
+      gradient: "linear-gradient(135deg, #cbd5e1, #64748b, #475569)",
+    }
+  },
+  GOLD: {
+    icon: Trophy,
+    colors: {
+      main: "#ca8a04", // yellow-600
+      light: "rgba(234, 179, 8, 0.08)",
+      bright: "#facc15", // yellow-400
+      gradient: "linear-gradient(135deg, #fef08a, #eab308, #ca8a04)",
+    }
+  },
+  PLATINUM: {
+    icon: Crown,
+    colors: {
+      main: "#0369a1", // sky-700
+      light: "rgba(14, 165, 233, 0.08)",
+      bright: "#38bdf8", // sky-400
+      gradient: "linear-gradient(135deg, #bae6fd, #0284c7, #0369a1)",
+    }
+  },
+  DIAMOND: {
+    icon: Gem,
+    colors: {
+      main: "#7e22ce", // purple-700
+      light: "rgba(168, 85, 247, 0.08)",
+      bright: "#c084fc", // purple-400
+      gradient: "linear-gradient(135deg, #f3e8ff, #a855f7, #7e22ce)",
+    }
+  }
+};
+
+const TierGlowStyles = () => (
+  <style dangerouslySetInnerHTML={{ __html: `
+    @keyframes tier-glow-shimmer {
+      0% {
+        background-position: -200% 50%;
+      }
+      100% {
+        background-position: 200% 50%;
+      }
+    }
+    @keyframes tier-pulse-glow {
+      0%, 100% {
+        box-shadow: 0 0 8px var(--glow-color), inset 0 0 2px var(--glow-color);
+      }
+      50% {
+        box-shadow: 0 0 16px var(--glow-color), inset 0 0 4px var(--glow-color);
+      }
+    }
+  `}} />
+);
+
 function TierSelectionOption({
   tier,
   checked,
@@ -1018,10 +1100,12 @@ function TierSelectionOption({
   checked: boolean;
   onCheckedChange: (checked: boolean | "indeterminate") => void;
 }) {
-  const { hex, badge } = useTierStyle(tier);
-  const tierColor = hex ?? "#64748b";
+  const design = TIER_DESIGNS[tier];
+  const IconComponent = design?.icon || Award;
+  const colors = design?.colors || TIER_DESIGNS.BRONZE.colors;
 
   return (
+<<<<<<< Updated upstream
     <label
       className={cn(
         "flex cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 text-sm font-bold transition-all",
@@ -1043,11 +1127,24 @@ function TierSelectionOption({
         checked={checked}
         onCheckedChange={onCheckedChange}
         className="rounded-full"
+=======
+    <>
+      <TierGlowStyles />
+      <label
+        className={cn(
+          "relative flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4 text-sm font-bold transition-all overflow-hidden select-none",
+          checked ? "shadow-md" : "bg-white/80 text-slate-700 hover:bg-slate-50/50"
+        )}
+>>>>>>> Stashed changes
         style={{
-          borderColor: tierColor,
-          backgroundColor: checked ? tierColor : "transparent",
-          color: checked ? "#ffffff" : tierColor,
+          borderColor: checked ? colors.bright : `${colors.main}22`,
+          background: checked 
+            ? `linear-gradient(to right, ${colors.light}, rgba(255, 255, 255, 0.95))` 
+            : 'rgba(255, 255, 255, 0.85)',
+          animation: `tier-pulse-glow 3s infinite ease-in-out`,
+          ['--glow-color' as any]: checked ? `${colors.bright}99` : `${colors.main}15`,
         }}
+<<<<<<< Updated upstream
       />
       <TierIcon
         tier={tier}
@@ -1066,6 +1163,51 @@ function TierSelectionOption({
         <span className="truncate">{tier}</span>
       </span>
     </label>
+=======
+      >
+        {/* Shimmer sweep animation */}
+        <div 
+          className="absolute inset-0 opacity-15 pointer-events-none mix-blend-overlay"
+          style={{
+            background: `linear-gradient(90deg, transparent, ${colors.bright}, transparent)`,
+            backgroundSize: '200% 100%',
+            animation: 'tier-glow-shimmer 3s infinite linear',
+          }}
+        />
+
+        <div className="flex items-center gap-3">
+          <Checkbox
+            checked={checked}
+            onCheckedChange={onCheckedChange}
+            className="rounded-full transition-transform duration-200"
+            style={{
+              borderColor: colors.main,
+              backgroundColor: checked ? colors.main : "transparent",
+              color: checked ? "#ffffff" : colors.main,
+              transform: checked ? "scale(1.08)" : "scale(1)",
+            }}
+          />
+          <div className="flex items-center gap-2.5">
+            <div 
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-sm transition-transform duration-300"
+              style={{
+                background: colors.gradient,
+                transform: checked ? "rotate(6deg) scale(1.05)" : "none",
+              }}
+            >
+              <IconComponent className="h-4.5 w-4.5" />
+            </div>
+            <span 
+              className="font-black tracking-wide"
+              style={{ color: checked ? colors.main : "#334155" }}
+            >
+              {tier}
+            </span>
+          </div>
+        </div>
+      </label>
+    </>
+>>>>>>> Stashed changes
   );
 }
 

@@ -68,6 +68,7 @@ public class BookingController {
     }
 
     @PostMapping("/staff-options")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'MANAGER', 'ADMIN')")
     @Operation(summary = "Recommend staff for a booking draft")
     public ApiResponse<List<BookingStaffOptionResponse>> recommendStaffOptions(
             @Valid @RequestBody BookingStaffOptionsRequest request
