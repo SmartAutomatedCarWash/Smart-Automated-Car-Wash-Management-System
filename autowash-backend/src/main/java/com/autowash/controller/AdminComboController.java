@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -38,8 +41,15 @@ public class AdminComboController {
 
     @GetMapping
     @Operation(summary = "List combos for admin")
-    public ApiResponse<List<ComboResponse>> listCombos() {
-        return ApiResponse.ok("Combos retrieved", adminComboService.listCombos());
+    public ApiResponse<List<ComboResponse>> listCombos(
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "5") @Min(1) @Max(100) int limit
+    ) {
+        AdminComboService.ComboPage comboPage = adminComboService.listCombos(status, sortBy, direction, page, limit);
+        return ApiResponse.ok("Combos retrieved", comboPage.items(), comboPage.pagination());
     }
 
     @GetMapping("/{comboId}")

@@ -21,8 +21,13 @@ import com.autowash.repository.PackageServiceRepository;
 import com.autowash.repository.ServiceRepository;
 import com.autowash.service.AdminCatalogManagementService;
 import java.util.LinkedHashSet;
+import java.util.Locale;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
+import com.autowash.shared.dto.PaginationMeta;
 
 @Service
 public class AdminCatalogManagementServiceImpl implements AdminCatalogManagementService {
@@ -50,6 +55,19 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
         return serviceRepository.findAll().stream()
                 .map(this::toServiceResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ServicePage listServices(String status, String sortBy, String direction, int page, int limit) {
+        Page<com.autowash.entity.Service> services = serviceRepository.searchAdmin(
+                parseStatus(status),
+                PageRequest.of(Math.max(page - 1, 0), limit, catalogSort(sortBy, direction, "price"))
+        );
+        return new ServicePage(
+                services.getContent().stream().map(this::toServiceResponse).toList(),
+                pagination(services)
+        );
     }
 
     @Override
@@ -101,6 +119,19 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
         return packageRepository.findAll().stream()
                 .map(this::toPackageResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PackagePage listPackages(String status, String sortBy, String direction, int page, int limit) {
+        Page<Package> packages = packageRepository.searchAdmin(
+                parseStatus(status),
+                PageRequest.of(Math.max(page - 1, 0), limit, catalogSort(sortBy, direction, "basePrice"))
+        );
+        return new PackagePage(
+                packages.getContent().stream().map(this::toPackageResponse).toList(),
+                pagination(packages)
+        );
     }
 
     @Override
@@ -200,6 +231,33 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
 
     private ActiveStatus statusOrActive(ActiveStatus status) {
         return status == null ? ActiveStatus.ACTIVE : status;
+    }
+
+    private ActiveStatus parseStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        try {
+            return ActiveStatus.valueOf(status.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw validationError("Invalid status filter");
+        }
+    }
+
+    private Sort catalogSort(String sortBy, String direction, String priceField) {
+        String sortField = "price".equalsIgnoreCase(sortBy) ? priceField : "name";
+        Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        return Sort.by(sortDirection, sortField).and(Sort.by(Sort.Direction.ASC, "id"));
+    }
+
+    private PaginationMeta pagination(Page<?> page) {
+        return new PaginationMeta(
+                page.getNumber() + 1,
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.hasNext()
+        );
     }
 
     private ApiException validationError(String message) {
