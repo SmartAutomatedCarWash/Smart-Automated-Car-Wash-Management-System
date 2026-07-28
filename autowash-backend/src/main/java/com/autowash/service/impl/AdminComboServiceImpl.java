@@ -18,8 +18,13 @@ import com.autowash.repository.ComboServiceRepository;
 import com.autowash.repository.ServiceRepository;
 import com.autowash.service.AdminComboService;
 import java.util.LinkedHashSet;
+import java.util.Locale;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
+import com.autowash.shared.dto.PaginationMeta;
 
 @Service
 public class AdminComboServiceImpl implements AdminComboService {
@@ -43,6 +48,19 @@ public class AdminComboServiceImpl implements AdminComboService {
         return comboRepository.findAll().stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ComboPage listCombos(String status, String sortBy, String direction, int page, int limit) {
+        Page<Combo> combos = comboRepository.searchAdmin(
+                parseStatus(status),
+                PageRequest.of(Math.max(page - 1, 0), limit, catalogSort(sortBy, direction))
+        );
+        return new ComboPage(
+                combos.getContent().stream().map(this::toResponse).toList(),
+                pagination(combos)
+        );
     }
 
     @Transactional(readOnly = true)
@@ -174,6 +192,33 @@ public class AdminComboServiceImpl implements AdminComboService {
 
     private ActiveStatus statusOrActive(ActiveStatus status) {
         return status == null ? ActiveStatus.ACTIVE : status;
+    }
+
+    private ActiveStatus parseStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        try {
+            return ActiveStatus.valueOf(status.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw validationError("Invalid status filter");
+        }
+    }
+
+    private Sort catalogSort(String sortBy, String direction) {
+        String sortField = "price".equalsIgnoreCase(sortBy) ? "price" : "name";
+        Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        return Sort.by(sortDirection, sortField).and(Sort.by(Sort.Direction.ASC, "id"));
+    }
+
+    private PaginationMeta pagination(Page<?> page) {
+        return new PaginationMeta(
+                page.getNumber() + 1,
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.hasNext()
+        );
     }
 
     private ApiException validationError(String message) {

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { AlertTriangle, ChevronDown, Droplets, ImageUp, Layers3, Loader2, Package, Plus, RefreshCcw, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
 import { notify } from "@/shared/lib/notify";
 import { Button } from "@/shared/ui/ui/button";
@@ -26,7 +27,7 @@ import {
   useDeleteAdminPackage,
   useUpdateAdminPackage,
 } from "@/features/management/hooks/use-admin-service-management";
-import type { AdminCatalogService, AdminCatalogPackage, AdminComboForm, AdminServiceForm, AdminPackageForm } from "@/entities/management";
+import type { AdminCatalogService, AdminCatalogPackage, AdminComboForm, AdminServiceForm, AdminPackageForm, CatalogSortBy, CatalogSortDirection, CatalogStatusFilter, PaginationMeta } from "@/entities/management";
 import { uploadCatalogImage } from "@/features/management/lib/admin-service-management-service";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { Pencil } from "lucide-react";
@@ -44,8 +45,27 @@ const EMPTY_COMBO_FORM: AdminComboForm = {
   optionIds: [],
 };
 
+const CATALOG_PAGE_LIMIT = 5;
+const DEFAULT_CATALOG_FILTERS = {
+  status: "" as CatalogStatusFilter,
+  sortBy: "name" as CatalogSortBy,
+  direction: "asc" as CatalogSortDirection,
+};
+
 export function AdminServiceManagementPage() {
   const { language } = useLanguageStore();
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get("tab") || "services";
+  const title = activeTab === "packages"
+    ? translate(language, "Quản lý gói dịch vụ", "Package Management")
+    : activeTab === "combos"
+      ? translate(language, "Quản lý combo", "Combo Management")
+      : translate(language, "Quản lý dịch vụ", "Service Management");
+  const description = activeTab === "packages"
+    ? translate(language, "Quản lý gói dịch vụ và các dịch vụ đi kèm theo từng gói.", "Manage service packages and included services.")
+    : activeTab === "combos"
+      ? translate(language, "Quản lý combo nhiều lượt, thời hạn sử dụng và dịch vụ trong combo.", "Manage multi-use combos, validity periods, and included services.")
+      : translate(language, "Quản lý từng dịch vụ rửa xe, giá, thời lượng và trạng thái hiển thị.", "Manage individual car wash services, pricing, duration, and availability.");
   return (
     <WorkspacePage className="space-y-6">
       <Card className="overflow-hidden border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(244,251,255,0.98)_100%)] shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
@@ -59,14 +79,10 @@ export function AdminServiceManagementPage() {
                 {translate(language, "Bảng điều phối danh mục", "Catalog control hub")}
               </div>
               <CardTitle className="text-2xl font-black tracking-tight text-slate-950">
-                {translate(language, "Quản lý dịch vụ", "Service Management")}
+                {title}
               </CardTitle>
               <CardDescription className="mt-1 text-sm text-slate-500">
-                {translate(
-                  language,
-                  "Đồng bộ dịch vụ, gói dịch vụ và combo trong cùng một giao diện quản trị.",
-                  "Manage services, packages, and combos from one consistent admin workspace.",
-                )}
+                {description}
               </CardDescription>
             </div>
           </div>
@@ -101,7 +117,9 @@ export function AdminServiceManagementPage() {
 function LiveServicesPanel() {
   const { language } = useLanguageStore();
   const getErrorMessage = useErrorMessage();
-  const servicesQuery = useAdminCatalogServices();
+  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState(DEFAULT_CATALOG_FILTERS);
+  const servicesQuery = useAdminCatalogServices({ page, limit: CATALOG_PAGE_LIMIT, ...filters });
   const createServiceMutation = useCreateAdminService();
   const deleteServiceMutation = useDeleteAdminService();
   const updateServiceMutation = useUpdateAdminService();
@@ -119,6 +137,8 @@ function LiveServicesPanel() {
   const [form, setForm] = useState<AdminServiceForm>(defaultForm);
   const [touched, setTouched] = useState<Partial<Record<keyof AdminServiceForm, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
+  const services = servicesQuery.data?.items ?? [];
+  const pagination = servicesQuery.data?.pagination;
 
   const formErrors = useMemo(() => {
     const errors: Partial<Record<keyof AdminServiceForm, string>> = {};
@@ -170,7 +190,7 @@ function LiveServicesPanel() {
             <div className="flex flex-wrap items-center gap-2">
               <CardTitle className="text-lg font-bold text-slate-950">{translate(language, "Danh sách dịch vụ", "Services list")}</CardTitle>
               <span className="rounded-full border border-sky-100 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
-                {(servicesQuery.data?.length ?? 0)} {translate(language, "dịch vụ", "services")}
+                {(pagination?.total ?? 0)} {translate(language, "dịch vụ", "services")}
               </span>
             </div>
             <CardDescription className="max-w-xl text-sm leading-6 text-slate-500">
@@ -198,6 +218,14 @@ function LiveServicesPanel() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4 p-0">
+          <CatalogTableControls
+            filters={filters}
+            language={language as "vi" | "en"}
+            onChange={(nextFilters) => {
+              setFilters(nextFilters);
+              setPage(1);
+            }}
+          />
           {servicesQuery.isPending ? (
             <div className="p-6">
               <LoadingPanel />
@@ -218,7 +246,7 @@ function LiveServicesPanel() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {servicesQuery.data?.length ? servicesQuery.data.map((service) => {
+                {services.length ? services.map((service) => {
                   const isDeleting = deleteServiceMutation.isPending && deleteServiceMutation.variables === service.serviceId;
                   return (
                     <TableRow key={service.serviceId} className="border-slate-100">
@@ -276,6 +304,7 @@ function LiveServicesPanel() {
               </TableBody>
             </Table>
           )}
+          <CatalogPagination pagination={pagination} language={language as "vi" | "en"} itemLabel={translate(language, "dịch vụ", "services")} onPageChange={setPage} />
         </CardContent>
       </Card>
 
@@ -358,8 +387,10 @@ function LiveServicesPanel() {
 function LivePackagesPanel() {
   const { language } = useLanguageStore();
   const getErrorMessage = useErrorMessage();
-  const packagesQuery = useAdminCatalogPackages();
-  const servicesQuery = useAdminCatalogServices();
+  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState(DEFAULT_CATALOG_FILTERS);
+  const packagesQuery = useAdminCatalogPackages({ page, limit: CATALOG_PAGE_LIMIT, ...filters });
+  const servicesQuery = useAdminCatalogServices({ page: 1, limit: 100, status: "ACTIVE", sortBy: "name", direction: "asc" });
   const createPackageMutation = useCreateAdminPackage();
   const deletePackageMutation = useDeleteAdminPackage();
   const updatePackageMutation = useUpdateAdminPackage();
@@ -380,6 +411,9 @@ function LivePackagesPanel() {
   const [form, setForm] = useState<AdminPackageForm>(defaultForm);
   const [touched, setTouched] = useState<Partial<Record<keyof AdminPackageForm, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
+  const packages = packagesQuery.data?.items ?? [];
+  const pagination = packagesQuery.data?.pagination;
+  const activeServices = servicesQuery.data?.items ?? [];
 
   const formErrors = useMemo(() => {
     const errors: Partial<Record<keyof AdminPackageForm, string>> = {};
@@ -436,7 +470,7 @@ function LivePackagesPanel() {
             <div className="flex flex-wrap items-center gap-2">
               <CardTitle className="text-lg font-bold text-slate-950">{translate(language, "Danh sách gói dịch vụ", "Packages list")}</CardTitle>
               <span className="rounded-full border border-sky-100 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
-                {(packagesQuery.data?.length ?? 0)} {translate(language, "gói", "packages")}
+                {(pagination?.total ?? 0)} {translate(language, "gói", "packages")}
               </span>
             </div>
             <CardDescription className="max-w-xl text-sm leading-6 text-slate-500">
@@ -464,6 +498,14 @@ function LivePackagesPanel() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
+          <CatalogTableControls
+            filters={filters}
+            language={language as "vi" | "en"}
+            onChange={(nextFilters) => {
+              setFilters(nextFilters);
+              setPage(1);
+            }}
+          />
           {packagesQuery.isPending ? (
             <div className="p-6">
               <LoadingPanel />
@@ -485,7 +527,7 @@ function LivePackagesPanel() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {packagesQuery.data?.length ? packagesQuery.data.map((pkg) => {
+                {packages.length ? packages.map((pkg) => {
                   const isDeleting = deletePackageMutation.isPending && deletePackageMutation.variables === pkg.packageId;
                   return (
                     <TableRow key={pkg.packageId} className="border-slate-100">
@@ -544,6 +586,7 @@ function LivePackagesPanel() {
               </TableBody>
             </Table>
           )}
+          <CatalogPagination pagination={pagination} language={language as "vi" | "en"} itemLabel={translate(language, "gói", "packages")} onPageChange={setPage} />
         </CardContent>
       </Card>
 
@@ -567,7 +610,7 @@ function LivePackagesPanel() {
             <CategorySelectField
               label={translate(language, "Danh mục", "Category")}
               value={form.category}
-              existingCategories={Array.from(new Set(packagesQuery.data?.map((p) => p.category).filter(Boolean) as string[]))}
+              existingCategories={Array.from(new Set(packages.map((p) => p.category).filter(Boolean) as string[]))}
               onChange={(value) => setForm((current) => ({ ...current, category: value }))}
               onBlur={() => touchField("category")}
               error={visibleErrors.category}
@@ -578,7 +621,7 @@ function LivePackagesPanel() {
             <ImageUploadField label={translate(language, "Ảnh gói dịch vụ", "Package image")} value={form.imageUrls || []} onChange={(value) => setForm((current) => ({ ...current, imageUrls: value }))} language={language as "vi" | "en"} />
             <ServiceMultiSelect
               label={translate(language, "Các dịch vụ đi kèm", "Services included")}
-              services={servicesQuery.data?.filter((s) => s.status === "ACTIVE") ?? []}
+              services={activeServices}
               selectedIds={form.serviceIds}
               onChange={(ids) => setForm((current) => ({ ...current, serviceIds: ids }))}
               isLoading={servicesQuery.isPending}
@@ -646,8 +689,10 @@ function LivePackagesPanel() {
 function LiveCombosPanel() {
   const { language } = useLanguageStore();
   const getErrorMessage = useErrorMessage();
-  const servicesQuery = useAdminCatalogServices();
-  const combosQuery = useAdminCombosCatalog();
+  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState(DEFAULT_CATALOG_FILTERS);
+  const servicesQuery = useAdminCatalogServices({ page: 1, limit: 100, status: "ACTIVE", sortBy: "name", direction: "asc" });
+  const combosQuery = useAdminCombosCatalog({ page, limit: CATALOG_PAGE_LIMIT, ...filters });
   const createComboMutation = useCreateAdminCombo();
   const deleteComboMutation = useDeleteAdminCombo();
   const updateComboMutation = useUpdateAdminCombo();
@@ -657,6 +702,9 @@ function LiveCombosPanel() {
   const [form, setForm] = useState<AdminComboForm>(EMPTY_COMBO_FORM);
   const [touched, setTouched] = useState<Partial<Record<keyof AdminComboForm, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
+  const combos = combosQuery.data?.items ?? [];
+  const pagination = combosQuery.data?.pagination;
+  const activeServices = servicesQuery.data?.items ?? [];
 
   const formErrors = useMemo(() => {
     const errors: Partial<Record<keyof AdminComboForm, string>> = {};
@@ -715,7 +763,7 @@ function LiveCombosPanel() {
             <div className="flex flex-wrap items-center gap-2">
               <CardTitle className="text-lg font-bold text-slate-950">{translate(language, "Danh sách combo", "Combos list")}</CardTitle>
               <span className="rounded-full border border-sky-100 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
-                {(combosQuery.data?.length ?? 0)} {translate(language, "combo", "combos")}
+                {(pagination?.total ?? 0)} {translate(language, "combo", "combos")}
               </span>
             </div>
             <CardDescription className="max-w-xl text-sm leading-6 text-slate-500">
@@ -743,6 +791,14 @@ function LiveCombosPanel() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
+          <CatalogTableControls
+            filters={filters}
+            language={language as "vi" | "en"}
+            onChange={(nextFilters) => {
+              setFilters(nextFilters);
+              setPage(1);
+            }}
+          />
           {combosQuery.isPending ? (
             <div className="p-6">
               <LoadingPanel />
@@ -764,7 +820,7 @@ function LiveCombosPanel() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {combosQuery.data?.length ? combosQuery.data.map((combo) => {
+                {combos.length ? combos.map((combo) => {
                   const isDeleting = deleteComboMutation.isPending && deleteComboMutation.variables === combo.comboId;
                   return (
                     <TableRow key={combo.comboId} className="border-slate-100">
@@ -823,6 +879,7 @@ function LiveCombosPanel() {
               </TableBody>
             </Table>
           )}
+          <CatalogPagination pagination={pagination} language={language as "vi" | "en"} itemLabel={translate(language, "combo", "combos")} onPageChange={setPage} />
         </CardContent>
       </Card>
 
@@ -865,7 +922,7 @@ function LiveCombosPanel() {
             </label>
             <ServiceMultiSelect
               label={translate(language, "Dịch vụ đi kèm trong Combo", "Services included")}
-              services={servicesQuery.data?.filter((s) => s.status === "ACTIVE") ?? []}
+              services={activeServices}
               selectedIds={form.optionIds}
               onChange={(ids) => setForm((current) => ({ ...current, optionIds: ids }))}
               isLoading={servicesQuery.isPending}
@@ -1098,6 +1155,102 @@ function ServiceMultiSelect({
       )}
 
       {validationError ? <p className="text-sm text-rose-600">{validationError}</p> : null}
+    </div>
+  );
+}
+
+function CatalogTableControls({
+  filters,
+  language,
+  onChange,
+}: {
+  filters: typeof DEFAULT_CATALOG_FILTERS;
+  language: "vi" | "en";
+  onChange: (filters: typeof DEFAULT_CATALOG_FILTERS) => void;
+}) {
+  return (
+    <div className="grid gap-3 border-b border-slate-100 bg-white p-4 md:grid-cols-3">
+      <label className="grid gap-1.5">
+        <span className="text-xs font-bold uppercase text-slate-500">{translate(language, "Trạng thái", "Status")}</span>
+        <select
+          value={filters.status}
+          onChange={(event) => onChange({ ...filters, status: event.target.value as CatalogStatusFilter })}
+          className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
+        >
+          <option value="">{translate(language, "Tất cả trạng thái", "All status")}</option>
+          <option value="ACTIVE">{translate(language, "Hoạt động", "Active")}</option>
+          <option value="INACTIVE">{translate(language, "Ngưng hoạt động", "Inactive")}</option>
+        </select>
+      </label>
+      <label className="grid gap-1.5">
+        <span className="text-xs font-bold uppercase text-slate-500">{translate(language, "Sắp xếp theo", "Sort by")}</span>
+        <select
+          value={filters.sortBy}
+          onChange={(event) => onChange({ ...filters, sortBy: event.target.value as CatalogSortBy })}
+          className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
+        >
+          <option value="name">{translate(language, "Tên", "Name")}</option>
+          <option value="price">{translate(language, "Giá", "Price")}</option>
+        </select>
+      </label>
+      <label className="grid gap-1.5">
+        <span className="text-xs font-bold uppercase text-slate-500">{translate(language, "Thứ tự", "Direction")}</span>
+        <select
+          value={filters.direction}
+          onChange={(event) => onChange({ ...filters, direction: event.target.value as CatalogSortDirection })}
+          className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
+        >
+          <option value="asc">{translate(language, "Tăng dần", "Ascending")}</option>
+          <option value="desc">{translate(language, "Giảm dần", "Descending")}</option>
+        </select>
+      </label>
+    </div>
+  );
+}
+
+function CatalogPagination({
+  pagination,
+  language,
+  itemLabel,
+  onPageChange,
+}: {
+  pagination?: PaginationMeta;
+  language: "vi" | "en";
+  itemLabel: string;
+  onPageChange: (page: number) => void;
+}) {
+  if (!pagination) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-slate-500">
+        {translate(language, "Trang", "Page")} {pagination.page} / {Math.max(pagination.totalPages, 1)}
+        <span className="ml-2 text-xs text-slate-400">
+          ({pagination.total.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} {itemLabel})
+        </span>
+      </p>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={pagination.page <= 1}
+          onClick={() => onPageChange(Math.max(1, pagination.page - 1))}
+        >
+          {translate(language, "Trước", "Previous")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={!pagination.hasMore}
+          onClick={() => onPageChange(pagination.page + 1)}
+        >
+          {translate(language, "Sau", "Next")}
+        </Button>
+      </div>
     </div>
   );
 }
