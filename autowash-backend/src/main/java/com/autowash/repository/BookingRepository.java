@@ -297,7 +297,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("select count(b) from Booking b where b.scheduledAt >= :from")
     long countByScheduledAtAfter(@Param("from") Instant from);
 
-    // No-show alerts: top customers by no-show count
+    // No-show alerts: customers by no-show count
     @Query(value = """
             select b.customer_id, u.full_name, u.phone, count(b.id)
             from bookings b
@@ -305,9 +305,17 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             where b.status = 'NO_SHOW'
             group by b.customer_id, u.full_name, u.phone
             order by count(b.id) desc
-            limit 10
-            """, nativeQuery = true)
-    List<Object[]> findTopNoShowCustomers();
+            """,
+            countQuery = """
+            select count(*) from (
+              select b.customer_id
+              from bookings b
+              where b.status = 'NO_SHOW'
+              group by b.customer_id
+            ) as no_show_customers
+            """,
+            nativeQuery = true)
+    Page<Object[]> findNoShowCustomers(Pageable pageable);
 
     // Last no-show date per customer
     @Query("""
@@ -322,6 +330,9 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @EntityGraph(attributePaths = {"customer", "pricing", "details"})
     @Query("select b from Booking b order by b.createdAt desc")
     List<Booking> findTop10ByOrderByCreatedAtDesc(org.springframework.data.domain.Pageable pageable);
+
+    @EntityGraph(attributePaths = {"customer", "pricing"})
+    Page<Booking> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     // Returning customers: customers with >1 completed booking
     @Query(value = """
