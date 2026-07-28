@@ -18,6 +18,7 @@ import com.autowash.repository.BookingRepository;
 import com.autowash.repository.BookingStaffAssignmentRepository;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.WashSessionRepository;
+import com.autowash.repository.WashSessionStaffAssignmentRepository;
 import com.autowash.service.StaffAssignmentService;
 import java.time.Instant;
 import java.time.DayOfWeek;
@@ -56,17 +57,20 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
     private final BookingRepository bookingRepository;
     private final BookingStaffAssignmentRepository bookingStaffAssignmentRepository;
     private final WashSessionRepository washSessionRepository;
+    private final WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository;
 
     public StaffAssignmentServiceImpl(
             UserRepository UserRepository,
             BookingRepository bookingRepository,
             BookingStaffAssignmentRepository bookingStaffAssignmentRepository,
-            WashSessionRepository washSessionRepository
+            WashSessionRepository washSessionRepository,
+            WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository
     ) {
         this.UserRepository = UserRepository;
         this.bookingRepository = bookingRepository;
         this.bookingStaffAssignmentRepository = bookingStaffAssignmentRepository;
         this.washSessionRepository = washSessionRepository;
+        this.washSessionStaffAssignmentRepository = washSessionStaffAssignmentRepository;
     }
 
     @Override
@@ -78,6 +82,7 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
         return UserRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE)
                 .stream()
                 .filter(staff -> !washSessionRepository.existsByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES))
+                .filter(staff -> washSessionStaffAssignmentRepository.findByStaffAndSession_StatusIn(staff, BUSY_SESSION_STATUSES).isEmpty())
                 .min(staffLoadComparator(weekStart, weekEnd, dayStart, dayEnd));
     }
 
@@ -180,6 +185,16 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
                         session.getBooking().getScheduledAt(),
                         session.getBooking().getScheduledAt().plusSeconds((long) session.getBooking().getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum() * 60)
                 ))
+                && washSessionStaffAssignmentRepository.findByStaffAndSession_StatusIn(staff, BUSY_SESSION_STATUSES)
+                .stream()
+                .map(assignment -> assignment.getSession().getBooking())
+                .filter(existingBooking -> !existingBooking.getId().equals(booking.getId()))
+                .noneMatch(existingBooking -> overlaps(
+                        targetStart,
+                        targetEnd,
+                        existingBooking.getScheduledAt(),
+                        existingBooking.getScheduledAt().plusSeconds((long) existingBooking.getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum() * 60)
+                ))
                 && bookingStaffAssignmentRepository.findByStaffAndBooking_StatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES)
                 .stream()
                 .map(assignment -> assignment.getBooking())
@@ -253,6 +268,7 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
                 ))
                 .thenComparingLong((User staff) -> bookingRepository.findTodayBookingsByAssignedStaff(staff, dayStart, dayEnd).size())
                 .thenComparingLong((User staff) -> washSessionRepository.countByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES))
+                .thenComparingLong((User staff) -> washSessionStaffAssignmentRepository.findByStaffAndSession_StatusIn(staff, BUSY_SESSION_STATUSES).size())
                 .thenComparingLong((User staff) -> bookingRepository.countByAssignedStaffAndStatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES))
                 .thenComparingLong((User staff) -> bookingStaffAssignmentRepository.countByStaffAndBooking_StatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES))
                 .thenComparing(User::getFullName)
