@@ -76,7 +76,8 @@ public class BookingResponseAssembler {
                 resolveAssignedStaffName(booking, washSession),
                 booking.getCreatedAt(),
                 resolveConfirmationExpiresAt(booking, null),
-                washSession == null ? null : washSession.getCompletedAt()
+                washSession == null ? null : washSession.getCompletedAt(),
+                resolveAssignedStaffName(booking, washSession)
         );
     }
 
