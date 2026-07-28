@@ -15,6 +15,7 @@ import { getVoucherCodeFormatError, sanitizeVoucherCodeInput } from "../../../sh
 
 /** @deprecated Use generateTimeSlotsFromRange() with operating hours from API instead */
 export const BOOKING_TIME_SLOTS = ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"] as const;
+export const MIN_ADVANCE_BOOKING_MINUTES = 30;
 
 /**
  * Generate hourly time slots between openTime and closeTime (exclusive).
@@ -167,8 +168,8 @@ export function validateBookingDraft(
   }
   if (!draft.bookingTime) {
     errors.bookingTime = "Please choose a booking time.";
-  } else if (draft.bookingDate === formatLocalDateInput(0) && isPastOrCurrentTime(draft.bookingTime)) {
-    errors.bookingTime = "Please choose a future time slot.";
+  } else if (isBeforeMinimumAdvance(draft.bookingDate, draft.bookingTime)) {
+    errors.bookingTime = "Please choose a time at least 30 minutes from now.";
   }
   if (draft.confirmationEmail?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.confirmationEmail.trim())) {
     errors.confirmationEmail = "Please enter a valid confirmation email.";
@@ -241,15 +242,6 @@ export function formatLocalDateInput(offsetDays = 0) {
   return `${year}-${month}-${day}`;
 }
 
-function isPastOrCurrentTime(time: string) {
-  const [hours, minutes] = time.split(":").map(Number);
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return false;
-
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  return hours * 60 + minutes <= currentMinutes;
-}
-
 export function getAvailableBookingTimeSlots(
   bookingDate: string,
   slots: readonly string[] = BOOKING_TIME_SLOTS,
@@ -264,9 +256,17 @@ export function getAvailableBookingTimeSlots(
 
     return {
       time,
-      disabled: bookingDate === today && slotMinutes < currentMinutes,
+      disabled: bookingDate === today && slotMinutes < currentMinutes + MIN_ADVANCE_BOOKING_MINUTES,
     };
   });
+}
+
+export function isBeforeMinimumAdvance(bookingDate: string, bookingTime: string) {
+  if (!bookingDate || !bookingTime) return false;
+  const scheduledAt = new Date(`${bookingDate}T${bookingTime}:00`);
+  if (Number.isNaN(scheduledAt.getTime())) return false;
+
+  return scheduledAt.getTime() < Date.now() + MIN_ADVANCE_BOOKING_MINUTES * 60_000;
 }
 
 export function humanizeCode(value: string) {

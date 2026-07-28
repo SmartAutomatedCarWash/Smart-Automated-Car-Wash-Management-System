@@ -16,6 +16,8 @@ import {
   Sparkles,
   Tag,
   Timer,
+  UserCheck,
+  Users,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -43,7 +45,7 @@ import { useSlotHold } from "@/features/bookings/hooks/use-slot-hold";
 import { useCustomerVehicles } from "@/features/vehicles/hooks/use-customer-vehicles";
 import { getBookingDraftSnapshot, useBookingStore } from "@/features/bookings/store/booking.store";
 import { clearCustomerCart } from "@/features/cart/store/cart.store";
-import type { BookingDetail, PaymentMethod } from "@/entities/bookings";
+import type { BookingDetail, BookingStaffOption, PaymentMethod } from "@/entities/bookings";
 import {
   Dialog,
   DialogContent,
@@ -334,7 +336,9 @@ export function BookingConfirmPage() {
   const isComboBooking = draft.mode === "COMBO" && Boolean(selectedCustomerCombo);
   const handleConfirm = async () => {
     setShowPaymentError(true);
-    if (staffUnavailable) {
+    const refreshedStaffOptions = (await staffOptionsQuery.refetch()).data ?? staffOptions;
+    const latestAvailableStaffOptions = refreshedStaffOptions.filter((staff) => staff.available !== false);
+    if (latestAvailableStaffOptions.length < 1) {
       toast.error("No staff is available for this service window.");
       return;
     }
@@ -342,11 +346,21 @@ export function BookingConfirmPage() {
       toast.error("Please select an available staff.");
       return;
     }
+    const selectedStaffOption = refreshedStaffOptions.find((staff) => staff.staffId === selectedStaffIds[0]);
+    if (!selectedStaffOption) {
+      toast.error("Selected staff is no longer available. Please choose another staff.");
+      return;
+    }
+    if (selectedStaffOption?.available === false) {
+      toast.error(selectedStaffOption.busyUntil ? `Selected staff is busy until ${selectedStaffOption.busyUntil}.` : "Selected staff is busy.");
+      return;
+    }
     const selectedPaymentMethod = paymentMethod ?? draft.paymentMethod;
     if (!isComboBooking && !selectedPaymentMethod) return;
     if (!expiresAt || expiresAt <= Date.now()) { handleExpired(); return; }
     const effectivePaymentMethod = isComboBooking ? ("CASH_AT_COUNTER" as PaymentMethod) : selectedPaymentMethod!;
-    const nextDraft = { ...sanitizedDraft, paymentMethod: effectivePaymentMethod, staffId: "", staffIds: [] };
+    const nextStaffIds = selectedStaffIds.slice(0, 1);
+    const nextDraft = { ...sanitizedDraft, paymentMethod: effectivePaymentMethod, staffId: nextStaffIds[0] ?? "", staffIds: nextStaffIds };
     const errors = validateBookingDraft(nextDraft, summary, { requirePaymentMethod: !isComboBooking });
     if (Object.keys(errors).length > 0) {
       toast.error(Object.values(errors)[0] ?? "Please complete booking information.");
@@ -590,6 +604,71 @@ export function BookingConfirmPage() {
           </Card>
           )}
 
+          <Card className="border-slate-200/80 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <CardHeader className="pb-3 pt-5">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-bold">Assigned staff</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3 pb-5">
+              {staffOptionsQuery.isPending ? (
+                <div className="h-20 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
+              ) : staffOptions.length === 0 ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+                  No staff is available for this service window.
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {staffOptions.map((staff) => {
+                    const available = staff.available !== false;
+                    const active = selectedStaffIds[0] === staff.staffId;
+                    return (
+                      <button
+                        key={staff.staffId}
+                        type="button"
+                        disabled={!available}
+                        onClick={() => updateDraft({ staffId: staff.staffId, staffIds: [staff.staffId] })}
+                        className={`relative rounded-2xl border p-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                          active
+                            ? "border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary)/0.3)]"
+                            : available
+                              ? "border-border bg-card hover:border-primary/40 hover:bg-muted/30"
+                              : "cursor-not-allowed border-border bg-muted/40 opacity-60"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                            available ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                          }`}>
+                            <UserCheck className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-bold text-foreground">{staff.staffName}</p>
+                            <p className={`mt-0.5 text-xs font-semibold ${available ? "text-emerald-600" : "text-amber-600"}`}>
+                              {formatStaffAvailability(staff)}
+                            </p>
+                          </div>
+                          {active ? <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" /> : null}
+                        </div>
+                        {staff.recommended && available ? (
+                          <span className="mt-3 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                            Recommended
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {staffOptionsQuery.isError ? (
+                <p className="text-xs font-semibold text-rose-600">{getErrorMessage(staffOptionsQuery.error)}</p>
+              ) : staffUnavailable ? (
+                <p className="text-xs font-semibold text-rose-600">All staff are busy for this time. Please choose another slot.</p>
+              ) : null}
+            </CardContent>
+          </Card>
+
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-3">
             <Button
@@ -714,6 +793,13 @@ export function BookingConfirmPage() {
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
+
+function formatStaffAvailability(staff: BookingStaffOption) {
+  if (staff.available === false) {
+    return staff.busyUntil ? `Busy until ${staff.busyUntil}` : "Busy";
+  }
+  return "Available";
+}
 
 function SummaryRow({
   icon: Icon,

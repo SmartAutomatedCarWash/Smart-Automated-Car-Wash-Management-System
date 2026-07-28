@@ -101,6 +101,7 @@ public class BookingServiceImpl implements BookingService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BookingServiceImpl.class);
     private static final Duration PENDING_BOOKING_HOLD_DURATION = Duration.ofMinutes(15);
+    private static final Duration MIN_ADVANCE_BOOKING_DURATION = Duration.ofMinutes(30);
 
     private static final Set<BookingStatus> ACTIVE_BOOKING_STATUSES = Set.of(
             BookingStatus.CONFIRMED,
@@ -920,10 +921,10 @@ public class BookingServiceImpl implements BookingService {
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
-        if (bookingDate.atTime(bookingTime).isBefore(LocalDateTime.now())) {
+        if (bookingDate.atTime(bookingTime).isBefore(LocalDateTime.now().plus(MIN_ADVANCE_BOOKING_DURATION))) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Booking time cannot be in the past",
+                    "Booking time must be at least 30 minutes from now",
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
@@ -1011,7 +1012,19 @@ public class BookingServiceImpl implements BookingService {
             return;
         }
 
-        User staff = staffAssignmentService.pickStaffGroupForBooking(booking, parsePreferredStaffIds(booking), 1).get(0);
+        List<UUID> preferredStaffIds = parsePreferredStaffIds(booking);
+        if (!preferredStaffIds.isEmpty()) {
+            User preferredStaff = staffAssignmentService.requireActiveStaff(preferredStaffIds.get(0));
+            if (!staffAssignmentService.isStaffAvailableForBooking(preferredStaff, booking)) {
+                throw new ApiException(
+                        HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Selected staff is not available for this booking time",
+                        ErrorCode.BUSINESS_RULE_VIOLATION
+                );
+            }
+        }
+
+        User staff = staffAssignmentService.pickStaffGroupForBooking(booking, preferredStaffIds, 1).get(0);
         normalizeSingleStaffAssignment(booking, staff);
     }
 

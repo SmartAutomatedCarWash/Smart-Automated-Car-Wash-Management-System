@@ -45,6 +45,7 @@ import {
   formatBookingCurrency,
   formatLocalDateInput,
   getModeLabel,
+  isBeforeMinimumAdvance,
   validateBookingDraft,
 } from "@/features/bookings/lib/booking-format";
 import { usePublicSettings } from "@/features/settings/hooks/use-public-settings";
@@ -709,10 +710,11 @@ function TimeSlotGrid({
     return timeSlots.map((t, idx) => {
       const [h, m] = t.split(":").map(Number);
       const isPast = bookingDate === today && (h * 60 + m <= nowMinutes);
+      const isTooSoon = bookingDate ? isBeforeMinimumAdvance(bookingDate, t) : false;
       const endTimeStr = addMinutesToTime(t, durationMinutes);
       const availability = availabilityByTime?.get(t);
       const remaining = availability?.remaining;
-      const isAvailable = !isPast && (availability ? availability.available : true);
+      const isAvailable = !isPast && !isTooSoon && (availability ? availability.available : true);
       
       return {
         id: idx + 1,
@@ -721,6 +723,7 @@ function TimeSlotGrid({
         isAvailable,
         remaining,
         isFull: !isPast && availability ? !availability.available : false,
+        isTooSoon,
       };
     });
   }, [timeSlots, bookingDate, durationMinutes, availabilityByTime]);
@@ -766,7 +769,7 @@ function TimeSlotGrid({
                   </span>
                 ) : (
                   <span className="inline-flex items-center rounded-full border border-rose-500/20 bg-rose-500/10 px-2 py-0.5 text-[9px] font-bold text-rose-600 dark:text-rose-400">
-                    {slot.isFull ? "Đã full" : "Không khả dụng"}
+                    {slot.isTooSoon ? "Cần đặt trước 30p" : slot.isFull ? "Đã full" : "Không khả dụng"}
                   </span>
                 )}
               </div>
