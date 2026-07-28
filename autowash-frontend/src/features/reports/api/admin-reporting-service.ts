@@ -84,7 +84,7 @@ export async function listAdminServiceQuality(
 export async function listAdminBookings(
   filters: AdminBookingsFilters,
   page = 1,
-  limit = 20,
+  limit = 5,
 ): Promise<AdminBookingsPage> {
   const response = await apiClient.get<ApiPaginatedResponse<AdminBooking>>("/admin/bookings", {
     params: {

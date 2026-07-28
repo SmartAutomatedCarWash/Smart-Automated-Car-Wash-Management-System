@@ -694,6 +694,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             LocalDate dateFrom,
             LocalDate dateTo,
             UUID customerId,
+            UUID packageId,
             String searchQuery,
             int page,
             int limit
@@ -708,6 +709,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 customerId,
                 dateFrom,
                 dateTo,
+                packageId,
                 searchLike,
                 PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending())
         );

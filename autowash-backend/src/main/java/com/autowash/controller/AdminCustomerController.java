@@ -230,7 +230,7 @@ public class AdminCustomerController {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
     ) {
         AdminReportingService.BookingPage bookingPage =
-                adminReportingService.listBookings(status, dateFrom, dateTo, customerId, searchQuery, page, limit);
+                adminReportingService.listBookings(status, dateFrom, dateTo, customerId, null, searchQuery, page, limit);
         return ApiResponse.ok("Customer bookings retrieved", bookingPage.items(), bookingPage.pagination());
     }
 }

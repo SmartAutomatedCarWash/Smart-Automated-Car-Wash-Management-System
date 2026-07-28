@@ -57,12 +57,13 @@ public class AdminBookingController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
             @RequestParam(required = false) UUID customerId,
+            @RequestParam(required = false) UUID packageId,
             @RequestParam(required = false) String searchQuery,
             @RequestParam(defaultValue = "1") @Min(1) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
+            @RequestParam(defaultValue = "5") @Min(1) @Max(100) int limit
     ) {
         AdminReportingService.BookingPage bookingPage =
-                adminReportingService.listBookings(status, dateFrom, dateTo, customerId, searchQuery, page, limit);
+                adminReportingService.listBookings(status, dateFrom, dateTo, customerId, packageId, searchQuery, page, limit);
         return ApiResponse.ok("Bookings retrieved", bookingPage.items(), bookingPage.pagination());
     }
 
