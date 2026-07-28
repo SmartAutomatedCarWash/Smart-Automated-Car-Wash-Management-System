@@ -25,6 +25,7 @@ import { Card } from "@/shared/ui/ui/card";
 import { DatePickerButton, getTodayInputValue } from "@/shared/ui/date-picker-button";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useWorkspaceHeader } from "@/shared/ui/workspace/workspace-header-context";
+import { TierIcon } from "@/shared/ui/workspace/tier-icon";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
   cancelWashSession,
@@ -52,6 +53,7 @@ type OperationRow = {
   sessionId?: string;
   customerName: string;
   customerPhone: string;
+  customerTier: string | null;
   vehiclePlate: string;
   servicePackage: string;
   bookingDate: string;
@@ -118,6 +120,8 @@ const BOARD_STAGE_LABELS: Record<BoardStage, string> = {
   IN_PROGRESS: "In Progress",
   COMPLETED: "Completed",
 };
+
+const VIP_TIERS = new Set(["GOLD", "PLATINUM", "DIAMOND"]);
 
 export function ManagerOperationsPage() {
   const getErrorMessage = useErrorMessage();
@@ -932,6 +936,9 @@ function BoardCard({
       </div>
       <p className="font-mono text-sm font-black text-slate-950">{row.vehiclePlate}</p>
       <p className="mt-0.5 truncate text-xs font-bold text-slate-600">{row.customerName}</p>
+      <div className="mt-1 min-h-[24px]">
+        <VipTierBadge tier={row.customerTier} />
+      </div>
       <p className="truncate text-[11px] font-semibold text-slate-400">{row.servicePackage}</p>
       <div className="mt-2 flex items-center justify-between gap-2 text-[11px] font-bold">
         <span className={isDelayed(row) ? "text-rose-600" : "text-slate-400"}>{getWaitLabel(row)}</span>
@@ -951,6 +958,33 @@ function BoardCard({
         {getPrimaryAction(row)}
       </Button>
     </button>
+  );
+}
+
+function VipTierBadge({ tier }: { tier: string | null }) {
+  const normalizedTier = tier?.toUpperCase() ?? null;
+  if (!normalizedTier || !VIP_TIERS.has(normalizedTier)) return null;
+
+  const palette = {
+    GOLD: {
+      wrap: "border-amber-200 bg-amber-50 text-amber-800",
+      icon: { background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)", color: "#ffffff" },
+    },
+    PLATINUM: {
+      wrap: "border-slate-200 bg-slate-100 text-slate-700",
+      icon: { background: "linear-gradient(135deg, #cbd5e1 0%, #64748b 100%)", color: "#ffffff" },
+    },
+    DIAMOND: {
+      wrap: "border-cyan-200 bg-cyan-50 text-cyan-800",
+      icon: { background: "linear-gradient(135deg, #67e8f9 0%, #2563eb 100%)", color: "#ffffff" },
+    },
+  }[normalizedTier as "GOLD" | "PLATINUM" | "DIAMOND"];
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${palette.wrap}`}>
+      <TierIcon tier={normalizedTier} className="h-5 w-5 border-0 bg-transparent" iconClassName="h-3 w-3" style={palette.icon} />
+      {normalizedTier}
+    </span>
   );
 }
 
@@ -1027,6 +1061,9 @@ function SessionDetailPanel({
                   <span className="rounded-lg bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">{getStatusLabel(row.status)}</span>
                 </div>
                 <p className="mt-1 text-xs font-semibold text-slate-500">{row.customerName} · Phone: {row.customerPhone || "—"}</p>
+                <div className="mt-2">
+                  <VipTierBadge tier={row.customerTier} />
+                </div>
                 <p className="text-xs font-semibold text-slate-500">Service package: <span className="font-black text-slate-700">{row.servicePackage}</span></p>
               </div>
             </div>
@@ -1237,6 +1274,7 @@ function buildOptimisticSessionRowFromBooking(
     sessionId,
     customerName: booking.customerName,
     customerPhone: booking.customerPhone,
+    customerTier: booking.customerTier,
     vehiclePlate: booking.vehiclePlate,
     servicePackage: getServiceName(booking.packageId),
     bookingDate: booking.bookingDate,
@@ -1274,6 +1312,7 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
         bookingId: booking.bookingId,
         customerName: booking.customerName,
         customerPhone: booking.customerPhone,
+        customerTier: booking.customerTier,
         vehiclePlate: booking.vehiclePlate,
         servicePackage: getServiceName(booking.packageId),
         bookingDate: booking.bookingDate,
@@ -1299,6 +1338,7 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
     sessionId: session.sessionId,
     customerName: session.customerName,
     customerPhone: session.customerPhone,
+    customerTier: session.customerTier ?? null,
     vehiclePlate: session.vehiclePlate,
     servicePackage: session.servicePackage ?? "Car wash package",
     bookingDate: session.bookingDate,

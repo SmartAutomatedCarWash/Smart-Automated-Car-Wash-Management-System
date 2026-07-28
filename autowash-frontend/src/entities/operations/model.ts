@@ -50,6 +50,7 @@ export type OperationsQueueSession = {
   bookingId: string;
   customerName: string;
   customerPhone: string;
+  customerTier?: string | null;
   vehiclePlate: string;
   packageId?: string | null;
   servicePackage?: string | null;
