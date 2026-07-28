@@ -8,11 +8,13 @@ import { Button } from "@/shared/ui/ui/button";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useSystemSettings, useUpdateSystemSettings } from "@/features/settings/hooks/use-admin-settings";
 import { useDeleteTierConfig, useTierConfigs, useUpdateTierConfig } from "@/features/settings/hooks/use-admin-tiers";
+import { getManagerSettings, updateWeeklyStaffKpiTarget } from "@/features/operations/lib/manager-settings-service";
 import type { SystemSettings } from "@/features/settings/lib/admin-settings-service";
 import { uploadTierImage, type TierConfig } from "@/features/settings/lib/admin-tiers-service";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { useLanguageStore } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 const ADMIN_SETTINGS_COPY = {
   vi: {
@@ -90,6 +92,12 @@ const ADMIN_SETTINGS_COPY = {
       currency: "Currency",
       earnPerVnd: "VND per earned point",
     },
+    staffKpi: {
+      title: "Staff KPI",
+      desc: "Adjust the weekly KPI target used across manager and staff reporting.",
+      target: "Weekly completed sessions target",
+      save: "Save KPI target",
+    },
     loyaltyTiers: {
       title: "Loyalty Tiers",
       desc: "Tier thresholds (total earned points) and point multipliers for each tier.",
@@ -137,16 +145,44 @@ function toForm(data: SystemSettings): SettingsForm {
 export function AdminSettingsPage() {
   const { language } = useLanguageStore();
   const getErrorMessage = useErrorMessage();
-  const copy = ADMIN_SETTINGS_COPY[language as keyof typeof ADMIN_SETTINGS_COPY] || ADMIN_SETTINGS_COPY.vi;
+  const copy = (ADMIN_SETTINGS_COPY[language as keyof typeof ADMIN_SETTINGS_COPY] || ADMIN_SETTINGS_COPY.vi) as any;
+  const staffKpiCopy = copy.staffKpi ?? {
+    title: "Staff KPI",
+    desc: "Adjust the weekly KPI target used across manager and staff reporting.",
+    target: "Weekly completed sessions target",
+    save: "Save KPI target",
+  };
   const settingsQuery = useSystemSettings();
   const updateMutation = useUpdateSystemSettings();
   const [form, setForm] = useState<SettingsForm | null>(null);
+  const managerSettingsQuery = useQuery({
+    queryKey: ["admin-settings", "manager-settings"],
+    queryFn: getManagerSettings,
+    refetchInterval: 30_000,
+  });
+  const [weeklyStaffKpiTarget, setWeeklyStaffKpiTarget] = useState(40);
+  const updateWeeklyKpiMutation = useMutation({
+    mutationFn: updateWeeklyStaffKpiTarget,
+    onSuccess: (data) => {
+      setWeeklyStaffKpiTarget(data.settings.weeklyStaffKpiTarget);
+      notify.success(copy.successMsg);
+    },
+    onError: (error) => {
+      notify.error(getErrorMessage(error));
+    },
+  });
 
   useEffect(() => {
     if (settingsQuery.data && !form) {
       setForm(toForm(settingsQuery.data));
     }
   }, [settingsQuery.data, form]);
+
+  useEffect(() => {
+    if (managerSettingsQuery.data?.settings) {
+      setWeeklyStaffKpiTarget(managerSettingsQuery.data.settings.weeklyStaffKpiTarget);
+    }
+  }, [managerSettingsQuery.data]);
 
   function updateField<K extends keyof SettingsForm>(field: K, value: SettingsForm[K]) {
     setForm((current) => (current ? { ...current, [field]: value } : current));
@@ -228,6 +264,34 @@ export function AdminSettingsPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FieldFormattedCurrency label={copy.currencyPoints.earnPerVnd} value={form.earnPointsUnitAmount} onChange={(v) => updateField("earnPointsUnitAmount", v)} />
                 </div>
+              </SettingsSection>
+
+              <SettingsSection icon={Trophy} title={staffKpiCopy.title} description={staffKpiCopy.desc}>
+                {managerSettingsQuery.isPending ? (
+                  <div className="flex justify-center p-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : managerSettingsQuery.isError ? (
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {getErrorMessage(managerSettingsQuery.error)}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="max-w-md">
+                      <FieldNumber
+                        label={staffKpiCopy.target}
+                        value={weeklyStaffKpiTarget}
+                        onChange={setWeeklyStaffKpiTarget}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button type="button" disabled={updateWeeklyKpiMutation.isPending} onClick={() => updateWeeklyKpiMutation.mutate({ weeklyStaffKpiTarget })}>
+                        {updateWeeklyKpiMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        {staffKpiCopy.save}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </SettingsSection>
 
               {/* Loyalty Tiers */}

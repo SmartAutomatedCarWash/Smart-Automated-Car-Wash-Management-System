@@ -38,6 +38,7 @@ public record OperationsQueueResponse(
             String bookingId,
             String customerName,
             String customerPhone,
+            String customerTier,
             String vehiclePlate,
             String packageId,
             String servicePackage,

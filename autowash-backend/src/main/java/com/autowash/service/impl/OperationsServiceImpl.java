@@ -1038,11 +1038,13 @@ public class OperationsServiceImpl implements OperationsService {
         User assignedStaff = session.getAssignedStaff();
         List<BookingDetailResponse.StaffAssignment> assignedStaffList = sessionStaffAssignments(session);
         UUID packageId = resolveBookingDetailRefId(booking, BookingItemType.PACKAGE);
+        String customerTier = loyaltyService.getAccount(booking.getCustomer().getId()).tier();
         return OperationsQueueResponse.WashSessionCard.builder()
                 .sessionId(session.getId())
                 .bookingId(booking.getId().toString())
                 .customerName(booking.getCustomer().getFullName())
                 .customerPhone(booking.getCustomer().getPhone())
+                .customerTier(customerTier)
                 .vehiclePlate(booking.getVehicle().getPlate())
                 .packageId(packageId == null ? null : packageId.toString())
                 .servicePackage(resolvePrimaryItemName(booking))
