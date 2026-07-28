@@ -15,6 +15,7 @@ import com.autowash.dto.ServiceResponse;
 import com.autowash.entity.Package;
 import com.autowash.entity.PackageService;
 import com.autowash.entity.enums.ActiveStatus;
+import com.autowash.repository.BookingRepository;
 import com.autowash.repository.PackageRepository;
 import com.autowash.repository.PackageServiceRepository;
 import com.autowash.repository.ServiceRepository;
@@ -27,15 +28,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminCatalogManagementServiceImpl implements AdminCatalogManagementService {
 
     private final ServiceRepository serviceRepository;
+    private final BookingRepository bookingRepository;
     private final PackageRepository packageRepository;
     private final PackageServiceRepository packageServiceRepository;
 
     public AdminCatalogManagementServiceImpl(
             ServiceRepository serviceRepository,
+            BookingRepository bookingRepository,
             PackageRepository packageRepository,
             PackageServiceRepository packageServiceRepository
     ) {
         this.serviceRepository = serviceRepository;
+        this.bookingRepository = bookingRepository;
         this.packageRepository = packageRepository;
         this.packageServiceRepository = packageServiceRepository;
     }

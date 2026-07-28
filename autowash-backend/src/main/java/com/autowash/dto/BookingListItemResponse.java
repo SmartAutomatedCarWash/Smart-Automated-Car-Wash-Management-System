@@ -12,6 +12,7 @@ public record BookingListItemResponse(
         long finalAmount,
         String status,
         String washStatus,
+        String assignedStaffName,
         Instant createdAt,
         Instant confirmationExpiresAt,
         Instant completedAt

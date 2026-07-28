@@ -27,9 +27,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ThreadLocalRandom;
+import com.autowash.shared.dto.PaginationMeta;
 
 @Service
 public class CustomerComboServiceImpl implements CustomerComboService {
@@ -76,6 +79,27 @@ public class CustomerComboServiceImpl implements CustomerComboService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public CustomerComboService.CustomerComboPage listCustomerCombos(User customer, int page, int limit) {
+        Page<CustomerCombo> combos = customerComboRepository.findByCustomer_IdOrderByCreatedAtDesc(
+                customer.getId(),
+                PageRequest.of(Math.max(page - 1, 0), limit)
+        );
+
+        List<CustomerComboResponse> items = combos.getContent().stream()
+                .map(this::toResponse)
+                .toList();
+
+        PaginationMeta pagination = new PaginationMeta(
+                combos.getNumber() + 1,
+                combos.getSize(),
+                combos.getTotalElements(),
+                combos.getTotalPages(),
+                combos.hasNext()
+        );
+        return new CustomerComboService.CustomerComboPage(items, pagination);
     }
 
     @Transactional
@@ -299,7 +323,10 @@ public class CustomerComboServiceImpl implements CustomerComboService {
                 combo.getStatus().name(),
                 combo.getTotalUsages(),
                 combo.getRemainingUsages(),
+                combo.getPaymentStatus() == null ? null : combo.getPaymentStatus().name(),
+                combo.getTransactionRef(),
                 combo.getActivatedAt(),
+                combo.getCreatedAt(),
                 combo.getExpiresAt(),
                 customerComboUsageRepository.findFirstByCustomerComboIdOrderByUsedAtDesc(combo.getId())
                         .map(CustomerComboUsage::getUsedAt)

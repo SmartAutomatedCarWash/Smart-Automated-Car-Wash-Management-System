@@ -8,6 +8,7 @@ export type LoyaltyAccount = {
   availablePoints: number;
   lifetimePoints: number;
   completedWashCount: number;
+  totalBookingCount?: number;
   totalPaid?: number;
 };
 

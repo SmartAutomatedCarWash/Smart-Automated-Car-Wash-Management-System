@@ -470,10 +470,21 @@ public class BookingServiceImpl implements BookingService {
     public BookingService.BookingPage listBookings(String status, LocalDate dateFrom, LocalDate dateTo, int page, int limit) {
         User user = currentUserService.getCurrentUser();
         Page<Booking> bookings;
-        if (status != null && !status.isBlank()) {
+        boolean hasStatusFilter = status != null && !status.isBlank();
+        boolean hasDateFilter = dateFrom != null || dateTo != null;
+        if (hasStatusFilter && !hasDateFilter) {
             bookings = BookingRepository.findByCustomerAndStatusOrderByCreatedAtDesc(
                     user,
                     BookingStatus.valueOf(status),
+                    PageRequest.of(Math.max(page - 1, 0), limit)
+            );
+        } else if (!hasStatusFilter && hasDateFilter) {
+            LocalDate from = dateFrom == null ? LocalDate.of(1970, 1, 1) : dateFrom;
+            LocalDate to = dateTo == null ? LocalDate.of(2999, 12, 31) : dateTo;
+            bookings = BookingRepository.findByCustomerAndBookingDateBetweenOrderByCreatedAtDesc(
+                    user,
+                    from,
+                    to,
                     PageRequest.of(Math.max(page - 1, 0), limit)
             );
         } else {

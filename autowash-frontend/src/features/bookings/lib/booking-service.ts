@@ -81,6 +81,20 @@ export async function listActiveCustomerCombos(): Promise<CustomerCombo[]> {
   return response.data.data as CustomerCombo[];
 }
 
+export async function listCustomerComboHistory(page = 1, limit = 20): Promise<{
+  items: CustomerCombo[];
+  pagination: ApiPaginatedResponse<never>["pagination"];
+}> {
+  const response = await apiClient.get<ApiPaginatedResponse<CustomerCombo>>("/customers/combos/history", {
+    params: { page, limit },
+  });
+
+  return {
+    items: response.data.data,
+    pagination: response.data.pagination,
+  };
+}
+
 export async function getCustomerComboPaymentStatus(transactionRef: string): Promise<CustomerComboPaymentStatus> {
   const response = await apiClient.get(`/customers/combos/payments/${encodeURIComponent(transactionRef)}/status`);
   return response.data.data as CustomerComboPaymentStatus;

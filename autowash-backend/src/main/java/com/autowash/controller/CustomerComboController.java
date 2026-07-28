@@ -13,6 +13,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -44,6 +47,17 @@ public class CustomerComboController {
     public ApiResponse<List<CustomerComboResponse>> listActiveCombos() {
         User user = currentUserService.getCurrentUser();
         return ApiResponse.ok("Active combos retrieved", customerComboService.listActiveCustomerCombos(user));
+    }
+
+    @GetMapping("/history")
+    @Operation(summary = "List owned combos history for customer")
+    public ApiResponse<List<CustomerComboResponse>> listComboHistory(
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
+    ) {
+        User user = currentUserService.getCurrentUser();
+        CustomerComboService.CustomerComboPage comboPage = customerComboService.listCustomerCombos(user, page, limit);
+        return ApiResponse.ok("Customer combo history retrieved", comboPage.items(), comboPage.pagination());
     }
 
     @GetMapping("/payments/{transactionRef}/status")

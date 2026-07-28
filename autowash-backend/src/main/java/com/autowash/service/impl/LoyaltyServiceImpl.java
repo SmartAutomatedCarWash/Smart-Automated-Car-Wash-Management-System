@@ -552,6 +552,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 account.getCurrentPoints(),
                 account.getTotalEarnedPoints(),
                 (int) washSessionRepository.countByBookingCustomerAndStatus(account.getCustomer(), WashSessionStatus.COMPLETED),
+                bookingRepository.countByCustomer(account.getCustomer()),
                 account.getUpdatedAt()
         );
     }
