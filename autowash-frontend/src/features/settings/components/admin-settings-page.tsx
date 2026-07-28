@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
-import { Settings2, Loader2, Save, Clock, Calendar, Coins, Trophy, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { Settings2, Loader2, Save, Clock, Calendar, Coins, Trophy, ChevronDown, ChevronRight, Trash2, Medal, Crown, Diamond, Star } from "lucide-react";
 import { notify } from "@/shared/lib/notify";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Button } from "@/shared/ui/ui/button";
@@ -514,6 +514,14 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
     DIAMOND: copy.loyaltyTiers.diamond,
   };
 
+  const iconMap: Record<string, React.ReactNode> = {
+    BRONZE: <Medal className="h-4 w-4" />,
+    SILVER: <Medal className="h-4 w-4" />,
+    GOLD: <Trophy className="h-4 w-4" />,
+    PLATINUM: <Crown className="h-4 w-4" />,
+    DIAMOND: <Diamond className="h-4 w-4" />,
+  };
+
   const isBronze = initialConfig.tier === "BRONZE";
   
   const dynamicStyle = imageUrl ? {
@@ -533,13 +541,14 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
       >
         <div className="flex items-center gap-4">
           <span 
-            className="inline-block rounded-full px-3 py-1 text-xs font-black border"
+            className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black border"
             style={
               imageUrl && imageUrl.startsWith("#")
                 ? { color: imageUrl, borderColor: imageUrl, backgroundColor: `${imageUrl}1A` }
                 : { color: "#0f766e", borderColor: "#ccfbf1", backgroundColor: "#f0fdfa" }
             }
           >
+            {iconMap[initialConfig.tier] || <Star className="h-4 w-4" />}
             {nameMap[initialConfig.tier] || name || initialConfig.tier}
           </span>
           <div className="hidden sm:flex items-center gap-4 text-sm font-medium text-muted-foreground">
