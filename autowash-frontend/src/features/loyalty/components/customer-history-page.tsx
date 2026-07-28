@@ -72,9 +72,13 @@ export function CustomerHistoryPageContent() {
               value={summary ? summary.availablePoints.toLocaleString(locale) : "--"}
             />
             <StatCard
-              icon={CalendarDays}
-              label={translate(language, "SỐ LƯỢNG BOOKING", "TOTAL BOOKINGS")}
-              value={bookingsQuery.data?.pagination?.total ? bookingsQuery.data.pagination.total.toLocaleString(locale) : "0"}
+              icon={Crown}
+              label={translate(language, "TỔNG BOOKING", "TOTAL BOOKINGS")}
+              value={
+                typeof accountQuery.data?.totalBookingCount === "number"
+                  ? accountQuery.data.totalBookingCount.toLocaleString(locale)
+                  : "--"
+              }
             />
             <Card className="flex items-center justify-between border-slate-100 bg-white p-5 shadow-sm">
               <div className="w-full">
@@ -351,13 +355,7 @@ function BookingRow({ booking, language, locale }: { booking: BookingListItem; l
     >
       <div className="flex flex-1 items-center gap-8">
         <div className="w-[180px]">
-          <div className="text-sm font-bold text-slate-900 truncate">{booking.primaryItemName ?? "Booking"}</div>
-          <div className="text-xs text-slate-500 font-medium truncate mt-0.5">
-            {translate(language, "Nhân viên: ", "Staff: ")}
-            <span className="font-semibold text-slate-700">
-              {booking.staffName || booking.assignedStaffName || translate(language, "Chưa phân công", "Unassigned")}
-            </span>
-          </div>
+          <div className="truncate text-sm font-bold text-slate-900">{booking.primaryItemName ?? "Booking"}</div>
         </div>
 
         <div className="flex w-[140px] items-center gap-2 text-slate-500">
@@ -368,11 +366,30 @@ function BookingRow({ booking, language, locale }: { booking: BookingListItem; l
           </div>
         </div>
 
-        <div className="flex items-center gap-2 w-[140px] text-slate-500">
-           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
-           <div>
-             <div className="text-xs font-medium text-slate-900 truncate">{booking.vehiclePlate}</div>
-           </div>
+        <div className="flex w-[160px] items-center gap-2 text-slate-500">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="shrink-0"
+          >
+            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
+            <circle cx="7" cy="17" r="2" />
+            <path d="M9 17h6" />
+            <circle cx="17" cy="17" r="2" />
+          </svg>
+          <div>
+            <div className="truncate text-xs font-medium text-slate-900">{booking.vehiclePlate}</div>
+            <div className="truncate text-xs">
+              {booking.staffName ?? booking.assignedStaffName ?? translate(language, "Chưa gán staff", "No staff assigned")}
+            </div>
+          </div>
         </div>
       </div>
 

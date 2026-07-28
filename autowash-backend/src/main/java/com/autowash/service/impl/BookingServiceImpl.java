@@ -101,6 +101,7 @@ public class BookingServiceImpl implements BookingService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BookingServiceImpl.class);
     private static final Duration PENDING_BOOKING_HOLD_DURATION = Duration.ofMinutes(15);
+    private static final Duration MIN_ADVANCE_BOOKING_DURATION = Duration.ofMinutes(30);
 
     private static final Set<BookingStatus> ACTIVE_BOOKING_STATUSES = Set.of(
             BookingStatus.CONFIRMED,
@@ -834,38 +835,15 @@ public class BookingServiceImpl implements BookingService {
         booking.updateStatus(status);
         if (status == BookingStatus.CONFIRMED) {
             assignSingleStaffOnConfirmation(booking);
-            sendAdminStatusNotification(booking, "Booking Confirmed!", "Your booking " + booking.getId() + " has been confirmed.", NotificationType.BOOKING_CONFIRMED);
-        } else if (status == BookingStatus.CHECKED_IN) {
-            sendAdminStatusNotification(booking, "Car Wash Checked-In", "Your vehicle (" + (booking.getVehicle() != null ? booking.getVehicle().getPlate() : "") + ") has been checked in.", NotificationType.WASH_CHECKED_IN);
-        } else if (status == BookingStatus.IN_PROGRESS) {
-            sendAdminStatusNotification(booking, "Car Wash in Progress", "Your car wash session for vehicle (" + (booking.getVehicle() != null ? booking.getVehicle().getPlate() : "") + ") is now in progress.", NotificationType.WASH_CHECKED_IN);
-        } else if (status == BookingStatus.COMPLETED) {
+        }
+        if (status == BookingStatus.COMPLETED) {
             markBookingPaidForOperations(booking.getId().toString(), null);
             completeAdminManagedWashSession(booking);
-            sendAdminStatusNotification(booking, "Car Wash Completed", "Your car wash session for vehicle (" + (booking.getVehicle() != null ? booking.getVehicle().getPlate() : "") + ") is completed. Thank you!", NotificationType.WASH_COMPLETED);
-        } else if (status == BookingStatus.CANCELLED) {
-            sendAdminStatusNotification(booking, "Booking Cancelled", "Your booking " + booking.getId() + " has been cancelled.", NotificationType.SYSTEM);
-        } else if (status == BookingStatus.NO_SHOW) {
-            sendAdminStatusNotification(booking, "Booking Marked No-Show", "Your booking " + booking.getId() + " was marked no-show.", NotificationType.NO_SHOW);
         }
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), "Booking status updated by admin");
         BookingDetailResponse updateStatusResponse = toDetailResponse(booking);
         webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), status.name());
         return updateStatusResponse;
-    }
-
-    private void sendAdminStatusNotification(Booking booking, String title, String message, NotificationType type) {
-        if (booking != null && booking.getCustomer() != null) {
-            notificationRepository.save(Notification.builder()
-                    .id(UUID.randomUUID())
-                    .user(booking.getCustomer())
-                    .title(title)
-                    .message(message)
-                    .type(type)
-                    .read(false)
-                    .createdAt(Instant.now())
-                    .build());
-        }
     }
 
     private void completeAdminManagedWashSession(Booking booking) {
@@ -890,13 +868,6 @@ public class BookingServiceImpl implements BookingService {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Booking status is locked after " + oldStatus,
-                    ErrorCode.BUSINESS_RULE_VIOLATION
-            );
-        }
-        if ((oldStatus == BookingStatus.CHECKED_IN || oldStatus == BookingStatus.IN_PROGRESS) && newStatus == BookingStatus.NO_SHOW) {
-            throw new ApiException(
-                    HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Booking cannot be marked as NO_SHOW after vehicle check-in",
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
@@ -950,10 +921,10 @@ public class BookingServiceImpl implements BookingService {
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
-        if (bookingDate.atTime(bookingTime).isBefore(LocalDateTime.now())) {
+        if (bookingDate.atTime(bookingTime).isBefore(LocalDateTime.now().plus(MIN_ADVANCE_BOOKING_DURATION))) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Booking time cannot be in the past",
+                    "Booking time must be at least 30 minutes from now",
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
@@ -1041,7 +1012,19 @@ public class BookingServiceImpl implements BookingService {
             return;
         }
 
-        User staff = staffAssignmentService.pickStaffGroupForBooking(booking, parsePreferredStaffIds(booking), 1).get(0);
+        List<UUID> preferredStaffIds = parsePreferredStaffIds(booking);
+        if (!preferredStaffIds.isEmpty()) {
+            User preferredStaff = staffAssignmentService.requireActiveStaff(preferredStaffIds.get(0));
+            if (!staffAssignmentService.isStaffAvailableForBooking(preferredStaff, booking)) {
+                throw new ApiException(
+                        HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Selected staff is not available for this booking time",
+                        ErrorCode.BUSINESS_RULE_VIOLATION
+                );
+            }
+        }
+
+        User staff = staffAssignmentService.pickStaffGroupForBooking(booking, preferredStaffIds, 1).get(0);
         normalizeSingleStaffAssignment(booking, staff);
     }
 

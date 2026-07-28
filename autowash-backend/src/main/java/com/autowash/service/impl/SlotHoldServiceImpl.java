@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SlotHoldServiceImpl implements SlotHoldService {
+    private static final long MIN_ADVANCE_BOOKING_MINUTES = 30;
 
     private final SlotHoldRepository slotHoldRepository;
     private final BookingRepository bookingRepository;
@@ -47,6 +48,7 @@ public class SlotHoldServiceImpl implements SlotHoldService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Customer not found", ErrorCode.RESOURCE_NOT_FOUND));
 
         Instant now = Instant.now();
+        validateMinimumAdvance(slotTime, now);
         var existingHold = slotHoldRepository.findByCustomerAndSlotTime(customer, slotTime);
         if (existingHold.isPresent()) {
             SlotHold hold = existingHold.get();
@@ -141,8 +143,11 @@ public class SlotHoldServiceImpl implements SlotHoldService {
         long activeHolds = slotHoldRepository.countActiveHoldsForSlotExcludingCustomer(slotStart, slotEnd, now, customer);
         long remaining = Math.max(capacity - existingBookings - activeHolds, 0);
         boolean withinOperatingHours = !localTime.isBefore(operatingStart) && localTime.isBefore(operatingEnd);
-        boolean isFuture = scheduledLocal.atZone(ZoneId.systemDefault()).toInstant().isAfter(now);
-        boolean available = withinOperatingHours && isFuture && remaining > 0;
+        boolean meetsMinimumAdvance = !scheduledLocal
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .isBefore(now.plus(MIN_ADVANCE_BOOKING_MINUTES, ChronoUnit.MINUTES));
+        boolean available = withinOperatingHours && meetsMinimumAdvance && remaining > 0;
 
         return new SlotAvailabilityResponse(
                 bookingDate,
@@ -154,5 +159,15 @@ public class SlotHoldServiceImpl implements SlotHoldService {
                 remaining,
                 available
         );
+    }
+
+    private void validateMinimumAdvance(Instant slotTime, Instant now) {
+        if (slotTime.isBefore(now.plus(MIN_ADVANCE_BOOKING_MINUTES, ChronoUnit.MINUTES))) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Booking time must be at least 30 minutes from now",
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
     }
 }

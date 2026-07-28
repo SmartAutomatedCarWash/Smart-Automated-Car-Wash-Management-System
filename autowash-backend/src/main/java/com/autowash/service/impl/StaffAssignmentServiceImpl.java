@@ -12,6 +12,7 @@ import com.autowash.repository.BookingRepository;
 import com.autowash.repository.BookingStaffAssignmentRepository;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.WashSessionRepository;
+import com.autowash.repository.WashSessionStaffAssignmentRepository;
 import com.autowash.service.StaffAssignmentService;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.shared.exception.ErrorCode;
@@ -62,17 +63,20 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
     private final BookingRepository bookingRepository;
     private final BookingStaffAssignmentRepository bookingStaffAssignmentRepository;
     private final WashSessionRepository washSessionRepository;
+    private final WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository;
 
     public StaffAssignmentServiceImpl(
             UserRepository userRepository,
             BookingRepository bookingRepository,
             BookingStaffAssignmentRepository bookingStaffAssignmentRepository,
-            WashSessionRepository washSessionRepository
+            WashSessionRepository washSessionRepository,
+            WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository
     ) {
         this.userRepository = userRepository;
         this.bookingRepository = bookingRepository;
         this.bookingStaffAssignmentRepository = bookingStaffAssignmentRepository;
         this.washSessionRepository = washSessionRepository;
+        this.washSessionStaffAssignmentRepository = washSessionStaffAssignmentRepository;
     }
 
     @Override
@@ -84,6 +88,7 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
         return userRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE)
                 .stream()
                 .filter(staff -> !washSessionRepository.existsByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES))
+                .filter(staff -> washSessionStaffAssignmentRepository.findByStaffAndSession_StatusIn(staff, BUSY_SESSION_STATUSES).isEmpty())
                 .min(Comparator
                         .comparingLong((User staff) -> bookingRepository.sumCompletedRevenueForStaffKpiRange(
                                 staff,
@@ -178,13 +183,15 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
                         bookingRepository.sumCompletedRevenueForStaffKpiRange(staff, weekStart, weekEnd),
                         bookingRepository.countAssignedBookingsForStaffOnDay(staff, dayStart, dayEnd, DAILY_WORKLOAD_STATUSES),
                         bookingStaffAssignmentRepository.countByStaffAndBooking_StatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES),
-                        washSessionRepository.countByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES)
+                        washSessionRepository.countByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES),
+                        washSessionStaffAssignmentRepository.findByStaffAndSession_StatusIn(staff, BUSY_SESSION_STATUSES).size()
                 ))
                 .sorted(Comparator
                         .comparingLong(StaffLoadSnapshot::weeklyKpiRevenue)
                         .thenComparingLong(StaffLoadSnapshot::dailyBookingCount)
                         .thenComparingLong(StaffLoadSnapshot::activeBookingCount)
                         .thenComparingLong(StaffLoadSnapshot::busySessionCount)
+                        .thenComparingLong(StaffLoadSnapshot::multiStaffBusySessionCount)
                         .thenComparing(snapshot -> snapshot.staff().getFullName())
                         .thenComparing(snapshot -> snapshot.staff().getId()))
                 .toList();
@@ -242,6 +249,16 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
                         targetEnd,
                         session.getBooking().getScheduledAt(),
                         session.getBooking().getScheduledAt().plusSeconds((long) session.getBooking().getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum() * 60)
+                ))
+                && washSessionStaffAssignmentRepository.findByStaffAndSession_StatusIn(staff, BUSY_SESSION_STATUSES)
+                .stream()
+                .map(assignment -> assignment.getSession().getBooking())
+                .filter(existingBooking -> !existingBooking.getId().equals(booking.getId()))
+                .noneMatch(existingBooking -> overlaps(
+                        targetStart,
+                        targetEnd,
+                        existingBooking.getScheduledAt(),
+                        existingBooking.getScheduledAt().plusSeconds((long) existingBooking.getDetails().stream().mapToInt(BookingDetail::getDurationMinutes).sum() * 60)
                 ))
                 && bookingStaffAssignmentRepository.findByStaffAndBooking_StatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES)
                 .stream()
@@ -319,7 +336,8 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
             long weeklyKpiRevenue,
             long dailyBookingCount,
             long activeBookingCount,
-            long busySessionCount
+            long busySessionCount,
+            long multiStaffBusySessionCount
     ) {}
 
     private record StaffPriorityKey(long weeklyKpiRevenue, long dailyBookingCount) {}

@@ -70,7 +70,6 @@ import { useTierConfigs } from "@/features/settings/hooks/use-admin-tiers";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { useTierStore } from "@/shared/store/tier.store";
 import { DynamicTierBadge } from "@/shared/ui/workspace/dynamic-tier-badge";
-import { TierIcon } from "@/shared/ui/workspace/tier-icon";
 import type { AdminPromotionKind } from "@/features/promotions/api/admin-promotions-service";
 import { useTierStyle } from "@/shared/lib/tier-styles";
 
@@ -1105,29 +1104,6 @@ function TierSelectionOption({
   const colors = design?.colors || TIER_DESIGNS.BRONZE.colors;
 
   return (
-<<<<<<< Updated upstream
-    <label
-      className={cn(
-        "flex cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 text-sm font-bold transition-all",
-        checked ? "shadow-sm ring-1 ring-current/10" : "bg-white text-slate-700 hover:bg-slate-50",
-      )}
-      style={
-        checked
-          ? {
-              borderColor: tierColor,
-              backgroundColor: `${tierColor}14`,
-              color: tierColor,
-            }
-          : {
-              borderColor: `${tierColor}55`,
-            }
-      }
-    >
-      <Checkbox
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-        className="rounded-full"
-=======
     <>
       <TierGlowStyles />
       <label
@@ -1135,7 +1111,6 @@ function TierSelectionOption({
           "relative flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4 text-sm font-bold transition-all overflow-hidden select-none",
           checked ? "shadow-md" : "bg-white/80 text-slate-700 hover:bg-slate-50/50"
         )}
->>>>>>> Stashed changes
         style={{
           borderColor: checked ? colors.bright : `${colors.main}22`,
           background: checked 
@@ -1144,26 +1119,6 @@ function TierSelectionOption({
           animation: `tier-pulse-glow 3s infinite ease-in-out`,
           ['--glow-color' as any]: checked ? `${colors.bright}99` : `${colors.main}15`,
         }}
-<<<<<<< Updated upstream
-      />
-      <TierIcon
-        tier={tier}
-        className="h-9 w-9"
-        iconClassName="h-[18px] w-[18px]"
-        style={{
-          color: tierColor,
-          backgroundColor: checked ? `${tierColor}20` : `${tierColor}12`,
-          borderColor: `${tierColor}33`,
-        }}
-      />
-      <span
-        className="inline-flex min-w-0 flex-1 items-center gap-2 truncate"
-        style={checked ? undefined : { color: badge.color }}
-      >
-        <span className="truncate">{tier}</span>
-      </span>
-    </label>
-=======
       >
         {/* Shimmer sweep animation */}
         <div 
@@ -1207,7 +1162,6 @@ function TierSelectionOption({
         </div>
       </label>
     </>
->>>>>>> Stashed changes
   );
 }
 

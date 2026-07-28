@@ -58,3 +58,8 @@ start-db.ps1
 seed-data.sql
 *mock-data*
 *seed-data*
+
+# Presentation artifacts
+/presentation-output/
+*.ppt
+*.pptx

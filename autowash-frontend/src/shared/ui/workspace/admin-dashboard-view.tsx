@@ -946,7 +946,7 @@ export function AdminDashboardView() {
                 <AlertTriangle className="h-4 w-4 shrink-0" />
                 {t("Không thể tải dữ liệu KPI nhân viên.", "Failed to load staff KPI.")}
               </div>
-            ) : !staffKpiQuery.data || (Array.isArray(staffKpiQuery.data) && staffKpiQuery.data.length === 0) || !Array.isArray(staffKpiQuery.data) ? (
+            ) : !staffKpiQuery.data || staffKpiQuery.data.length === 0 ? (
               <div className="py-10 text-center text-sm text-slate-400 font-semibold">
                 {t("Chưa có nhân viên nào.", "No staff found.")}
               </div>
