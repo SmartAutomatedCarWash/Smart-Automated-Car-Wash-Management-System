@@ -8,6 +8,7 @@ import com.autowash.dto.CreateWashSessionResponse;
 import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.EarnPointsResponse;
 import com.autowash.dto.EligibleSessionBookingResponse;
+import com.autowash.dto.ManagerCheckInRecommendationResponse;
 import com.autowash.dto.OperationsQueueResponse;
 import com.autowash.dto.QueueWashSessionResponse;
 import com.autowash.dto.StartWashSessionResponse;
@@ -152,7 +153,7 @@ public class OperationsServiceImpl implements OperationsService {
         }
 
         User actor = currentUserService.getCurrentUser();
-        User assignedStaff = resolveSessionAssigneeForCreate(booking, actor);
+        User assignedStaff = resolveSessionAssigneeForCreate(booking, actor, request.preferredStaffId());
         WashSession session = washSessionRepository.save(WashSession.create(booking, request.notes(), assignedStaff));
         List<BookingDetailResponse.StaffAssignment> assignedStaffList = copyBookingStaffAssignmentsToSession(booking, session);
         CreateWashSessionResponse createResponse = CreateWashSessionResponse.builder()
@@ -248,6 +249,41 @@ public class OperationsServiceImpl implements OperationsService {
                 .map(this::toEligibleBooking)
                 .toList();
         return new PaginatedResponse<>(data, bookingsPage.getTotalPages(), bookingsPage.getTotalElements());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ManagerCheckInRecommendationResponse previewManagerCheckInRecommendation(String bookingId) {
+        Booking booking = bookingService.requireBookingForOperations(bookingId);
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Booking must be CONFIRMED to check in",
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
+
+        List<BookingStaffAssignment> currentAssignments = bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking);
+        User currentStaff = currentAssignments.isEmpty() ? booking.getAssignedStaff() : currentAssignments.get(0).getStaff();
+        boolean currentAvailable = currentStaff != null && staffAssignmentService.isStaffAvailableForBooking(currentStaff, booking);
+        List<ManagerCheckInRecommendationResponse.ManagerCheckInRecommendationItem> candidates = staffAssignmentService.rankActiveStaffForBooking(booking)
+                .stream()
+                .map(staff -> toCheckInRecommendationItem(staff, booking))
+                .toList();
+        String currentStaffStatus = currentStaff == null ? "UNASSIGNED" : currentAvailable ? "AVAILABLE" : "BUSY";
+        boolean needsReassignment = currentStaff == null || !currentAvailable;
+
+        return new ManagerCheckInRecommendationResponse(
+                booking.getId().toString(),
+                currentStaff == null ? null : currentStaff.getId().toString(),
+                currentStaff == null ? null : currentStaff.getFullName(),
+                currentStaffStatus,
+                needsReassignment,
+                needsReassignment
+                        ? "Assigned staff is not available for this booking time. Review an available recommendation before check-in."
+                        : "Assigned staff is available for this booking time.",
+                candidates
+        );
     }
 
     @Transactional
@@ -909,13 +945,29 @@ public class OperationsServiceImpl implements OperationsService {
         return session;
     }
 
-    private User resolveSessionAssigneeForCreate(Booking booking, User actor) {
+    private User resolveSessionAssigneeForCreate(Booking booking, User actor, UUID preferredStaffId) {
         ensureBookingStaffAssignments(booking);
         User assignedStaff = booking.getAssignedStaff();
         if (actor.getRole() == UserRole.STAFF) {
+            if (preferredStaffId != null && !preferredStaffId.equals(actor.getId())) {
+                throw new ApiException(HttpStatus.NOT_FOUND, "Booking not found", ErrorCode.RESOURCE_NOT_FOUND);
+            }
             if (assignedStaff != null && !assignedStaff.getId().equals(actor.getId())) {
                 throw new ApiException(HttpStatus.NOT_FOUND, "Booking not found", ErrorCode.RESOURCE_NOT_FOUND);
             }
+        }
+
+        if (preferredStaffId != null) {
+            User preferredStaff = staffAssignmentService.requireActiveStaff(preferredStaffId);
+            if (!staffAssignmentService.isStaffAvailableForBooking(preferredStaff, booking)) {
+                throw new ApiException(
+                        HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Selected staff is busy during this booking time",
+                        ErrorCode.BUSINESS_RULE_VIOLATION
+                );
+            }
+            normalizeSingleBookingStaffAssignment(booking, preferredStaff);
+            return preferredStaff;
         }
 
         if (assignedStaff == null || !staffAssignmentService.isStaffAvailableForBooking(assignedStaff, booking)) {
@@ -1064,6 +1116,7 @@ public class OperationsServiceImpl implements OperationsService {
                 .startedAt(session.getStartedAt())
                 .completedAt(session.getCompletedAt())
                 .notes(session.getNotes())
+                .customerNotes(booking.getNote())
                 .build();
     }
 
@@ -1090,7 +1143,42 @@ public class OperationsServiceImpl implements OperationsService {
                 primaryStaffName(assignedStaffList, assignedStaff),
                 assignedStaffList,
                 customerTier,
-                customerPriorityScore
+                customerPriorityScore,
+                booking.getNote()
+        );
+    }
+
+    private ManagerCheckInRecommendationResponse.ManagerCheckInRecommendationItem toCheckInRecommendationItem(User staff, Booking booking) {
+        boolean available = staffAssignmentService.isStaffAvailableForBooking(staff, booking);
+        long waitingCount = washSessionRepository.countByAssignedStaffAndStatus(staff, WashSessionStatus.PENDING)
+                + washSessionRepository.countByAssignedStaffAndStatus(staff, WashSessionStatus.QUEUED)
+                + washSessionRepository.countByAssignedStaffAndStatus(staff, WashSessionStatus.CHECKED_IN);
+        long activeCount = washSessionRepository.countByAssignedStaffAndStatus(staff, WashSessionStatus.IN_PROGRESS);
+        long openCount = waitingCount + activeCount + bookingStaffAssignmentRepository.countByStaffAndBooking_StatusIn(staff, ELIGIBLE_BOOKING_STATUSES);
+        Instant weekStart = LocalDate.now()
+                .with(java.time.DayOfWeek.MONDAY)
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant();
+        Instant weekEnd = LocalDate.now()
+                .with(java.time.DayOfWeek.MONDAY)
+                .plusWeeks(1)
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant();
+        long weeklyKpiRevenue = BookingRepository.sumCompletedRevenueForStaffKpiRange(staff, weekStart, weekEnd);
+
+        return new ManagerCheckInRecommendationResponse.ManagerCheckInRecommendationItem(
+                staff.getId(),
+                staff.getFullName(),
+                available ? "AVAILABLE" : "BUSY",
+                Math.toIntExact(activeCount),
+                Math.toIntExact(waitingCount),
+                0,
+                Math.toIntExact(openCount),
+                weeklyKpiRevenue,
+                0,
+                available,
+                available ? "Available for this booking time" : "Busy during this booking time",
+                available
         );
     }
 

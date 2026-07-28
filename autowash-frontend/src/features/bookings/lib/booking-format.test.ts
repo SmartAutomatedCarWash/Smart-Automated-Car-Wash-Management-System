@@ -94,6 +94,7 @@ test("builds a package booking payload with trimmed note and voucher code", () =
     bookingDate: "2026-06-10",
     bookingTime: "14:00",
     discountCode: " welcome20 ",
+    note: "  Please check the right door scratch.  ",
     paymentMethod: "E_WALLET",
   };
 
@@ -104,6 +105,7 @@ test("builds a package booking payload with trimmed note and voucher code", () =
     bookingDate: "2026-06-10",
     bookingTime: "14:00",
     discountCode: "WELCOME20",
+    note: "Please check the right door scratch.",
     paymentMethod: "E_WALLET",
   });
 });

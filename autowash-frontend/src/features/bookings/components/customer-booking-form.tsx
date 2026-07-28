@@ -1647,28 +1647,49 @@ export function CustomerBookingForm() {
           </StepCard>
 
           {/* Step 6 — Confirmation email */}
-          <StepCard step={6} title="Confirmation email (optional)">
-            <div className="space-y-2">
-              <Label htmlFor="booking-confirmation-email" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Gmail / Email nhận xác nhận (không bắt buộc)
-              </Label>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="booking-confirmation-email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="example@gmail.com"
-                  value={draft.confirmationEmail ?? ""}
-                  onChange={(event) => updateDraft({ confirmationEmail: event.target.value })}
-                  className="h-12 rounded-xl pl-10"
-                />
+          <StepCard step={6} title="Confirmation details">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="booking-confirmation-email" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Gmail / Email nhận xác nhận (không bắt buộc)
+                </Label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="booking-confirmation-email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="example@gmail.com"
+                    value={draft.confirmationEmail ?? ""}
+                    onChange={(event) => updateDraft({ confirmationEmail: event.target.value })}
+                    className="h-12 rounded-xl pl-10"
+                  />
+                </div>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Nếu để trống, email xác nhận booking sẽ gửi về email tài khoản đăng ký.
+                </p>
+                <FieldError message={showValidation ? errors.confirmationEmail : null} />
               </div>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                Nếu để trống, email xác nhận booking sẽ gửi về email tài khoản đăng ký.
-              </p>
-              <FieldError message={showValidation ? errors.confirmationEmail : null} />
+
+              <div className="space-y-2">
+                <Label htmlFor="booking-customer-note" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Ghi chú cho manager / staff (không bắt buộc)
+                </Label>
+                <textarea
+                  id="booking-customer-note"
+                  value={draft.note ?? ""}
+                  maxLength={500}
+                  onChange={(event) => updateDraft({ note: event.target.value })}
+                  placeholder="Ví dụ: xe có vết xước bên phải, xin kiểm tra kỹ nội thất..."
+                  className="min-h-24 w-full resize-none rounded-xl border border-input bg-background px-3 py-3 text-sm outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span>Manager và staff sẽ thấy ghi chú này trong luồng check-in/rửa xe.</span>
+                  <span className="shrink-0">{(draft.note ?? "").length}/500</span>
+                </div>
+                <FieldError message={showValidation ? errors.note : null} />
+              </div>
             </div>
           </StepCard>
 
@@ -1883,6 +1904,7 @@ function BookingButton({
     bookingDate: "Please select a date",
     bookingTime: "Please select a time",
     confirmationEmail: "Please enter a valid confirmation email",
+    note: "Customer note must be at most 500 characters",
     paymentMethod: "Please select a payment method",
   };
   const hintText = firstErrorKey ? errorHintMap[firstErrorKey] : null;

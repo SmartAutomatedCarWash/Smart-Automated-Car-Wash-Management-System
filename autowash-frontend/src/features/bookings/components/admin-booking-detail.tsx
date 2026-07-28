@@ -530,7 +530,7 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
                   </h4>
                 </div>
                 <p className="text-sm text-slate-600 leading-relaxed italic bg-white p-4 rounded-2xl border border-slate-100 min-h-[80px]">
-                  {booking.notes || translate(language, "Không có ghi chú nào.", "No specific notes provided.")}
+                  {booking.customerNotes || translate(language, "Không có ghi chú nào.", "No specific notes provided.")}
                 </p>
                 <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
                   {new Date(booking.createdAt).toLocaleDateString(language === "vi" ? "vi-VN" : "en-US")}

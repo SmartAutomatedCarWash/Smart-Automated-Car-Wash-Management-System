@@ -57,7 +57,8 @@ public record OperationsQueueResponse(
             Instant checkedInAt,
             Instant startedAt,
             Instant completedAt,
-            String notes
+            String notes,
+            String customerNotes
     ) {
     }
 }

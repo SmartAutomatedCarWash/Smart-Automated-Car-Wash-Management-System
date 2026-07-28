@@ -4,6 +4,7 @@ import com.autowash.dto.CheckInWashSessionResponse;
 import com.autowash.dto.CreateWashSessionRequest;
 import com.autowash.dto.CreateWashSessionResponse;
 import com.autowash.dto.EligibleSessionBookingResponse;
+import com.autowash.dto.ManagerCheckInRecommendationResponse;
 import com.autowash.dto.OperationsQueueResponse;
 import com.autowash.dto.StaffOptionResponse;
 import com.autowash.entity.Notification;
@@ -198,8 +199,15 @@ public class ManagerOperationsController {
     }
 
     @PostMapping("/bookings/{bookingId}/check-in")
-    public ApiResponse<BookingCheckInResponse> checkInBooking(@PathVariable String bookingId) {
-        CreateWashSessionResponse created = operationsService.createSession(new CreateWashSessionRequest(bookingId, "Manager check-in", null));
+    public ApiResponse<BookingCheckInResponse> checkInBooking(
+            @PathVariable String bookingId,
+            @RequestBody(required = false) ManagerBookingCheckInRequest request
+    ) {
+        CreateWashSessionResponse created = operationsService.createSession(new CreateWashSessionRequest(
+                bookingId,
+                "Manager check-in",
+                request == null ? null : request.preferredStaffId()
+        ));
         CheckInWashSessionResponse checkedIn = operationsService.checkInSession(created.sessionId());
         return ApiResponse.ok(
                 "Manager booking checked in",
@@ -212,6 +220,14 @@ public class ManagerOperationsController {
                         "AUTO",
                         checkedIn.checkedInAt()
                 )
+        );
+    }
+
+    @GetMapping("/bookings/{bookingId}/check-in-preview")
+    public ApiResponse<ManagerCheckInRecommendationResponse> previewCheckInBooking(@PathVariable String bookingId) {
+        return ApiResponse.ok(
+                "Manager check-in recommendation retrieved",
+                operationsService.previewManagerCheckInRecommendation(bookingId)
         );
     }
 
@@ -433,6 +449,7 @@ public class ManagerOperationsController {
     public record TimelineItemResponse(String step, String label, String status, LocalTime time, String date, String note) {}
     public record TransferOptionResponse(UUID staffId, String fullName, String status, int todayKpiCompleted, int todayKpiTarget, double rating, String recommendationLevel, String reason, boolean selectable) {}
     public record BookingCheckInResponse(String bookingId, UUID sessionId, String status, UUID assignedStaffId, String assignedStaffName, String assignedBay, Instant checkedInAt) {}
+    public record ManagerBookingCheckInRequest(UUID preferredStaffId) {}
     public record TransferSessionRequest(UUID toStaffId, String reason) {}
     public record TransferSessionResponse(UUID auditId, UUID sessionId, String bookingId, UUID fromStaffId, String fromStaffName, UUID toStaffId, String toStaffName, String reason, Instant transferredAt) {}
 

@@ -60,6 +60,11 @@ export function buildCreateBookingPayload(draft: BookingDraft): CreateBookingReq
     payload.confirmationEmail = confirmationEmail.toLowerCase();
   }
 
+  const note = normalizeOptionalText(draft.note ?? "");
+  if (note) {
+    payload.note = note;
+  }
+
   return payload;
 }
 
@@ -158,6 +163,9 @@ export function validateBookingDraft(
   }
   if (draft.confirmationEmail?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.confirmationEmail.trim())) {
     errors.confirmationEmail = "Please enter a valid confirmation email.";
+  }
+  if ((draft.note ?? "").trim().length > 500) {
+    errors.note = "Customer note must be at most 500 characters.";
   }
   if (requirePaymentMethod && !draft.paymentMethod) {
     errors.paymentMethod = "Please select a payment method.";

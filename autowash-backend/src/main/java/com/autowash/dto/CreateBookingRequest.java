@@ -7,6 +7,7 @@ import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -28,7 +29,9 @@ public record CreateBookingRequest(
         PaymentMethod paymentMethod,
         String comboId,
         String staffId,
-        List<String> staffIds
+        List<String> staffIds,
+        @Size(max = 500, message = "Note must be at most 500 characters")
+        String note
 ) {
     @AssertTrue(message = "Either packageId or comboId is required")
     public boolean hasPackageOrCombo() {

@@ -20,6 +20,7 @@ public record EligibleSessionBookingResponse(
         String assignedStaffName,
         List<BookingDetailResponse.StaffAssignment> assignedStaff,
         String customerTier,
-        int customerPriorityScore
+        int customerPriorityScore,
+        String customerNotes
 ) {
 }

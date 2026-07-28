@@ -121,6 +121,7 @@ class BusinessRuleValidationTest {
                 PaymentMethod.CASH_AT_COUNTER,
                 null,
                 null,
+                null,
                 null
         ))).isEmpty();
 
@@ -133,6 +134,7 @@ class BusinessRuleValidationTest {
                         null,
                         "not-an-email",
                         PaymentMethod.CASH_AT_COUNTER,
+                        null,
                         null,
                         null,
                         null
