@@ -29,6 +29,15 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("SELECT bd.refId FROM BookingDetail bd JOIN bd.booking b WHERE bd.itemType = 'PACKAGE' AND b.status IN ('COMPLETED', 'CONFIRMED') GROUP BY bd.refId ORDER BY COUNT(bd.id) DESC LIMIT 1")
     Optional<UUID> findTopPackageId();
 
+    @Query("""
+            select count(bd.id) from BookingDetail bd
+            join bd.booking b
+            where bd.itemType = 'PACKAGE'
+              and bd.refId = :packageId
+              and b.status in ('COMPLETED', 'CONFIRMED')
+            """)
+    long countQualifiedBookingsByPackageId(@Param("packageId") UUID packageId);
+
     long countByCustomerAndStatusIn(User customer, Collection<BookingStatus> statuses);
 
     long countByAssignedStaffAndStatusIn(User assignedStaff, Collection<BookingStatus> statuses);

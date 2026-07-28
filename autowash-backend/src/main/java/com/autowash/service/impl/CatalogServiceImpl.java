@@ -217,6 +217,7 @@ public ComboResponse getComboById(String comboId) {
 
         Double avgRating = reviewRepository.getAverageRatingByPackageId(pkg.getId());
         Long reviewCount = reviewRepository.getReviewCountByPackageId(pkg.getId());
+        long bookingCount = bookingRepository.countQualifiedBookingsByPackageId(pkg.getId());
 
         String popularity = null;
         UUID topPackageId = bookingRepository.findTopPackageId().orElse(null);
@@ -231,7 +232,8 @@ public ComboResponse getComboById(String comboId) {
                 split(pkg.getImageUrl()),
                 popularity,
                 avgRating != null ? avgRating : 0.0,
-                reviewCount != null ? reviewCount : 0L
+                reviewCount != null ? reviewCount : 0L,
+                bookingCount
         );
     }
 

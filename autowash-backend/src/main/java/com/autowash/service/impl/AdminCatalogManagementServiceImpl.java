@@ -222,6 +222,7 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
         List<String> serviceIds = packageServices.stream()
                 .map(ps -> ps.getOptionId().toString())
                 .toList();
+        long bookingCount = bookingRepository.countQualifiedBookingsByPackageId(pkg.getId());
         return new PackageResponse(
                 pkg.getId().toString(),
                 pkg.getName(),
@@ -235,7 +236,8 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
                 pkg.getStatus().name(),
                 null,
                 0.0,
-                0L
+                0L,
+                bookingCount
         );
     }
 

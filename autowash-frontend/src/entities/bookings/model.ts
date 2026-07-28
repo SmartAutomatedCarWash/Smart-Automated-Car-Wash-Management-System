@@ -38,6 +38,7 @@ export type BookingPackage = {
   popularity: string | null;
   averageRating?: number;
   reviewCount?: number;
+  bookingCount?: number;
 };
 
 export type BookingAddon = {
