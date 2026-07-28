@@ -126,6 +126,7 @@ public class BookingResponseAssembler {
                 resolveAssignedStaff(booking, washSession),
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
+                booking.getNote(),
                 booking.getCreatedAt(),
                 null,
                 statusHistory,

@@ -132,6 +132,7 @@ export type CreateBookingRequest = {
   paymentMethod: PaymentMethod;
   staffId?: string;
   staffIds?: string[];
+  note?: string;
 };
 
 export type BookingStaffOptionsRequest = {
@@ -341,6 +342,7 @@ export type BookingDetail = {
   assignedStaff?: BookingStaffAssignment[];
   washStatus: string | null;
   notes: string | null;
+  customerNotes?: string | null;
   createdAt: string;
   devOtp?: string;
   statusHistory?: BookingStatusHistoryItem[];
@@ -450,6 +452,7 @@ export type BookingDraft = {
   bookingTime: string;
   discountCode: string;
   confirmationEmail?: string;
+  note?: string;
   paymentMethod: PaymentMethod | null;
   staffId?: string;
   staffIds?: string[];

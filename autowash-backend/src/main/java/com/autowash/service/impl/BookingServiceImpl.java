@@ -412,6 +412,9 @@ public class BookingServiceImpl implements BookingService {
                 scheduledAt
         );
         booking.setConfirmationEmail(resolveConfirmationEmail(request.confirmationEmail(), user));
+        if (request.note() != null && !request.note().isBlank()) {
+            booking.setNote(request.note().trim());
+        }
         
         BookingPricing pricing = BookingPricing.builder()
                 .booking(booking)

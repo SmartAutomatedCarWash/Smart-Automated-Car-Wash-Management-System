@@ -32,6 +32,7 @@ export const EMPTY_BOOKING_DRAFT: BookingDraft = {
   bookingTime: "",
   discountCode: "",
   confirmationEmail: "",
+  note: "",
   paymentMethod: null,
   staffId: "",
   staffIds: [],

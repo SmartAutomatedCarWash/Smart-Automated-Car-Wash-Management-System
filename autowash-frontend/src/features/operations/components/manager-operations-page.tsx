@@ -34,13 +34,14 @@ import {
   assignStaffToSession,
   getActiveStaffOptions,
   getEligibleSessionBookings,
+  getManagerCheckInRecommendation,
   getOperationsQueue,
   managerCheckInBooking,
   startWashSession,
 } from "@/features/operations/lib/operations-service";
 import { useManagerNotificationStore } from "@/features/operations/store/manager-notification.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
-import type { BookingStatus, EligibleSessionBooking, OperationStaffAssignment, OperationsQueueSession, StaffOption, WashSessionStatus } from "@/entities/operations";
+import type { BookingStatus, EligibleSessionBooking, ManagerCheckInRecommendation, OperationStaffAssignment, OperationsQueueSession, StaffOption, WashSessionStatus } from "@/entities/operations";
 import { useWebSocket } from "@/shared/hooks/use-web-socket";
 
 type FocusFilter = "ALL" | "NEEDS_ACTION" | "DELAYED" | "UNASSIGNED";
@@ -65,6 +66,7 @@ type OperationRow = {
   amount: number | null;
   estimatedDurationMinutes: number | null;
   notes: string | null;
+  customerNotes: string | null;
   queuedAt: string | null;
   checkedInAt: string | null;
   startedAt: string | null;
@@ -137,6 +139,9 @@ export function ManagerOperationsPage() {
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [optimisticSessionRows, setOptimisticSessionRows] = useState<Record<string, OperationRow>>({});
+  const [checkInPreviewRow, setCheckInPreviewRow] = useState<OperationRow | null>(null);
+  const [checkInPreview, setCheckInPreview] = useState<ManagerCheckInRecommendation | null>(null);
+  const [checkInPreferredStaffId, setCheckInPreferredStaffId] = useState<string | null>(null);
 
   const handleSelectRow = (id: string | null) => {
     setSelectedRowId(id);
@@ -275,9 +280,23 @@ export function ManagerOperationsPage() {
     });
   };
 
+  const previewCheckInMutation = useMutation({
+    mutationFn: (bookingId: string) => getManagerCheckInRecommendation(bookingId),
+    onSuccess: (preview) => {
+      setCheckInPreview(preview);
+      setCheckInPreferredStaffId(preview.needsReassignment ? (preview.candidates.find((item) => item.selectable)?.staffId ?? null) : null);
+    },
+    onError: (actionError: ApiErrorResponse) => {
+      setCheckInPreviewRow(null);
+      setCheckInPreview(null);
+      setCheckInPreferredStaffId(null);
+      handleActionError("Unable to preview check-in", actionError);
+    },
+  });
+
   const createMutation = useMutation({
-    mutationFn: (bookingId: string) => managerCheckInBooking(bookingId),
-    onMutate: (bookingId) => {
+    mutationFn: ({ bookingId, preferredStaffId }: { bookingId: string; preferredStaffId?: string | null }) => managerCheckInBooking(bookingId, preferredStaffId),
+    onMutate: ({ bookingId }) => {
       const booking = eligibleBookings.find((item) => item.bookingId === bookingId);
       if (booking) {
         const now = new Date().toISOString();
@@ -290,7 +309,7 @@ export function ManagerOperationsPage() {
         }));
       }
     },
-    onSuccess: (_data, bookingId) => {
+    onSuccess: (_data, { bookingId }) => {
       setOptimisticSessionRows((current) => {
         const existing = current[bookingId];
         if (!existing) return current;
@@ -303,6 +322,9 @@ export function ManagerOperationsPage() {
             status: _data.status as WashSessionStatus,
             assignedStaffId: _data.assignedStaffId,
             assignedStaffName: _data.assignedStaffName,
+            assignedStaff: _data.assignedStaffId
+              ? [{ staffId: _data.assignedStaffId, staffName: _data.assignedStaffName ?? "Assigned staff", sortOrder: 1 }]
+              : existing.assignedStaff,
             checkedInAt: _data.checkedInAt ?? existing.checkedInAt,
           },
         };
@@ -318,7 +340,7 @@ export function ManagerOperationsPage() {
         href: "/manager/operations",
       });
     },
-    onError: (actionError: ApiErrorResponse, bookingId) => {
+    onError: (actionError: ApiErrorResponse, { bookingId }) => {
       setOptimisticSessionRows((current) => removeOptimisticSessionRow(current, bookingId));
       handleActionError("Unable to create session", actionError);
     },
@@ -408,13 +430,26 @@ export function ManagerOperationsPage() {
   const runPrimaryAction = (row: OperationRow) => {
     if (row.type === "booking") {
       if (row.status !== "CONFIRMED") return;
-      createMutation.mutate(row.bookingId);
+      setCheckInPreviewRow(row);
+      setCheckInPreview(null);
+      setCheckInPreferredStaffId(null);
+      previewCheckInMutation.mutate(row.bookingId);
       return;
     }
     if (!row.sessionId) return;
     if (row.status === "QUEUED" || row.status === "PENDING") checkInMutation.mutate(row.sessionId);
     if (row.status === "CHECKED_IN") startMutation.mutate(row.sessionId);
     if (row.status === "IN_PROGRESS") completeMutation.mutate(row.sessionId);
+  };
+
+  const confirmPreviewCheckIn = () => {
+    if (!checkInPreviewRow) return;
+    const bookingId = checkInPreviewRow.bookingId;
+    const preferredStaffId = checkInPreferredStaffId;
+    setCheckInPreviewRow(null);
+    setCheckInPreview(null);
+    setCheckInPreferredStaffId(null);
+    createMutation.mutate({ bookingId, preferredStaffId });
   };
 
   const transferSelectedRow = (toStaffId: string) => {
@@ -478,7 +513,7 @@ export function ManagerOperationsPage() {
                     key={row.id}
                     row={row}
                     index={(safeCheckInPage - 1) * TOP_PANEL_PAGE_SIZE + index}
-                    loading={isActionLoading(row, createMutation.variables, checkInMutation.variables, createMutation.isPending, checkInMutation.isPending)}
+                    loading={isActionLoading(row, createMutation.variables?.bookingId, checkInMutation.variables, createMutation.isPending, checkInMutation.isPending)}
                     onSelect={() => handleSelectRow(row.id)}
                     onAction={() => runPrimaryAction(row)}
                   />
@@ -659,7 +694,126 @@ export function ManagerOperationsPage() {
           />
         ) : null}
       </div>
+      <CheckInPreviewDialog
+        row={checkInPreviewRow}
+        preview={checkInPreview}
+        loading={previewCheckInMutation.isPending}
+        submitting={createMutation.isPending}
+        selectedStaffId={checkInPreferredStaffId}
+        onSelectStaff={setCheckInPreferredStaffId}
+        onClose={() => {
+          setCheckInPreviewRow(null);
+          setCheckInPreview(null);
+          setCheckInPreferredStaffId(null);
+        }}
+        onConfirm={confirmPreviewCheckIn}
+      />
     </WorkspacePage>
+  );
+}
+
+function CheckInPreviewDialog({
+  row,
+  preview,
+  loading,
+  submitting,
+  selectedStaffId,
+  onSelectStaff,
+  onClose,
+  onConfirm,
+}: {
+  row: OperationRow | null;
+  preview: ManagerCheckInRecommendation | null;
+  loading: boolean;
+  submitting: boolean;
+  selectedStaffId: string | null;
+  onSelectStaff: (staffId: string | null) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  if (!row) return null;
+  const availableCandidates = preview?.candidates.filter((item) => item.selectable) ?? [];
+  const topCandidates = availableCandidates.length > 0 ? availableCandidates.slice(0, 4) : preview?.candidates.slice(0, 4) ?? [];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
+      <div role="dialog" aria-modal="true" aria-labelledby="check-in-preview-title" className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 p-4">
+          <div>
+            <h2 id="check-in-preview-title" className="text-base font-black text-slate-950">Check-in staff preview</h2>
+            <p className="mt-1 text-xs font-bold text-slate-500">
+              {row.vehiclePlate} · {formatBookingTime(row.bookingTime)} · {row.customerName}
+            </p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-3 p-4">
+          {loading || !preview ? (
+            <div className="flex min-h-36 items-center justify-center rounded-xl bg-slate-50 text-sm font-bold text-slate-500">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading staff recommendation...
+            </div>
+          ) : (
+            <>
+              <div className={`rounded-xl border p-3 ${preview.needsReassignment ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"}`}>
+                <div className="flex items-center gap-2">
+                  {preview.needsReassignment ? <AlertTriangle className="h-4 w-4 text-amber-600" /> : <Check className="h-4 w-4 text-emerald-600" />}
+                  <p className={`text-sm font-black ${preview.needsReassignment ? "text-amber-800" : "text-emerald-800"}`}>
+                    {preview.currentStaffName ?? "No assigned staff"} · {preview.currentStaffStatus}
+                  </p>
+                </div>
+                <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">{preview.message}</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Recommended staff</p>
+                {topCandidates.length > 0 ? (
+                  topCandidates.map((staff) => (
+                    <button
+                      key={staff.staffId}
+                      type="button"
+                      disabled={!staff.selectable}
+                      onClick={() => onSelectStaff(staff.selectable ? staff.staffId : null)}
+                      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
+                        selectedStaffId === staff.staffId
+                          ? "border-[#00236f] bg-blue-50/40"
+                          : staff.selectable
+                            ? "border-emerald-100 bg-white hover:border-[#00236f]/40"
+                            : "border-slate-100 bg-slate-50 opacity-70"
+                      }`}
+                    >
+                      <Avatar name={staff.staffName} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-black text-slate-950">{staff.staffName}</p>
+                        <p className="text-xs font-semibold text-slate-500">{staff.reason}</p>
+                      </div>
+                      <span className={`rounded-full px-2 py-1 text-[10px] font-black ${staff.selectable ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                        {staff.status}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <p className="rounded-xl bg-slate-50 p-3 text-xs font-bold text-slate-500">No staff recommendation available.</p>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-slate-100 p-4">
+          <Button type="button" variant="outline" className="rounded-xl" onClick={onClose} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button type="button" className="rounded-xl bg-[#00236f] text-white hover:bg-[#001b55]" onClick={onConfirm} disabled={loading || !preview || submitting}>
+            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Confirm check-in
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1069,6 +1223,13 @@ function SessionDetailPanel({
             </div>
           </div>
 
+          {row.customerNotes ? (
+            <div className="rounded-xl border border-cyan-100 bg-cyan-50/60 p-3">
+              <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-cyan-700">Customer note</p>
+              <p className="whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-slate-700">{row.customerNotes}</p>
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-2 gap-2">
             <MiniInfo label="Status" value={getStatusLabel(row.status)} />
             <MiniInfo label="ETA" value={row.estimatedDurationMinutes ? `${row.estimatedDurationMinutes} min` : "—"} />
@@ -1286,6 +1447,7 @@ function buildOptimisticSessionRowFromBooking(
     amount: booking.finalAmount,
     estimatedDurationMinutes: booking.estimatedDurationMinutes,
     notes: patch.notes ?? null,
+    customerNotes: booking.customerNotes ?? null,
     queuedAt: null,
     checkedInAt: patch.checkedInAt ?? null,
     startedAt: patch.startedAt ?? null,
@@ -1324,6 +1486,7 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
         amount: booking.finalAmount,
         estimatedDurationMinutes: booking.estimatedDurationMinutes,
         notes: null,
+        customerNotes: booking.customerNotes ?? null,
         queuedAt: null,
         checkedInAt: null,
         startedAt: null,
@@ -1350,6 +1513,7 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
     amount: session.feeAmount ?? null,
     estimatedDurationMinutes: session.estimatedDurationMinutes ?? null,
     notes: session.notes ?? null,
+    customerNotes: session.customerNotes ?? null,
     queuedAt: session.queuedAt ?? null,
     checkedInAt: session.checkedInAt ?? null,
     startedAt: session.startedAt ?? null,
@@ -1574,13 +1738,13 @@ function isActionLoading(row: OperationRow, creatingId: string | undefined, chec
 
 function isMutatingRow(
   row: OperationRow,
-  createMutation: { isPending: boolean; variables?: string },
+  createMutation: { isPending: boolean; variables?: { bookingId: string; preferredStaffId?: string | null } },
   checkInMutation: { isPending: boolean; variables?: string },
   startMutation: { isPending: boolean; variables?: string },
   completeMutation: { isPending: boolean; variables?: string },
 ) {
   return (
-    (createMutation.isPending && createMutation.variables === row.bookingId) ||
+    (createMutation.isPending && createMutation.variables?.bookingId === row.bookingId) ||
     Boolean(row.sessionId && checkInMutation.isPending && checkInMutation.variables === row.sessionId) ||
     Boolean(row.sessionId && startMutation.isPending && startMutation.variables === row.sessionId) ||
     Boolean(row.sessionId && completeMutation.isPending && completeMutation.variables === row.sessionId)

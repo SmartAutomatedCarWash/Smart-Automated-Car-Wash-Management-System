@@ -804,6 +804,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 assignedStaff,
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
+                booking.getNote(),
                 booking.getCreatedAt(),
                 null,
                 statusHistory,

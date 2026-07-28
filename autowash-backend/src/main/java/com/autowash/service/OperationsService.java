@@ -8,6 +8,7 @@ import com.autowash.dto.CompleteWashSessionResponse;
 import com.autowash.dto.CreateWashSessionRequest;
 import com.autowash.dto.CreateWashSessionResponse;
 import com.autowash.dto.EligibleSessionBookingResponse;
+import com.autowash.dto.ManagerCheckInRecommendationResponse;
 import com.autowash.dto.OperationsQueueResponse;
 import com.autowash.dto.QueueWashSessionResponse;
 import com.autowash.dto.StaffDashboardSummaryResponse;
@@ -32,6 +33,7 @@ public interface OperationsService {
     CancelWashSessionResponse cancelSession(UUID sessionId, String reason, String faultType);
     StaffDashboardSummaryResponse getStaffSummary();
     List<StaffOptionResponse> listActiveStaff();
+    ManagerCheckInRecommendationResponse previewManagerCheckInRecommendation(String bookingId);
     OperationsQueueResponse getOperationsQueue();
     PaginatedResponse<EligibleSessionBookingResponse> getEligibleSessionBookings(int page, int limit);
     StaffDashboardSummaryResponse getMyStaffSummary();

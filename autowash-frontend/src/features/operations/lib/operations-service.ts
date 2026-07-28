@@ -22,6 +22,7 @@ import type {
   TransferWashSessionResponse,
   PaginatedResponse,
   InterventionResponse,
+  ManagerCheckInRecommendation,
 } from "@/entities/operations";
 
 const SESSION_BASE_URL = "/operations/sessions";
@@ -34,15 +35,16 @@ export function createWashSession(bookingId: string, notes?: string) {
   });
 }
 
-export function managerCheckInBooking(bookingId: string) {
-  return apiRequest<{ bookingId: string; sessionId: string; status: string; assignedStaffId: string | null; assignedStaffName: string | null; assignedBay: string | null; checkedInAt: string | null }>({
+export function managerCheckInBooking(bookingId: string, preferredStaffId?: string | null) {
+  return apiRequest<{ bookingId: string; sessionId: string; status: string; assignedStaffId: string | null; assignedStaffName: string | null; assignedBay: string | null; checkedInAt: string | null }, { preferredStaffId?: string }>({
     method: "POST",
     url: `/manager/operations/bookings/${bookingId}/check-in`,
+    data: preferredStaffId ? { preferredStaffId } : {},
   });
 }
 
 export function getManagerCheckInRecommendation(bookingId: string) {
-  return apiRequest<any>({
+  return apiRequest<ManagerCheckInRecommendation>({
     method: "GET",
     url: `/manager/operations/bookings/${bookingId}/check-in-preview`,
   });
