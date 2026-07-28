@@ -50,21 +50,6 @@ export function buildCreateBookingPayload(draft: BookingDraft): CreateBookingReq
     payload.comboId = draft.comboId;
   }
 
-  const staffIds = (draft.staffIds ?? [])
-    .map((staffId) => normalizeOptionalText(staffId))
-    .filter((staffId): staffId is string => Boolean(staffId))
-    .slice(0, 1);
-  if (staffIds.length > 0) {
-    payload.staffIds = staffIds;
-    payload.staffId = staffIds[0];
-  } else {
-    const staffId = normalizeOptionalText(draft.staffId ?? "");
-    if (staffId) {
-      payload.staffId = staffId;
-      payload.staffIds = [staffId];
-    }
-  }
-
   const discountCode = normalizeOptionalText(sanitizeVoucherCodeInput(draft.discountCode));
   if (discountCode) {
     payload.discountCode = discountCode;
