@@ -6,6 +6,7 @@ export type ManagerOperationSettingsPayload = {
   leastBusyStaffFirst: boolean;
   respectStaffCapacity: boolean;
   maxActiveSessionsPerStaff: number;
+  weeklyStaffKpiTarget: number;
   paidBookingPriority: boolean;
   tierPriorityEnabled: boolean;
   primaryVehiclePriority: boolean;
@@ -49,11 +50,16 @@ export type UpdateManagerSettingsRequest = {
   templates: ManagerNotificationTemplatePayload[];
 };
 
+export type UpdateWeeklyStaffKpiTargetRequest = {
+  weeklyStaffKpiTarget: number;
+};
+
 const DEFAULT_DEMO_SETTINGS: ManagerOperationSettingsPayload = {
   autoAssignEnabled: true,
   leastBusyStaffFirst: true,
   respectStaffCapacity: true,
   maxActiveSessionsPerStaff: 4,
+  weeklyStaffKpiTarget: 40,
   paidBookingPriority: true,
   tierPriorityEnabled: true,
   primaryVehiclePriority: true,
@@ -85,10 +91,10 @@ const DEFAULT_DEMO_TEMPLATES: ManagerNotificationTemplatePayload[] = [
     preview: "Example: Vehicle 51F-456.89 is taking longer than expected.",
   },
   {
-    templateKey: "transfer",
-    displayName: "Staff transfer",
-    description: "Sent when a manager transfers a wash session to another staff member.",
-    message: "A wash session has been reassigned to another staff member. Please continue tracking the handover.",
+    templateKey: "assignStaff",
+    displayName: "Staff assignment",
+    description: "Sent when a manager assigns or reassigns a wash session to a staff member.",
+    message: "A wash session has been assigned to a staff member. Please continue tracking the wash progress.",
     preview: "Example: Vehicle 51F-456.89 has been reassigned to Le Van Hai.",
   },
 ];
@@ -135,6 +141,37 @@ export function updateManagerSettings(data: UpdateManagerSettingsRequest) {
   return apiRequest<ManagerSettingsResponse, UpdateManagerSettingsRequest>({
     method: "PUT",
     url: "/manager/settings",
+    data,
+  });
+}
+
+export function updateWeeklyStaffKpiTarget(data: UpdateWeeklyStaffKpiTargetRequest) {
+  if (isManagerDemoToken()) {
+    const now = new Date().toISOString();
+    demoSettings = {
+      ...demoSettings,
+      settings: {
+        ...demoSettings.settings,
+        weeklyStaffKpiTarget: data.weeklyStaffKpiTarget,
+      },
+      auditLogs: [
+        {
+          id: `demo-manager-kpi-target-${Date.now()}`,
+          title: "Weekly staff KPI target updated",
+          detail: "Demo manager updated the weekly staff KPI target.",
+          actorName: "Manager Demo",
+          createdAt: now,
+        },
+        ...demoSettings.auditLogs,
+      ].slice(0, 20),
+      updatedAt: now,
+    };
+    return Promise.resolve(demoSettings);
+  }
+
+  return apiRequest<ManagerSettingsResponse, UpdateWeeklyStaffKpiTargetRequest>({
+    method: "PUT",
+    url: "/manager/settings/weekly-staff-kpi-target",
     data,
   });
 }

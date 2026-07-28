@@ -333,3 +333,19 @@ export type UpdateAdminCustomerTierResult = {
   updatedAt: string;
 };
 
+export type UpdateAdminCustomerLifetimePointsPayload = {
+  pointsDelta: number;
+  reason: string;
+};
+
+export type UpdateAdminCustomerLifetimePointsResult = {
+  customerId: string;
+  currentPoints: number;
+  totalEarnedPoints: number;
+  oldTier: string;
+  newTier: string;
+  tierChanged: boolean;
+  direction: string;
+  message: string;
+};
+

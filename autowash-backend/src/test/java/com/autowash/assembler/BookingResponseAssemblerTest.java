@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.autowash.dto.BookingDetailResponse;
+import com.autowash.dto.BookingPaymentInfo;
 import com.autowash.dto.BookingStatusHistoryItem;
 import com.autowash.entity.Booking;
 import com.autowash.entity.BookingDetail;
@@ -69,9 +70,10 @@ class BookingResponseAssemblerTest {
                 .build();
         when(washSessionStaffAssignmentRepository.findBySessionOrderBySortOrderAsc(washSession)).thenReturn(List.of());
         when(bookingStaffAssignmentRepository.findByBookingOrderBySortOrderAsc(booking)).thenReturn(List.of());
-        var payment = new BookingResponseAssembler.PaymentInfo(
+        var payment = new BookingPaymentInfo(
                 PaymentMethod.BANK_TRANSFER,
                 PaymentStatus.PAID,
+                200_000L,
                 "TXN-001",
                 Instant.parse("2026-07-20T02:30:00Z")
         );
@@ -96,6 +98,7 @@ class BookingResponseAssemblerTest {
         assertThat(response.scheduling().estimatedDuration()).isEqualTo(75);
         assertThat(response.payment().method()).isEqualTo("BANK_TRANSFER");
         assertThat(response.payment().status()).isEqualTo("PAID");
+        assertThat(response.payment().amount()).isEqualTo(200_000L);
         assertThat(response.washSessionId()).isEqualTo(washSession.getId().toString());
         assertThat(response.staffName()).isEqualTo("Session Staff");
         assertThat(response.washStatus()).isEqualTo("COMPLETED");

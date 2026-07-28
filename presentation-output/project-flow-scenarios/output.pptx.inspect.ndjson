@@ -1,0 +1,1075 @@
+{"kind":"deck","id":"pr/jtaum3","name":"Deck"}
+{"kind":"layout","layoutId":"7a6393d8-bf4e-4989-906c-2ea975b43407","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"c3122549-fd07-458b-8a32-14225dc0704e","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/qiwhyr","slide":1,"title":"6. Flows","textShapes":55}
+{"kind":"shape","id":"sh/czqpc7qd","slide":1,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/ryho3m9s","slide":1,"bbox":[44,30,1192,660]}
+{"kind":"textbox","id":"sh/qx87ah87","slide":1,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[78,55,130,38]}
+{"kind":"shape","id":"sh/1ojq9wru","slide":1,"bbox":[214,60,3,29]}
+{"kind":"textbox","id":"sh/03apgrqp","slide":1,"text":"Scenario 1: Account Onboarding & Vehicle Setup","textPreview":"Scenario 1: Account Onboarding & Vehicle Setup","textChars":46,"textLines":1,"bbox":[230,53,890,42]}
+{"kind":"textbox","id":"sh/z21o7m94","slide":1,"text":"A customer activates an account, receives JWT credentials, completes a profile, and prepares a primary vehicle for booking.","textPreview":"A customer activates an account, receives JWT credentials, completes a profile, and prepares a primary vehicle for booking.","textChars":123,"textLines":1,"bbox":[80,101,1050,24]}
+{"kind":"shape","id":"sh/e1s7eh8j","slide":1,"bbox":[1110,58,90,27]}
+{"kind":"textbox","id":"sh/9s3qdwr6","slide":1,"text":"AUTOWASH","textPreview":"AUTOWASH","textChars":8,"textLines":1,"bbox":[1119,63,72,17]}
+{"kind":"shape","id":"sh/orapkrql","slide":1,"bbox":[80,162,220,116]}
+{"kind":"shape","id":"sh/mlkvqd0v","slide":1,"bbox":[68,150,30,30]}
+{"kind":"textbox","id":"sh/nmdwzihg","slide":1,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[68,156,30,18]}
+{"kind":"shape","id":"sh/8nmds3i1","slide":1,"bbox":[94,187,54,68]}
+{"kind":"shape","id":"sh/9ove18z6","slide":1,"bbox":[104,197,34,34]}
+{"kind":"textbox","id":"sh/a94vud0r","slide":1,"text":"GO","textPreview":"GO","textChars":2,"textLines":1,"bbox":[104,204,34,20]}
+{"kind":"shape","id":"sh/vadw3ihc","slide":1,"bbox":[106,238,30,3]}
+{"kind":"shape","id":"sh/wbmdwnix","slide":1,"bbox":[106,245,20,3]}
+{"kind":"textbox","id":"sh/xcve5szi","slide":1,"text":"Open Register or Login","textPreview":"Open Register or Login","textChars":22,"textLines":1,"bbox":[156,175,130,34]}
+{"kind":"textbox","id":"sh/qt0vit0n","slide":1,"text":"Choose email/password or Google authentication.","textPreview":"Choose email/password or Google authentication.","textChars":47,"textLines":1,"bbox":[156,211,130,35]}
+{"kind":"shape","id":"sh/be9creh8","slide":1,"bbox":[156,250,130,19]}
+{"kind":"textbox","id":"sh/fypszux0","slide":1,"text":"Customer entry","textPreview":"Customer entry","textChars":14,"textLines":1,"bbox":[162,253,118,13]}
+{"kind":"shape","id":"sh/exgrqpgf","slide":1,"bbox":[380,162,220,116]}
+{"kind":"shape","id":"sh/1k7a1kfq","slide":1,"bbox":[368,150,30,30]}
+{"kind":"textbox","id":"sh/gzytsfyl","slide":1,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[368,156,30,18]}
+{"kind":"shape","id":"sh/ru5svaxo","slide":1,"bbox":[394,187,54,68]}
+{"kind":"shape","id":"sh/6twrm5g3","slide":1,"bbox":[404,197,34,34]}
+{"kind":"textbox","id":"sh/tw7axkfu","slide":1,"text":"FM","textPreview":"FM","textChars":2,"textLines":1,"bbox":[404,204,34,20]}
+{"kind":"shape","id":"sh/sve9ofy9","slide":1,"bbox":[406,238,30,3]}
+{"kind":"shape","id":"sh/bq9s7ex8","slide":1,"bbox":[406,245,20,3]}
+{"kind":"textbox","id":"sh/qp0by9gn","slide":1,"text":"Submit Account Data","textPreview":"Submit Account Data","textChars":19,"textLines":1,"bbox":[456,175,130,34]}
+{"kind":"textbox","id":"sh/8vapsbe5","slide":1,"text":"Frontend validates required registration fields.","textPreview":"Frontend validates required registration fields.","textChars":48,"textLines":1,"bbox":[456,211,130,35]}
+{"kind":"shape","id":"sh/9w3qlwvq","slide":1,"bbox":[456,250,130,19]}
+{"kind":"textbox","id":"sh/m9s7q1wz","slide":1,"text":"POST /auth/register","textPreview":"POST /auth/register","textChars":19,"textLines":1,"bbox":[462,253,118,13]}
+{"kind":"shape","id":"sh/7u1oj6dk","slide":1,"bbox":[680,162,220,116]}
+{"kind":"shape","id":"sh/wzupwbe1","slide":1,"bbox":[668,150,30,30]}
+{"kind":"textbox","id":"sh/h03qpgvm","slide":1,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[668,156,30,18]}
+{"kind":"shape","id":"sh/uxc7u1wv","slide":1,"bbox":[694,187,54,68]}
+{"kind":"shape","id":"sh/vyl8n6dg","slide":1,"bbox":[704,197,34,34]}
+{"kind":"textbox","id":"sh/43up0ved","slide":1,"text":"OTP","textPreview":"OTP","textChars":3,"textLines":1,"bbox":[704,204,34,20]}
+{"kind":"shape","id":"sh/54nqtgvi","slide":1,"bbox":[706,238,30,3]}
+{"kind":"shape","id":"sh/50bytcvm","slide":1,"bbox":[706,245,20,3]}
+{"kind":"textbox","id":"sh/4z2hk7e1","slide":1,"text":"Send Verification OTP","textPreview":"Send Verification OTP","textChars":21,"textLines":1,"bbox":[756,175,130,34]}
+{"kind":"textbox","id":"sh/3ytgrmdg","slide":1,"text":"Backend creates OTP and requests delivery through Resend.","textPreview":"Backend creates OTP and requests delivery through Resend.","textChars":57,"textLines":1,"bbox":[756,211,130,35]}
+{"kind":"shape","id":"sh/ixkzihwb","slide":1,"bbox":[756,250,130,19]}
+{"kind":"textbox","id":"sh/hwbypcvq","slide":1,"text":"POST /auth/otp/send","textPreview":"POST /auth/otp/send","textChars":19,"textLines":1,"bbox":[762,253,118,13]}
+{"kind":"shape","id":"sh/gv2hg7e5","slide":1,"bbox":[980,162,220,116]}
+{"kind":"shape","id":"sh/vutgn2xk","slide":1,"bbox":[968,150,30,30]}
+{"kind":"textbox","id":"sh/utkzexwz","slide":1,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[968,156,30,18]}
+{"kind":"shape","id":"sh/1sfi1wvu","slide":1,"bbox":[994,187,54,68]}
+{"kind":"shape","id":"sh/0rmhsre9","slide":1,"bbox":[1004,197,34,34]}
+{"kind":"textbox","id":"sh/yxgvmtcr","slide":1,"text":"OK","textPreview":"OK","textChars":2,"textLines":1,"bbox":[1004,204,34,20]}
+{"kind":"shape","id":"sh/zypwvytc","slide":1,"bbox":[1006,238,30,3]}
+{"kind":"shape","id":"sh/kzydo3ux","slide":1,"bbox":[1006,245,20,3]}
+{"kind":"textbox","id":"sh/l07ex8bi","slide":1,"text":"Verify and Activate","textPreview":"Verify and Activate","textChars":19,"textLines":1,"bbox":[1056,175,130,34]}
+{"kind":"textbox","id":"sh/a9wvitcv","slide":1,"text":"Correct OTP activates the customer account.","textPreview":"Correct OTP activates the customer account.","textChars":43,"textLines":1,"bbox":[1056,211,130,35]}
+{"kind":"shape","id":"sh/bapwrydg","slide":1,"bbox":[1056,250,130,19]}
+{"kind":"textbox","id":"sh/cbydk3ul","slide":1,"text":"POST /auth/otp/verify","textPreview":"POST /auth/otp/verify","textChars":21,"textLines":1,"bbox":[1062,253,118,13]}
+{"kind":"shape","id":"sh/xw7etov6","slide":1,"bbox":[980,444,220,116]}
+{"kind":"shape","id":"sh/u50fudcz","slide":1,"bbox":[968,432,30,30]}
+{"kind":"textbox","id":"sh/v69w3itk","slide":1,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[968,438,30,18]}
+{"kind":"shape","id":"sh/ra1svatw","slide":1,"bbox":[994,469,54,68]}
+{"kind":"shape","id":"sh/q9sbm5sb","slide":1,"bbox":[1004,479,34,34]}
+{"kind":"textbox","id":"sh/dc3axkb2","slide":1,"text":"JWT","textPreview":"JWT","textChars":3,"textLines":1,"bbox":[1004,486,34,20]}
+{"kind":"shape","id":"sh/sbutofah","slide":1,"bbox":[1006,520,30,3]}
+{"kind":"shape","id":"sh/felszut8","slide":1,"bbox":[1006,527,20,3]}
+{"kind":"textbox","id":"sh/edcbqpsn","slide":1,"text":"Issue Access Tokens","textPreview":"Issue Access Tokens","textChars":19,"textLines":1,"bbox":[1056,457,130,34]}
+{"kind":"textbox","id":"sh/1g3u1kry","slide":1,"text":"Login or Google flow returns access and refresh tokens.","textPreview":"Login or Google flow returns access and refresh tokens.","textChars":55,"textLines":1,"bbox":[1056,493,130,35]}
+{"kind":"shape","id":"sh/0futszad","slide":1,"bbox":[1056,532,130,19]}
+{"kind":"textbox","id":"sh/ni5c3u94","slide":1,"text":"JWT secured APIs","textPreview":"JWT secured APIs","textChars":16,"textLines":1,"bbox":[1062,535,118,13]}
+{"kind":"shape","id":"sh/2hcbupsj","slide":1,"bbox":[680,444,220,116]}
+{"kind":"shape","id":"sh/k7e9kzqx","slide":1,"bbox":[668,432,30,30]}
+{"kind":"textbox","id":"sh/l8nad472","slide":1,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[668,438,30,18]}
+{"kind":"shape","id":"sh/y5wri98r","slide":1,"bbox":[694,469,54,68]}
+{"kind":"shape","id":"sh/z65sbupc","slide":1,"bbox":[704,479,34,34]}
+{"kind":"textbox","id":"sh/cje9gzql","slide":1,"text":"PF","textPreview":"PF","textChars":2,"textLines":1,"bbox":[704,486,34,20]}
+{"kind":"shape","id":"sh/x4na9476","slide":1,"bbox":[706,520,30,3]}
+{"kind":"shape","id":"sh/ahcrep8f","slide":1,"bbox":[706,527,20,3]}
+{"kind":"textbox","id":"sh/bi5s7up0","slide":1,"text":"Complete Customer Profile","textPreview":"Complete Customer Profile","textChars":25,"textLines":1,"bbox":[756,457,130,34]}
+{"kind":"textbox","id":"sh/ofu9cfqp","slide":1,"text":"Load and update personal information for bookings.","textPreview":"Load and update personal information for bookings.","textChars":50,"textLines":1,"bbox":[756,493,130,35]}
+{"kind":"shape","id":"sh/pg3a5k7a","slide":1,"bbox":[756,532,130,19]}
+{"kind":"textbox","id":"sh/hc7ipcri","slide":1,"text":"Profile API","textPreview":"Profile API","textChars":11,"textLines":1,"bbox":[762,535,118,13]}
+{"kind":"shape","id":"sh/gbyhg7qd","slide":1,"bbox":[380,444,220,116]}
+{"kind":"shape","id":"sh/fap0n29s","slide":1,"bbox":[368,432,30,30]}
+{"kind":"textbox","id":"sh/u9gzex87","slide":1,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[368,438,30,18]}
+{"kind":"shape","id":"sh/pgritcru","slide":1,"bbox":[394,469,54,68]}
+{"kind":"shape","id":"sh/4fyhkrq9","slide":1,"bbox":[404,479,34,34]}
+{"kind":"textbox","id":"sh/3ep0rm9o","slide":1,"text":"CAR","textPreview":"CAR","textChars":3,"textLines":1,"bbox":[404,486,34,20]}
+{"kind":"shape","id":"sh/2dgzih83","slide":1,"bbox":[406,520,30,3]}
+{"kind":"shape","id":"sh/dkrixwrq","slide":1,"bbox":[406,527,20,3]}
+{"kind":"textbox","id":"sh/cjihorql","slide":1,"text":"Add a Vehicle","textPreview":"Add a Vehicle","textChars":13,"textLines":1,"bbox":[456,457,130,34]}
+{"kind":"textbox","id":"sh/apcfiton","slide":1,"text":"Create plate, brand/model and primary preference.","textPreview":"Create plate, brand/model and primary preference.","textChars":49,"textLines":1,"bbox":[456,493,130,35]}
+{"kind":"shape","id":"sh/bqlwryp8","slide":1,"bbox":[456,532,130,19]}
+{"kind":"textbox","id":"sh/wruxk36t","slide":1,"text":"/customers/vehicles","textPreview":"/customers/vehicles","textChars":19,"textLines":1,"bbox":[462,535,118,13]}
+{"kind":"shape","id":"sh/xs3et87e","slide":1,"bbox":[80,444,220,116]}
+{"kind":"shape","id":"sh/ytcfmtoz","slide":1,"bbox":[68,432,30,30]}
+{"kind":"textbox","id":"sh/julwvypk","slide":1,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[68,438,30,18]}
+{"kind":"shape","id":"sh/kfuxo365","slide":1,"bbox":[94,469,54,68]}
+{"kind":"shape","id":"sh/lg3ex87a","slide":1,"bbox":[104,479,34,34]}
+{"kind":"textbox","id":"sh/6hwfqdov","slide":1,"text":"P","textPreview":"P","textChars":1,"textLines":1,"bbox":[104,486,34,20]}
+{"kind":"shape","id":"sh/7i5wzipg","slide":1,"bbox":[106,520,30,3]}
+{"kind":"shape","id":"sh/wzedsrqt","slide":1,"bbox":[106,527,20,3]}
+{"kind":"textbox","id":"sh/x0nulwry","slide":1,"text":"Set Primary Vehicle","textPreview":"Set Primary Vehicle","textChars":19,"textLines":1,"bbox":[156,457,130,34]}
+{"kind":"textbox","id":"sh/adcbq18n","slide":1,"text":"Primary selection becomes the booking default.","textPreview":"Primary selection becomes the booking default.","textChars":46,"textLines":1,"bbox":[156,493,130,35]}
+{"kind":"shape","id":"sh/belcj698","slide":1,"bbox":[156,532,130,19]}
+{"kind":"textbox","id":"sh/k3edwbqp","slide":1,"text":"Duplicate plate errors","textPreview":"Duplicate plate errors","textChars":22,"textLines":1,"bbox":[162,535,118,13]}
+{"kind":"shape","id":"sh/l4nupgra","slide":1,"bbox":[300,216,80,8]}
+{"kind":"shape","id":"sh/y1wvu18j","slide":1,"bbox":[302,179,76,31]}
+{"kind":"textbox","id":"sh/j25cn694","slide":1,"text":"2. Submit Account Data","textPreview":"2. Submit Account Data","textChars":22,"textLines":1,"bbox":[304,181,72,27]}
+{"kind":"shape","id":"sh/07atk7ql","slide":1,"bbox":[600,216,80,8]}
+{"kind":"shape","id":"sh/183udcr6","slide":1,"bbox":[602,179,76,31]}
+{"kind":"textbox","id":"sh/329gjato","slide":1,"text":"3. Send Verification OTP","textPreview":"3. Send Verification OTP","textChars":24,"textLines":1,"bbox":[604,181,72,27]}
+{"kind":"shape","id":"sh/i10fqps3","slide":1,"bbox":[900,216,80,8]}
+{"kind":"shape","id":"sh/54rylkbe","slide":1,"bbox":[902,179,76,31]}
+{"kind":"textbox","id":"sh/43ixsfat","slide":1,"text":"4. Verify and Activate","textPreview":"4. Verify and Activate","textChars":22,"textLines":1,"bbox":[904,181,72,27]}
+{"kind":"shape","id":"sh/vy9wfatc","slide":1,"bbox":[1085,278,10,166]}
+{"kind":"shape","id":"sh/uxgfm5sr","slide":1,"bbox":[1096,334,92,31]}
+{"kind":"textbox","id":"sh/h0rehkbi","slide":1,"text":"5. Issue Access Tokens","textPreview":"5. Issue Access Tokens","textChars":22,"textLines":1,"bbox":[1098,336,88,27]}
+{"kind":"shape","id":"sh/gzixofax","slide":1,"bbox":[900,498,80,8]}
+{"kind":"shape","id":"sh/7upwbqtg","slide":1,"bbox":[902,460,76,31]}
+{"kind":"textbox","id":"sh/6tgfi5sv","slide":1,"text":"6. Complete Customer Profile","textPreview":"6. Complete Customer Profile","textChars":28,"textLines":1,"bbox":[904,462,72,27]}
+{"kind":"shape","id":"sh/a5wfulwn","slide":1,"bbox":[600,498,80,8]}
+{"kind":"shape","id":"sh/b65gnqd8","slide":1,"bbox":[602,460,76,31]}
+{"kind":"textbox","id":"sh/wryxwvet","slide":1,"text":"7. Add a Vehicle","textPreview":"7. Add a Vehicle","textChars":16,"textLines":1,"bbox":[604,462,72,27]}
+{"kind":"shape","id":"sh/xs7yp0ve","slide":1,"bbox":[300,498,80,8]}
+{"kind":"shape","id":"sh/ytgzy5wj","slide":1,"bbox":[302,460,76,31]}
+{"kind":"textbox","id":"sh/jupgrad4","slide":1,"text":"8. Set Primary Vehicle","textPreview":"8. Set Primary Vehicle","textChars":22,"textLines":1,"bbox":[304,462,72,27]}
+{"kind":"shape","id":"sh/kvyh0fup","slide":1,"bbox":[80,625,1120,31]}
+{"kind":"textbox","id":"sh/lw7ytkva","slide":1,"text":"Authentication protects customer routes with JWT; vehicle creation returns explicit validation errors such as duplicate license plates.","textPreview":"Authentication protects customer routes with JWT; vehicle creation returns explicit validation errors such as duplicate license plates.","textChars":135,"textLines":1,"bbox":[96,631,1088,19]}
+{"kind":"textbox","id":"sh/6xgz25cv","slide":1,"text":"Solid arrow: next command/action","textPreview":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":[82,665,230,16]}
+{"kind":"textbox","id":"sh/7ypgvadg","slide":1,"text":"Dashed arrow: callback/realtime update","textPreview":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":[325,665,270,16]}
+{"kind":"textbox","id":"sh/h4vah8ju","slide":1,"text":"Repository-aligned: origin/dev b5ad575","textPreview":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":[870,665,325,16]}
+{"kind":"notes","id":"nt/qiwhyr","slide":1,"text":"Registration uses the /api/v1/auth endpoints. OTP delivery is delegated to Resend. Vehicle CRUD and primary selection are exposed by customer vehicle APIs."}
+{"kind":"slide","id":"sl/zzyc65","slide":2,"title":"6. Flows","textShapes":55}
+{"kind":"shape","id":"sh/98vihony","slide":2,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/m54j6t47","slide":2,"bbox":[44,30,1192,660]}
+{"kind":"textbox","id":"sh/n6d0fy5s","slide":2,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[78,55,130,38]}
+{"kind":"shape","id":"sh/0j214jm1","slide":2,"bbox":[214,60,3,29]}
+{"kind":"textbox","id":"sh/14vidonm","slide":2,"text":"Scenario 2: Service-to-Slot Booking","textPreview":"Scenario 2: Service-to-Slot Booking","textChars":35,"textLines":1,"bbox":[230,53,890,42]}
+{"kind":"textbox","id":"sh/ehkj294b","slide":2,"text":"The customer compares available offerings, selects a vehicle and date, then reserves capacity before entering booking details.","textPreview":"The customer compares available offerings, selects a vehicle and date, then reserves capacity before entering booking details.","textChars":126,"textLines":1,"bbox":[80,101,1050,24]}
+{"kind":"shape","id":"sh/zit0be5w","slide":2,"bbox":[1110,58,90,27]}
+{"kind":"textbox","id":"sh/cf210zm5","slide":2,"text":"AUTOWASH","textPreview":"AUTOWASH","textChars":8,"textLines":1,"bbox":[1119,63,72,17]}
+{"kind":"shape","id":"sh/dgbi94nq","slide":2,"bbox":[80,162,220,116]}
+{"kind":"shape","id":"sh/pkf658fu","slide":2,"bbox":[68,150,30,30]}
+{"kind":"textbox","id":"sh/oj6pw3e9","slide":2,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[68,156,30,18]}
+{"kind":"shape","id":"sh/nixo3yxo","slide":2,"bbox":[94,187,54,68]}
+{"kind":"shape","id":"sh/2ho7utwj","slide":2,"bbox":[104,197,34,34]}
+{"kind":"textbox","id":"sh/1gf61ofy","slide":2,"text":"SV","textPreview":"SV","textChars":2,"textLines":1,"bbox":[104,204,34,20]}
+{"kind":"shape","id":"sh/0f6psjed","slide":2,"bbox":[106,238,30,3]}
+{"kind":"shape","id":"sh/fexozexs","slide":2,"bbox":[106,245,20,3]}
+{"kind":"textbox","id":"sh/ed4nqtw7","slide":2,"text":"Browse Services","textPreview":"Browse Services","textChars":15,"textLines":1,"bbox":[156,175,130,34]}
+{"kind":"textbox","id":"sh/dcv6xofm","slide":2,"text":"Load active car-care services and their details.","textPreview":"Load active car-care services and their details.","textChars":48,"textLines":1,"bbox":[156,211,130,35]}
+{"kind":"shape","id":"sh/sbm5oje1","slide":2,"bbox":[156,250,130,19]}
+{"kind":"textbox","id":"sh/47ax0nq9","slide":2,"text":"GET /services","textPreview":"GET /services","textChars":13,"textLines":1,"bbox":[162,253,118,13]}
+{"kind":"shape","id":"sh/58jyt8ru","slide":2,"bbox":[380,162,220,116]}
+{"kind":"shape","id":"sh/i5sfyd83","slide":2,"bbox":[368,150,30,30]}
+{"kind":"textbox","id":"sh/361gri9o","slide":2,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[368,156,30,18]}
+{"kind":"shape","id":"sh/w3qxw3qd","slide":2,"bbox":[394,187,54,68]}
+{"kind":"shape","id":"sh/h4zyp8ry","slide":2,"bbox":[404,197,34,34]}
+{"kind":"textbox","id":"sh/u18fut87","slide":2,"text":"PK","textPreview":"PK","textChars":2,"textLines":1,"bbox":[404,204,34,20]}
+{"kind":"shape","id":"sh/v2hgny9s","slide":2,"bbox":[406,238,30,3]}
+{"kind":"shape","id":"sh/0zuh87qh","slide":2,"bbox":[406,245,20,3]}
+{"kind":"textbox","id":"sh/103y1sr2","slide":2,"text":"Compare Packages","textPreview":"Compare Packages","textChars":16,"textLines":1,"bbox":[456,175,130,34]}
+{"kind":"textbox","id":"sh/bu5076t4","slide":2,"text":"Review packages and included service items.","textPreview":"Review packages and included service items.","textChars":43,"textLines":1,"bbox":[456,211,130,35]}
+{"kind":"shape","id":"sh/atwjy1sj","slide":2,"bbox":[456,250,130,19]}
+{"kind":"textbox","id":"sh/xw7i9wba","slide":2,"text":"GET /packages","textPreview":"GET /packages","textChars":13,"textLines":1,"bbox":[462,253,118,13]}
+{"kind":"shape","id":"sh/cvy10rap","slide":2,"bbox":[680,162,220,116]}
+{"kind":"shape","id":"sh/zyp0b6tg","slide":2,"bbox":[668,150,30,30]}
+{"kind":"textbox","id":"sh/yxgj21sv","slide":2,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[668,156,30,18]}
+{"kind":"shape","id":"sh/l07idgb6","slide":2,"bbox":[694,187,54,68]}
+{"kind":"shape","id":"sh/kzy14bal","slide":2,"bbox":[704,197,34,34]}
+{"kind":"textbox","id":"sh/f2l0zmtw","slide":2,"text":"CB","textPreview":"CB","textChars":2,"textLines":1,"bbox":[704,204,34,20]}
+{"kind":"shape","id":"sh/e1czqhsb","slide":2,"bbox":[706,238,30,3]}
+{"kind":"shape","id":"sh/6lgj6h07","slide":2,"bbox":[706,245,20,3]}
+{"kind":"textbox","id":"sh/r6p0fm1s","slide":2,"text":"Check Available Combos","textPreview":"Check Available Combos","textChars":22,"textLines":1,"bbox":[756,175,130,34]}
+{"kind":"textbox","id":"sh/s7y18rid","slide":2,"text":"Display eligible combo offerings and benefits.","textPreview":"Display eligible combo offerings and benefits.","textChars":46,"textLines":1,"bbox":[756,211,130,35]}
+{"kind":"shape","id":"sh/t87ihwjy","slide":2,"bbox":[756,250,130,19]}
+{"kind":"textbox","id":"sh/e90jah0j","slide":2,"text":"GET /combos/available","textPreview":"GET /combos/available","textChars":21,"textLines":1,"bbox":[762,253,118,13]}
+{"kind":"shape","id":"sh/fa90jm14","slide":2,"bbox":[980,162,220,116]}
+{"kind":"shape","id":"sh/gbi1cri9","slide":2,"bbox":[968,150,30,30]}
+{"kind":"textbox","id":"sh/1cr2lwju","slide":2,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[968,156,30,18]}
+{"kind":"shape","id":"sh/2d0je10f","slide":2,"bbox":[994,187,54,68]}
+{"kind":"shape","id":"sh/3e9kn610","slide":2,"bbox":[1004,197,34,34]}
+{"kind":"textbox","id":"sh/d8vmd032","slide":2,"text":"CAR","textPreview":"CAR","textChars":3,"textLines":1,"bbox":[1004,204,34,20]}
+{"kind":"shape","id":"sh/c72l4v2h","slide":2,"bbox":[1006,238,30,3]}
+{"kind":"shape","id":"sh/b6t4bqlc","slide":2,"bbox":[1006,245,20,3]}
+{"kind":"textbox","id":"sh/q5k32lkr","slide":2,"text":"Select a Vehicle","textPreview":"Select a Vehicle","textChars":16,"textLines":1,"bbox":[1056,175,130,34]}
+{"kind":"textbox","id":"sh/lwvmh03e","slide":2,"text":"Choose an owned vehicle, usually the primary vehicle.","textPreview":"Choose an owned vehicle, usually the primary vehicle.","textChars":53,"textLines":1,"bbox":[1056,211,130,35]}
+{"kind":"shape","id":"sh/0bml8f2t","slide":2,"bbox":[1056,250,130,19]}
+{"kind":"textbox","id":"sh/zad4fal8","slide":2,"text":"Vehicle ID","textPreview":"Vehicle ID","textChars":10,"textLines":1,"bbox":[1062,253,118,13]}
+{"kind":"shape","id":"sh/y94365kn","slide":2,"bbox":[980,444,220,116]}
+{"kind":"shape","id":"sh/90fmlk3a","slide":2,"bbox":[968,432,30,30]}
+{"kind":"textbox","id":"sh/8zm5cf2p","slide":2,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[968,438,30,18]}
+{"kind":"shape","id":"sh/sfex4ned","slide":2,"bbox":[994,469,54,68]}
+{"kind":"shape","id":"sh/tgnexsfy","slide":2,"bbox":[1004,479,34,34]}
+{"kind":"textbox","id":"sh/6twf2dw7","slide":2,"text":"DAY","textPreview":"DAY","textChars":3,"textLines":1,"bbox":[1004,486,34,20]}
+{"kind":"shape","id":"sh/re5wvixs","slide":2,"bbox":[1006,520,30,3]}
+{"kind":"shape","id":"sh/gjyx8ne9","slide":2,"bbox":[1006,527,20,3]}
+{"kind":"textbox","id":"sh/1k7y1sfu","slide":2,"text":"Choose Booking Date","textPreview":"Choose Booking Date","textChars":19,"textLines":1,"bbox":[1056,457,130,34]}
+{"kind":"textbox","id":"sh/ehgf6xw3","slide":2,"text":"Customer selects the intended wash date.","textPreview":"Customer selects the intended wash date.","textChars":40,"textLines":1,"bbox":[1056,493,130,35]}
+{"kind":"shape","id":"sh/fipgz2xo","slide":2,"bbox":[1056,532,130,19]}
+{"kind":"textbox","id":"sh/wnuxw3e5","slide":2,"text":"Local date","textPreview":"Local date","textChars":10,"textLines":1,"bbox":[1062,535,118,13]}
+{"kind":"shape","id":"sh/xo3ep8fq","slide":2,"bbox":[680,444,220,116]}
+{"kind":"shape","id":"sh/zit0v6h8","slide":2,"bbox":[668,432,30,30]}
+{"kind":"textbox","id":"sh/yhkz21gn","slide":2,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[668,438,30,18]}
+{"kind":"shape","id":"sh/l4bixgze","slide":2,"bbox":[694,469,54,68]}
+{"kind":"shape","id":"sh/0j2h4byt","slide":2,"bbox":[704,479,34,34]}
+{"kind":"textbox","id":"sh/be907mhw","slide":2,"text":"SL","textPreview":"SL","textChars":2,"textLines":1,"bbox":[704,486,34,20]}
+{"kind":"shape","id":"sh/qd0zy1gb","slide":2,"bbox":[706,520,30,3]}
+{"kind":"shape","id":"sh/dgbi9wz2","slide":2,"bbox":[706,527,20,3]}
+{"kind":"textbox","id":"sh/cfih0ryh","slide":2,"text":"Load Slot Availability","textPreview":"Load Slot Availability","textChars":22,"textLines":1,"bbox":[756,457,130,34]}
+{"kind":"textbox","id":"sh/3a903mh0","slide":2,"text":"Backend calculates capacity, holds and remaining slots.","textPreview":"Backend calculates capacity, holds and remaining slots.","textChars":55,"textLines":1,"bbox":[756,493,130,35]}
+{"kind":"shape","id":"sh/290zuhgf","slide":2,"bbox":[756,532,130,19]}
+{"kind":"textbox","id":"sh/utkzahob","slide":2,"text":"GET /slots/availability","textPreview":"GET /slots/availability","textChars":23,"textLines":1,"bbox":[762,535,118,13]}
+{"kind":"shape","id":"sh/fud0jmpw","slide":2,"bbox":[380,444,220,116]}
+{"kind":"shape","id":"sh/gvm1cr6h","slide":2,"bbox":[368,432,30,30]}
+{"kind":"textbox","id":"sh/hwvilw72","slide":2,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[368,438,30,18]}
+{"kind":"shape","id":"sh/6pkz6hoz","slide":2,"bbox":[394,469,54,68]}
+{"kind":"shape","id":"sh/7qt0fmpk","slide":2,"bbox":[404,479,34,34]}
+{"kind":"textbox","id":"sh/sr2h8765","slide":2,"text":"H","textPreview":"H","textChars":1,"textLines":1,"bbox":[404,486,34,20]}
+{"kind":"shape","id":"sh/tsbihc7q","slide":2,"bbox":[406,520,30,3]}
+{"kind":"shape","id":"sh/qloji1oj","slide":2,"bbox":[406,527,20,3]}
+{"kind":"textbox","id":"sh/rmx0r6p4","slide":2,"text":"Hold the Selected Slot","textPreview":"Hold the Selected Slot","textChars":22,"textLines":1,"bbox":[456,457,130,34]}
+{"kind":"textbox","id":"sh/lsjux4vi","slide":2,"text":"Create a temporary reservation before booking submit.","textPreview":"Create a temporary reservation before booking submit.","textChars":53,"textLines":1,"bbox":[456,493,130,35]}
+{"kind":"shape","id":"sh/0rat4zux","slide":2,"bbox":[456,532,130,19]}
+{"kind":"textbox","id":"sh/zq1cvudc","slide":2,"text":"POST /slots/hold","textPreview":"POST /slots/hold","textChars":16,"textLines":1,"bbox":[462,535,118,13]}
+{"kind":"shape","id":"sh/yp8b2pcr","slide":2,"bbox":[80,444,220,116]}
+{"kind":"shape","id":"sh/d4zutkv6","slide":2,"bbox":[68,432,30,30]}
+{"kind":"textbox","id":"sh/c3qt0ful","slide":2,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[68,438,30,18]}
+{"kind":"shape","id":"sh/b2hcrudg","slide":2,"bbox":[94,469,54,68]}
+{"kind":"shape","id":"sh/q18bypcv","slide":2,"bbox":[104,479,34,34]}
+{"kind":"textbox","id":"sh/xk3u5ovq","slide":2,"text":"SUM","textPreview":"SUM","textChars":3,"textLines":1,"bbox":[104,486,34,20]}
+{"kind":"shape","id":"sh/wzudcju5","slide":2,"bbox":[106,520,30,3]}
+{"kind":"shape","id":"sh/1wju9gn6","slide":2,"bbox":[106,527,20,3]}
+{"kind":"textbox","id":"sh/0vad0bml","slide":2,"text":"Review Booking Setup","textPreview":"Review Booking Setup","textChars":20,"textLines":1,"bbox":[156,457,130,34]}
+{"kind":"textbox","id":"sh/zu1c7650","slide":2,"text":"Show service, vehicle, date, slot and estimated price.","textPreview":"Show service, vehicle, date, slot and estimated price.","textChars":54,"textLines":1,"bbox":[156,493,130,35]}
+{"kind":"shape","id":"sh/etsvyl4f","slide":2,"bbox":[156,532,130,19]}
+{"kind":"textbox","id":"sh/d8ju5gnu","slide":2,"text":"Continue checkout","textPreview":"Continue checkout","textChars":17,"textLines":1,"bbox":[162,535,118,13]}
+{"kind":"shape","id":"sh/c7adwbm9","slide":2,"bbox":[300,216,80,8]}
+{"kind":"shape","id":"sh/r61c3654","slide":2,"bbox":[302,179,76,31]}
+{"kind":"textbox","id":"sh/q5svu14j","slide":2,"text":"2. Compare Packages","textPreview":"2. Compare Packages","textChars":19,"textLines":1,"bbox":[304,181,72,27]}
+{"kind":"shape","id":"sh/p4zu1wny","slide":2,"bbox":[600,216,80,8]}
+{"kind":"shape","id":"sh/43qdsrmd","slide":2,"bbox":[602,179,76,31]}
+{"kind":"textbox","id":"sh/ux4jmdgz","slide":2,"text":"3. Check Available Combos","textPreview":"3. Check Available Combos","textChars":25,"textLines":1,"bbox":[604,181,72,27]}
+{"kind":"shape","id":"sh/vyd0fihk","slide":2,"bbox":[900,216,80,8]}
+{"kind":"shape","id":"sh/gzm1o3y5","slide":2,"bbox":[902,179,76,31]}
+{"kind":"textbox","id":"sh/h0f2h8zq","slide":2,"text":"4. Select a Vehicle","textPreview":"4. Select a Vehicle","textChars":19,"textLines":1,"bbox":[904,181,72,27]}
+{"kind":"shape","id":"sh/6t4jitg3","slide":2,"bbox":[1085,278,10,166]}
+{"kind":"shape","id":"sh/7ud0byh8","slide":2,"bbox":[1096,334,92,31]}
+{"kind":"textbox","id":"sh/8vm1k3yt","slide":2,"text":"5. Choose Booking Date","textPreview":"5. Choose Booking Date","textChars":22,"textLines":1,"bbox":[1098,336,88,27]}
+{"kind":"shape","id":"sh/twvid8ze","slide":2,"bbox":[900,498,80,8]}
+{"kind":"shape","id":"sh/y5kjetgr","slide":2,"bbox":[902,460,76,31]}
+{"kind":"textbox","id":"sh/j6t07ehc","slide":2,"text":"6. Load Slot Availability","textPreview":"6. Load Slot Availability","textChars":25,"textLines":1,"bbox":[904,462,72,27]}
+{"kind":"shape","id":"sh/na9gfux4","slide":2,"bbox":[600,498,80,8]}
+{"kind":"shape","id":"sh/m9gfmpwj","slide":2,"bbox":[602,460,76,31]}
+{"kind":"textbox","id":"sh/9cryhkfa","slide":2,"text":"7. Hold the Selected Slot","textPreview":"7. Hold the Selected Slot","textChars":25,"textLines":1,"bbox":[604,462,72,27]}
+{"kind":"shape","id":"sh/obixofep","slide":2,"bbox":[300,498,80,8]}
+{"kind":"shape","id":"sh/by9gjux0","slide":2,"bbox":[302,460,76,31]}
+{"kind":"textbox","id":"sh/ad0zqpwv","slide":2,"text":"8. Review Booking Setup","textPreview":"8. Review Booking Setup","textChars":23,"textLines":1,"bbox":[304,462,72,27]}
+{"kind":"shape","id":"sh/x0ryl4f6","slide":2,"bbox":[80,625,1120,31]}
+{"kind":"textbox","id":"sh/wzihszel","slide":2,"text":"Available capacity equals configured slot capacity minus existing non-cancelled bookings and active holds; a hold expires after 15 minutes.","textPreview":"Available capacity equals configured slot capacity minus existing non-cancelled bookings and active holds; a hold expires after 15 minutes.","textChars":139,"textLines":1,"bbox":[96,631,1088,19]}
+{"kind":"textbox","id":"sh/r2pg7axw","slide":2,"text":"Solid arrow: next command/action","textPreview":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":[82,665,230,16]}
+{"kind":"textbox","id":"sh/qhwfe5wb","slide":2,"text":"Dashed arrow: callback/realtime update","textPreview":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":[325,665,270,16]}
+{"kind":"textbox","id":"sh/gnudobu9","slide":2,"text":"Repository-aligned: origin/dev b5ad575","textPreview":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":[870,665,325,16]}
+{"kind":"notes","id":"nt/zzyc65","slide":2,"text":"SlotService evaluates maxBookingsPerTimeSlot rather than relying on a frontend-only limit. Active holds are included in capacity calculations."}
+{"kind":"slide","id":"sl/zdoj1h","slide":3,"title":"6. Flows","textShapes":55}
+{"kind":"shape","id":"sh/cfudsr6t","slide":3,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/relwjm58","slide":3,"bbox":[44,30,1192,660]}
+{"kind":"textbox","id":"sh/qdcvqhon","slide":3,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[78,55,130,38]}
+{"kind":"shape","id":"sh/ps3ehwn2","slide":3,"bbox":[214,60,3,29]}
+{"kind":"textbox","id":"sh/4rudor6h","slide":3,"text":"Scenario 3: Voucher, Staff Preference & Booking Creation","textPreview":"Scenario 3: Voucher, Staff Preference & Booking Creation","textChars":56,"textLines":1,"bbox":[230,53,890,42]}
+{"kind":"textbox","id":"sh/3q1wfm5c","slide":3,"text":"Optional discounts and staff preferences are validated before a transactional booking is created from the active slot hold.","textPreview":"Optional discounts and staff preferences are validated before a transactional booking is created from the active slot hold.","textChars":123,"textLines":1,"bbox":[80,101,1050,24]}
+{"kind":"shape","id":"sh/2psvmhor","slide":3,"bbox":[1110,58,90,27]}
+{"kind":"textbox","id":"sh/hojudcn6","slide":3,"text":"AUTOWASH","textPreview":"AUTOWASH","textChars":8,"textLines":1,"bbox":[1119,63,72,17]}
+{"kind":"shape","id":"sh/gnadk76l","slide":3,"bbox":[80,162,220,116]}
+{"kind":"shape","id":"sh/elcfmlcn","slide":3,"bbox":[68,150,30,30]}
+{"kind":"textbox","id":"sh/zmlwfqd8","slide":3,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[68,156,30,18]}
+{"kind":"shape","id":"sh/0nuxovut","slide":3,"bbox":[94,187,54,68]}
+{"kind":"shape","id":"sh/1oneh0ve","slide":3,"bbox":[104,197,34,34]}
+{"kind":"textbox","id":"sh/qxcvilwb","slide":3,"text":"VC","textPreview":"VC","textChars":2,"textLines":1,"bbox":[104,204,34,20]}
+{"kind":"shape","id":"sh/rylwb6dw","slide":3,"bbox":[106,238,30,3]}
+{"kind":"shape","id":"sh/czuxkbuh","slide":3,"bbox":[106,245,20,3]}
+{"kind":"textbox","id":"sh/d03edgv2","slide":3,"text":"Enter Voucher","textPreview":"Enter Voucher","textChars":13,"textLines":1,"bbox":[156,175,130,34]}
+{"kind":"textbox","id":"sh/2tsve1wf","slide":3,"text":"Customer provides an optional promotion or voucher code.","textPreview":"Customer provides an optional promotion or voucher code.","textChars":56,"textLines":1,"bbox":[156,211,130,35]}
+{"kind":"shape","id":"sh/3u1w76d0","slide":3,"bbox":[156,250,130,19]}
+{"kind":"textbox","id":"sh/7yhcf2ts","slide":3,"text":"Booking context","textPreview":"Booking context","textChars":15,"textLines":1,"bbox":[162,253,118,13]}
+{"kind":"shape","id":"sh/6xob6xc7","slide":3,"bbox":[380,162,220,116]}
+{"kind":"shape","id":"sh/t0zuhcby","slide":3,"bbox":[368,150,30,30]}
+{"kind":"textbox","id":"sh/szqt87ud","slide":3,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[368,156,30,18]}
+{"kind":"shape","id":"sh/f2hcjmto","slide":3,"bbox":[394,187,54,68]}
+{"kind":"shape","id":"sh/u18bahs3","slide":3,"bbox":[404,197,34,34]}
+{"kind":"textbox","id":"sh/h4zulcbu","slide":3,"text":"%","textPreview":"%","textChars":1,"textLines":1,"bbox":[404,204,34,20]}
+{"kind":"shape","id":"sh/g3qtc7a9","slide":3,"bbox":[406,238,30,3]}
+{"kind":"shape","id":"sh/v6xs7itk","slide":3,"bbox":[406,245,20,3]}
+{"kind":"textbox","id":"sh/a54bydcz","slide":3,"text":"Validate Discount","textPreview":"Validate Discount","textChars":17,"textLines":1,"bbox":[456,175,130,34]}
+{"kind":"textbox","id":"sh/0b298jax","slide":3,"text":"Backend checks eligibility, validity and discount result.","textPreview":"Backend checks eligibility, validity and discount result.","textChars":57,"textLines":1,"bbox":[456,211,130,35]}
+{"kind":"shape","id":"sh/1cbqhori","slide":3,"bbox":[456,250,130,19]}
+{"kind":"textbox","id":"sh/e9kr69sr","slide":3,"text":"/validate-voucher","textPreview":"/validate-voucher","textChars":17,"textLines":1,"bbox":[462,253,118,13]}
+{"kind":"shape","id":"sh/zat8fe9c","slide":3,"bbox":[680,162,220,116]}
+{"kind":"shape","id":"sh/c72p4zal","slide":3,"bbox":[668,150,30,30]}
+{"kind":"textbox","id":"sh/d8bqd4r6","slide":3,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[668,156,30,18]}
+{"kind":"shape","id":"sh/ql0729sv","slide":3,"bbox":[694,187,54,68]}
+{"kind":"shape","id":"sh/r698be9g","slide":3,"bbox":[704,197,34,34]}
+{"kind":"textbox","id":"sh/w3m9g3q5","slide":3,"text":"ST","textPreview":"ST","textChars":2,"textLines":1,"bbox":[704,204,34,20]}
+{"kind":"shape","id":"sh/x4vqp8rq","slide":3,"bbox":[706,238,30,3]}
+{"kind":"shape","id":"sh/tcnelw3q","slide":3,"bbox":[706,245,20,3]}
+{"kind":"textbox","id":"sh/8bexsbm5","slide":3,"text":"Request Staff Options","textPreview":"Request Staff Options","textChars":21,"textLines":1,"bbox":[756,175,130,34]}
+{"kind":"textbox","id":"sh/7a5wj6lk","slide":3,"text":"Load staff candidates available for the selected time.","textPreview":"Load staff candidates available for the selected time.","textChars":54,"textLines":1,"bbox":[756,211,130,35]}
+{"kind":"shape","id":"sh/69cfq14z","slide":3,"bbox":[756,250,130,19]}
+{"kind":"textbox","id":"sh/hgnepg32","slide":3,"text":"/staff-options","textPreview":"/staff-options","textChars":14,"textLines":1,"bbox":[762,253,118,13]}
+{"kind":"shape","id":"sh/gfexwbmh","slide":3,"bbox":[980,162,220,116]}
+{"kind":"shape","id":"sh/ve5wn6lw","slide":3,"bbox":[968,150,30,30]}
+{"kind":"textbox","id":"sh/udwfu14b","slide":3,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[968,156,30,18]}
+{"kind":"shape","id":"sh/547etg3y","slide":3,"bbox":[994,187,54,68]}
+{"kind":"shape","id":"sh/43yx0vmd","slide":3,"bbox":[1004,197,34,34]}
+{"kind":"textbox","id":"sh/2p8budkv","slide":3,"text":"SEL","textPreview":"SEL","textChars":3,"textLines":1,"bbox":[1004,204,34,20]}
+{"kind":"shape","id":"sh/nqhcni1g","slide":3,"bbox":[1006,238,30,3]}
+{"kind":"shape","id":"sh/obatwn21","slide":3,"bbox":[1006,245,20,3]}
+{"kind":"textbox","id":"sh/pcjupsjm","slide":3,"text":"Choose Staff Preference","textPreview":"Choose Staff Preference","textChars":23,"textLines":1,"bbox":[1056,175,130,34]}
+{"kind":"textbox","id":"sh/adsbyxkr","slide":3,"text":"Customer selects preferred staff or automatic assignment.","textPreview":"Customer selects preferred staff or automatic assignment.","textChars":57,"textLines":1,"bbox":[1056,211,130,35]}
+{"kind":"shape","id":"sh/be1cr21c","slide":3,"bbox":[1056,250,130,19]}
+{"kind":"textbox","id":"sh/wfat072x","slide":3,"text":"Optional preference","textPreview":"Optional preference","textChars":19,"textLines":1,"bbox":[1062,253,118,13]}
+{"kind":"shape","id":"sh/xgjutsji","slide":3,"bbox":[980,444,220,116]}
+{"kind":"shape","id":"sh/yhsb2xk3","slide":3,"bbox":[968,432,30,30]}
+{"kind":"textbox","id":"sh/ji1cv21o","slide":3,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[968,438,30,18]}
+{"kind":"shape","id":"sh/vmlsj2hw","slide":3,"bbox":[994,469,54,68]}
+{"kind":"shape","id":"sh/ulcbahgb","slide":3,"bbox":[1004,479,34,34]}
+{"kind":"textbox","id":"sh/ho3alczm","slide":3,"text":"CHK","textPreview":"CHK","textChars":3,"textLines":1,"bbox":[1004,486,34,20]}
+{"kind":"shape","id":"sh/gnutc7y1","slide":3,"bbox":[1006,520,30,3]}
+{"kind":"shape","id":"sh/7ilsf2hk","slide":3,"bbox":[1006,527,20,3]}
+{"kind":"textbox","id":"sh/6hsb6xgz","slide":3,"text":"Confirm Booking Data","textPreview":"Confirm Booking Data","textChars":20,"textLines":1,"bbox":[1056,457,130,34]}
+{"kind":"textbox","id":"sh/tk3ahczq","slide":3,"text":"Frontend submits vehicle, offering, slot and payment choice.","textPreview":"Frontend submits vehicle, offering, slot and payment choice.","textChars":60,"textLines":1,"bbox":[1056,493,130,35]}
+{"kind":"shape","id":"sh/8jut87y5","slide":3,"bbox":[1056,532,130,19]}
+{"kind":"textbox","id":"sh/je1sbiho","slide":3,"text":"Create request","textPreview":"Create request","textChars":14,"textLines":1,"bbox":[1062,535,118,13]}
+{"kind":"shape","id":"sh/ydsr2dg3","slide":3,"bbox":[680,444,220,116]}
+{"kind":"shape","id":"sh/ojqpcje1","slide":3,"bbox":[668,432,30,30]}
+{"kind":"textbox","id":"sh/pkzqlof6","slide":3,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[668,438,30,18]}
+{"kind":"shape","id":"sh/2xo7atwv","slide":3,"bbox":[694,469,54,68]}
+{"kind":"shape","id":"sh/nyx8jexg","slide":3,"bbox":[704,479,34,34]}
+{"kind":"textbox","id":"sh/cnqpg3ex","slide":3,"text":"API","textPreview":"API","textChars":3,"textLines":1,"bbox":[704,486,34,20]}
+{"kind":"shape","id":"sh/xozqp8fi","slide":3,"bbox":[706,520,30,3]}
+{"kind":"shape","id":"sh/al87etwr","slide":3,"bbox":[706,527,20,3]}
+{"kind":"textbox","id":"sh/bmh8nyxc","slide":3,"text":"Create Booking","textPreview":"Create Booking","textChars":14,"textLines":1,"bbox":[756,457,130,34]}
+{"kind":"textbox","id":"sh/srmp4zet","slide":3,"text":"Backend validates hold, capacity, voucher and ownership.","textPreview":"Backend validates hold, capacity, voucher and ownership.","textChars":56,"textLines":1,"bbox":[756,493,130,35]}
+{"kind":"shape","id":"sh/dsfqd4fy","slide":3,"bbox":[756,532,130,19]}
+{"kind":"textbox","id":"sh/hwbml0vq","slide":3,"text":"POST /customers/bookings","textPreview":"POST /customers/bookings","textChars":24,"textLines":1,"bbox":[762,535,118,13]}
+{"kind":"shape","id":"sh/gv25cvul","slide":3,"bbox":[380,444,220,116]}
+{"kind":"shape","id":"sh/vut4jad0","slide":3,"bbox":[368,432,30,30]}
+{"kind":"textbox","id":"sh/utkna5cf","slide":3,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[368,438,30,18]}
+{"kind":"shape","id":"sh/t8bmh0vu","slide":3,"bbox":[394,469,54,68]}
+{"kind":"shape","id":"sh/87i58ve9","slide":3,"bbox":[404,479,34,34]}
+{"kind":"textbox","id":"sh/7694fqdo","slide":3,"text":"DB","textPreview":"DB","textChars":2,"textLines":1,"bbox":[404,486,34,20]}
+{"kind":"shape","id":"sh/650n6lw3","slide":3,"bbox":[406,520,30,3]}
+{"kind":"shape","id":"sh/d4v6tkvy","slide":3,"bbox":[406,527,20,3]}
+{"kind":"textbox","id":"sh/s3m5kfut","slide":3,"text":"Commit Transaction","textPreview":"Commit Transaction","textChars":18,"textLines":1,"bbox":[456,457,130,34]}
+{"kind":"textbox","id":"sh/qxwbyxoz","slide":3,"text":"Persist booking/payment, consume voucher and delete hold.","textPreview":"Persist booking/payment, consume voucher and delete hold.","textChars":57,"textLines":1,"bbox":[456,493,130,35]}
+{"kind":"shape","id":"sh/by5sr2pk","slide":3,"bbox":[456,532,130,19]}
+{"kind":"textbox","id":"sh/czet0n6p","slide":3,"text":"PostgreSQL","textPreview":"PostgreSQL","textChars":10,"textLines":1,"bbox":[462,535,118,13]}
+{"kind":"shape","id":"sh/x0nats7a","slide":3,"bbox":[80,444,220,116]}
+{"kind":"shape","id":"sh/2tcbud8n","slide":3,"bbox":[68,432,30,30]}
+{"kind":"textbox","id":"sh/3ulsnip8","slide":3,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[68,438,30,18]}
+{"kind":"shape","id":"sh/ovutwnqt","slide":3,"bbox":[94,469,54,68]}
+{"kind":"shape","id":"sh/pwnaps7e","slide":3,"bbox":[104,479,34,34]}
+{"kind":"textbox","id":"sh/mpgb6ho7","slide":3,"text":"P","textPreview":"P","textChars":1,"textLines":1,"bbox":[104,486,34,20]}
+{"kind":"shape","id":"sh/7qpczmpc","slide":3,"bbox":[106,520,30,3]}
+{"kind":"shape","id":"sh/0z25cvmt","slide":3,"bbox":[106,527,20,3]}
+{"kind":"textbox","id":"sh/10vm50ne","slide":3,"text":"Return Pending Booking","textPreview":"Return Pending Booking","textChars":22,"textLines":1,"bbox":[156,457,130,34]}
+{"kind":"textbox","id":"sh/exknal4n","slide":3,"text":"Response includes booking status and payment information.","textPreview":"Response includes booking status and payment information.","textChars":57,"textLines":1,"bbox":[156,493,130,35]}
+{"kind":"shape","id":"sh/fyt43q58","slide":3,"bbox":[156,532,130,19]}
+{"kind":"textbox","id":"sh/sv258vmx","slide":3,"text":"PENDING","textPreview":"PENDING","textChars":7,"textLines":1,"bbox":[162,535,118,13]}
+{"kind":"shape","id":"sh/dwbm10n2","slide":3,"bbox":[300,216,80,8]}
+{"kind":"shape","id":"sh/qtkn6l4r","slide":3,"bbox":[302,179,76,31]}
+{"kind":"textbox","id":"sh/rut4zq5c","slide":3,"text":"2. Validate Discount","textPreview":"2. Validate Discount","textChars":20,"textLines":1,"bbox":[304,181,72,27]}
+{"kind":"shape","id":"sh/cr65kfm1","slide":3,"bbox":[600,216,80,8]}
+{"kind":"shape","id":"sh/xsf6dknm","slide":3,"bbox":[602,179,76,31]}
+{"kind":"textbox","id":"sh/7mh83epo","slide":3,"text":"3. Request Staff Options","textPreview":"3. Request Staff Options","textChars":24,"textLines":1,"bbox":[604,181,72,27]}
+{"kind":"shape","id":"sh/ml87a9o3","slide":3,"bbox":[900,216,80,8]}
+{"kind":"shape","id":"sh/9ozq5o7u","slide":3,"bbox":[902,179,76,31]}
+{"kind":"textbox","id":"sh/8nqpcj69","slide":3,"text":"4. Choose Staff Preference","textPreview":"4. Choose Staff Preference","textChars":26,"textLines":1,"bbox":[904,181,72,27]}
+{"kind":"shape","id":"sh/vq187ypk","slide":3,"bbox":[1085,278,10,166]}
+{"kind":"shape","id":"sh/up87etof","slide":3,"bbox":[1096,334,92,31]}
+{"kind":"textbox","id":"sh/hcjq987q","slide":3,"text":"5. Confirm Booking Data","textPreview":"5. Confirm Booking Data","textChars":23,"textLines":1,"bbox":[1098,336,88,27]}
+{"kind":"shape","id":"sh/grapg365","slide":3,"bbox":[900,498,80,8]}
+{"kind":"shape","id":"sh/buxovupg","slide":3,"bbox":[902,460,76,31]}
+{"kind":"textbox","id":"sh/ato72pov","slide":3,"text":"6. Create Booking","textPreview":"6. Create Booking","textChars":17,"textLines":1,"bbox":[904,462,72,27]}
+{"kind":"shape","id":"sh/e9cbax8j","slide":3,"bbox":[600,498,80,8]}
+{"kind":"shape","id":"sh/fa5s3294","slide":3,"bbox":[602,460,76,31]}
+{"kind":"textbox","id":"sh/0betc7qp","slide":3,"text":"7. Commit Transaction","textPreview":"7. Commit Transaction","textChars":21,"textLines":1,"bbox":[604,462,72,27]}
+{"kind":"shape","id":"sh/1cna5cra","slide":3,"bbox":[300,498,80,8]}
+{"kind":"shape","id":"sh/qlcb6x8n","slide":3,"bbox":[302,460,76,31]}
+{"kind":"textbox","id":"sh/r6lsz29s","slide":3,"text":"8. Return Pending Booking","textPreview":"8. Return Pending Booking","textChars":25,"textLines":1,"bbox":[304,462,72,27]}
+{"kind":"shape","id":"sh/s7ut87qd","slide":3,"bbox":[80,625,1120,31]}
+{"kind":"textbox","id":"sh/d83a1sry","slide":3,"text":"Booking creation is server-authoritative: the active hold is removed only after the booking transaction succeeds, preventing duplicate capacity usage.","textPreview":"Booking creation is server-authoritative: the active hold is removed only after the booking transaction succeeds, preventing duplicate ca...","textChars":150,"textLines":1,"bbox":[96,631,1088,19]}
+{"kind":"textbox","id":"sh/ihsr2d8b","slide":3,"text":"Solid arrow: next command/action","textPreview":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":[82,665,230,16]}
+{"kind":"textbox","id":"sh/3ilsvi9w","slide":3,"text":"Dashed arrow: callback/realtime update","textPreview":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":[325,665,270,16]}
+{"kind":"textbox","id":"sh/lwre1gre","slide":3,"text":"Repository-aligned: origin/dev b5ad575","textPreview":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":[870,665,325,16]}
+{"kind":"notes","id":"nt/zdoj1h","slide":3,"text":"The create flow persists booking and payment data, consumes an eligible voucher, removes the slot hold, and publishes BOOKING_UPDATE."}
+{"kind":"slide","id":"sl/7zwhub","slide":4,"title":"6. Flows","textShapes":56}
+{"kind":"shape","id":"sh/t8zq98v2","slide":4,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/6587ydwr","slide":4,"bbox":[44,30,1192,660]}
+{"kind":"textbox","id":"sh/r6h87ydc","slide":4,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[78,55,130,38]}
+{"kind":"shape","id":"sh/gba94net","slide":4,"bbox":[214,60,3,29]}
+{"kind":"textbox","id":"sh/1cjqxsve","slide":4,"text":"Scenario 4: Payment Confirmation","textPreview":"Scenario 4: Payment Confirmation","textChars":32,"textLines":1,"bbox":[230,53,890,42]}
+{"kind":"textbox","id":"sh/e98r2dwn","slide":4,"text":"Online payment is verified by the backend before the booking becomes confirmed and eligible for wash operations.","textPreview":"Online payment is verified by the backend before the booking becomes confirmed and eligible for wash operations.","textChars":112,"textLines":1,"bbox":[80,101,1050,24]}
+{"kind":"shape","id":"sh/fah8vid8","slide":4,"bbox":[1110,58,90,27]}
+{"kind":"textbox","id":"sh/wf6psjep","slide":4,"text":"AUTOWASH","textPreview":"AUTOWASH","textChars":8,"textLines":1,"bbox":[1119,63,72,17]}
+{"kind":"shape","id":"sh/hgfq1ovu","slide":4,"bbox":[80,162,220,116]}
+{"kind":"shape","id":"sh/5kfitsjq","slide":4,"bbox":[68,150,30,30]}
+{"kind":"textbox","id":"sh/4j6hk7i5","slide":4,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[68,156,30,18]}
+{"kind":"shape","id":"sh/3ix0r21k","slide":4,"bbox":[94,187,54,68]}
+{"kind":"shape","id":"sh/ihozix0z","slide":4,"bbox":[104,197,34,34]}
+{"kind":"textbox","id":"sh/d8zixcjm","slide":4,"text":"PAY","textPreview":"PAY","textChars":3,"textLines":1,"bbox":[104,204,34,20]}
+{"kind":"shape","id":"sh/s7q1o7i1","slide":4,"bbox":[106,238,30,3]}
+{"kind":"shape","id":"sh/r6h0v21g","slide":4,"bbox":[106,245,20,3]}
+{"kind":"textbox","id":"sh/qlozmx0b","slide":4,"text":"Select Payment Method","textPreview":"Select Payment Method","textChars":21,"textLines":1,"bbox":[156,175,130,34]}
+{"kind":"textbox","id":"sh/1czi1cjy","slide":4,"text":"Choose supported payment option during booking creation.","textPreview":"Choose supported payment option during booking creation.","textChars":56,"textLines":1,"bbox":[156,211,130,35]}
+{"kind":"shape","id":"sh/0bq1srid","slide":4,"bbox":[156,250,130,19]}
+{"kind":"textbox","id":"sh/kritkful","slide":4,"text":"Payment method","textPreview":"Payment method","textChars":14,"textLines":1,"bbox":[162,253,118,13]}
+{"kind":"shape","id":"sh/lsrudkb6","slide":4,"bbox":[380,162,220,116]}
+{"kind":"shape","id":"sh/yp0bipcf","slide":4,"bbox":[368,150,30,30]}
+{"kind":"textbox","id":"sh/zq9cbat0","slide":4,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[368,156,30,18]}
+{"kind":"shape","id":"sh/8v2tozux","slide":4,"bbox":[394,187,54,68]}
+{"kind":"shape","id":"sh/9wbuh4b2","slide":4,"bbox":[404,197,34,34]}
+{"kind":"textbox","id":"sh/mt0bmpcr","slide":4,"text":"SP","textPreview":"SP","textChars":2,"textLines":1,"bbox":[404,204,34,20]}
+{"kind":"shape","id":"sh/7u9cfutc","slide":4,"bbox":[406,238,30,3]}
+{"kind":"shape","id":"sh/ozytcvud","slide":4,"bbox":[406,245,20,3]}
+{"kind":"textbox","id":"sh/p07a50by","slide":4,"text":"Prepare SePay Transfer","textPreview":"Prepare SePay Transfer","textChars":22,"textLines":1,"bbox":[456,175,130,34]}
+{"kind":"textbox","id":"sh/rexwbydg","slide":4,"text":"Generate payment code and VietQR information.","textPreview":"Generate payment code and VietQR information.","textChars":45,"textLines":1,"bbox":[456,211,130,35]}
+{"kind":"shape","id":"sh/qt4fidwv","slide":4,"bbox":[456,250,130,19]}
+{"kind":"textbox","id":"sh/dgfed8vm","slide":4,"text":"BANK_TRANSFER","textPreview":"BANK_TRANSFER","textChars":13,"textLines":1,"bbox":[462,253,118,13]}
+{"kind":"shape","id":"sh/sf6xk3e1","slide":4,"bbox":[680,162,220,116]}
+{"kind":"shape","id":"sh/jqdw7ydk","slide":4,"bbox":[668,150,30,30]}
+{"kind":"textbox","id":"sh/ip4vetwz","slide":4,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[668,156,30,18]}
+{"kind":"shape","id":"sh/5sve98va","slide":4,"bbox":[694,187,54,68]}
+{"kind":"shape","id":"sh/4rmdg3e5","slide":4,"bbox":[704,197,34,34]}
+{"kind":"textbox","id":"sh/vmtw3ed8","slide":4,"text":"QR","textPreview":"QR","textChars":2,"textLines":1,"bbox":[704,204,34,20]}
+{"kind":"shape","id":"sh/ulkvatwn","slide":4,"bbox":[706,238,30,3]}
+{"kind":"shape","id":"sh/atozehsn","slide":4,"bbox":[706,245,20,3]}
+{"kind":"textbox","id":"sh/bux0nm9s","slide":4,"text":"Customer Transfers Funds","textPreview":"Customer Transfers Funds","textChars":24,"textLines":1,"bbox":[756,175,130,34]}
+{"kind":"textbox","id":"sh/wv6hgrad","slide":4,"text":"Customer pays using the generated bank-transfer content.","textPreview":"Customer pays using the generated bank-transfer content.","textChars":56,"textLines":1,"bbox":[756,211,130,35]}
+{"kind":"shape","id":"sh/xwfipwry","slide":4,"bbox":[756,250,130,19]}
+{"kind":"textbox","id":"sh/m54zahsb","slide":4,"text":"SePay / VietQR","textPreview":"SePay / VietQR","textChars":14,"textLines":1,"bbox":[762,253,118,13]}
+{"kind":"shape","id":"sh/n6d0j2tw","slide":4,"bbox":[980,162,220,116]}
+{"kind":"shape","id":"sh/ormhc7ah","slide":4,"bbox":[968,150,30,30]}
+{"kind":"textbox","id":"sh/9svilcr2","slide":4,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[968,156,30,18]}
+{"kind":"shape","id":"sh/e14z6xsf","slide":4,"bbox":[994,187,54,68]}
+{"kind":"shape","id":"sh/z2d0f2t0","slide":4,"bbox":[1004,197,34,34]}
+{"kind":"textbox","id":"sh/hwj2l0bi","slide":4,"text":"WH","textPreview":"WH","textChars":2,"textLines":1,"bbox":[1004,204,34,20]}
+{"kind":"shape","id":"sh/gvalcvux","slide":4,"bbox":[1006,238,30,3]}
+{"kind":"shape","id":"sh/vu1kjqtc","slide":4,"bbox":[1006,245,20,3]}
+{"kind":"textbox","id":"sh/uts3a5cr","slide":4,"text":"Receive Signed Webhook","textPreview":"Receive Signed Webhook","textChars":22,"textLines":1,"bbox":[1056,175,130,34]}
+{"kind":"textbox","id":"sh/tsj2h0b6","slide":4,"text":"Verify HMAC signature, timestamp and payment code.","textPreview":"Verify HMAC signature, timestamp and payment code.","textChars":50,"textLines":1,"bbox":[1056,211,130,35]}
+{"kind":"shape","id":"sh/8rql8vul","slide":4,"bbox":[1056,250,130,19]}
+{"kind":"textbox","id":"sh/7qhkfqt0","slide":4,"text":"/payments/sepay/webhook","textPreview":"/payments/sepay/webhook","textChars":23,"textLines":1,"bbox":[1062,253,118,13]}
+{"kind":"shape","id":"sh/6p836lcv","slide":4,"bbox":[980,444,220,116]}
+{"kind":"shape","id":"sh/loz2dgva","slide":4,"bbox":[968,432,30,30]}
+{"kind":"textbox","id":"sh/knql4bup","slide":4,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[968,438,30,18]}
+{"kind":"shape","id":"sh/wjetgf6x","slide":4,"bbox":[994,469,54,68]}
+{"kind":"shape","id":"sh/xknu9k72","slide":4,"bbox":[1004,479,34,34]}
+{"kind":"textbox","id":"sh/ahcbe5or","slide":4,"text":"VP","textPreview":"VP","textChars":2,"textLines":1,"bbox":[1004,486,34,20]}
+{"kind":"shape","id":"sh/bilc7apc","slide":4,"bbox":[1006,520,30,3]}
+{"kind":"shape","id":"sh/ofutcv6l","slide":4,"bbox":[1006,527,20,3]}
+{"kind":"textbox","id":"sh/9g3u5076","slide":4,"text":"VNPay Alternative","textPreview":"VNPay Alternative","textChars":17,"textLines":1,"bbox":[1056,457,130,34]}
+{"kind":"textbox","id":"sh/mdcba5of","slide":4,"text":"Create checkout URL and handle return, IPN or query.","textPreview":"Create checkout URL and handle return, IPN or query.","textChars":52,"textLines":1,"bbox":[1056,493,130,35]}
+{"kind":"shape","id":"sh/nelc3ap0","slide":4,"bbox":[1056,532,130,19]}
+{"kind":"textbox","id":"sh/8bydoz6p","slide":4,"text":"VNPay endpoints","textPreview":"VNPay endpoints","textChars":15,"textLines":1,"bbox":[1062,535,118,13]}
+{"kind":"shape","id":"sh/tc7uh4na","slide":4,"bbox":[680,444,220,116]}
+{"kind":"shape","id":"sh/369w7y9s","slide":4,"bbox":[668,432,30,30]}
+{"kind":"textbox","id":"sh/i50fet87","slide":4,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[668,438,30,18]}
+{"kind":"shape","id":"sh/p8re98ri","slide":4,"bbox":[694,469,54,68]}
+{"kind":"shape","id":"sh/47ixg3qx","slide":4,"bbox":[704,479,34,34]}
+{"kind":"textbox","id":"sh/ratgbipo","slide":4,"text":"DB","textPreview":"DB","textChars":2,"textLines":1,"bbox":[704,486,34,20]}
+{"kind":"shape","id":"sh/q90fid83","slide":4,"bbox":[706,520,30,3]}
+{"kind":"shape","id":"sh/dcbyd87u","slide":4,"bbox":[706,527,20,3]}
+{"kind":"textbox","id":"sh/cb2xk3q9","slide":4,"text":"Mark Payment Paid","textPreview":"Mark Payment Paid","textChars":17,"textLines":1,"bbox":[756,457,130,34]}
+{"kind":"textbox","id":"sh/7epwze9k","slide":4,"text":"Persist the verified successful payment transaction.","textPreview":"Persist the verified successful payment transaction.","textChars":52,"textLines":1,"bbox":[756,493,130,35]}
+{"kind":"shape","id":"sh/6dgf698z","slide":4,"bbox":[756,532,130,19]}
+{"kind":"textbox","id":"sh/apcnaxwz","slide":4,"text":"PAID","textPreview":"PAID","textChars":4,"textLines":1,"bbox":[762,535,118,13]}
+{"kind":"shape","id":"sh/vq54jidk","slide":4,"bbox":[380,444,220,116]}
+{"kind":"shape","id":"sh/wre5cnep","slide":4,"bbox":[368,432,30,30]}
+{"kind":"textbox","id":"sh/hsnmlsva","slide":4,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[368,438,30,18]}
+{"kind":"shape","id":"sh/itwnexwv","slide":4,"bbox":[394,469,54,68]}
+{"kind":"shape","id":"sh/ju54n2dg","slide":4,"bbox":[404,479,34,34]}
+{"kind":"textbox","id":"sh/4ve5g7e1","slide":4,"text":"CF","textPreview":"CF","textChars":2,"textLines":1,"bbox":[404,486,34,20]}
+{"kind":"shape","id":"sh/5wnmpcvm","slide":4,"bbox":[406,520,30,3]}
+{"kind":"shape","id":"sh/yxs32dwr","slide":4,"bbox":[406,527,20,3]}
+{"kind":"textbox","id":"sh/zyl4bydc","slide":4,"text":"Confirm Booking","textPreview":"Confirm Booking","textChars":15,"textLines":1,"bbox":[456,457,130,34]}
+{"kind":"textbox","id":"sh/1crqhgfu","slide":4,"text":"Booking changes from pending payment to confirmed.","textPreview":"Booking changes from pending payment to confirmed.","textChars":50,"textLines":1,"bbox":[456,493,130,35]}
+{"kind":"shape","id":"sh/gripoby9","slide":4,"bbox":[456,532,130,19]}
+{"kind":"textbox","id":"sh/fq98f6xo","slide":4,"text":"CONFIRMED","textPreview":"CONFIRMED","textChars":9,"textLines":1,"bbox":[462,535,118,13]}
+{"kind":"shape","id":"sh/ep07m1g3","slide":4,"bbox":[80,444,220,116]}
+{"kind":"shape","id":"sh/pgrqlgfq","slide":4,"bbox":[68,432,30,30]}
+{"kind":"textbox","id":"sh/ofipsby5","slide":4,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[68,438,30,18]}
+{"kind":"shape","id":"sh/3e98j6x0","slide":4,"bbox":[94,469,54,68]}
+{"kind":"shape","id":"sh/2d07qlgf","slide":4,"bbox":[104,479,34,34]}
+{"kind":"textbox","id":"sh/5k769wfm","slide":4,"text":"ST","textPreview":"ST","textChars":2,"textLines":1,"bbox":[104,486,34,20]}
+{"kind":"shape","id":"sh/4jypgry1","slide":4,"bbox":[106,520,30,3]}
+{"kind":"shape","id":"sh/lk321sri","slide":4,"bbox":[106,527,20,3]}
+{"kind":"textbox","id":"sh/kzulsnax","slide":4,"text":"Assign Staff and Notify","textPreview":"Assign Staff and Notify","textChars":23,"textLines":1,"bbox":[156,457,130,34]}
+{"kind":"textbox","id":"sh/jylkzi9c","slide":4,"text":"Select available staff and publish booking update.","textPreview":"Select available staff and publish booking update.","textChars":50,"textLines":1,"bbox":[156,493,130,35]}
+{"kind":"shape","id":"sh/yxc3qdsr","slide":4,"bbox":[156,532,130,19]}
+{"kind":"textbox","id":"sh/tonm5cre","slide":4,"text":"BOOKING_UPDATE","textPreview":"BOOKING_UPDATE","textChars":14,"textLines":1,"bbox":[162,535,118,13]}
+{"kind":"shape","id":"sh/8nulw7at","slide":4,"bbox":[300,216,80,8]}
+{"kind":"shape","id":"sh/7ml43298","slide":4,"bbox":[302,179,76,31]}
+{"kind":"textbox","id":"sh/6lc3uxsn","slide":4,"text":"2. Prepare SePay Transfer","textPreview":"2. Prepare SePay Transfer","textChars":25,"textLines":1,"bbox":[304,181,72,27]}
+{"kind":"shape","id":"sh/9sj2t8ra","slide":4,"bbox":[600,216,80,8]}
+{"kind":"shape","id":"sh/oralk3ap","slide":4,"bbox":[602,179,76,31]}
+{"kind":"textbox","id":"sh/ex8zu98n","slide":4,"text":"3. Customer Transfers Funds","textPreview":"3. Customer Transfers Funds","textChars":27,"textLines":1,"bbox":[604,181,72,27]}
+{"kind":"shape","id":"sh/zyh03eps","slide":4,"bbox":[900,219,6,2]}
+{"kind":"shape","id":"sh/0zq1wjqd","slide":4,"bbox":[911,219,6,2]}
+{"kind":"shape","id":"sh/10zi5o7y","slide":4,"bbox":[922,219,6,2]}
+{"kind":"shape","id":"sh/m18jy98j","slide":4,"bbox":[933,219,6,2]}
+{"kind":"shape","id":"sh/n2h07ep4","slide":4,"bbox":[944,219,6,2]}
+{"kind":"shape","id":"sh/o3q10jqp","slide":4,"bbox":[955,219,6,2]}
+{"kind":"shape","id":"sh/94zi9o7a","slide":4,"bbox":[963,214,17,12]}
+{"kind":"shape","id":"sh/254zmp8f","slide":4,"bbox":[902,179,76,31]}
+{"kind":"textbox","id":"sh/36x0vupk","slide":4,"text":"4. Receive Signed Webhook","textPreview":"4. Receive Signed Webhook","textChars":25,"textLines":1,"bbox":[904,181,72,27]}
+{"kind":"shape","id":"sh/7atw3q5c","slide":4,"bbox":[1085,278,10,166]}
+{"kind":"shape","id":"sh/69kfulo7","slide":4,"bbox":[1096,334,92,31]}
+{"kind":"textbox","id":"sh/tcby50ni","slide":4,"text":"5. VNPay Alternative","textPreview":"5. VNPay Alternative","textChars":20,"textLines":1,"bbox":[1098,336,88,27]}
+{"kind":"shape","id":"sh/sb2xwv6x","slide":4,"bbox":[900,498,80,8]}
+{"kind":"shape","id":"sh/j69wz65g","slide":4,"bbox":[902,460,76,31]}
+{"kind":"textbox","id":"sh/y50fqlov","slide":4,"text":"6. Mark Payment Paid","textPreview":"6. Mark Payment Paid","textChars":20,"textLines":1,"bbox":[904,462,72,27]}
+{"kind":"shape","id":"sh/58be1gnm","slide":4,"bbox":[600,498,80,8]}
+{"kind":"shape","id":"sh/k72xsb61","slide":4,"bbox":[602,460,76,31]}
+{"kind":"textbox","id":"sh/32dgba5k","slide":4,"text":"7. Confirm Booking","textPreview":"7. Confirm Booking","textChars":18,"textLines":1,"bbox":[604,462,72,27]}
+{"kind":"shape","id":"sh/214f25of","slide":4,"bbox":[300,498,80,8]}
+{"kind":"shape","id":"sh/0belg3il","slide":4,"bbox":[302,460,76,31]}
+{"kind":"textbox","id":"sh/1cnm98z6","slide":4,"text":"8. Assign Staff and Notify","textPreview":"8. Assign Staff and Notify","textChars":26,"textLines":1,"bbox":[304,462,72,27]}
+{"kind":"shape","id":"sh/e9c3ed0f","slide":4,"bbox":[382,397,686,24]}
+{"kind":"textbox","id":"sh/fa5k7yh0","slide":4,"text":"Dashed connection: SePay webhook or VNPay IPN/query callback is verified by Spring Boot before confirmation","textPreview":"Dashed connection: SePay webhook or VNPay IPN/query callback is verified by Spring Boot before confirmation","textChars":107,"textLines":1,"bbox":[396,401,658,16]}
+{"kind":"shape","id":"sh/ofelknih","slide":4,"bbox":[80,625,1120,31]}
+{"kind":"textbox","id":"sh/p0nmdsz2","slide":4,"text":"The frontend never confirms an online payment by itself; only a verified SePay webhook or VNPay IPN/query result can mark the booking CONFIRMED.","textPreview":"The frontend never confirms an online payment by itself; only a verified SePay webhook or VNPay IPN/query result can mark the booking CON...","textChars":144,"textLines":1,"bbox":[96,631,1088,19]}
+{"kind":"textbox","id":"sh/2dw3id0b","slide":4,"text":"Solid arrow: next command/action","textPreview":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":[82,665,230,16]}
+{"kind":"textbox","id":"sh/ne54bihw","slide":4,"text":"Dashed arrow: callback/realtime update","textPreview":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":[325,665,270,16]}
+{"kind":"textbox","id":"sh/c3ylonit","slide":4,"text":"Repository-aligned: origin/dev b5ad575","textPreview":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":[870,665,325,16]}
+{"kind":"notes","id":"nt/7zwhub","slide":4,"text":"SePay validates signed webhooks. VNPay supports checkout, return, IPN and query. Successful verification marks payment paid and booking confirmed."}
+{"kind":"slide","id":"sl/1xu2b2","slide":5,"title":"6. Flows","textShapes":55}
+{"kind":"shape","id":"sh/8vq10v6d","slide":5,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/nuh07a5s","slide":5,"bbox":[44,30,1192,660]}
+{"kind":"textbox","id":"sh/mt8jy5o7","slide":5,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[78,55,130,38]}
+{"kind":"shape","id":"sh/xkjidknu","slide":5,"bbox":[214,60,3,29]}
+{"kind":"textbox","id":"sh/wja14fmp","slide":5,"text":"Scenario 5: Staff Assignment, Queue & Check-in","textPreview":"Scenario 5: Staff Assignment, Queue & Check-in","textChars":46,"textLines":1,"bbox":[230,53,890,42]}
+{"kind":"textbox","id":"sh/vi10ba54","slide":5,"text":"Operational users turn a confirmed booking into a wash session and advance it through controlled lifecycle transitions.","textPreview":"Operational users turn a confirmed booking into a wash session and advance it through controlled lifecycle transitions.","textChars":119,"textLines":1,"bbox":[80,101,1050,24]}
+{"kind":"shape","id":"sh/ahsj25oj","slide":5,"bbox":[1110,58,90,27]}
+{"kind":"textbox","id":"sh/dozi1gnq","slide":5,"text":"AUTOWASH","textPreview":"AUTOWASH","textChars":8,"textLines":1,"bbox":[1119,63,72,17]}
+{"kind":"shape","id":"sh/cn6hsb65","slide":5,"bbox":[80,162,220,116]}
+{"kind":"shape","id":"sh/e1sripcf","slide":5,"bbox":[68,150,30,30]}
+{"kind":"textbox","id":"sh/z218rut0","slide":5,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[68,156,30,18]}
+{"kind":"shape","id":"sh/0na9kzul","slide":5,"bbox":[94,187,54,68]}
+{"kind":"shape","id":"sh/1o3qt4b6","slide":5,"bbox":[104,197,34,34]}
+{"kind":"textbox","id":"sh/mpcrmpcb","slide":5,"text":"OPS","textPreview":"OPS","textChars":3,"textLines":1,"bbox":[104,204,34,20]}
+{"kind":"shape","id":"sh/nql8vutw","slide":5,"bbox":[106,238,30,3]}
+{"kind":"shape","id":"sh/oru9ozuh","slide":5,"bbox":[106,245,20,3]}
+{"kind":"textbox","id":"sh/9s3ax4b2","slide":5,"text":"Open Operations Queue","textPreview":"Open Operations Queue","textChars":21,"textLines":1,"bbox":[156,175,130,34]}
+{"kind":"textbox","id":"sh/atcrq9cn","slide":5,"text":"Staff or manager views operational booking data.","textPreview":"Staff or manager views operational booking data.","textChars":48,"textLines":1,"bbox":[156,211,130,35]}
+{"kind":"shape","id":"sh/bulszet8","slide":5,"bbox":[156,250,130,19]}
+{"kind":"textbox","id":"sh/7y587e9g","slide":5,"text":"Operations workspace","textPreview":"Operations workspace","textChars":20,"textLines":1,"bbox":[162,253,118,13]}
+{"kind":"shape","id":"sh/6xw7e98v","slide":5,"bbox":[380,162,220,116]}
+{"kind":"shape","id":"sh/t0nq9or6","slide":5,"bbox":[368,150,30,30]}
+{"kind":"textbox","id":"sh/8zepgjql","slide":5,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[368,156,30,18]}
+{"kind":"shape","id":"sh/jul83u94","slide":5,"bbox":[394,187,54,68]}
+{"kind":"shape","id":"sh/ytc7a9sj","slide":5,"bbox":[404,197,34,34]}
+{"kind":"textbox","id":"sh/lwnq54ra","slide":5,"text":"EL","textPreview":"EL","textChars":2,"textLines":1,"bbox":[404,204,34,20]}
+{"kind":"shape","id":"sh/kvepczap","slide":5,"bbox":[406,238,30,3]}
+{"kind":"shape","id":"sh/bql8zu98","slide":5,"bbox":[406,245,20,3]}
+{"kind":"textbox","id":"sh/apc76psn","slide":5,"text":"Load Eligible Bookings","textPreview":"Load Eligible Bookings","textChars":22,"textLines":1,"bbox":[456,175,130,34]}
+{"kind":"textbox","id":"sh/0zqdkrm9","slide":5,"text":"Only confirmed bookings can start a wash session.","textPreview":"Only confirmed bookings can start a wash session.","textChars":49,"textLines":1,"bbox":[456,211,130,35]}
+{"kind":"shape","id":"sh/1kzetw3u","slide":5,"bbox":[456,250,130,19]}
+{"kind":"textbox","id":"sh/exovi143","slide":5,"text":"/eligible-sessions","textPreview":"/eligible-sessions","textChars":18,"textLines":1,"bbox":[462,253,118,13]}
+{"kind":"shape","id":"sh/fyxwrmlo","slide":5,"bbox":[680,162,220,116]}
+{"kind":"shape","id":"sh/onqxob25","slide":5,"bbox":[668,150,30,30]}
+{"kind":"textbox","id":"sh/pozexg3q","slide":5,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[668,156,30,18]}
+{"kind":"shape","id":"sh/2l8fm1kz","slide":5,"bbox":[694,187,54,68]}
+{"kind":"shape","id":"sh/nmhwv6lk","slide":5,"bbox":[704,197,34,34]}
+{"kind":"textbox","id":"sh/4r6dc7m1","slide":5,"text":"AS","textPreview":"AS","textChars":2,"textLines":1,"bbox":[704,204,34,20]}
+{"kind":"shape","id":"sh/5sfelc3m","slide":5,"bbox":[706,238,30,3]}
+{"kind":"shape","id":"sh/x0behg72","slide":5,"bbox":[706,245,20,3]}
+{"kind":"textbox","id":"sh/wzix8bqh","slide":5,"text":"Resolve Staff Assignment","textPreview":"Resolve Staff Assignment","textChars":24,"textLines":1,"bbox":[756,175,130,34]}
+{"kind":"textbox","id":"sh/vy9wf6pw","slide":5,"text":"Use assignment, availability and workload information.","textPreview":"Use assignment, availability and workload information.","textChars":54,"textLines":1,"bbox":[756,211,130,35]}
+{"kind":"shape","id":"sh/ax0f618b","slide":5,"bbox":[756,250,130,19]}
+{"kind":"textbox","id":"sh/9wredw7q","slide":5,"text":"Staff options","textPreview":"Staff options","textChars":13,"textLines":1,"bbox":[762,253,118,13]}
+{"kind":"shape","id":"sh/8vix4rql","slide":5,"bbox":[980,162,220,116]}
+{"kind":"shape","id":"sh/nu9wbmp0","slide":5,"bbox":[968,150,30,30]}
+{"kind":"textbox","id":"sh/mt0v218f","slide":5,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[968,156,30,18]}
+{"kind":"shape","id":"sh/ls7e9w7u","slide":5,"bbox":[994,187,54,68]}
+{"kind":"shape","id":"sh/0ryd0rq9","slide":5,"bbox":[1004,197,34,34]}
+{"kind":"textbox","id":"sh/qxwbaxo7","slide":5,"text":"NEW","textPreview":"NEW","textChars":3,"textLines":1,"bbox":[1004,204,34,20]}
+{"kind":"shape","id":"sh/by5cj25s","slide":5,"bbox":[1006,238,30,3]}
+{"kind":"shape","id":"sh/czetcn6d","slide":5,"bbox":[1006,245,20,3]}
+{"kind":"textbox","id":"sh/d0nulsni","slide":5,"text":"Create Wash Session","textPreview":"Create Wash Session","textChars":19,"textLines":1,"bbox":[1056,175,130,34]}
+{"kind":"textbox","id":"sh/29cb6dov","slide":5,"text":"Create session linked to booking and assigned staff.","textPreview":"Create session linked to booking and assigned staff.","textChars":52,"textLines":1,"bbox":[1056,211,130,35]}
+{"kind":"shape","id":"sh/3a5cfi5g","slide":5,"bbox":[1056,250,130,19]}
+{"kind":"textbox","id":"sh/obet8n61","slide":5,"text":"PENDING","textPreview":"PENDING","textChars":7,"textLines":1,"bbox":[1062,253,118,13]}
+{"kind":"shape","id":"sh/pcnuhsnm","slide":5,"bbox":[980,444,220,116]}
+{"kind":"shape","id":"sh/e5cb2doz","slide":5,"bbox":[968,432,30,30]}
+{"kind":"textbox","id":"sh/f6lcbi5k","slide":5,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[968,438,30,18]}
+{"kind":"shape","id":"sh/jyh0nah0","slide":5,"bbox":[994,469,54,68]}
+{"kind":"shape","id":"sh/yx8zu50f","slide":5,"bbox":[1004,479,34,34]}
+{"kind":"textbox","id":"sh/l0zipkz6","slide":5,"text":"Q","textPreview":"Q","textChars":1,"textLines":1,"bbox":[1004,486,34,20]}
+{"kind":"shape","id":"sh/kzqhwfil","slide":5,"bbox":[1006,520,30,3]}
+{"kind":"shape","id":"sh/72h0ruhc","slide":5,"bbox":[1006,527,20,3]}
+{"kind":"textbox","id":"sh/618zyp0r","slide":5,"text":"Move Session to Queue","textPreview":"Move Session to Queue","textChars":21,"textLines":1,"bbox":[1056,457,130,34]}
+{"kind":"textbox","id":"sh/t4zitkz2","slide":5,"text":"Operational queue accepts the prepared wash session.","textPreview":"Operational queue accepts the prepared wash session.","textChars":52,"textLines":1,"bbox":[1056,493,130,35]}
+{"kind":"shape","id":"sh/83qh0fih","slide":5,"bbox":[1056,532,130,19]}
+{"kind":"textbox","id":"sh/n6xgfqhs","slide":5,"text":"QUEUED","textPreview":"QUEUED","textChars":6,"textLines":1,"bbox":[1062,535,118,13]}
+{"kind":"shape","id":"sh/m54zml07","slide":5,"bbox":[680,444,220,116]}
+{"kind":"shape","id":"sh/cb2xgry5","slide":5,"bbox":[668,432,30,30]}
+{"kind":"textbox","id":"sh/dcbepwfq","slide":5,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[668,438,30,18]}
+{"kind":"shape","id":"sh/q9kfehgz","slide":5,"bbox":[694,469,54,68]}
+{"kind":"shape","id":"sh/ratwnmxk","slide":5,"bbox":[704,479,34,34]}
+{"kind":"textbox","id":"sh/472xs7y9","slide":5,"text":"IN","textPreview":"IN","textChars":2,"textLines":1,"bbox":[704,486,34,20]}
+{"kind":"shape","id":"sh/p8belcfe","slide":5,"bbox":[706,520,30,3]}
+{"kind":"shape","id":"sh/2l0fqhg3","slide":5,"bbox":[706,527,20,3]}
+{"kind":"textbox","id":"sh/3m9wjmxo","slide":5,"text":"Check In Vehicle","textPreview":"Check In Vehicle","textChars":16,"textLines":1,"bbox":[756,457,130,34]}
+{"kind":"textbox","id":"sh/o3mxobyd","slide":5,"text":"Staff confirms the vehicle has arrived for service.","textPreview":"Staff confirms the vehicle has arrived for service.","textChars":51,"textLines":1,"bbox":[756,493,130,35]}
+{"kind":"shape","id":"sh/94vyxgfy","slide":5,"bbox":[756,532,130,19]}
+{"kind":"textbox","id":"sh/hkzaxs72","slide":5,"text":"CHECKED_IN","textPreview":"CHECKED_IN","textChars":10,"textLines":1,"bbox":[762,535,118,13]}
+{"kind":"shape","id":"sh/wj6ton6h","slide":5,"bbox":[380,444,220,116]}
+{"kind":"shape","id":"sh/vixsvipc","slide":5,"bbox":[368,432,30,30]}
+{"kind":"textbox","id":"sh/uhobmdor","slide":5,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[368,438,30,18]}
+{"kind":"shape","id":"sh/58za1s7e","slide":5,"bbox":[394,469,54,68]}
+{"kind":"shape","id":"sh/47qtsn6t","slide":5,"bbox":[404,479,34,34]}
+{"kind":"textbox","id":"sh/jmhszip8","slide":5,"text":"GO","textPreview":"GO","textChars":2,"textLines":1,"bbox":[404,486,34,20]}
+{"kind":"shape","id":"sh/il8bqxon","slide":5,"bbox":[406,520,30,3]}
+{"kind":"shape","id":"sh/lcvap87u","slide":5,"bbox":[406,527,20,3]}
+{"kind":"textbox","id":"sh/0bm9g36p","slide":5,"text":"Start Washing","textPreview":"Start Washing","textChars":13,"textLines":1,"bbox":[456,457,130,34]}
+{"kind":"textbox","id":"sh/qhk7q947","slide":5,"text":"Session and booking move to active execution.","textPreview":"Session and booking move to active execution.","textChars":45,"textLines":1,"bbox":[456,493,130,35]}
+{"kind":"shape","id":"sh/bit8zu5s","slide":5,"bbox":[456,532,130,19]}
+{"kind":"textbox","id":"sh/cj2pszmd","slide":5,"text":"IN_PROGRESS","textPreview":"IN_PROGRESS","textChars":11,"textLines":1,"bbox":[462,535,118,13]}
+{"kind":"shape","id":"sh/dkbq14ny","slide":5,"bbox":[80,444,220,116]}
+{"kind":"shape","id":"sh/yl47u94j","slide":5,"bbox":[68,432,30,30]}
+{"kind":"textbox","id":"sh/zmd83e54","slide":5,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[68,438,30,18]}
+{"kind":"shape","id":"sh/0nmpwjm9","slide":5,"bbox":[94,469,54,68]}
+{"kind":"shape","id":"sh/lovq5onu","slide":5,"bbox":[104,479,34,34]}
+{"kind":"textbox","id":"sh/ep07ipoz","slide":5,"text":"EV","textPreview":"EV","textChars":2,"textLines":1,"bbox":[104,486,34,20]}
+{"kind":"shape","id":"sh/fq9ora5k","slide":5,"bbox":[106,520,30,3]}
+{"kind":"shape","id":"sh/wjy5o7ut","slide":5,"bbox":[106,527,20,3]}
+{"kind":"textbox","id":"sh/xk76xcby","slide":5,"text":"Persist and Broadcast","textPreview":"Persist and Broadcast","textChars":21,"textLines":1,"bbox":[156,457,130,34]}
+{"kind":"textbox","id":"sh/ahgnmxcn","slide":5,"text":"Save lifecycle state and publish realtime update.","textPreview":"Save lifecycle state and publish realtime update.","textChars":49,"textLines":1,"bbox":[156,493,130,35]}
+{"kind":"shape","id":"sh/vipov2t8","slide":5,"bbox":[156,532,130,19]}
+{"kind":"textbox","id":"sh/kni5srup","slide":5,"text":"WASH_SESSION_UPDATE","textPreview":"WASH_SESSION_UPDATE","textChars":19,"textLines":1,"bbox":[162,535,118,13]}
+{"kind":"shape","id":"sh/5or61wba","slide":5,"bbox":[300,216,80,8]}
+{"kind":"shape","id":"sh/ilgnqhcj","slide":5,"bbox":[302,179,76,31]}
+{"kind":"textbox","id":"sh/jm9ozmt4","slide":5,"text":"2. Load Eligible Bookings","textPreview":"2. Load Eligible Bookings","textChars":25,"textLines":1,"bbox":[304,181,72,27]}
+{"kind":"shape","id":"sh/sbipwru1","slide":5,"bbox":[600,216,80,8]}
+{"kind":"shape","id":"sh/tcr65wb6","slide":5,"bbox":[602,179,76,31]}
+{"kind":"textbox","id":"sh/36d8vqdo","slide":5,"text":"3. Resolve Staff Assignment","textPreview":"3. Resolve Staff Assignment","textChars":27,"textLines":1,"bbox":[604,181,72,27]}
+{"kind":"shape","id":"sh/254r2lw3","slide":5,"bbox":[900,216,80,8]}
+{"kind":"shape","id":"sh/p8vqx0ve","slide":5,"bbox":[902,179,76,31]}
+{"kind":"textbox","id":"sh/o7m94ve9","slide":5,"text":"4. Create Wash Session","textPreview":"4. Create Wash Session","textChars":22,"textLines":1,"bbox":[904,181,72,27]}
+{"kind":"shape","id":"sh/fit8rqdc","slide":5,"bbox":[1085,278,10,166]}
+{"kind":"shape","id":"sh/ehkrylwr","slide":5,"bbox":[1096,334,92,31]}
+{"kind":"textbox","id":"sh/1kbqtgvi","slide":5,"text":"5. Move Session to Queue","textPreview":"5. Move Session to Queue","textChars":24,"textLines":1,"bbox":[1098,336,88,27]}
+{"kind":"shape","id":"sh/gj290vex","slide":5,"bbox":[900,498,80,8]}
+{"kind":"shape","id":"sh/zex83adw","slide":5,"bbox":[902,460,76,31]}
+{"kind":"textbox","id":"sh/ydora5wb","slide":5,"text":"6. Check In Vehicle","textPreview":"6. Check In Vehicle","textChars":19,"textLines":1,"bbox":[904,462,72,27]}
+{"kind":"shape","id":"sh/a98b29gj","slide":5,"bbox":[600,498,80,8]}
+{"kind":"shape","id":"sh/vahcvex4","slide":5,"bbox":[602,460,76,31]}
+{"kind":"textbox","id":"sh/wvqt4jy9","slide":5,"text":"7. Start Washing","textPreview":"7. Start Washing","textChars":16,"textLines":1,"bbox":[604,462,72,27]}
+{"kind":"shape","id":"sh/xwjuxofu","slide":5,"bbox":[300,498,80,8]}
+{"kind":"shape","id":"sh/ixsb6tgf","slide":5,"bbox":[302,460,76,31]}
+{"kind":"textbox","id":"sh/jy1czyx0","slide":5,"text":"8. Persist and Broadcast","textPreview":"8. Persist and Broadcast","textChars":24,"textLines":1,"bbox":[304,462,72,27]}
+{"kind":"shape","id":"sh/kzat83yl","slide":5,"bbox":[80,625,1120,31]}
+{"kind":"textbox","id":"sh/50ju1of6","slide":5,"text":"Lifecycle transitions are validated by the backend: PENDING -> QUEUED -> CHECKED_IN -> IN_PROGRESS -> COMPLETED, with CANCELLED as a terminal alternative.","textPreview":"Lifecycle transitions are validated by the backend: PENDING -> QUEUED -> CHECKED_IN -> IN_PROGRESS -> COMPLETED, with CANCELLED as a term...","textChars":154,"textLines":1,"bbox":[96,631,1088,19]}
+{"kind":"textbox","id":"sh/y1obupgb","slide":5,"text":"Solid arrow: next command/action","textPreview":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":[82,665,230,16]}
+{"kind":"textbox","id":"sh/z2xsnuxw","slide":5,"text":"Dashed arrow: callback/realtime update","textPreview":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":[325,665,270,16]}
+{"kind":"textbox","id":"sh/1wnetsze","slide":5,"text":"Repository-aligned: origin/dev b5ad575","textPreview":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":[870,665,325,16]}
+{"kind":"notes","id":"nt/1xu2b2","slide":5,"text":"Operations endpoints create and transition WashSession entities. Confirmed booking eligibility is enforced before session creation."}
+{"kind":"slide","id":"sl/ophlcg","slide":6,"title":"6. Flows","textShapes":56}
+{"kind":"shape","id":"sh/h87qdw76","slide":6,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/ulg72h8v","slide":6,"bbox":[44,30,1192,660]}
+{"kind":"textbox","id":"sh/vmp8bmpg","slide":6,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[78,55,130,38]}
+{"kind":"shape","id":"sh/4byp8bqx","slide":6,"bbox":[214,60,3,29]}
+{"kind":"textbox","id":"sh/5c7qhw7i","slide":6,"text":"Scenario 6: Wash Progress & Realtime Customer Tracking","textPreview":"Scenario 6: Wash Progress & Realtime Customer Tracking","textChars":54,"textLines":1,"bbox":[230,53,890,42]}
+{"kind":"textbox","id":"sh/i9g7618r","slide":6,"text":"The customer follows the active wash session while staff actions update persisted state and notify subscribed dashboards.","textPreview":"The customer follows the active wash session while staff actions update persisted state and notify subscribed dashboards.","textChars":121,"textLines":1,"bbox":[80,101,1050,24]}
+{"kind":"shape","id":"sh/jap8f6pc","slide":6,"bbox":[1110,58,90,27]}
+{"kind":"textbox","id":"sh/kfepw7qt","slide":6,"text":"AUTOWASH","textPreview":"AUTOWASH","textChars":8,"textLines":1,"bbox":[1119,63,72,17]}
+{"kind":"shape","id":"sh/lgnq5c7y","slide":6,"bbox":[80,162,220,116]}
+{"kind":"shape","id":"sh/9srydk7a","slide":6,"bbox":[68,150,30,30]}
+{"kind":"textbox","id":"sh/orihkfqp","slide":6,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[68,156,30,18]}
+{"kind":"shape","id":"sh/nq9gbap4","slide":6,"bbox":[94,187,54,68]}
+{"kind":"shape","id":"sh/mp0zi58j","slide":6,"bbox":[104,197,34,34]}
+{"kind":"textbox","id":"sh/xgrihk76","slide":6,"text":"TR","textPreview":"TR","textChars":2,"textLines":1,"bbox":[104,204,34,20]}
+{"kind":"shape","id":"sh/wfihozql","slide":6,"bbox":[106,238,30,3]}
+{"kind":"shape","id":"sh/be90fup0","slide":6,"bbox":[106,245,20,3]}
+{"kind":"textbox","id":"sh/at0zmp8f","slide":6,"text":"Open Wash Tracking","textPreview":"Open Wash Tracking","textChars":18,"textLines":1,"bbox":[156,175,130,34]}
+{"kind":"textbox","id":"sh/lkbil472","slide":6,"text":"Customer opens the active booking or tracking page.","textPreview":"Customer opens the active booking or tracking page.","textChars":51,"textLines":1,"bbox":[156,211,130,35]}
+{"kind":"shape","id":"sh/kj2hszqx","slide":6,"bbox":[156,250,130,19]}
+{"kind":"textbox","id":"sh/4na1o3et","slide":6,"text":"Customer workspace","textPreview":"Customer workspace","textChars":18,"textLines":1,"bbox":[162,253,118,13]}
+{"kind":"shape","id":"sh/5oj2h8fe","slide":6,"bbox":[380,162,220,116]}
+{"kind":"shape","id":"sh/ilsjmdgn","slide":6,"bbox":[368,150,30,30]}
+{"kind":"textbox","id":"sh/jm1kfyx8","slide":6,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[368,156,30,18]}
+{"kind":"shape","id":"sh/sra1sne5","slide":6,"bbox":[394,187,54,68]}
+{"kind":"shape","id":"sh/ts32lsfq","slide":6,"bbox":[404,197,34,34]}
+{"kind":"textbox","id":"sh/6psjqdwz","slide":6,"text":"GET","textPreview":"GET","textChars":3,"textLines":1,"bbox":[404,204,34,20]}
+{"kind":"shape","id":"sh/rq1kjixk","slide":6,"bbox":[406,238,30,3]}
+{"kind":"shape","id":"sh/8vq1gjyl","slide":6,"bbox":[406,245,20,3]}
+{"kind":"textbox","id":"sh/9wzi9of6","slide":6,"text":"Request Active Session","textPreview":"Request Active Session","textChars":22,"textLines":1,"bbox":[456,175,130,34]}
+{"kind":"textbox","id":"sh/bq54fmho","slide":6,"text":"Load active tracking or a selected session by ID.","textPreview":"Load active tracking or a selected session by ID.","textChars":49,"textLines":1,"bbox":[456,211,130,35]}
+{"kind":"shape","id":"sh/apwnm1g3","slide":6,"bbox":[456,250,130,19]}
+{"kind":"textbox","id":"sh/xc7mhwzu","slide":6,"text":"/wash-tracking/active","textPreview":"/wash-tracking/active","textChars":21,"textLines":1,"bbox":[462,253,118,13]}
+{"kind":"shape","id":"sh/cby5ory9","slide":6,"bbox":[680,162,220,116]}
+{"kind":"shape","id":"sh/nm54bmhs","slide":6,"bbox":[668,150,30,30]}
+{"kind":"textbox","id":"sh/2lw3ihg7","slide":6,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[668,156,30,18]}
+{"kind":"shape","id":"sh/ponmdwzy","slide":6,"bbox":[694,187,54,68]}
+{"kind":"shape","id":"sh/one5kryd","slide":6,"bbox":[704,197,34,34]}
+{"kind":"textbox","id":"sh/fil472hg","slide":6,"text":"API","textPreview":"API","textChars":3,"textLines":1,"bbox":[704,204,34,20]}
+{"kind":"shape","id":"sh/ehc3ex0v","slide":6,"bbox":[706,238,30,3]}
+{"kind":"shape","id":"sh/upw7i5wv","slide":6,"bbox":[706,245,20,3]}
+{"kind":"textbox","id":"sh/vqp8rad0","slide":6,"text":"Load Session Context","textPreview":"Load Session Context","textChars":20,"textLines":1,"bbox":[756,175,130,34]}
+{"kind":"textbox","id":"sh/gry9kfel","slide":6,"text":"Resolve booking, status, staff and timestamps.","textPreview":"Resolve booking, status, staff and timestamps.","textChars":46,"textLines":1,"bbox":[756,211,130,35]}
+{"kind":"shape","id":"sh/hs7qtkv6","slide":6,"bbox":[756,250,130,19]}
+{"kind":"textbox","id":"sh/61w7e5wj","slide":6,"text":"Tracking service","textPreview":"Tracking service","textChars":16,"textLines":1,"bbox":[762,253,118,13]}
+{"kind":"shape","id":"sh/7258nqd4","slide":6,"bbox":[980,162,220,116]}
+{"kind":"shape","id":"sh/8nepgvep","slide":6,"bbox":[968,150,30,30]}
+{"kind":"textbox","id":"sh/tonqp0va","slide":6,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[968,156,30,18]}
+{"kind":"shape","id":"sh/yxc7alwn","slide":6,"bbox":[994,187,54,68]}
+{"kind":"shape","id":"sh/jy58jqd8","slide":6,"bbox":[1004,197,34,34]}
+{"kind":"textbox","id":"sh/lov25sjm","slide":6,"text":"DB","textPreview":"DB","textChars":2,"textLines":1,"bbox":[1004,204,34,20]}
+{"kind":"shape","id":"sh/03m1cn2h","slide":6,"bbox":[1006,238,30,3]}
+{"kind":"shape","id":"sh/z2dk3i1w","slide":6,"bbox":[1006,245,20,3]}
+{"kind":"textbox","id":"sh/y1kjadkb","slide":6,"text":"Read Current State","textPreview":"Read Current State","textChars":18,"textLines":1,"bbox":[1056,175,130,34]}
+{"kind":"textbox","id":"sh/d0b218jq","slide":6,"text":"PostgreSQL remains the authoritative session state.","textPreview":"PostgreSQL remains the authoritative session state.","textChars":51,"textLines":1,"bbox":[1056,211,130,35]}
+{"kind":"shape","id":"sh/cz218325","slide":6,"bbox":[1056,250,130,19]}
+{"kind":"textbox","id":"sh/rytkzy1k","slide":6,"text":"Session + booking","textPreview":"Session + booking","textChars":17,"textLines":1,"bbox":[1062,253,118,13]}
+{"kind":"shape","id":"sh/qxkj6dkz","slide":6,"bbox":[980,444,220,116]}
+{"kind":"shape","id":"sh/pwb2x8ju","slide":6,"bbox":[968,432,30,30]}
+{"kind":"textbox","id":"sh/4v214329","slide":6,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[968,438,30,18]}
+{"kind":"shape","id":"sh/gfm1k3a5","slide":6,"bbox":[994,469,54,68]}
+{"kind":"shape","id":"sh/hgf2d8ra","slide":6,"bbox":[1004,479,34,34]}
+{"kind":"textbox","id":"sh/ud4jitsz","slide":6,"text":"UP","textPreview":"UP","textChars":2,"textLines":1,"bbox":[1004,486,34,20]}
+{"kind":"shape","id":"sh/vedkby9k","slide":6,"bbox":[1006,520,30,3]}
+{"kind":"shape","id":"sh/8bm1gjat","slide":6,"bbox":[1006,527,20,3]}
+{"kind":"textbox","id":"sh/tcv29ore","slide":6,"text":"Staff Updates Progress","textPreview":"Staff Updates Progress","textChars":22,"textLines":1,"bbox":[1056,457,130,34]}
+{"kind":"textbox","id":"sh/694jetsn","slide":6,"text":"Queue, check-in, start or completion command is submitted.","textPreview":"Queue, check-in, start or completion command is submitted.","textChars":58,"textLines":1,"bbox":[1056,493,130,35]}
+{"kind":"shape","id":"sh/7adk7y98","slide":6,"bbox":[1056,532,130,19]}
+{"kind":"textbox","id":"sh/s7qlsnax","slide":6,"text":"Operations API","textPreview":"Operations API","textChars":14,"textLines":1,"bbox":[1062,535,118,13]}
+{"kind":"shape","id":"sh/d8z2lsri","slide":6,"bbox":[680,444,220,116]}
+{"kind":"shape","id":"sh/n214bmt0","slide":6,"bbox":[668,432,30,30]}
+{"kind":"textbox","id":"sh/m1snihcf","slide":6,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[668,438,30,18]}
+{"kind":"shape","id":"sh/94j6dwbq","slide":6,"bbox":[694,469,54,68]}
+{"kind":"shape","id":"sh/o3a5kru5","slide":6,"bbox":[704,479,34,34]}
+{"kind":"textbox","id":"sh/b6lof6tw","slide":6,"text":"WS","textPreview":"WS","textChars":2,"textLines":1,"bbox":[704,486,34,20]}
+{"kind":"shape","id":"sh/a5snm1cb","slide":6,"bbox":[706,520,30,3]}
+{"kind":"shape","id":"sh/x836hwb2","slide":6,"bbox":[706,527,20,3]}
+{"kind":"textbox","id":"sh/w7u5oruh","slide":6,"text":"Publish Realtime Event","textPreview":"Publish Realtime Event","textChars":22,"textLines":1,"bbox":[756,457,130,34]}
+{"kind":"textbox","id":"sh/rah432ts","slide":6,"text":"Backend emits booking or wash-session update.","textPreview":"Backend emits booking or wash-session update.","textChars":45,"textLines":1,"bbox":[756,493,130,35]}
+{"kind":"shape","id":"sh/q98naxc7","slide":6,"bbox":[756,532,130,19]}
+{"kind":"textbox","id":"sh/el4velg7","slide":6,"text":"/topic/bookings","textPreview":"/topic/bookings","textChars":15,"textLines":1,"bbox":[762,535,118,13]}
+{"kind":"shape","id":"sh/fmdcn6hs","slide":6,"bbox":[380,444,220,116]}
+{"kind":"shape","id":"sh/gn6dgbyd","slide":6,"bbox":[368,432,30,30]}
+{"kind":"textbox","id":"sh/1ofupgzi","slide":6,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[368,438,30,18]}
+{"kind":"shape","id":"sh/2povilg3","slide":6,"bbox":[394,469,54,68]}
+{"kind":"shape","id":"sh/3qxcrqho","slide":6,"bbox":[404,479,34,34]}
+{"kind":"textbox","id":"sh/or6dkvy9","slide":6,"text":"RQ","textPreview":"RQ","textChars":2,"textLines":1,"bbox":[404,486,34,20]}
+{"kind":"shape","id":"sh/psfet0zu","slide":6,"bbox":[406,520,30,3]}
+{"kind":"shape","id":"sh/itkv610z","slide":6,"bbox":[406,527,20,3]}
+{"kind":"textbox","id":"sh/jutcfmhk","slide":6,"text":"Refresh Client Cache","textPreview":"Refresh Client Cache","textChars":20,"textLines":1,"bbox":[456,457,130,34]}
+{"kind":"textbox","id":"sh/l8jyl4j2","slide":6,"text":"React Query caches are invalidated and reloaded.","textPreview":"React Query caches are invalidated and reloaded.","textChars":48,"textLines":1,"bbox":[456,493,130,35]}
+{"kind":"shape","id":"sh/0naxszih","slide":6,"bbox":[456,532,130,19]}
+{"kind":"textbox","id":"sh/zm1gju1w","slide":6,"text":"Polling fallback","textPreview":"Polling fallback","textChars":16,"textLines":1,"bbox":[462,535,118,13]}
+{"kind":"shape","id":"sh/yl8fqp0b","slide":6,"bbox":[80,444,220,116]}
+{"kind":"shape","id":"sh/9cjyp4jy","slide":6,"bbox":[68,432,30,30]}
+{"kind":"textbox","id":"sh/8baxwzid","slide":6,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[68,438,30,18]}
+{"kind":"shape","id":"sh/na1gnu18","slide":6,"bbox":[94,469,54,68]}
+{"kind":"shape","id":"sh/m9sfu90n","slide":6,"bbox":[104,479,34,34]}
+{"kind":"textbox","id":"sh/pgzydkju","slide":6,"text":"LIVE","textPreview":"LIVE","textChars":4,"textLines":1,"bbox":[104,486,34,20]}
+{"kind":"shape","id":"sh/ofqxkfi9","slide":6,"bbox":[106,520,30,3]}
+{"kind":"shape","id":"sh/9sny9k32","slide":6,"bbox":[106,527,20,3]}
+{"kind":"textbox","id":"sh/8rex0fmh","slide":6,"text":"Display Current Progress","textPreview":"Display Current Progress","textChars":24,"textLines":1,"bbox":[156,457,130,34]}
+{"kind":"textbox","id":"sh/765g7ulw","slide":6,"text":"Customer sees latest status, staff and timing data.","textPreview":"Customer sees latest status, staff and timing data.","textChars":51,"textLines":1,"bbox":[156,493,130,35]}
+{"kind":"shape","id":"sh/m5wfyp4r","slide":6,"bbox":[156,532,130,19]}
+{"kind":"textbox","id":"sh/hw7yd43e","slide":6,"text":"Near realtime","textPreview":"Near realtime","textChars":13,"textLines":1,"bbox":[162,535,118,13]}
+{"kind":"shape","id":"sh/wvex4zmt","slide":6,"bbox":[300,216,80,8]}
+{"kind":"shape","id":"sh/vu5gbul8","slide":6,"bbox":[302,179,76,31]}
+{"kind":"textbox","id":"sh/utwf2p4n","slide":6,"text":"2. Request Active Session","textPreview":"2. Request Active Session","textChars":25,"textLines":1,"bbox":[304,181,72,27]}
+{"kind":"shape","id":"sh/x03e103u","slide":6,"bbox":[600,216,80,8]}
+{"kind":"shape","id":"sh/czuxsvm9","slide":6,"bbox":[602,179,76,31]}
+{"kind":"textbox","id":"sh/25sv21k7","slide":6,"text":"3. Load Session Context","textPreview":"3. Load Session Context","textChars":23,"textLines":1,"bbox":[604,181,72,27]}
+{"kind":"shape","id":"sh/n61cb61s","slide":6,"bbox":[900,216,80,8]}
+{"kind":"shape","id":"sh/o7ad4b2d","slide":6,"bbox":[902,179,76,31]}
+{"kind":"textbox","id":"sh/p8judgjy","slide":6,"text":"4. Read Current State","textPreview":"4. Read Current State","textChars":21,"textLines":1,"bbox":[904,181,72,27]}
+{"kind":"shape","id":"sh/a9sv6lkj","slide":6,"bbox":[1085,278,10,166]}
+{"kind":"shape","id":"sh/ba1cfq1o","slide":6,"bbox":[1096,334,92,31]}
+{"kind":"textbox","id":"sh/cbad8v29","slide":6,"text":"5. Staff Updates Progress","textPreview":"5. Staff Updates Progress","textChars":25,"textLines":1,"bbox":[1098,336,88,27]}
+{"kind":"shape","id":"sh/xcjuhgju","slide":6,"bbox":[900,498,80,8]}
+{"kind":"shape","id":"sh/6dobuhkz","slide":6,"bbox":[902,460,76,31]}
+{"kind":"textbox","id":"sh/rehc3m1k","slide":6,"text":"6. Publish Realtime Event","textPreview":"6. Publish Realtime Event","textChars":25,"textLines":1,"bbox":[904,462,72,27]}
+{"kind":"shape","id":"sh/vidsbihc","slide":6,"bbox":[617,501,6,2]}
+{"kind":"shape","id":"sh/uh4r2d0r","slide":6,"bbox":[628,501,6,2]}
+{"kind":"shape","id":"sh/hkvadszi","slide":6,"bbox":[639,501,6,2]}
+{"kind":"shape","id":"sh/wjm94nix","slide":6,"bbox":[650,501,6,2]}
+{"kind":"shape","id":"sh/7ets7ihg","slide":6,"bbox":[661,501,6,2]}
+{"kind":"shape","id":"sh/mdkryd0v","slide":6,"bbox":[672,501,6,2]}
+{"kind":"shape","id":"sh/9gva98z6","slide":6,"bbox":[600,496,17,12]}
+{"kind":"shape","id":"sh/8fm90nil","slide":6,"bbox":[602,460,76,31]}
+{"kind":"textbox","id":"sh/raxsj2hk","slide":6,"text":"7. Refresh Client Cache","textPreview":"7. Refresh Client Cache","textChars":23,"textLines":1,"bbox":[604,462,72,27]}
+{"kind":"shape","id":"sh/69orax0z","slide":6,"bbox":[300,498,80,8]}
+{"kind":"shape","id":"sh/ovip4zyh","slide":6,"bbox":[302,460,76,31]}
+{"kind":"textbox","id":"sh/pwr6x4f2","slide":6,"text":"8. Display Current Progress","textPreview":"8. Display Current Progress","textChars":27,"textLines":1,"bbox":[304,462,72,27]}
+{"kind":"shape","id":"sh/2tg72pgb","slide":6,"bbox":[382,397,686,24]}
+{"kind":"textbox","id":"sh/nupovuhw","slide":6,"text":"Dashed connection: STOMP /topic/bookings event causes subscribed clients to invalidate and reload React Query data","textPreview":"Dashed connection: STOMP /topic/bookings event causes subscribed clients to invalidate and reload React Query data","textChars":114,"textLines":1,"bbox":[396,401,658,16]}
+{"kind":"shape","id":"sh/cjip8jyd","slide":6,"bbox":[80,625,1120,31]}
+{"kind":"textbox","id":"sh/xkr61ofy","slide":6,"text":"WebSocket improves freshness but does not replace persisted state; reconnecting clients reload data and polling remains the fallback mechanism.","textPreview":"WebSocket improves freshness but does not replace persisted state; reconnecting clients reload data and polling remains the fallback mech...","textChars":143,"textLines":1,"bbox":[96,631,1088,19]}
+{"kind":"textbox","id":"sh/ax0769gn","slide":6,"text":"Solid arrow: next command/action","textPreview":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":[82,665,230,16]}
+{"kind":"textbox","id":"sh/bi9ozex8","slide":6,"text":"Dashed arrow: callback/realtime update","textPreview":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":[325,665,270,16]}
+{"kind":"textbox","id":"sh/kn2pcjyp","slide":6,"text":"Repository-aligned: origin/dev b5ad575","textPreview":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":[870,665,325,16]}
+{"kind":"notes","id":"nt/ophlcg","slide":6,"text":"The frontend uses STOMP/SockJS. Backend publishes BOOKING_UPDATE and WASH_SESSION_UPDATE events on /topic/bookings."}
+{"kind":"slide","id":"sl/1crhya","slide":7,"title":"6. Flows","textShapes":55}
+{"kind":"shape","id":"sh/edcb6t4n","slide":7,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/1gna1o3e","slide":7,"bbox":[44,30,1192,660]}
+{"kind":"textbox","id":"sh/0fet8jmt","slide":7,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[78,55,130,38]}
+{"kind":"shape","id":"sh/ni5c3ylk","slide":7,"bbox":[214,60,3,29]}
+{"kind":"textbox","id":"sh/mhwbat4z","slide":7,"text":"Scenario 7: Completion, Loyalty, Tier & Review","textPreview":"Scenario 7: Completion, Loyalty, Tier & Review","textChars":46,"textLines":1,"bbox":[230,53,890,42]}
+{"kind":"textbox","id":"sh/9knu583a","slide":7,"text":"Completing the wash finalizes operational and payment state, awards points, updates tier progress, and unlocks a booking review.","textPreview":"Completing the wash finalizes operational and payment state, awards points, updates tier progress, and unlocks a booking review.","textChars":128,"textLines":1,"bbox":[80,101,1050,24]}
+{"kind":"shape","id":"sh/ojetc3mp","slide":7,"bbox":[1110,58,90,27]}
+{"kind":"textbox","id":"sh/bmpc7ilg","slide":7,"text":"AUTOWASH","textPreview":"AUTOWASH","textChars":8,"textLines":1,"bbox":[1119,63,72,17]}
+{"kind":"shape","id":"sh/alwbed4v","slide":7,"bbox":[80,162,220,116]}
+{"kind":"shape","id":"sh/4j6pwvit","slide":7,"bbox":[68,150,30,30]}
+{"kind":"textbox","id":"sh/pkf65gje","slide":7,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[68,156,30,18]}
+{"kind":"shape","id":"sh/2ho7ul0n","slide":7,"bbox":[94,187,54,68]}
+{"kind":"shape","id":"sh/3ixo3q18","slide":7,"bbox":[104,197,34,34]}
+{"kind":"textbox","id":"sh/cnqp0vip","slide":7,"text":"DONE","textPreview":"DONE","textChars":4,"textLines":1,"bbox":[104,204,34,20]}
+{"kind":"shape","id":"sh/dozq90ja","slide":7,"bbox":[106,238,30,3]}
+{"kind":"shape","id":"sh/ql87yl0z","slide":7,"bbox":[106,245,20,3]}
+{"kind":"textbox","id":"sh/bmho7q1k","slide":7,"text":"Complete Wash Session","textPreview":"Complete Wash Session","textChars":21,"textLines":1,"bbox":[156,175,130,34]}
+{"kind":"textbox","id":"sh/0bqp4fi1","slide":7,"text":"Authorized operations user submits completion.","textPreview":"Authorized operations user submits completion.","textChars":46,"textLines":1,"bbox":[156,211,130,35]}
+{"kind":"shape","id":"sh/lcjqd0jm","slide":7,"bbox":[156,250,130,19]}
+{"kind":"textbox","id":"sh/9wvy1g7e","slide":7,"text":"COMPLETED","textPreview":"COMPLETED","textChars":9,"textLines":1,"bbox":[162,253,118,13]}
+{"kind":"shape","id":"sh/8vmx8b6t","slide":7,"bbox":[380,162,220,116]}
+{"kind":"shape","id":"sh/nudgz6p8","slide":7,"bbox":[368,150,30,30]}
+{"kind":"textbox","id":"sh/mtkf61o3","slide":7,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[368,156,30,18]}
+{"kind":"shape","id":"sh/xkvy5g7q","slide":7,"bbox":[394,187,54,68]}
+{"kind":"shape","id":"sh/wzmxwb65","slide":7,"bbox":[404,197,34,34]}
+{"kind":"textbox","id":"sh/vydg36pk","slide":7,"text":"BK","textPreview":"BK","textChars":2,"textLines":1,"bbox":[404,204,34,20]}
+{"kind":"shape","id":"sh/ax4faloz","slide":7,"bbox":[406,238,30,3]}
+{"kind":"shape","id":"sh/dobytw76","slide":7,"bbox":[406,245,20,3]}
+{"kind":"textbox","id":"sh/c32x0r6l","slide":7,"text":"Complete the Booking","textPreview":"Complete the Booking","textChars":20,"textLines":1,"bbox":[456,175,130,34]}
+{"kind":"textbox","id":"sh/29gvux4j","slide":7,"text":"Booking status is synchronized with the wash session.","textPreview":"Booking status is synchronized with the wash session.","textChars":53,"textLines":1,"bbox":[456,211,130,35]}
+{"kind":"shape","id":"sh/3upc3254","slide":7,"bbox":[456,250,130,19]}
+{"kind":"textbox","id":"sh/4vidwnmp","slide":7,"text":"Booking COMPLETED","textPreview":"Booking COMPLETED","textChars":17,"textLines":1,"bbox":[462,253,118,13]}
+{"kind":"shape","id":"sh/pwru5sna","slide":7,"bbox":[680,162,220,116]}
+{"kind":"shape","id":"sh/qx0vyx4v","slide":7,"bbox":[668,150,30,30]}
+{"kind":"textbox","id":"sh/ry9w7250","slide":7,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[668,156,30,18]}
+{"kind":"shape","id":"sh/czid07ml","slide":7,"bbox":[694,187,54,68]}
+{"kind":"shape","id":"sh/d0re9cn6","slide":7,"bbox":[704,197,34,34]}
+{"kind":"textbox","id":"sh/61wvmd4b","slide":7,"text":"PAY","textPreview":"PAY","textChars":3,"textLines":1,"bbox":[704,204,34,20]}
+{"kind":"shape","id":"sh/725cvi5w","slide":7,"bbox":[706,238,30,3]}
+{"kind":"shape","id":"sh/7yxszuxk","slide":7,"bbox":[706,245,20,3]}
+{"kind":"textbox","id":"sh/mxobqpgf","slide":7,"text":"Finalize Payment State","textPreview":"Finalize Payment State","textChars":22,"textLines":1,"bbox":[756,175,130,34]}
+{"kind":"textbox","id":"sh/90za14fq","slide":7,"text":"Completion marks the associated payment paid where required.","textPreview":"Completion marks the associated payment paid where required.","textChars":60,"textLines":1,"bbox":[756,211,130,35]}
+{"kind":"shape","id":"sh/8zqtszy5","slide":7,"bbox":[756,250,130,19]}
+{"kind":"textbox","id":"sh/v2hs3exw","slide":7,"text":"PAID","textPreview":"PAID","textChars":4,"textLines":1,"bbox":[762,253,118,13]}
+{"kind":"shape","id":"sh/u18bu9gb","slide":7,"bbox":[980,162,220,116]}
+{"kind":"shape","id":"sh/hoza5of2","slide":7,"bbox":[968,150,30,30]}
+{"kind":"textbox","id":"sh/wnqtwjyh","slide":7,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[968,156,30,18]}
+{"kind":"shape","id":"sh/jqhs7exs","slide":7,"bbox":[994,187,54,68]}
+{"kind":"shape","id":"sh/ip8by9g7","slide":7,"bbox":[1004,197,34,34]}
+{"kind":"textbox","id":"sh/gva9ojul","slide":7,"text":"PTS","textPreview":"PTS","textChars":3,"textLines":1,"bbox":[1004,204,34,20]}
+{"kind":"shape","id":"sh/1wjahov6","slide":7,"bbox":[1006,238,30,3]}
+{"kind":"shape","id":"sh/etsrmtcf","slide":7,"bbox":[1006,245,20,3]}
+{"kind":"textbox","id":"sh/fu1sfed0","slide":7,"text":"Award Loyalty Points","textPreview":"Award Loyalty Points","textChars":20,"textLines":1,"bbox":[1056,175,130,34]}
+{"kind":"textbox","id":"sh/sra9kju9","slide":7,"text":"Create an earn transaction based on completed service.","textPreview":"Create an earn transaction based on completed service.","textChars":54,"textLines":1,"bbox":[1056,211,130,35]}
+{"kind":"shape","id":"sh/tsjadovu","slide":7,"bbox":[1056,250,130,19]}
+{"kind":"textbox","id":"sh/6p8ri9cj","slide":7,"text":"Point history","textPreview":"Point history","textChars":13,"textLines":1,"bbox":[1062,253,118,13]}
+{"kind":"shape","id":"sh/rq1sred4","slide":7,"bbox":[980,444,220,116]}
+{"kind":"shape","id":"sh/43q9gzud","slide":7,"bbox":[968,432,30,30]}
+{"kind":"textbox","id":"sh/54zap4vy","slide":7,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[968,438,30,18]}
+{"kind":"shape","id":"sh/l87yxwja","slide":7,"bbox":[994,469,54,68]}
+{"kind":"shape","id":"sh/k7yh4b25","slide":7,"bbox":[1004,479,34,34]}
+{"kind":"textbox","id":"sh/zmpgv61k","slide":7,"text":"T","textPreview":"T","textChars":1,"textLines":1,"bbox":[1004,486,34,20]}
+{"kind":"shape","id":"sh/ylgz21kz","slide":7,"bbox":[1006,520,30,3]}
+{"kind":"shape","id":"sh/dk7ytwje","slide":7,"bbox":[1006,527,20,3]}
+{"kind":"textbox","id":"sh/cjyh0r2t","slide":7,"text":"Recalculate Tier","textPreview":"Recalculate Tier","textChars":16,"textLines":1,"bbox":[1056,457,130,34]}
+{"kind":"textbox","id":"sh/bipgrm18","slide":7,"text":"Updated points determine the customer loyalty tier.","textPreview":"Updated points determine the customer loyalty tier.","textChars":51,"textLines":1,"bbox":[1056,493,130,35]}
+{"kind":"shape","id":"sh/qhwfyhkn","slide":7,"bbox":[1056,532,130,19]}
+{"kind":"textbox","id":"sh/hgry5gji","slide":7,"text":"Tier progress","textPreview":"Tier progress","textChars":13,"textLines":1,"bbox":[1062,535,118,13]}
+{"kind":"shape","id":"sh/wfihcvix","slide":7,"bbox":[680,444,220,116]}
+{"kind":"shape","id":"sh/elcvqd0f","slide":7,"bbox":[668,432,30,30]}
+{"kind":"textbox","id":"sh/fmlwzih0","slide":7,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[668,438,30,18]}
+{"kind":"shape","id":"sh/gnudsnil","slide":7,"bbox":[694,469,54,68]}
+{"kind":"shape","id":"sh/1o3e1sz6","slide":7,"bbox":[704,479,34,34]}
+{"kind":"textbox","id":"sh/6hsvmd0j","slide":7,"text":"SUM","textPreview":"SUM","textChars":3,"textLines":1,"bbox":[704,486,34,20]}
+{"kind":"shape","id":"sh/rilwvih4","slide":7,"bbox":[706,520,30,3]}
+{"kind":"shape","id":"sh/sjudonip","slide":7,"bbox":[706,527,20,3]}
+{"kind":"textbox","id":"sh/tk3ex8za","slide":7,"text":"Show Completion Summary","textPreview":"Show Completion Summary","textChars":23,"textLines":1,"bbox":[756,457,130,34]}
+{"kind":"textbox","id":"sh/qdwvyxgn","slide":7,"text":"Display service, amount, completion time and awarded points.","textPreview":"Display service, amount, completion time and awarded points.","textChars":60,"textLines":1,"bbox":[756,493,130,35]}
+{"kind":"shape","id":"sh/be5w72h8","slide":7,"bbox":[756,532,130,19]}
+{"kind":"textbox","id":"sh/za1wr29c","slide":7,"text":"/completion-summary","textPreview":"/completion-summary","textChars":19,"textLines":1,"bbox":[762,535,118,13]}
+{"kind":"shape","id":"sh/y9svix8r","slide":7,"bbox":[380,444,220,116]}
+{"kind":"shape","id":"sh/lc3etcri","slide":7,"bbox":[368,432,30,30]}
+{"kind":"textbox","id":"sh/kbadk7qx","slide":7,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[368,438,30,18]}
+{"kind":"shape","id":"sh/b61wn29g","slide":7,"bbox":[394,469,54,68]}
+{"kind":"shape","id":"sh/a5svex8v","slide":7,"bbox":[404,479,34,34]}
+{"kind":"textbox","id":"sh/x8jepsrm","slide":7,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[404,486,34,20]}
+{"kind":"shape","id":"sh/c7adgnq1","slide":7,"bbox":[406,520,30,3]}
+{"kind":"shape","id":"sh/n2hcji94","slide":7,"bbox":[406,527,20,3]}
+{"kind":"textbox","id":"sh/2h8vadsz","slide":7,"text":"Submit Booking Review","textPreview":"Submit Booking Review","textChars":21,"textLines":1,"bbox":[456,457,130,34]}
+{"kind":"textbox","id":"sh/sbm14f25","slide":7,"text":"Customer rates the completed booking and adds comments/images.","textPreview":"Customer rates the completed booking and adds comments/images.","textChars":62,"textLines":1,"bbox":[456,493,130,35]}
+{"kind":"shape","id":"sh/tcv2xk3q","slide":7,"bbox":[456,532,130,19]}
+{"kind":"textbox","id":"sh/694j2pkf","slide":7,"text":"One review / booking","textPreview":"One review / booking","textChars":20,"textLines":1,"bbox":[462,535,118,13]}
+{"kind":"shape","id":"sh/radkvul0","slide":7,"bbox":[80,444,220,116]}
+{"kind":"shape","id":"sh/gzm18z2h","slide":7,"bbox":[68,432,30,30]}
+{"kind":"textbox","id":"sh/10f21432","slide":7,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[68,438,30,18]}
+{"kind":"shape","id":"sh/ex4j6pkb","slide":7,"bbox":[94,469,54,68]}
+{"kind":"shape","id":"sh/fydkzulw","slide":7,"bbox":[104,479,34,34]}
+{"kind":"textbox","id":"sh/w321wvmd","slide":7,"text":"+10","textPreview":"+10","textChars":3,"textLines":1,"bbox":[104,486,34,20]}
+{"kind":"shape","id":"sh/h4bip03i","slide":7,"bbox":[106,520,30,3]}
+{"kind":"shape","id":"sh/q50na10v","slide":7,"bbox":[106,527,20,3]}
+{"kind":"textbox","id":"sh/r694j6hg","slide":7,"text":"Award Review Bonus","textPreview":"Award Review Bonus","textChars":18,"textLines":1,"bbox":[156,457,130,34]}
+{"kind":"textbox","id":"sh/s7i5cbi1","slide":7,"text":"Persist review and add the configured review-point bonus.","textPreview":"Persist review and add the configured review-point bonus.","textChars":57,"textLines":1,"bbox":[156,493,130,35]}
+{"kind":"shape","id":"sh/d8rmlgzm","slide":7,"bbox":[156,532,130,19]}
+{"kind":"textbox","id":"sh/e90ne10r","slide":7,"text":"+10 points","textPreview":"+10 points","textChars":10,"textLines":1,"bbox":[162,535,118,13]}
+{"kind":"shape","id":"sh/fa94n6hc","slide":7,"bbox":[300,216,80,8]}
+{"kind":"shape","id":"sh/0b25gbix","slide":7,"bbox":[302,179,76,31]}
+{"kind":"textbox","id":"sh/1cb6pgzi","slide":7,"text":"2. Complete the Booking","textPreview":"2. Complete the Booking","textChars":23,"textLines":1,"bbox":[304,181,72,27]}
+{"kind":"shape","id":"sh/udg32h0n","slide":7,"bbox":[600,216,80,8]}
+{"kind":"shape","id":"sh/vep4bmh8","slide":7,"bbox":[602,179,76,31]}
+{"kind":"textbox","id":"sh/xsvqhkjq","slide":7,"text":"3. Finalize Payment State","textPreview":"3. Finalize Payment State","textChars":25,"textLines":1,"bbox":[604,181,72,27]}
+{"kind":"shape","id":"sh/w7mpof25","slide":7,"bbox":[900,216,80,8]}
+{"kind":"shape","id":"sh/b6d8fa1k","slide":7,"bbox":[902,179,76,31]}
+{"kind":"textbox","id":"sh/a547m5kz","slide":7,"text":"4. Award Loyalty Points","textPreview":"4. Award Loyalty Points","textChars":23,"textLines":1,"bbox":[904,181,72,27]}
+{"kind":"shape","id":"sh/lwfqlkjm","slide":7,"bbox":[1085,278,10,166]}
+{"kind":"shape","id":"sh/kv6pcz2h","slide":7,"bbox":[1096,334,92,31]}
+{"kind":"textbox","id":"sh/jux8ju1w","slide":7,"text":"5. Recalculate Tier","textPreview":"5. Recalculate Tier","textChars":19,"textLines":1,"bbox":[1098,336,88,27]}
+{"kind":"shape","id":"sh/yt47apkb","slide":7,"bbox":[900,498,80,8]}
+{"kind":"shape","id":"sh/10b690ji","slide":7,"bbox":[902,460,76,31]}
+{"kind":"textbox","id":"sh/0z2pgv2x","slide":7,"text":"6. Show Completion Summary","textPreview":"6. Show Completion Summary","textChars":26,"textLines":1,"bbox":[904,462,72,27]}
+{"kind":"shape","id":"sh/cvqhcze5","slide":7,"bbox":[600,498,80,8]}
+{"kind":"shape","id":"sh/dwzyl4vq","slide":7,"bbox":[602,460,76,31]}
+{"kind":"textbox","id":"sh/qtozapwz","slide":7,"text":"7. Submit Booking Review","textPreview":"7. Submit Booking Review","textChars":24,"textLines":1,"bbox":[604,462,72,27]}
+{"kind":"shape","id":"sh/ruhgjudk","slide":7,"bbox":[300,498,80,8]}
+{"kind":"shape","id":"sh/0jqhgze1","slide":7,"bbox":[302,460,76,31]}
+{"kind":"textbox","id":"sh/1kzyp4vm","slide":7,"text":"8. Award Review Bonus","textPreview":"8. Award Review Bonus","textChars":21,"textLines":1,"bbox":[304,462,72,27]}
+{"kind":"shape","id":"sh/ex8ze9wb","slide":7,"bbox":[80,625,1120,31]}
+{"kind":"textbox","id":"sh/zihgnudw","slide":7,"text":"Reviews are accepted only for COMPLETED bookings, are limited to one per booking, and can store before/after image URLs in AWS S3.","textPreview":"Reviews are accepted only for COMPLETED bookings, are limited to one per booking, and can store before/after image URLs in AWS S3.","textChars":130,"textLines":1,"bbox":[96,631,1088,19]}
+{"kind":"textbox","id":"sh/onahkjed","slide":7,"text":"Solid arrow: next command/action","textPreview":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":[82,665,230,16]}
+{"kind":"textbox","id":"sh/9ojitovy","slide":7,"text":"Dashed arrow: callback/realtime update","textPreview":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":[325,665,270,16]}
+{"kind":"textbox","id":"sh/jilkjix0","slide":7,"text":"Repository-aligned: origin/dev b5ad575","textPreview":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":[870,665,325,16]}
+{"kind":"notes","id":"nt/1crhya","slide":7,"text":"Completion triggers payment state, loyalty earn transaction and notification. Review creation grants a ten-point review bonus."}
+{"kind":"slide","id":"sl/h3a4kf","slide":8,"title":"6. Flows","textShapes":55}
+{"kind":"shape","id":"sh/1kbqtsju","slide":8,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/eh0ryd0j","slide":8,"bbox":[44,30,1192,660]}
+{"kind":"textbox","id":"sh/fi98ri14","slide":8,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[78,55,130,38]}
+{"kind":"shape","id":"sh/svi9w3id","slide":8,"bbox":[214,60,3,29]}
+{"kind":"textbox","id":"sh/twrqp8jy","slide":8,"text":"Scenario 8: Admin Insights & History","textPreview":"Scenario 8: Admin Insights & History","textChars":36,"textLines":1,"bbox":[230,53,890,42]}
+{"kind":"textbox","id":"sh/6t0rud07","slide":8,"text":"Customers revisit their service records while managers and administrators monitor bookings, vehicles, staff performance, reviews and revenue.","textPreview":"Customers revisit their service records while managers and administrators monitor bookings, vehicles, staff performance, reviews and reve...","textChars":141,"textLines":1,"bbox":[80,101,1050,24]}
+{"kind":"shape","id":"sh/ru98ni1s","slide":8,"bbox":[1110,58,90,27]}
+{"kind":"textbox","id":"sh/4ry9s3ih","slide":8,"text":"AUTOWASH","textPreview":"AUTOWASH","textChars":8,"textLines":1,"bbox":[1119,63,72,17]}
+{"kind":"shape","id":"sh/5srql8j2","slide":8,"bbox":[80,162,220,116]}
+{"kind":"shape","id":"sh/tkfe5gv2","slide":8,"bbox":[68,150,30,30]}
+{"kind":"textbox","id":"sh/8j6xwbex","slide":8,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[68,156,30,18]}
+{"kind":"shape","id":"sh/7ixw36dc","slide":8,"bbox":[94,187,54,68]}
+{"kind":"shape","id":"sh/6hofu1wr","slide":8,"bbox":[104,197,34,34]}
+{"kind":"textbox","id":"sh/lgfe1wv6","slide":8,"text":"HIS","textPreview":"HIS","textChars":3,"textLines":1,"bbox":[104,204,34,20]}
+{"kind":"shape","id":"sh/kv6xsrel","slide":8,"bbox":[106,238,30,3]}
+{"kind":"shape","id":"sh/juxwz6x0","slide":8,"bbox":[106,245,20,3]}
+{"kind":"textbox","id":"sh/yt4fq1wf","slide":8,"text":"Open Booking History","textPreview":"Open Booking History","textChars":20,"textLines":1,"bbox":[156,175,130,34]}
+{"kind":"textbox","id":"sh/xsvexwfa","slide":8,"text":"Customer views past and active bookings separately.","textPreview":"Customer views past and active bookings separately.","textChars":51,"textLines":1,"bbox":[156,211,130,35]}
+{"kind":"shape","id":"sh/wrmdorep","slide":8,"bbox":[156,250,130,19]}
+{"kind":"textbox","id":"sh/obqx4rml","slide":8,"text":"History workspace","textPreview":"History workspace","textChars":17,"textLines":1,"bbox":[162,253,118,13]}
+{"kind":"shape","id":"sh/pwzedwnq","slide":8,"bbox":[380,162,220,116]}
+{"kind":"shape","id":"sh/298fih4f","slide":8,"bbox":[368,150,30,30]}
+{"kind":"textbox","id":"sh/nahwbm50","slide":8,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[368,156,30,18]}
+{"kind":"shape","id":"sh/076xgrm9","slide":8,"bbox":[394,187,54,68]}
+{"kind":"shape","id":"sh/18ze9cnu","slide":8,"bbox":[404,197,34,34]}
+{"kind":"textbox","id":"sh/e5ofeh43","slide":8,"text":"DT","textPreview":"DT","textChars":2,"textLines":1,"bbox":[404,204,34,20]}
+{"kind":"shape","id":"sh/f6xw7m5o","slide":8,"bbox":[406,238,30,3]}
+{"kind":"shape","id":"sh/k3axcbmd","slide":8,"bbox":[406,245,20,3]}
+{"kind":"textbox","id":"sh/l4jylg3y","slide":8,"text":"View Booking Detail","textPreview":"View Booking Detail","textChars":19,"textLines":1,"bbox":[456,175,130,34]}
+{"kind":"textbox","id":"sh/vy50bapg","slide":8,"text":"Load booking, selected service, payment and staff data.","textPreview":"Load booking, selected service, payment and staff data.","textChars":55,"textLines":1,"bbox":[456,211,130,35]}
+{"kind":"shape","id":"sh/uxczi5ov","slide":8,"bbox":[456,250,130,19]}
+{"kind":"textbox","id":"sh/h0nidk76","slide":8,"text":"Booking ID","textPreview":"Booking ID","textChars":10,"textLines":1,"bbox":[462,253,118,13]}
+{"kind":"shape","id":"sh/wzehkf61","slide":8,"bbox":[680,162,220,116]}
+{"kind":"shape","id":"sh/3m50fu5c","slide":8,"bbox":[668,150,30,30]}
+{"kind":"textbox","id":"sh/ilwzmpor","slide":8,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[668,156,30,18]}
+{"kind":"shape","id":"sh/5onihkni","slide":8,"bbox":[694,187,54,68]}
+{"kind":"shape","id":"sh/4nehoz6x","slide":8,"bbox":[704,197,34,34]}
+{"kind":"textbox","id":"sh/zq1g3qp8","slide":8,"text":"CAR","textPreview":"CAR","textChars":3,"textLines":1,"bbox":[704,204,34,20]}
+{"kind":"shape","id":"sh/y5szalon","slide":8,"bbox":[706,238,30,3]}
+{"kind":"shape","id":"sh/q9wzqlwj","slide":8,"bbox":[706,245,20,3]}
+{"kind":"textbox","id":"sh/ba50jqx4","slide":8,"text":"View Booking Vehicle","textPreview":"View Booking Vehicle","textChars":20,"textLines":1,"bbox":[756,175,130,34]}
+{"kind":"textbox","id":"sh/cbehsve9","slide":8,"text":"Display plate, model, owner metadata and service history.","textPreview":"Display plate, model, owner metadata and service history.","textChars":57,"textLines":1,"bbox":[756,211,130,35]}
+{"kind":"shape","id":"sh/dc7il0fu","slide":8,"bbox":[756,250,130,19]}
+{"kind":"textbox","id":"sh/ydgzu5wf","slide":8,"text":"Vehicle detail","textPreview":"Vehicle detail","textChars":14,"textLines":1,"bbox":[762,253,118,13]}
+{"kind":"shape","id":"sh/zep0nax0","slide":8,"bbox":[980,162,220,116]}
+{"kind":"shape","id":"sh/0fy1wfel","slide":8,"bbox":[968,150,30,30]}
+{"kind":"textbox","id":"sh/lg7ipkf6","slide":8,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[968,156,30,18]}
+{"kind":"shape","id":"sh/m1gjypwr","slide":8,"bbox":[994,187,54,68]}
+{"kind":"shape","id":"sh/n2p0raxc","slide":8,"bbox":[1004,197,34,34]}
+{"kind":"textbox","id":"sh/h8vud83q","slide":8,"text":"X","textPreview":"X","textChars":1,"textLines":1,"bbox":[1004,204,34,20]}
+{"kind":"shape","id":"sh/g72t4325","slide":8,"bbox":[1006,238,30,3]}
+{"kind":"shape","id":"sh/v6tcbylk","slide":8,"bbox":[1006,245,20,3]}
+{"kind":"textbox","id":"sh/ulkb2tkz","slide":8,"text":"Cancel Eligible Booking","textPreview":"Cancel Eligible Booking","textChars":23,"textLines":1,"bbox":[1056,175,130,34]}
+{"kind":"textbox","id":"sh/5cvuhs3m","slide":8,"text":"Backend validates whether cancellation is still allowed.","textPreview":"Backend validates whether cancellation is still allowed.","textChars":56,"textLines":1,"bbox":[1056,211,130,35]}
+{"kind":"shape","id":"sh/4bmt8n21","slide":8,"bbox":[1056,250,130,19]}
+{"kind":"textbox","id":"sh/3adcfilg","slide":8,"text":"Cancel endpoint","textPreview":"Cancel endpoint","textChars":15,"textLines":1,"bbox":[1062,253,118,13]}
+{"kind":"shape","id":"sh/i94b6dkv","slide":8,"bbox":[980,444,220,116]}
+{"kind":"shape","id":"sh/dgfuls3i","slide":8,"bbox":[968,432,30,30]}
+{"kind":"textbox","id":"sh/sfmdcn2d","slide":8,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[968,438,30,18]}
+{"kind":"shape","id":"sh/cjud8ra9","slide":8,"bbox":[994,469,54,68]}
+{"kind":"shape","id":"sh/dknehwru","slide":8,"bbox":[1004,479,34,34]}
+{"kind":"textbox","id":"sh/qhcv61sj","slide":8,"text":"FLT","textPreview":"FLT","textChars":3,"textLines":1,"bbox":[1004,486,34,20]}
+{"kind":"shape","id":"sh/bilwf69o","slide":8,"bbox":[1006,520,30,3]}
+{"kind":"shape","id":"sh/0nexcbal","slide":8,"bbox":[1006,527,20,3]}
+{"kind":"textbox","id":"sh/lonelgr6","slide":8,"text":"Filter Admin Bookings","textPreview":"Filter Admin Bookings","textChars":21,"textLines":1,"bbox":[1056,457,130,34]}
+{"kind":"textbox","id":"sh/ylwfa1sf","slide":8,"text":"Search by customer, plate, phone, status, package and date.","textPreview":"Search by customer, plate, phone, status, package and date.","textChars":59,"textLines":1,"bbox":[1056,493,130,35]}
+{"kind":"shape","id":"sh/zm5wj690","slide":8,"bbox":[1056,532,130,19]}
+{"kind":"textbox","id":"sh/grad07a1","slide":8,"text":"Booking management","textPreview":"Booking management","textChars":18,"textLines":1,"bbox":[1062,535,118,13]}
+{"kind":"shape","id":"sh/1s3e9crm","slide":8,"bbox":[680,444,220,116]}
+{"kind":"shape","id":"sh/j69gfut4","slide":8,"bbox":[668,432,30,30]}
+{"kind":"textbox","id":"sh/i50zmpcj","slide":8,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[668,438,30,18]}
+{"kind":"shape","id":"sh/58rihkba","slide":8,"bbox":[694,469,54,68]}
+{"kind":"shape","id":"sh/47ihofup","slide":8,"bbox":[704,479,34,34]}
+{"kind":"textbox","id":"sh/vipgbat8","slide":8,"text":"ST","textPreview":"ST","textChars":2,"textLines":1,"bbox":[704,486,34,20]}
+{"kind":"shape","id":"sh/ahgzi5cn","slide":8,"bbox":[706,520,30,3]}
+{"kind":"shape","id":"sh/x4rydkbe","slide":8,"bbox":[706,527,20,3]}
+{"kind":"textbox","id":"sh/w3ihkfut","slide":8,"text":"Monitor Staff Workload","textPreview":"Monitor Staff Workload","textChars":22,"textLines":1,"bbox":[756,457,130,34]}
+{"kind":"textbox","id":"sh/nepg7atw","slide":8,"text":"Review availability, assignments and completed daily orders.","textPreview":"Review availability, assignments and completed daily orders.","textChars":60,"textLines":1,"bbox":[756,493,130,35]}
+{"kind":"shape","id":"sh/mdgze5cr","slide":8,"bbox":[756,532,130,19]}
+{"kind":"textbox","id":"sh/ytk7apoj","slide":8,"text":"Staff KPI","textPreview":"Staff KPI","textChars":9,"textLines":1,"bbox":[762,535,118,13]}
+{"kind":"shape","id":"sh/zud8jup4","slide":8,"bbox":[380,444,220,116]}
+{"kind":"shape","id":"sh/0vm9cz6p","slide":8,"bbox":[368,432,30,30]}
+{"kind":"textbox","id":"sh/lwvql4na","slide":8,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[368,438,30,18]}
+{"kind":"shape","id":"sh/q5k76pon","slide":8,"bbox":[394,469,54,68]}
+{"kind":"shape","id":"sh/b6t8fup8","slide":8,"bbox":[404,479,34,34]}
+{"kind":"textbox","id":"sh/c72p8z6d","slide":8,"text":"REP","textPreview":"REP","textChars":3,"textLines":1,"bbox":[404,486,34,20]}
+{"kind":"shape","id":"sh/d8bqh47y","slide":8,"bbox":[406,520,30,3]}
+{"kind":"shape","id":"sh/u1ori9or","slide":8,"bbox":[406,527,20,3]}
+{"kind":"textbox","id":"sh/v2x8re5c","slide":8,"text":"Aggregate Reports","textPreview":"Aggregate Reports","textChars":17,"textLines":1,"bbox":[456,457,130,34]}
+{"kind":"textbox","id":"sh/5wzah87e","slide":8,"text":"Combine bookings, sessions, ratings and revenue.","textPreview":"Combine bookings, sessions, ratings and revenue.","textChars":48,"textLines":1,"bbox":[456,493,130,35]}
+{"kind":"shape","id":"sh/4vqt8nqt","slide":8,"bbox":[456,532,130,19]}
+{"kind":"textbox","id":"sh/juhsfipo","slide":8,"text":"Reporting APIs","textPreview":"Reporting APIs","textChars":14,"textLines":1,"bbox":[462,535,118,13]}
+{"kind":"shape","id":"sh/it8b6d83","slide":8,"bbox":[80,444,220,116]}
+{"kind":"shape","id":"sh/hsfad8ri","slide":8,"bbox":[68,432,30,30]}
+{"kind":"textbox","id":"sh/wr6t43qx","slide":8,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[68,438,30,18]}
+{"kind":"shape","id":"sh/vqxsby9c","slide":8,"bbox":[94,469,54,68]}
+{"kind":"shape","id":"sh/upob2t8r","slide":8,"bbox":[104,479,34,34]}
+{"kind":"textbox","id":"sh/1ojups7m","slide":8,"text":"KPI","textPreview":"KPI","textChars":3,"textLines":1,"bbox":[104,486,34,20]}
+{"kind":"shape","id":"sh/gnatg7q1","slide":8,"bbox":[106,520,30,3]}
+{"kind":"shape","id":"sh/xg7q9wba","slide":8,"bbox":[106,527,20,3]}
+{"kind":"textbox","id":"sh/wfy90rap","slide":8,"text":"Display Management KPI","textPreview":"Display Management KPI","textChars":22,"textLines":1,"bbox":[156,457,130,34]}
+{"kind":"textbox","id":"sh/be587mt4","slide":8,"text":"Admin and manager dashboards present operational insights.","textPreview":"Admin and manager dashboards present operational insights.","textChars":58,"textLines":1,"bbox":[156,493,130,35]}
+{"kind":"shape","id":"sh/adwryhsj","slide":8,"bbox":[156,532,130,19]}
+{"kind":"textbox","id":"sh/9cnq5cby","slide":8,"text":"Dashboard","textPreview":"Dashboard","textChars":9,"textLines":1,"bbox":[162,535,118,13]}
+{"kind":"shape","id":"sh/orepw7at","slide":8,"bbox":[300,216,80,8]}
+{"kind":"shape","id":"sh/nq5832t8","slide":8,"bbox":[302,179,76,31]}
+{"kind":"textbox","id":"sh/mpw7uhsn","slide":8,"text":"2. View Booking Detail","textPreview":"2. View Booking Detail","textChars":22,"textLines":1,"bbox":[304,181,72,27]}
+{"kind":"shape","id":"sh/1onq1cb2","slide":8,"bbox":[600,216,80,8]}
+{"kind":"shape","id":"sh/0nups7ah","slide":8,"bbox":[602,179,76,31]}
+{"kind":"textbox","id":"sh/qtsn2d8f","slide":8,"text":"3. View Booking Vehicle","textPreview":"3. View Booking Vehicle","textChars":23,"textLines":1,"bbox":[604,181,72,27]}
+{"kind":"shape","id":"sh/ru1ovy90","slide":8,"bbox":[900,216,80,8]}
+{"kind":"shape","id":"sh/cva543ql","slide":8,"bbox":[902,179,76,31]}
+{"kind":"textbox","id":"sh/dw36x8rq","slide":8,"text":"4. Cancel Eligible Booking","textPreview":"4. Cancel Eligible Booking","textChars":26,"textLines":1,"bbox":[904,181,72,27]}
+{"kind":"shape","id":"sh/2psnyt83","slide":8,"bbox":[1085,278,10,166]}
+{"kind":"shape","id":"sh/3q1o7y9o","slide":8,"bbox":[1096,334,92,31]}
+{"kind":"textbox","id":"sh/4ra503q9","slide":8,"text":"5. Filter Admin Bookings","textPreview":"5. Filter Admin Bookings","textChars":24,"textLines":1,"bbox":[1098,336,88,27]}
+{"kind":"shape","id":"sh/psj6t8ru","slide":8,"bbox":[900,498,80,8]}
+{"kind":"shape","id":"sh/u18nut87","slide":8,"bbox":[902,460,76,31]}
+{"kind":"textbox","id":"sh/fmh43e9s","slide":8,"text":"6. Monitor Staff Workload","textPreview":"6. Monitor Staff Workload","textChars":25,"textLines":1,"bbox":[904,462,72,27]}
+{"kind":"shape","id":"sh/judcfql8","slide":8,"bbox":[600,498,80,8]}
+{"kind":"shape","id":"sh/yt4bmlkn","slide":8,"bbox":[602,460,76,31]}
+{"kind":"textbox","id":"sh/lwvuh03e","slide":8,"text":"7. Aggregate Reports","textPreview":"7. Aggregate Reports","textChars":20,"textLines":1,"bbox":[604,462,72,27]}
+{"kind":"shape","id":"sh/kvmtov2t","slide":8,"bbox":[300,498,80,8]}
+{"kind":"shape","id":"sh/7idcjal4","slide":8,"bbox":[302,460,76,31]}
+{"kind":"textbox","id":"sh/6h4bq5kz","slide":8,"text":"8. Display Management KPI","textPreview":"8. Display Management KPI","textChars":25,"textLines":1,"bbox":[304,462,72,27]}
+{"kind":"shape","id":"sh/tkful03a","slide":8,"bbox":[80,625,1120,31]}
+{"kind":"textbox","id":"sh/8jmtcv2p","slide":8,"text":"Administrative views consume server data through dedicated APIs; booking, vehicle and KPI values must not depend on frontend mock or fallback datasets.","textPreview":"Administrative views consume server data through dedicated APIs; booking, vehicle and KPI values must not depend on frontend mock or fall...","textChars":151,"textLines":1,"bbox":[96,631,1088,19]}
+{"kind":"textbox","id":"sh/nmts76l0","slide":8,"text":"Solid arrow: next command/action","textPreview":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":[82,665,230,16]}
+{"kind":"textbox","id":"sh/2lkbe1kf","slide":8,"text":"Dashed arrow: callback/realtime update","textPreview":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":[325,665,270,16]}
+{"kind":"textbox","id":"sh/sry987id","slide":8,"text":"Repository-aligned: origin/dev b5ad575","textPreview":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":[870,665,325,16]}
+{"kind":"notes","id":"nt/h3a4kf","slide":8,"text":"The project exposes booking management, vehicle detail, staff metrics, review and report APIs for role-specific dashboards."}

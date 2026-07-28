@@ -20,7 +20,6 @@ export type BookingStatus =
 export type WashStatus = "Queued" | "In Progress" | "Ready for Checkout" | "Completed";
 export type NotificationType = "Booking" | "Reminder" | "Loyalty" | "DiscountRecord" | "Support";
 export type RewardType = "discount" | "free wash" | "add-on";
-export type RefundStatus = "NONE" | "PENDING" | "COMPLETED";
 export type ReviewAlertStatus = "OPEN" | "ACKNOWLEDGED";
 export type VoucherLifecycleStatus = "ACTIVE" | "USED" | "EXPIRED";
 
@@ -109,8 +108,6 @@ export interface Booking {
   cancelledAt?: string;
   cancelledBy?: "Customer" | "Admin";
   cancelReason?: string;
-  refundAmount?: number;
-  refundStatus?: RefundStatus;
   assignedStaffId?: string;
   assignedStaffName?: string;
   reminderSent?: boolean;
@@ -389,7 +386,6 @@ export interface BusinessSettings {
 export interface CancellationPolicySettings {
   freeCancelHoursBefore: number;
   lateCancelFeePercent: number;
-  refundPolicy: string;
 }
 
 export interface PointConversionSettings {
@@ -586,12 +582,11 @@ interface Store {
   addDiscountRecord: (discount: Omit<DiscountRecord, "id">) => void;
   updateDiscountRecord: (id: string, patch: Partial<Omit<DiscountRecord, "id">>) => void;
   toggleDiscountRecord: (id: string) => void;
-  cancelBookingWithRefund: (
+  cancelBooking: (
     bookingId: string,
     actor: "Customer" | "Admin",
     reason: string,
-  ) => { refundAmount: number; refundStatus: RefundStatus };
-  markRefundCompleted: (bookingId: string) => number;
+  ) => void;
   submitReview: (input: {
     bookingId: string;
     starRating: number;
@@ -905,7 +900,6 @@ const bookingSeed: Booking[] = [
     dateISO: localDateISO(plusDays(1)),
     timeSlot: "09:00 AM",
     status: "Confirmed",
-    refundStatus: "NONE",
     assignedStaffId: "s1",
     assignedStaffName: "Tran Bao Nam",
     createdAt: now.toISOString(),
@@ -925,7 +919,6 @@ const bookingSeed: Booking[] = [
     dateISO: localDateISO(plusDays(2)),
     timeSlot: "02:00 PM",
     status: "Pending",
-    refundStatus: "NONE",
     assignedStaffId: "s3",
     assignedStaffName: "Nguyen Van Hung",
     createdAt: now.toISOString(),
@@ -945,7 +938,6 @@ const bookingSeed: Booking[] = [
     dateISO: localDateISO(plusDays(0)),
     timeSlot: "08:25 PM",
     status: "Checked-in",
-    refundStatus: "NONE",
     assignedStaffId: "s3",
     assignedStaffName: "Nguyen Van Hung",
     createdAt: now.toISOString(),
@@ -967,7 +959,6 @@ const bookingSeed: Booking[] = [
     dateISO: localDateISO(plusDays(0)),
     timeSlot: "07:47 PM",
     status: "Checked-in",
-    refundStatus: "NONE",
     assignedStaffId: "s4",
     assignedStaffName: "Pham Minh Duc",
     createdAt: now.toISOString(),
@@ -989,7 +980,6 @@ const bookingSeed: Booking[] = [
     dateISO: localDateISO(plusDays(0)),
     timeSlot: "06:37 PM",
     status: "Completed",
-    refundStatus: "NONE",
     assignedStaffId: "s1",
     assignedStaffName: "Tran Bao Nam",
     createdAt: now.toISOString(),
@@ -1014,8 +1004,6 @@ const bookingSeed: Booking[] = [
     dateISO: localDateISO(plusDays(1)),
     timeSlot: "10:27 PM",
     status: "Cancelled",
-    refundStatus: "COMPLETED",
-    refundAmount: 120000,
     cancelledBy: "Customer",
     cancelReason: "Customer cancelled due to travel schedule change.",
     createdAt: now.toISOString(),
@@ -1191,7 +1179,6 @@ const defaultSettings: AppSettings = {
   cancellation: {
     freeCancelHoursBefore: 12,
     lateCancelFeePercent: 30,
-    refundPolicy: "Full refund if cancelled at least 12 hours in advance; otherwise 30% fee.",
   },
   point: {
     spendPerPoint: 10000,
@@ -1448,14 +1435,6 @@ function tierFor(points: number, tiers: TierRule[]): Tier {
 
 function tierRank(tier: Tier) {
   return ["Member", "Silver", "Gold", "Platinum"].indexOf(tier);
-}
-
-function refundRateForBooking(booking: Booking) {
-  const bookingTime = parseBookingDate(booking).getTime();
-  const hoursBefore = (bookingTime - Date.now()) / 3600000;
-  if (hoursBefore > 24) return 1;
-  if (hoursBefore >= 2) return 0.5;
-  return 0;
 }
 
 function generateVoucherCode(offerId: string) {
@@ -2505,7 +2484,7 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
     [bookings, customers, pushNotification, settings.cancellationAutoBan],
   );
 
-  const cancelBookingWithRefund = React.useCallback(
+  const cancelBooking = React.useCallback(
     (bookingId: string, actor: "Customer" | "Admin", reason: string) => {
       const booking = bookings.find((item) => item.id === bookingId);
       if (!booking) {
@@ -2520,9 +2499,6 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
         throw new Error("Cancellation reason must be at least 10 characters.");
       }
 
-      const refundAmount = Math.round(booking.totalPrice * refundRateForBooking(booking));
-      const refundStatus: RefundStatus = refundAmount > 0 ? "PENDING" : "NONE";
-
       setBookings((prev) =>
         prev.map((item) =>
           item.id === bookingId
@@ -2532,8 +2508,6 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
                 cancelledAt: new Date().toISOString(),
                 cancelledBy: actor,
                 cancelReason: cleanReason,
-                refundAmount,
-                refundStatus,
               }
             : item,
         ),
@@ -2542,45 +2516,10 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
       pushNotification({
         type: "Booking",
         title: actor === "Admin" ? "Booking force cancelled" : "Booking cancelled",
-        message: `${booking.id} cancelled. Reason: ${cleanReason}. Refund ${refundAmount.toLocaleString()} VND.`,
+        message: `${booking.id} cancelled. Reason: ${cleanReason}.`,
         customerId: booking.customerId,
         bookingId: booking.id,
       });
-
-      return { refundAmount, refundStatus };
-    },
-    [bookings, pushNotification],
-  );
-
-  const markRefundCompleted = React.useCallback(
-    (bookingId: string) => {
-      const booking = bookings.find((item) => item.id === bookingId);
-      if (!booking) {
-        throw new Error("Booking not found.");
-      }
-      if (booking.refundStatus !== "PENDING") {
-        throw new Error("Only pending refunds can be completed.");
-      }
-
-      setBookings((prev) =>
-        prev.map((item) => (item.id === bookingId ? { ...item, refundStatus: "COMPLETED" } : item)),
-      );
-      setCustomers((prev) =>
-        prev.map((customer) =>
-          customer.id === booking.customerId
-            ? { ...customer, walletBalance: customer.walletBalance + (booking.refundAmount ?? 0) }
-            : customer,
-        ),
-      );
-      pushNotification({
-        type: "Booking",
-        title: "Refund completed",
-        message: `${booking.id} refund of ${(booking.refundAmount ?? 0).toLocaleString()} VND was returned to your wallet.`,
-        customerId: booking.customerId,
-        bookingId: booking.id,
-      });
-
-      return booking.refundAmount ?? 0;
     },
     [bookings, pushNotification],
   );
@@ -3819,8 +3758,7 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
     completeCheckout,
     updateCustomerPoints,
     redeemReward,
-    cancelBookingWithRefund,
-    markRefundCompleted,
+    cancelBooking,
     submitReview,
     acknowledgeReview,
     updateTiers: (next) => setPendingTierRules(next),

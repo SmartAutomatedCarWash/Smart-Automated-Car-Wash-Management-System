@@ -1,0 +1,60 @@
+{"kind":"textbox","slide":1,"role":"title","text":"3. Proposed Solutions | System Architecture","textChars":43,"textLines":1,"bbox":{"left":82,"top":58,"width":820,"height":52}}
+{"kind":"textbox","slide":1,"role":"label","text":"GITHUB ORIGIN/DEV","textChars":17,"textLines":1,"bbox":{"left":1026,"top":69,"width":144,"height":20}}
+{"kind":"textbox","slide":1,"role":"subtitle","text":"Role-based web application with a modular Spring Boot backend","textChars":61,"textLines":1,"bbox":{"left":84,"top":108,"width":650,"height":22}}
+{"kind":"textbox","slide":1,"role":"label","text":"ACTORS","textChars":6,"textLines":1,"bbox":{"left":96,"top":149,"width":116,"height":20}}
+{"kind":"textbox","slide":1,"role":"label","text":"PRESENTATION","textChars":12,"textLines":1,"bbox":{"left":268,"top":149,"width":204,"height":20}}
+{"kind":"textbox","slide":1,"role":"label","text":"APPLICATION MODULES","textChars":19,"textLines":1,"bbox":{"left":526,"top":149,"width":374,"height":20}}
+{"kind":"textbox","slide":1,"role":"label","text":"DATA & SERVICES","textChars":15,"textLines":1,"bbox":{"left":954,"top":149,"width":214,"height":20}}
+{"kind":"textbox","slide":1,"role":"icon","text":"CU","textChars":2,"textLines":1,"bbox":{"left":98,"top":208,"width":36,"height":23}}
+{"kind":"textbox","slide":1,"role":"actor","text":"Guest /\nCustomer","textChars":16,"textLines":2,"bbox":{"left":142,"top":207,"width":70,"height":26}}
+{"kind":"textbox","slide":1,"role":"icon","text":"ST","textChars":2,"textLines":1,"bbox":{"left":98,"top":274,"width":36,"height":23}}
+{"kind":"textbox","slide":1,"role":"actor","text":"Staff","textChars":5,"textLines":1,"bbox":{"left":142,"top":273,"width":70,"height":26}}
+{"kind":"textbox","slide":1,"role":"icon","text":"MG","textChars":2,"textLines":1,"bbox":{"left":98,"top":340,"width":36,"height":23}}
+{"kind":"textbox","slide":1,"role":"actor","text":"Manager","textChars":7,"textLines":1,"bbox":{"left":142,"top":339,"width":70,"height":26}}
+{"kind":"textbox","slide":1,"role":"icon","text":"AD","textChars":2,"textLines":1,"bbox":{"left":98,"top":406,"width":36,"height":23}}
+{"kind":"textbox","slide":1,"role":"actor","text":"Admin","textChars":5,"textLines":1,"bbox":{"left":142,"top":405,"width":70,"height":26}}
+{"kind":"textbox","slide":1,"role":"layer-title","text":"Next.js 14 Web Application","textChars":26,"textLines":1,"bbox":{"left":278,"top":202,"width":184,"height":40}}
+{"kind":"textbox","slide":1,"role":"technology","text":"React 18 + TypeScript","textChars":21,"textLines":1,"bbox":{"left":294,"top":250,"width":152,"height":22}}
+{"kind":"textbox","slide":1,"role":"workspace","text":"Customer Workspace","textChars":18,"textLines":1,"bbox":{"left":294,"top":292,"width":152,"height":20}}
+{"kind":"textbox","slide":1,"role":"workspace","text":"Staff Workspace","textChars":15,"textLines":1,"bbox":{"left":294,"top":336,"width":152,"height":20}}
+{"kind":"textbox","slide":1,"role":"workspace","text":"Manager Workspace","textChars":17,"textLines":1,"bbox":{"left":294,"top":380,"width":152,"height":20}}
+{"kind":"textbox","slide":1,"role":"workspace","text":"Admin Workspace","textChars":15,"textLines":1,"bbox":{"left":294,"top":424,"width":152,"height":20}}
+{"kind":"textbox","slide":1,"role":"technology","text":"React Query + Axios  |  Zustand\nSTOMP + SockJS","textChars":46,"textLines":2,"bbox":{"left":278,"top":466,"width":184,"height":36}}
+{"kind":"textbox","slide":1,"role":"layer-title","text":"Spring Boot 3 REST API","textChars":22,"textLines":1,"bbox":{"left":540,"top":200,"width":220,"height":28}}
+{"kind":"textbox","slide":1,"role":"label","text":"JAVA 21","textChars":7,"textLines":1,"bbox":{"left":778,"top":203,"width":52,"height":20}}
+{"kind":"textbox","slide":1,"role":"label","text":"JWT","textChars":3,"textLines":1,"bbox":{"left":852,"top":203,"width":30,"height":20}}
+{"kind":"textbox","slide":1,"role":"technology","text":"Spring Security  |  Validation  |  Spring Data JPA","textChars":50,"textLines":1,"bbox":{"left":540,"top":235,"width":340,"height":20}}
+{"kind":"textbox","slide":1,"role":"module-title","text":"Authentication & User","textChars":21,"textLines":1,"bbox":{"left":553,"top":278,"width":143,"height":20}}
+{"kind":"textbox","slide":1,"role":"module-subtitle","text":"accounts, roles, profile","textChars":24,"textLines":1,"bbox":{"left":553,"top":301,"width":143,"height":16}}
+{"kind":"textbox","slide":1,"role":"module-title","text":"Catalog & Promotion","textChars":19,"textLines":1,"bbox":{"left":734,"top":278,"width":143,"height":20}}
+{"kind":"textbox","slide":1,"role":"module-subtitle","text":"services, packages, combos","textChars":26,"textLines":1,"bbox":{"left":734,"top":301,"width":143,"height":16}}
+{"kind":"textbox","slide":1,"role":"module-title","text":"Booking & Slot Hold","textChars":19,"textLines":1,"bbox":{"left":553,"top":348,"width":143,"height":20}}
+{"kind":"textbox","slide":1,"role":"module-subtitle","text":"availability and capacity","textChars":25,"textLines":1,"bbox":{"left":553,"top":371,"width":143,"height":16}}
+{"kind":"textbox","slide":1,"role":"module-title","text":"Vehicle Management","textChars":18,"textLines":1,"bbox":{"left":734,"top":348,"width":143,"height":20}}
+{"kind":"textbox","slide":1,"role":"module-subtitle","text":"vehicles and primary plate","textChars":26,"textLines":1,"bbox":{"left":734,"top":371,"width":143,"height":16}}
+{"kind":"textbox","slide":1,"role":"module-title","text":"Wash Operations","textChars":15,"textLines":1,"bbox":{"left":553,"top":418,"width":143,"height":20}}
+{"kind":"textbox","slide":1,"role":"module-subtitle","text":"check-in and wash session","textChars":25,"textLines":1,"bbox":{"left":553,"top":441,"width":143,"height":16}}
+{"kind":"textbox","slide":1,"role":"module-title","text":"Staff Assignment","textChars":16,"textLines":1,"bbox":{"left":734,"top":418,"width":143,"height":20}}
+{"kind":"textbox","slide":1,"role":"module-subtitle","text":"availability and workload","textChars":25,"textLines":1,"bbox":{"left":734,"top":441,"width":143,"height":16}}
+{"kind":"textbox","slide":1,"role":"module-title","text":"Payment & Loyalty","textChars":17,"textLines":1,"bbox":{"left":553,"top":488,"width":143,"height":20}}
+{"kind":"textbox","slide":1,"role":"module-subtitle","text":"voucher, points, tier","textChars":21,"textLines":1,"bbox":{"left":553,"top":511,"width":143,"height":16}}
+{"kind":"textbox","slide":1,"role":"module-title","text":"Review & Reporting","textChars":18,"textLines":1,"bbox":{"left":734,"top":488,"width":143,"height":20}}
+{"kind":"textbox","slide":1,"role":"module-subtitle","text":"ratings, KPI, analytics","textChars":23,"textLines":1,"bbox":{"left":734,"top":511,"width":143,"height":16}}
+{"kind":"textbox","slide":1,"role":"connector-label","text":"HTTP","textChars":4,"textLines":1,"bbox":{"left":202,"top":301,"width":76,"height":14}}
+{"kind":"textbox","slide":1,"role":"connector-label","text":"REST / WS","textChars":9,"textLines":1,"bbox":{"left":462,"top":301,"width":74,"height":14}}
+{"kind":"textbox","slide":1,"role":"icon","text":"DB","textChars":2,"textLines":1,"bbox":{"left":966,"top":218,"width":46,"height":24}}
+{"kind":"textbox","slide":1,"role":"data-title","text":"PostgreSQL","textChars":10,"textLines":1,"bbox":{"left":1026,"top":202,"width":128,"height":26}}
+{"kind":"textbox","slide":1,"role":"data-subtitle","text":"JPA + Flyway migrations","textChars":23,"textLines":1,"bbox":{"left":1026,"top":235,"width":128,"height":22}}
+{"kind":"textbox","slide":1,"role":"integration-title","text":"SePay + VietQR","textChars":14,"textLines":1,"bbox":{"left":958,"top":309,"width":96,"height":18}}
+{"kind":"textbox","slide":1,"role":"integration-subtitle","text":"QR transfer request / payment webhook","textChars":37,"textLines":1,"bbox":{"left":1050,"top":309,"width":114,"height":34}}
+{"kind":"textbox","slide":1,"role":"integration-title","text":"VNPay","textChars":5,"textLines":1,"bbox":{"left":958,"top":373,"width":96,"height":18}}
+{"kind":"textbox","slide":1,"role":"integration-subtitle","text":"checkout request / return and IPN","textChars":33,"textLines":1,"bbox":{"left":1050,"top":373,"width":114,"height":34}}
+{"kind":"textbox","slide":1,"role":"integration-title","text":"Resend","textChars":6,"textLines":1,"bbox":{"left":958,"top":437,"width":96,"height":18}}
+{"kind":"textbox","slide":1,"role":"integration-subtitle","text":"email request / API response","textChars":28,"textLines":1,"bbox":{"left":1050,"top":437,"width":114,"height":34}}
+{"kind":"textbox","slide":1,"role":"integration-title","text":"AWS S3","textChars":6,"textLines":1,"bbox":{"left":958,"top":501,"width":96,"height":18}}
+{"kind":"textbox","slide":1,"role":"integration-subtitle","text":"upload or read / object response","textChars":32,"textLines":1,"bbox":{"left":1050,"top":501,"width":114,"height":34}}
+{"kind":"textbox","slide":1,"role":"connector-label","text":"JPA","textChars":3,"textLines":1,"bbox":{"left":890,"top":203,"width":74,"height":14}}
+{"kind":"textbox","slide":1,"role":"business-flow","text":"Catalog  →  Booking  →  SePay/VNPay Payment  →  Staff Check-in  →  Wash Session  →  Rating  →  Loyalty & Reporting","textChars":114,"textLines":1,"bbox":{"left":106,"top":601,"width":1048,"height":22}}
+{"kind":"textbox","slide":1,"role":"legend","text":"Request / command","textChars":17,"textLines":1,"bbox":{"left":128,"top":645,"width":145,"height":18}}
+{"kind":"textbox","slide":1,"role":"legend","text":"Response / callback / realtime event","textChars":36,"textLines":1,"bbox":{"left":334,"top":645,"width":255,"height":18}}
+{"kind":"textbox","slide":1,"role":"legend","text":"Every connection is bidirectional where the repository has a response, callback, or event.","textChars":90,"textLines":1,"bbox":{"left":690,"top":645,"width":486,"height":18}}

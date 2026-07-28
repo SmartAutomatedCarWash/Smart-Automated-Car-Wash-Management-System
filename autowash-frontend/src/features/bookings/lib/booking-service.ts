@@ -61,6 +61,16 @@ export async function listBookingAddons(): Promise<BookingAddon[]> {
     }));
 }
 
+export async function listCatalogServices(): Promise<AdminCatalogService[]> {
+  const response = await apiClient.get<ApiSuccessResponse<AdminCatalogService[]>>("/services");
+  return response.data.data.filter((service) => service.status === "ACTIVE");
+}
+
+export async function getCatalogService(serviceId: string): Promise<AdminCatalogService> {
+  const response = await apiClient.get<ApiSuccessResponse<AdminCatalogService>>(`/services/${serviceId}`);
+  return response.data.data;
+}
+
 export async function listBookingCombos(): Promise<BookingCombo[]> {
   const response = await apiClient.get("/combos/available");
   return response.data.data as BookingCombo[];
@@ -69,6 +79,20 @@ export async function listBookingCombos(): Promise<BookingCombo[]> {
 export async function listActiveCustomerCombos(): Promise<CustomerCombo[]> {
   const response = await apiClient.get("/customers/combos/active");
   return response.data.data as CustomerCombo[];
+}
+
+export async function listCustomerComboHistory(page = 1, limit = 20): Promise<{
+  items: CustomerCombo[];
+  pagination: ApiPaginatedResponse<never>["pagination"];
+}> {
+  const response = await apiClient.get<ApiPaginatedResponse<CustomerCombo>>("/customers/combos/history", {
+    params: { page, limit },
+  });
+
+  return {
+    items: response.data.data,
+    pagination: response.data.pagination,
+  };
 }
 
 export async function getCustomerComboPaymentStatus(transactionRef: string): Promise<CustomerComboPaymentStatus> {

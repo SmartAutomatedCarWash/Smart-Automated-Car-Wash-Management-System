@@ -1,0 +1,442 @@
+{"kind":"textbox","slide":1,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":55,"width":130,"height":38}}
+{"kind":"textbox","slide":1,"role":"title","text":"Scenario 1: Account Onboarding & Vehicle Setup","textChars":46,"textLines":1,"bbox":{"left":230,"top":53,"width":890,"height":42}}
+{"kind":"textbox","slide":1,"role":"subtitle","text":"A customer activates an account, receives JWT credentials, completes a profile, and prepares a primary vehicle for booking.","textChars":123,"textLines":1,"bbox":{"left":80,"top":101,"width":1050,"height":24}}
+{"kind":"textbox","slide":1,"role":"brand","text":"AUTOWASH","textChars":8,"textLines":1,"bbox":{"left":1119,"top":63,"width":72,"height":17}}
+{"kind":"textbox","slide":1,"role":"step-number","text":"1","textChars":1,"textLines":1,"bbox":{"left":68,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":1,"role":"glyph","text":"GO","textChars":2,"textLines":1,"bbox":{"left":104,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":1,"role":"step-title","text":"Open Register or Login","textChars":22,"textLines":1,"bbox":{"left":156,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":1,"role":"step-detail","text":"Choose email/password or Google authentication.","textChars":47,"textLines":1,"bbox":{"left":156,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":1,"role":"step-meta","text":"Customer entry","textChars":14,"textLines":1,"bbox":{"left":162,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":1,"role":"step-number","text":"2","textChars":1,"textLines":1,"bbox":{"left":368,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":1,"role":"glyph","text":"FM","textChars":2,"textLines":1,"bbox":{"left":404,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":1,"role":"step-title","text":"Submit Account Data","textChars":19,"textLines":1,"bbox":{"left":456,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":1,"role":"step-detail","text":"Frontend validates required registration fields.","textChars":48,"textLines":1,"bbox":{"left":456,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":1,"role":"step-meta","text":"POST /auth/register","textChars":19,"textLines":1,"bbox":{"left":462,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":1,"role":"step-number","text":"3","textChars":1,"textLines":1,"bbox":{"left":668,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":1,"role":"glyph","text":"OTP","textChars":3,"textLines":1,"bbox":{"left":704,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":1,"role":"step-title","text":"Send Verification OTP","textChars":21,"textLines":1,"bbox":{"left":756,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":1,"role":"step-detail","text":"Backend creates OTP and requests delivery through Resend.","textChars":57,"textLines":1,"bbox":{"left":756,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":1,"role":"step-meta","text":"POST /auth/otp/send","textChars":19,"textLines":1,"bbox":{"left":762,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":1,"role":"step-number","text":"4","textChars":1,"textLines":1,"bbox":{"left":968,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":1,"role":"glyph","text":"OK","textChars":2,"textLines":1,"bbox":{"left":1004,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":1,"role":"step-title","text":"Verify and Activate","textChars":19,"textLines":1,"bbox":{"left":1056,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":1,"role":"step-detail","text":"Correct OTP activates the customer account.","textChars":43,"textLines":1,"bbox":{"left":1056,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":1,"role":"step-meta","text":"POST /auth/otp/verify","textChars":21,"textLines":1,"bbox":{"left":1062,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":1,"role":"step-number","text":"5","textChars":1,"textLines":1,"bbox":{"left":968,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":1,"role":"glyph","text":"JWT","textChars":3,"textLines":1,"bbox":{"left":1004,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":1,"role":"step-title","text":"Issue Access Tokens","textChars":19,"textLines":1,"bbox":{"left":1056,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":1,"role":"step-detail","text":"Login or Google flow returns access and refresh tokens.","textChars":55,"textLines":1,"bbox":{"left":1056,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":1,"role":"step-meta","text":"JWT secured APIs","textChars":16,"textLines":1,"bbox":{"left":1062,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":1,"role":"step-number","text":"6","textChars":1,"textLines":1,"bbox":{"left":668,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":1,"role":"glyph","text":"PF","textChars":2,"textLines":1,"bbox":{"left":704,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":1,"role":"step-title","text":"Complete Customer Profile","textChars":25,"textLines":1,"bbox":{"left":756,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":1,"role":"step-detail","text":"Load and update personal information for bookings.","textChars":50,"textLines":1,"bbox":{"left":756,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":1,"role":"step-meta","text":"Profile API","textChars":11,"textLines":1,"bbox":{"left":762,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":1,"role":"step-number","text":"7","textChars":1,"textLines":1,"bbox":{"left":368,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":1,"role":"glyph","text":"CAR","textChars":3,"textLines":1,"bbox":{"left":404,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":1,"role":"step-title","text":"Add a Vehicle","textChars":13,"textLines":1,"bbox":{"left":456,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":1,"role":"step-detail","text":"Create plate, brand/model and primary preference.","textChars":49,"textLines":1,"bbox":{"left":456,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":1,"role":"step-meta","text":"/customers/vehicles","textChars":19,"textLines":1,"bbox":{"left":462,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":1,"role":"step-number","text":"8","textChars":1,"textLines":1,"bbox":{"left":68,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":1,"role":"glyph","text":"P","textChars":1,"textLines":1,"bbox":{"left":104,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":1,"role":"step-title","text":"Set Primary Vehicle","textChars":19,"textLines":1,"bbox":{"left":156,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":1,"role":"step-detail","text":"Primary selection becomes the booking default.","textChars":46,"textLines":1,"bbox":{"left":156,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":1,"role":"step-meta","text":"Duplicate plate errors","textChars":22,"textLines":1,"bbox":{"left":162,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":1,"role":"connector-label","text":"2. Submit Account Data","textChars":22,"textLines":1,"bbox":{"left":304,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":1,"role":"connector-label","text":"3. Send Verification OTP","textChars":24,"textLines":1,"bbox":{"left":604,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":1,"role":"connector-label","text":"4. Verify and Activate","textChars":22,"textLines":1,"bbox":{"left":904,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":1,"role":"connector-label","text":"5. Issue Access Tokens","textChars":22,"textLines":1,"bbox":{"left":1098,"top":336,"width":88,"height":27}}
+{"kind":"textbox","slide":1,"role":"connector-label","text":"6. Complete Customer Profile","textChars":28,"textLines":1,"bbox":{"left":904,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":1,"role":"connector-label","text":"7. Add a Vehicle","textChars":16,"textLines":1,"bbox":{"left":604,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":1,"role":"connector-label","text":"8. Set Primary Vehicle","textChars":22,"textLines":1,"bbox":{"left":304,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":1,"role":"business-rule","text":"Authentication protects customer routes with JWT; vehicle creation returns explicit validation errors such as duplicate license plates.","textChars":135,"textLines":1,"bbox":{"left":96,"top":631,"width":1088,"height":19}}
+{"kind":"textbox","slide":1,"role":"legend","text":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":{"left":82,"top":665,"width":230,"height":16}}
+{"kind":"textbox","slide":1,"role":"legend","text":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":{"left":325,"top":665,"width":270,"height":16}}
+{"kind":"textbox","slide":1,"role":"source","text":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":{"left":870,"top":665,"width":325,"height":16}}
+{"kind":"textbox","slide":2,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":55,"width":130,"height":38}}
+{"kind":"textbox","slide":2,"role":"title","text":"Scenario 2: Service-to-Slot Booking","textChars":35,"textLines":1,"bbox":{"left":230,"top":53,"width":890,"height":42}}
+{"kind":"textbox","slide":2,"role":"subtitle","text":"The customer compares available offerings, selects a vehicle and date, then reserves capacity before entering booking details.","textChars":126,"textLines":1,"bbox":{"left":80,"top":101,"width":1050,"height":24}}
+{"kind":"textbox","slide":2,"role":"brand","text":"AUTOWASH","textChars":8,"textLines":1,"bbox":{"left":1119,"top":63,"width":72,"height":17}}
+{"kind":"textbox","slide":2,"role":"step-number","text":"1","textChars":1,"textLines":1,"bbox":{"left":68,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":2,"role":"glyph","text":"SV","textChars":2,"textLines":1,"bbox":{"left":104,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":2,"role":"step-title","text":"Browse Services","textChars":15,"textLines":1,"bbox":{"left":156,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":2,"role":"step-detail","text":"Load active car-care services and their details.","textChars":48,"textLines":1,"bbox":{"left":156,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":2,"role":"step-meta","text":"GET /services","textChars":13,"textLines":1,"bbox":{"left":162,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":2,"role":"step-number","text":"2","textChars":1,"textLines":1,"bbox":{"left":368,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":2,"role":"glyph","text":"PK","textChars":2,"textLines":1,"bbox":{"left":404,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":2,"role":"step-title","text":"Compare Packages","textChars":16,"textLines":1,"bbox":{"left":456,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":2,"role":"step-detail","text":"Review packages and included service items.","textChars":43,"textLines":1,"bbox":{"left":456,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":2,"role":"step-meta","text":"GET /packages","textChars":13,"textLines":1,"bbox":{"left":462,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":2,"role":"step-number","text":"3","textChars":1,"textLines":1,"bbox":{"left":668,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":2,"role":"glyph","text":"CB","textChars":2,"textLines":1,"bbox":{"left":704,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":2,"role":"step-title","text":"Check Available Combos","textChars":22,"textLines":1,"bbox":{"left":756,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":2,"role":"step-detail","text":"Display eligible combo offerings and benefits.","textChars":46,"textLines":1,"bbox":{"left":756,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":2,"role":"step-meta","text":"GET /combos/available","textChars":21,"textLines":1,"bbox":{"left":762,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":2,"role":"step-number","text":"4","textChars":1,"textLines":1,"bbox":{"left":968,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":2,"role":"glyph","text":"CAR","textChars":3,"textLines":1,"bbox":{"left":1004,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":2,"role":"step-title","text":"Select a Vehicle","textChars":16,"textLines":1,"bbox":{"left":1056,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":2,"role":"step-detail","text":"Choose an owned vehicle, usually the primary vehicle.","textChars":53,"textLines":1,"bbox":{"left":1056,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":2,"role":"step-meta","text":"Vehicle ID","textChars":10,"textLines":1,"bbox":{"left":1062,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":2,"role":"step-number","text":"5","textChars":1,"textLines":1,"bbox":{"left":968,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":2,"role":"glyph","text":"DAY","textChars":3,"textLines":1,"bbox":{"left":1004,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":2,"role":"step-title","text":"Choose Booking Date","textChars":19,"textLines":1,"bbox":{"left":1056,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":2,"role":"step-detail","text":"Customer selects the intended wash date.","textChars":40,"textLines":1,"bbox":{"left":1056,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":2,"role":"step-meta","text":"Local date","textChars":10,"textLines":1,"bbox":{"left":1062,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":2,"role":"step-number","text":"6","textChars":1,"textLines":1,"bbox":{"left":668,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":2,"role":"glyph","text":"SL","textChars":2,"textLines":1,"bbox":{"left":704,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":2,"role":"step-title","text":"Load Slot Availability","textChars":22,"textLines":1,"bbox":{"left":756,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":2,"role":"step-detail","text":"Backend calculates capacity, holds and remaining slots.","textChars":55,"textLines":1,"bbox":{"left":756,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":2,"role":"step-meta","text":"GET /slots/availability","textChars":23,"textLines":1,"bbox":{"left":762,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":2,"role":"step-number","text":"7","textChars":1,"textLines":1,"bbox":{"left":368,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":2,"role":"glyph","text":"H","textChars":1,"textLines":1,"bbox":{"left":404,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":2,"role":"step-title","text":"Hold the Selected Slot","textChars":22,"textLines":1,"bbox":{"left":456,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":2,"role":"step-detail","text":"Create a temporary reservation before booking submit.","textChars":53,"textLines":1,"bbox":{"left":456,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":2,"role":"step-meta","text":"POST /slots/hold","textChars":16,"textLines":1,"bbox":{"left":462,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":2,"role":"step-number","text":"8","textChars":1,"textLines":1,"bbox":{"left":68,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":2,"role":"glyph","text":"SUM","textChars":3,"textLines":1,"bbox":{"left":104,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":2,"role":"step-title","text":"Review Booking Setup","textChars":20,"textLines":1,"bbox":{"left":156,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":2,"role":"step-detail","text":"Show service, vehicle, date, slot and estimated price.","textChars":54,"textLines":1,"bbox":{"left":156,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":2,"role":"step-meta","text":"Continue checkout","textChars":17,"textLines":1,"bbox":{"left":162,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":2,"role":"connector-label","text":"2. Compare Packages","textChars":19,"textLines":1,"bbox":{"left":304,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":2,"role":"connector-label","text":"3. Check Available Combos","textChars":25,"textLines":1,"bbox":{"left":604,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":2,"role":"connector-label","text":"4. Select a Vehicle","textChars":19,"textLines":1,"bbox":{"left":904,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":2,"role":"connector-label","text":"5. Choose Booking Date","textChars":22,"textLines":1,"bbox":{"left":1098,"top":336,"width":88,"height":27}}
+{"kind":"textbox","slide":2,"role":"connector-label","text":"6. Load Slot Availability","textChars":25,"textLines":1,"bbox":{"left":904,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":2,"role":"connector-label","text":"7. Hold the Selected Slot","textChars":25,"textLines":1,"bbox":{"left":604,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":2,"role":"connector-label","text":"8. Review Booking Setup","textChars":23,"textLines":1,"bbox":{"left":304,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":2,"role":"business-rule","text":"Available capacity equals configured slot capacity minus existing non-cancelled bookings and active holds; a hold expires after 15 minutes.","textChars":139,"textLines":1,"bbox":{"left":96,"top":631,"width":1088,"height":19}}
+{"kind":"textbox","slide":2,"role":"legend","text":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":{"left":82,"top":665,"width":230,"height":16}}
+{"kind":"textbox","slide":2,"role":"legend","text":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":{"left":325,"top":665,"width":270,"height":16}}
+{"kind":"textbox","slide":2,"role":"source","text":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":{"left":870,"top":665,"width":325,"height":16}}
+{"kind":"textbox","slide":3,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":55,"width":130,"height":38}}
+{"kind":"textbox","slide":3,"role":"title","text":"Scenario 3: Voucher, Staff Preference & Booking Creation","textChars":56,"textLines":1,"bbox":{"left":230,"top":53,"width":890,"height":42}}
+{"kind":"textbox","slide":3,"role":"subtitle","text":"Optional discounts and staff preferences are validated before a transactional booking is created from the active slot hold.","textChars":123,"textLines":1,"bbox":{"left":80,"top":101,"width":1050,"height":24}}
+{"kind":"textbox","slide":3,"role":"brand","text":"AUTOWASH","textChars":8,"textLines":1,"bbox":{"left":1119,"top":63,"width":72,"height":17}}
+{"kind":"textbox","slide":3,"role":"step-number","text":"1","textChars":1,"textLines":1,"bbox":{"left":68,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":3,"role":"glyph","text":"VC","textChars":2,"textLines":1,"bbox":{"left":104,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":3,"role":"step-title","text":"Enter Voucher","textChars":13,"textLines":1,"bbox":{"left":156,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":3,"role":"step-detail","text":"Customer provides an optional promotion or voucher code.","textChars":56,"textLines":1,"bbox":{"left":156,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":3,"role":"step-meta","text":"Booking context","textChars":15,"textLines":1,"bbox":{"left":162,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":3,"role":"step-number","text":"2","textChars":1,"textLines":1,"bbox":{"left":368,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":3,"role":"glyph","text":"%","textChars":1,"textLines":1,"bbox":{"left":404,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":3,"role":"step-title","text":"Validate Discount","textChars":17,"textLines":1,"bbox":{"left":456,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":3,"role":"step-detail","text":"Backend checks eligibility, validity and discount result.","textChars":57,"textLines":1,"bbox":{"left":456,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":3,"role":"step-meta","text":"/validate-voucher","textChars":17,"textLines":1,"bbox":{"left":462,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":3,"role":"step-number","text":"3","textChars":1,"textLines":1,"bbox":{"left":668,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":3,"role":"glyph","text":"ST","textChars":2,"textLines":1,"bbox":{"left":704,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":3,"role":"step-title","text":"Request Staff Options","textChars":21,"textLines":1,"bbox":{"left":756,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":3,"role":"step-detail","text":"Load staff candidates available for the selected time.","textChars":54,"textLines":1,"bbox":{"left":756,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":3,"role":"step-meta","text":"/staff-options","textChars":14,"textLines":1,"bbox":{"left":762,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":3,"role":"step-number","text":"4","textChars":1,"textLines":1,"bbox":{"left":968,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":3,"role":"glyph","text":"SEL","textChars":3,"textLines":1,"bbox":{"left":1004,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":3,"role":"step-title","text":"Choose Staff Preference","textChars":23,"textLines":1,"bbox":{"left":1056,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":3,"role":"step-detail","text":"Customer selects preferred staff or automatic assignment.","textChars":57,"textLines":1,"bbox":{"left":1056,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":3,"role":"step-meta","text":"Optional preference","textChars":19,"textLines":1,"bbox":{"left":1062,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":3,"role":"step-number","text":"5","textChars":1,"textLines":1,"bbox":{"left":968,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":3,"role":"glyph","text":"CHK","textChars":3,"textLines":1,"bbox":{"left":1004,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":3,"role":"step-title","text":"Confirm Booking Data","textChars":20,"textLines":1,"bbox":{"left":1056,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":3,"role":"step-detail","text":"Frontend submits vehicle, offering, slot and payment choice.","textChars":60,"textLines":1,"bbox":{"left":1056,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":3,"role":"step-meta","text":"Create request","textChars":14,"textLines":1,"bbox":{"left":1062,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":3,"role":"step-number","text":"6","textChars":1,"textLines":1,"bbox":{"left":668,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":3,"role":"glyph","text":"API","textChars":3,"textLines":1,"bbox":{"left":704,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":3,"role":"step-title","text":"Create Booking","textChars":14,"textLines":1,"bbox":{"left":756,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":3,"role":"step-detail","text":"Backend validates hold, capacity, voucher and ownership.","textChars":56,"textLines":1,"bbox":{"left":756,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":3,"role":"step-meta","text":"POST /customers/bookings","textChars":24,"textLines":1,"bbox":{"left":762,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":3,"role":"step-number","text":"7","textChars":1,"textLines":1,"bbox":{"left":368,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":3,"role":"glyph","text":"DB","textChars":2,"textLines":1,"bbox":{"left":404,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":3,"role":"step-title","text":"Commit Transaction","textChars":18,"textLines":1,"bbox":{"left":456,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":3,"role":"step-detail","text":"Persist booking/payment, consume voucher and delete hold.","textChars":57,"textLines":1,"bbox":{"left":456,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":3,"role":"step-meta","text":"PostgreSQL","textChars":10,"textLines":1,"bbox":{"left":462,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":3,"role":"step-number","text":"8","textChars":1,"textLines":1,"bbox":{"left":68,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":3,"role":"glyph","text":"P","textChars":1,"textLines":1,"bbox":{"left":104,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":3,"role":"step-title","text":"Return Pending Booking","textChars":22,"textLines":1,"bbox":{"left":156,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":3,"role":"step-detail","text":"Response includes booking status and payment information.","textChars":57,"textLines":1,"bbox":{"left":156,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":3,"role":"step-meta","text":"PENDING","textChars":7,"textLines":1,"bbox":{"left":162,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":3,"role":"connector-label","text":"2. Validate Discount","textChars":20,"textLines":1,"bbox":{"left":304,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":3,"role":"connector-label","text":"3. Request Staff Options","textChars":24,"textLines":1,"bbox":{"left":604,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":3,"role":"connector-label","text":"4. Choose Staff Preference","textChars":26,"textLines":1,"bbox":{"left":904,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":3,"role":"connector-label","text":"5. Confirm Booking Data","textChars":23,"textLines":1,"bbox":{"left":1098,"top":336,"width":88,"height":27}}
+{"kind":"textbox","slide":3,"role":"connector-label","text":"6. Create Booking","textChars":17,"textLines":1,"bbox":{"left":904,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":3,"role":"connector-label","text":"7. Commit Transaction","textChars":21,"textLines":1,"bbox":{"left":604,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":3,"role":"connector-label","text":"8. Return Pending Booking","textChars":25,"textLines":1,"bbox":{"left":304,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":3,"role":"business-rule","text":"Booking creation is server-authoritative: the active hold is removed only after the booking transaction succeeds, preventing duplicate capacity usage.","textChars":150,"textLines":1,"bbox":{"left":96,"top":631,"width":1088,"height":19}}
+{"kind":"textbox","slide":3,"role":"legend","text":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":{"left":82,"top":665,"width":230,"height":16}}
+{"kind":"textbox","slide":3,"role":"legend","text":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":{"left":325,"top":665,"width":270,"height":16}}
+{"kind":"textbox","slide":3,"role":"source","text":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":{"left":870,"top":665,"width":325,"height":16}}
+{"kind":"textbox","slide":4,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":55,"width":130,"height":38}}
+{"kind":"textbox","slide":4,"role":"title","text":"Scenario 4: Payment Confirmation","textChars":32,"textLines":1,"bbox":{"left":230,"top":53,"width":890,"height":42}}
+{"kind":"textbox","slide":4,"role":"subtitle","text":"Online payment is verified by the backend before the booking becomes confirmed and eligible for wash operations.","textChars":112,"textLines":1,"bbox":{"left":80,"top":101,"width":1050,"height":24}}
+{"kind":"textbox","slide":4,"role":"brand","text":"AUTOWASH","textChars":8,"textLines":1,"bbox":{"left":1119,"top":63,"width":72,"height":17}}
+{"kind":"textbox","slide":4,"role":"step-number","text":"1","textChars":1,"textLines":1,"bbox":{"left":68,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":4,"role":"glyph","text":"PAY","textChars":3,"textLines":1,"bbox":{"left":104,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":4,"role":"step-title","text":"Select Payment Method","textChars":21,"textLines":1,"bbox":{"left":156,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":4,"role":"step-detail","text":"Choose supported payment option during booking creation.","textChars":56,"textLines":1,"bbox":{"left":156,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":4,"role":"step-meta","text":"Payment method","textChars":14,"textLines":1,"bbox":{"left":162,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":4,"role":"step-number","text":"2","textChars":1,"textLines":1,"bbox":{"left":368,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":4,"role":"glyph","text":"SP","textChars":2,"textLines":1,"bbox":{"left":404,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":4,"role":"step-title","text":"Prepare SePay Transfer","textChars":22,"textLines":1,"bbox":{"left":456,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":4,"role":"step-detail","text":"Generate payment code and VietQR information.","textChars":45,"textLines":1,"bbox":{"left":456,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":4,"role":"step-meta","text":"BANK_TRANSFER","textChars":13,"textLines":1,"bbox":{"left":462,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":4,"role":"step-number","text":"3","textChars":1,"textLines":1,"bbox":{"left":668,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":4,"role":"glyph","text":"QR","textChars":2,"textLines":1,"bbox":{"left":704,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":4,"role":"step-title","text":"Customer Transfers Funds","textChars":24,"textLines":1,"bbox":{"left":756,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":4,"role":"step-detail","text":"Customer pays using the generated bank-transfer content.","textChars":56,"textLines":1,"bbox":{"left":756,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":4,"role":"step-meta","text":"SePay / VietQR","textChars":14,"textLines":1,"bbox":{"left":762,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":4,"role":"step-number","text":"4","textChars":1,"textLines":1,"bbox":{"left":968,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":4,"role":"glyph","text":"WH","textChars":2,"textLines":1,"bbox":{"left":1004,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":4,"role":"step-title","text":"Receive Signed Webhook","textChars":22,"textLines":1,"bbox":{"left":1056,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":4,"role":"step-detail","text":"Verify HMAC signature, timestamp and payment code.","textChars":50,"textLines":1,"bbox":{"left":1056,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":4,"role":"step-meta","text":"/payments/sepay/webhook","textChars":23,"textLines":1,"bbox":{"left":1062,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":4,"role":"step-number","text":"5","textChars":1,"textLines":1,"bbox":{"left":968,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":4,"role":"glyph","text":"VP","textChars":2,"textLines":1,"bbox":{"left":1004,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":4,"role":"step-title","text":"VNPay Alternative","textChars":17,"textLines":1,"bbox":{"left":1056,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":4,"role":"step-detail","text":"Create checkout URL and handle return, IPN or query.","textChars":52,"textLines":1,"bbox":{"left":1056,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":4,"role":"step-meta","text":"VNPay endpoints","textChars":15,"textLines":1,"bbox":{"left":1062,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":4,"role":"step-number","text":"6","textChars":1,"textLines":1,"bbox":{"left":668,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":4,"role":"glyph","text":"DB","textChars":2,"textLines":1,"bbox":{"left":704,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":4,"role":"step-title","text":"Mark Payment Paid","textChars":17,"textLines":1,"bbox":{"left":756,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":4,"role":"step-detail","text":"Persist the verified successful payment transaction.","textChars":52,"textLines":1,"bbox":{"left":756,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":4,"role":"step-meta","text":"PAID","textChars":4,"textLines":1,"bbox":{"left":762,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":4,"role":"step-number","text":"7","textChars":1,"textLines":1,"bbox":{"left":368,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":4,"role":"glyph","text":"CF","textChars":2,"textLines":1,"bbox":{"left":404,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":4,"role":"step-title","text":"Confirm Booking","textChars":15,"textLines":1,"bbox":{"left":456,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":4,"role":"step-detail","text":"Booking changes from pending payment to confirmed.","textChars":50,"textLines":1,"bbox":{"left":456,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":4,"role":"step-meta","text":"CONFIRMED","textChars":9,"textLines":1,"bbox":{"left":462,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":4,"role":"step-number","text":"8","textChars":1,"textLines":1,"bbox":{"left":68,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":4,"role":"glyph","text":"ST","textChars":2,"textLines":1,"bbox":{"left":104,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":4,"role":"step-title","text":"Assign Staff and Notify","textChars":23,"textLines":1,"bbox":{"left":156,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":4,"role":"step-detail","text":"Select available staff and publish booking update.","textChars":50,"textLines":1,"bbox":{"left":156,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":4,"role":"step-meta","text":"BOOKING_UPDATE","textChars":14,"textLines":1,"bbox":{"left":162,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":4,"role":"connector-label","text":"2. Prepare SePay Transfer","textChars":25,"textLines":1,"bbox":{"left":304,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":4,"role":"connector-label","text":"3. Customer Transfers Funds","textChars":27,"textLines":1,"bbox":{"left":604,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":4,"role":"connector-label","text":"4. Receive Signed Webhook","textChars":25,"textLines":1,"bbox":{"left":904,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":4,"role":"connector-label","text":"5. VNPay Alternative","textChars":20,"textLines":1,"bbox":{"left":1098,"top":336,"width":88,"height":27}}
+{"kind":"textbox","slide":4,"role":"connector-label","text":"6. Mark Payment Paid","textChars":20,"textLines":1,"bbox":{"left":904,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":4,"role":"connector-label","text":"7. Confirm Booking","textChars":18,"textLines":1,"bbox":{"left":604,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":4,"role":"connector-label","text":"8. Assign Staff and Notify","textChars":26,"textLines":1,"bbox":{"left":304,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":4,"role":"event-label","text":"Dashed connection: SePay webhook or VNPay IPN/query callback is verified by Spring Boot before confirmation","textChars":107,"textLines":1,"bbox":{"left":396,"top":401,"width":658,"height":16}}
+{"kind":"textbox","slide":4,"role":"business-rule","text":"The frontend never confirms an online payment by itself; only a verified SePay webhook or VNPay IPN/query result can mark the booking CONFIRMED.","textChars":144,"textLines":1,"bbox":{"left":96,"top":631,"width":1088,"height":19}}
+{"kind":"textbox","slide":4,"role":"legend","text":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":{"left":82,"top":665,"width":230,"height":16}}
+{"kind":"textbox","slide":4,"role":"legend","text":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":{"left":325,"top":665,"width":270,"height":16}}
+{"kind":"textbox","slide":4,"role":"source","text":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":{"left":870,"top":665,"width":325,"height":16}}
+{"kind":"textbox","slide":5,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":55,"width":130,"height":38}}
+{"kind":"textbox","slide":5,"role":"title","text":"Scenario 5: Staff Assignment, Queue & Check-in","textChars":46,"textLines":1,"bbox":{"left":230,"top":53,"width":890,"height":42}}
+{"kind":"textbox","slide":5,"role":"subtitle","text":"Operational users turn a confirmed booking into a wash session and advance it through controlled lifecycle transitions.","textChars":119,"textLines":1,"bbox":{"left":80,"top":101,"width":1050,"height":24}}
+{"kind":"textbox","slide":5,"role":"brand","text":"AUTOWASH","textChars":8,"textLines":1,"bbox":{"left":1119,"top":63,"width":72,"height":17}}
+{"kind":"textbox","slide":5,"role":"step-number","text":"1","textChars":1,"textLines":1,"bbox":{"left":68,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":5,"role":"glyph","text":"OPS","textChars":3,"textLines":1,"bbox":{"left":104,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":5,"role":"step-title","text":"Open Operations Queue","textChars":21,"textLines":1,"bbox":{"left":156,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":5,"role":"step-detail","text":"Staff or manager views operational booking data.","textChars":48,"textLines":1,"bbox":{"left":156,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":5,"role":"step-meta","text":"Operations workspace","textChars":20,"textLines":1,"bbox":{"left":162,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":5,"role":"step-number","text":"2","textChars":1,"textLines":1,"bbox":{"left":368,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":5,"role":"glyph","text":"EL","textChars":2,"textLines":1,"bbox":{"left":404,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":5,"role":"step-title","text":"Load Eligible Bookings","textChars":22,"textLines":1,"bbox":{"left":456,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":5,"role":"step-detail","text":"Only confirmed bookings can start a wash session.","textChars":49,"textLines":1,"bbox":{"left":456,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":5,"role":"step-meta","text":"/eligible-sessions","textChars":18,"textLines":1,"bbox":{"left":462,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":5,"role":"step-number","text":"3","textChars":1,"textLines":1,"bbox":{"left":668,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":5,"role":"glyph","text":"AS","textChars":2,"textLines":1,"bbox":{"left":704,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":5,"role":"step-title","text":"Resolve Staff Assignment","textChars":24,"textLines":1,"bbox":{"left":756,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":5,"role":"step-detail","text":"Use assignment, availability and workload information.","textChars":54,"textLines":1,"bbox":{"left":756,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":5,"role":"step-meta","text":"Staff options","textChars":13,"textLines":1,"bbox":{"left":762,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":5,"role":"step-number","text":"4","textChars":1,"textLines":1,"bbox":{"left":968,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":5,"role":"glyph","text":"NEW","textChars":3,"textLines":1,"bbox":{"left":1004,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":5,"role":"step-title","text":"Create Wash Session","textChars":19,"textLines":1,"bbox":{"left":1056,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":5,"role":"step-detail","text":"Create session linked to booking and assigned staff.","textChars":52,"textLines":1,"bbox":{"left":1056,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":5,"role":"step-meta","text":"PENDING","textChars":7,"textLines":1,"bbox":{"left":1062,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":5,"role":"step-number","text":"5","textChars":1,"textLines":1,"bbox":{"left":968,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":5,"role":"glyph","text":"Q","textChars":1,"textLines":1,"bbox":{"left":1004,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":5,"role":"step-title","text":"Move Session to Queue","textChars":21,"textLines":1,"bbox":{"left":1056,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":5,"role":"step-detail","text":"Operational queue accepts the prepared wash session.","textChars":52,"textLines":1,"bbox":{"left":1056,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":5,"role":"step-meta","text":"QUEUED","textChars":6,"textLines":1,"bbox":{"left":1062,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":5,"role":"step-number","text":"6","textChars":1,"textLines":1,"bbox":{"left":668,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":5,"role":"glyph","text":"IN","textChars":2,"textLines":1,"bbox":{"left":704,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":5,"role":"step-title","text":"Check In Vehicle","textChars":16,"textLines":1,"bbox":{"left":756,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":5,"role":"step-detail","text":"Staff confirms the vehicle has arrived for service.","textChars":51,"textLines":1,"bbox":{"left":756,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":5,"role":"step-meta","text":"CHECKED_IN","textChars":10,"textLines":1,"bbox":{"left":762,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":5,"role":"step-number","text":"7","textChars":1,"textLines":1,"bbox":{"left":368,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":5,"role":"glyph","text":"GO","textChars":2,"textLines":1,"bbox":{"left":404,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":5,"role":"step-title","text":"Start Washing","textChars":13,"textLines":1,"bbox":{"left":456,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":5,"role":"step-detail","text":"Session and booking move to active execution.","textChars":45,"textLines":1,"bbox":{"left":456,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":5,"role":"step-meta","text":"IN_PROGRESS","textChars":11,"textLines":1,"bbox":{"left":462,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":5,"role":"step-number","text":"8","textChars":1,"textLines":1,"bbox":{"left":68,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":5,"role":"glyph","text":"EV","textChars":2,"textLines":1,"bbox":{"left":104,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":5,"role":"step-title","text":"Persist and Broadcast","textChars":21,"textLines":1,"bbox":{"left":156,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":5,"role":"step-detail","text":"Save lifecycle state and publish realtime update.","textChars":49,"textLines":1,"bbox":{"left":156,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":5,"role":"step-meta","text":"WASH_SESSION_UPDATE","textChars":19,"textLines":1,"bbox":{"left":162,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":5,"role":"connector-label","text":"2. Load Eligible Bookings","textChars":25,"textLines":1,"bbox":{"left":304,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":5,"role":"connector-label","text":"3. Resolve Staff Assignment","textChars":27,"textLines":1,"bbox":{"left":604,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":5,"role":"connector-label","text":"4. Create Wash Session","textChars":22,"textLines":1,"bbox":{"left":904,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":5,"role":"connector-label","text":"5. Move Session to Queue","textChars":24,"textLines":1,"bbox":{"left":1098,"top":336,"width":88,"height":27}}
+{"kind":"textbox","slide":5,"role":"connector-label","text":"6. Check In Vehicle","textChars":19,"textLines":1,"bbox":{"left":904,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":5,"role":"connector-label","text":"7. Start Washing","textChars":16,"textLines":1,"bbox":{"left":604,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":5,"role":"connector-label","text":"8. Persist and Broadcast","textChars":24,"textLines":1,"bbox":{"left":304,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":5,"role":"business-rule","text":"Lifecycle transitions are validated by the backend: PENDING -> QUEUED -> CHECKED_IN -> IN_PROGRESS -> COMPLETED, with CANCELLED as a terminal alternative.","textChars":154,"textLines":1,"bbox":{"left":96,"top":631,"width":1088,"height":19}}
+{"kind":"textbox","slide":5,"role":"legend","text":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":{"left":82,"top":665,"width":230,"height":16}}
+{"kind":"textbox","slide":5,"role":"legend","text":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":{"left":325,"top":665,"width":270,"height":16}}
+{"kind":"textbox","slide":5,"role":"source","text":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":{"left":870,"top":665,"width":325,"height":16}}
+{"kind":"textbox","slide":6,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":55,"width":130,"height":38}}
+{"kind":"textbox","slide":6,"role":"title","text":"Scenario 6: Wash Progress & Realtime Customer Tracking","textChars":54,"textLines":1,"bbox":{"left":230,"top":53,"width":890,"height":42}}
+{"kind":"textbox","slide":6,"role":"subtitle","text":"The customer follows the active wash session while staff actions update persisted state and notify subscribed dashboards.","textChars":121,"textLines":1,"bbox":{"left":80,"top":101,"width":1050,"height":24}}
+{"kind":"textbox","slide":6,"role":"brand","text":"AUTOWASH","textChars":8,"textLines":1,"bbox":{"left":1119,"top":63,"width":72,"height":17}}
+{"kind":"textbox","slide":6,"role":"step-number","text":"1","textChars":1,"textLines":1,"bbox":{"left":68,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":6,"role":"glyph","text":"TR","textChars":2,"textLines":1,"bbox":{"left":104,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":6,"role":"step-title","text":"Open Wash Tracking","textChars":18,"textLines":1,"bbox":{"left":156,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":6,"role":"step-detail","text":"Customer opens the active booking or tracking page.","textChars":51,"textLines":1,"bbox":{"left":156,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":6,"role":"step-meta","text":"Customer workspace","textChars":18,"textLines":1,"bbox":{"left":162,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":6,"role":"step-number","text":"2","textChars":1,"textLines":1,"bbox":{"left":368,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":6,"role":"glyph","text":"GET","textChars":3,"textLines":1,"bbox":{"left":404,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":6,"role":"step-title","text":"Request Active Session","textChars":22,"textLines":1,"bbox":{"left":456,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":6,"role":"step-detail","text":"Load active tracking or a selected session by ID.","textChars":49,"textLines":1,"bbox":{"left":456,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":6,"role":"step-meta","text":"/wash-tracking/active","textChars":21,"textLines":1,"bbox":{"left":462,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":6,"role":"step-number","text":"3","textChars":1,"textLines":1,"bbox":{"left":668,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":6,"role":"glyph","text":"API","textChars":3,"textLines":1,"bbox":{"left":704,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":6,"role":"step-title","text":"Load Session Context","textChars":20,"textLines":1,"bbox":{"left":756,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":6,"role":"step-detail","text":"Resolve booking, status, staff and timestamps.","textChars":46,"textLines":1,"bbox":{"left":756,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":6,"role":"step-meta","text":"Tracking service","textChars":16,"textLines":1,"bbox":{"left":762,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":6,"role":"step-number","text":"4","textChars":1,"textLines":1,"bbox":{"left":968,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":6,"role":"glyph","text":"DB","textChars":2,"textLines":1,"bbox":{"left":1004,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":6,"role":"step-title","text":"Read Current State","textChars":18,"textLines":1,"bbox":{"left":1056,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":6,"role":"step-detail","text":"PostgreSQL remains the authoritative session state.","textChars":51,"textLines":1,"bbox":{"left":1056,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":6,"role":"step-meta","text":"Session + booking","textChars":17,"textLines":1,"bbox":{"left":1062,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":6,"role":"step-number","text":"5","textChars":1,"textLines":1,"bbox":{"left":968,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":6,"role":"glyph","text":"UP","textChars":2,"textLines":1,"bbox":{"left":1004,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":6,"role":"step-title","text":"Staff Updates Progress","textChars":22,"textLines":1,"bbox":{"left":1056,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":6,"role":"step-detail","text":"Queue, check-in, start or completion command is submitted.","textChars":58,"textLines":1,"bbox":{"left":1056,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":6,"role":"step-meta","text":"Operations API","textChars":14,"textLines":1,"bbox":{"left":1062,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":6,"role":"step-number","text":"6","textChars":1,"textLines":1,"bbox":{"left":668,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":6,"role":"glyph","text":"WS","textChars":2,"textLines":1,"bbox":{"left":704,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":6,"role":"step-title","text":"Publish Realtime Event","textChars":22,"textLines":1,"bbox":{"left":756,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":6,"role":"step-detail","text":"Backend emits booking or wash-session update.","textChars":45,"textLines":1,"bbox":{"left":756,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":6,"role":"step-meta","text":"/topic/bookings","textChars":15,"textLines":1,"bbox":{"left":762,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":6,"role":"step-number","text":"7","textChars":1,"textLines":1,"bbox":{"left":368,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":6,"role":"glyph","text":"RQ","textChars":2,"textLines":1,"bbox":{"left":404,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":6,"role":"step-title","text":"Refresh Client Cache","textChars":20,"textLines":1,"bbox":{"left":456,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":6,"role":"step-detail","text":"React Query caches are invalidated and reloaded.","textChars":48,"textLines":1,"bbox":{"left":456,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":6,"role":"step-meta","text":"Polling fallback","textChars":16,"textLines":1,"bbox":{"left":462,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":6,"role":"step-number","text":"8","textChars":1,"textLines":1,"bbox":{"left":68,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":6,"role":"glyph","text":"LIVE","textChars":4,"textLines":1,"bbox":{"left":104,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":6,"role":"step-title","text":"Display Current Progress","textChars":24,"textLines":1,"bbox":{"left":156,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":6,"role":"step-detail","text":"Customer sees latest status, staff and timing data.","textChars":51,"textLines":1,"bbox":{"left":156,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":6,"role":"step-meta","text":"Near realtime","textChars":13,"textLines":1,"bbox":{"left":162,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":6,"role":"connector-label","text":"2. Request Active Session","textChars":25,"textLines":1,"bbox":{"left":304,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":6,"role":"connector-label","text":"3. Load Session Context","textChars":23,"textLines":1,"bbox":{"left":604,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":6,"role":"connector-label","text":"4. Read Current State","textChars":21,"textLines":1,"bbox":{"left":904,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":6,"role":"connector-label","text":"5. Staff Updates Progress","textChars":25,"textLines":1,"bbox":{"left":1098,"top":336,"width":88,"height":27}}
+{"kind":"textbox","slide":6,"role":"connector-label","text":"6. Publish Realtime Event","textChars":25,"textLines":1,"bbox":{"left":904,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":6,"role":"connector-label","text":"7. Refresh Client Cache","textChars":23,"textLines":1,"bbox":{"left":604,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":6,"role":"connector-label","text":"8. Display Current Progress","textChars":27,"textLines":1,"bbox":{"left":304,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":6,"role":"event-label","text":"Dashed connection: STOMP /topic/bookings event causes subscribed clients to invalidate and reload React Query data","textChars":114,"textLines":1,"bbox":{"left":396,"top":401,"width":658,"height":16}}
+{"kind":"textbox","slide":6,"role":"business-rule","text":"WebSocket improves freshness but does not replace persisted state; reconnecting clients reload data and polling remains the fallback mechanism.","textChars":143,"textLines":1,"bbox":{"left":96,"top":631,"width":1088,"height":19}}
+{"kind":"textbox","slide":6,"role":"legend","text":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":{"left":82,"top":665,"width":230,"height":16}}
+{"kind":"textbox","slide":6,"role":"legend","text":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":{"left":325,"top":665,"width":270,"height":16}}
+{"kind":"textbox","slide":6,"role":"source","text":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":{"left":870,"top":665,"width":325,"height":16}}
+{"kind":"textbox","slide":7,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":55,"width":130,"height":38}}
+{"kind":"textbox","slide":7,"role":"title","text":"Scenario 7: Completion, Loyalty, Tier & Review","textChars":46,"textLines":1,"bbox":{"left":230,"top":53,"width":890,"height":42}}
+{"kind":"textbox","slide":7,"role":"subtitle","text":"Completing the wash finalizes operational and payment state, awards points, updates tier progress, and unlocks a booking review.","textChars":128,"textLines":1,"bbox":{"left":80,"top":101,"width":1050,"height":24}}
+{"kind":"textbox","slide":7,"role":"brand","text":"AUTOWASH","textChars":8,"textLines":1,"bbox":{"left":1119,"top":63,"width":72,"height":17}}
+{"kind":"textbox","slide":7,"role":"step-number","text":"1","textChars":1,"textLines":1,"bbox":{"left":68,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":7,"role":"glyph","text":"DONE","textChars":4,"textLines":1,"bbox":{"left":104,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":7,"role":"step-title","text":"Complete Wash Session","textChars":21,"textLines":1,"bbox":{"left":156,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":7,"role":"step-detail","text":"Authorized operations user submits completion.","textChars":46,"textLines":1,"bbox":{"left":156,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":7,"role":"step-meta","text":"COMPLETED","textChars":9,"textLines":1,"bbox":{"left":162,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":7,"role":"step-number","text":"2","textChars":1,"textLines":1,"bbox":{"left":368,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":7,"role":"glyph","text":"BK","textChars":2,"textLines":1,"bbox":{"left":404,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":7,"role":"step-title","text":"Complete the Booking","textChars":20,"textLines":1,"bbox":{"left":456,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":7,"role":"step-detail","text":"Booking status is synchronized with the wash session.","textChars":53,"textLines":1,"bbox":{"left":456,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":7,"role":"step-meta","text":"Booking COMPLETED","textChars":17,"textLines":1,"bbox":{"left":462,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":7,"role":"step-number","text":"3","textChars":1,"textLines":1,"bbox":{"left":668,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":7,"role":"glyph","text":"PAY","textChars":3,"textLines":1,"bbox":{"left":704,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":7,"role":"step-title","text":"Finalize Payment State","textChars":22,"textLines":1,"bbox":{"left":756,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":7,"role":"step-detail","text":"Completion marks the associated payment paid where required.","textChars":60,"textLines":1,"bbox":{"left":756,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":7,"role":"step-meta","text":"PAID","textChars":4,"textLines":1,"bbox":{"left":762,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":7,"role":"step-number","text":"4","textChars":1,"textLines":1,"bbox":{"left":968,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":7,"role":"glyph","text":"PTS","textChars":3,"textLines":1,"bbox":{"left":1004,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":7,"role":"step-title","text":"Award Loyalty Points","textChars":20,"textLines":1,"bbox":{"left":1056,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":7,"role":"step-detail","text":"Create an earn transaction based on completed service.","textChars":54,"textLines":1,"bbox":{"left":1056,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":7,"role":"step-meta","text":"Point history","textChars":13,"textLines":1,"bbox":{"left":1062,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":7,"role":"step-number","text":"5","textChars":1,"textLines":1,"bbox":{"left":968,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":7,"role":"glyph","text":"T","textChars":1,"textLines":1,"bbox":{"left":1004,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":7,"role":"step-title","text":"Recalculate Tier","textChars":16,"textLines":1,"bbox":{"left":1056,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":7,"role":"step-detail","text":"Updated points determine the customer loyalty tier.","textChars":51,"textLines":1,"bbox":{"left":1056,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":7,"role":"step-meta","text":"Tier progress","textChars":13,"textLines":1,"bbox":{"left":1062,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":7,"role":"step-number","text":"6","textChars":1,"textLines":1,"bbox":{"left":668,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":7,"role":"glyph","text":"SUM","textChars":3,"textLines":1,"bbox":{"left":704,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":7,"role":"step-title","text":"Show Completion Summary","textChars":23,"textLines":1,"bbox":{"left":756,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":7,"role":"step-detail","text":"Display service, amount, completion time and awarded points.","textChars":60,"textLines":1,"bbox":{"left":756,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":7,"role":"step-meta","text":"/completion-summary","textChars":19,"textLines":1,"bbox":{"left":762,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":7,"role":"step-number","text":"7","textChars":1,"textLines":1,"bbox":{"left":368,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":7,"role":"glyph","text":"5","textChars":1,"textLines":1,"bbox":{"left":404,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":7,"role":"step-title","text":"Submit Booking Review","textChars":21,"textLines":1,"bbox":{"left":456,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":7,"role":"step-detail","text":"Customer rates the completed booking and adds comments/images.","textChars":62,"textLines":1,"bbox":{"left":456,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":7,"role":"step-meta","text":"One review / booking","textChars":20,"textLines":1,"bbox":{"left":462,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":7,"role":"step-number","text":"8","textChars":1,"textLines":1,"bbox":{"left":68,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":7,"role":"glyph","text":"+10","textChars":3,"textLines":1,"bbox":{"left":104,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":7,"role":"step-title","text":"Award Review Bonus","textChars":18,"textLines":1,"bbox":{"left":156,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":7,"role":"step-detail","text":"Persist review and add the configured review-point bonus.","textChars":57,"textLines":1,"bbox":{"left":156,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":7,"role":"step-meta","text":"+10 points","textChars":10,"textLines":1,"bbox":{"left":162,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":7,"role":"connector-label","text":"2. Complete the Booking","textChars":23,"textLines":1,"bbox":{"left":304,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":7,"role":"connector-label","text":"3. Finalize Payment State","textChars":25,"textLines":1,"bbox":{"left":604,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":7,"role":"connector-label","text":"4. Award Loyalty Points","textChars":23,"textLines":1,"bbox":{"left":904,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":7,"role":"connector-label","text":"5. Recalculate Tier","textChars":19,"textLines":1,"bbox":{"left":1098,"top":336,"width":88,"height":27}}
+{"kind":"textbox","slide":7,"role":"connector-label","text":"6. Show Completion Summary","textChars":26,"textLines":1,"bbox":{"left":904,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":7,"role":"connector-label","text":"7. Submit Booking Review","textChars":24,"textLines":1,"bbox":{"left":604,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":7,"role":"connector-label","text":"8. Award Review Bonus","textChars":21,"textLines":1,"bbox":{"left":304,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":7,"role":"business-rule","text":"Reviews are accepted only for COMPLETED bookings, are limited to one per booking, and can store before/after image URLs in AWS S3.","textChars":130,"textLines":1,"bbox":{"left":96,"top":631,"width":1088,"height":19}}
+{"kind":"textbox","slide":7,"role":"legend","text":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":{"left":82,"top":665,"width":230,"height":16}}
+{"kind":"textbox","slide":7,"role":"legend","text":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":{"left":325,"top":665,"width":270,"height":16}}
+{"kind":"textbox","slide":7,"role":"source","text":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":{"left":870,"top":665,"width":325,"height":16}}
+{"kind":"textbox","slide":8,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":55,"width":130,"height":38}}
+{"kind":"textbox","slide":8,"role":"title","text":"Scenario 8: Admin Insights & History","textChars":36,"textLines":1,"bbox":{"left":230,"top":53,"width":890,"height":42}}
+{"kind":"textbox","slide":8,"role":"subtitle","text":"Customers revisit their service records while managers and administrators monitor bookings, vehicles, staff performance, reviews and revenue.","textChars":141,"textLines":1,"bbox":{"left":80,"top":101,"width":1050,"height":24}}
+{"kind":"textbox","slide":8,"role":"brand","text":"AUTOWASH","textChars":8,"textLines":1,"bbox":{"left":1119,"top":63,"width":72,"height":17}}
+{"kind":"textbox","slide":8,"role":"step-number","text":"1","textChars":1,"textLines":1,"bbox":{"left":68,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":8,"role":"glyph","text":"HIS","textChars":3,"textLines":1,"bbox":{"left":104,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":8,"role":"step-title","text":"Open Booking History","textChars":20,"textLines":1,"bbox":{"left":156,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":8,"role":"step-detail","text":"Customer views past and active bookings separately.","textChars":51,"textLines":1,"bbox":{"left":156,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":8,"role":"step-meta","text":"History workspace","textChars":17,"textLines":1,"bbox":{"left":162,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":8,"role":"step-number","text":"2","textChars":1,"textLines":1,"bbox":{"left":368,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":8,"role":"glyph","text":"DT","textChars":2,"textLines":1,"bbox":{"left":404,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":8,"role":"step-title","text":"View Booking Detail","textChars":19,"textLines":1,"bbox":{"left":456,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":8,"role":"step-detail","text":"Load booking, selected service, payment and staff data.","textChars":55,"textLines":1,"bbox":{"left":456,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":8,"role":"step-meta","text":"Booking ID","textChars":10,"textLines":1,"bbox":{"left":462,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":8,"role":"step-number","text":"3","textChars":1,"textLines":1,"bbox":{"left":668,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":8,"role":"glyph","text":"CAR","textChars":3,"textLines":1,"bbox":{"left":704,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":8,"role":"step-title","text":"View Booking Vehicle","textChars":20,"textLines":1,"bbox":{"left":756,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":8,"role":"step-detail","text":"Display plate, model, owner metadata and service history.","textChars":57,"textLines":1,"bbox":{"left":756,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":8,"role":"step-meta","text":"Vehicle detail","textChars":14,"textLines":1,"bbox":{"left":762,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":8,"role":"step-number","text":"4","textChars":1,"textLines":1,"bbox":{"left":968,"top":156,"width":30,"height":18}}
+{"kind":"textbox","slide":8,"role":"glyph","text":"X","textChars":1,"textLines":1,"bbox":{"left":1004,"top":204,"width":34,"height":20}}
+{"kind":"textbox","slide":8,"role":"step-title","text":"Cancel Eligible Booking","textChars":23,"textLines":1,"bbox":{"left":1056,"top":175,"width":130,"height":34}}
+{"kind":"textbox","slide":8,"role":"step-detail","text":"Backend validates whether cancellation is still allowed.","textChars":56,"textLines":1,"bbox":{"left":1056,"top":211,"width":130,"height":35}}
+{"kind":"textbox","slide":8,"role":"step-meta","text":"Cancel endpoint","textChars":15,"textLines":1,"bbox":{"left":1062,"top":253,"width":118,"height":13}}
+{"kind":"textbox","slide":8,"role":"step-number","text":"5","textChars":1,"textLines":1,"bbox":{"left":968,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":8,"role":"glyph","text":"FLT","textChars":3,"textLines":1,"bbox":{"left":1004,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":8,"role":"step-title","text":"Filter Admin Bookings","textChars":21,"textLines":1,"bbox":{"left":1056,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":8,"role":"step-detail","text":"Search by customer, plate, phone, status, package and date.","textChars":59,"textLines":1,"bbox":{"left":1056,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":8,"role":"step-meta","text":"Booking management","textChars":18,"textLines":1,"bbox":{"left":1062,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":8,"role":"step-number","text":"6","textChars":1,"textLines":1,"bbox":{"left":668,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":8,"role":"glyph","text":"ST","textChars":2,"textLines":1,"bbox":{"left":704,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":8,"role":"step-title","text":"Monitor Staff Workload","textChars":22,"textLines":1,"bbox":{"left":756,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":8,"role":"step-detail","text":"Review availability, assignments and completed daily orders.","textChars":60,"textLines":1,"bbox":{"left":756,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":8,"role":"step-meta","text":"Staff KPI","textChars":9,"textLines":1,"bbox":{"left":762,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":8,"role":"step-number","text":"7","textChars":1,"textLines":1,"bbox":{"left":368,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":8,"role":"glyph","text":"REP","textChars":3,"textLines":1,"bbox":{"left":404,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":8,"role":"step-title","text":"Aggregate Reports","textChars":17,"textLines":1,"bbox":{"left":456,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":8,"role":"step-detail","text":"Combine bookings, sessions, ratings and revenue.","textChars":48,"textLines":1,"bbox":{"left":456,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":8,"role":"step-meta","text":"Reporting APIs","textChars":14,"textLines":1,"bbox":{"left":462,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":8,"role":"step-number","text":"8","textChars":1,"textLines":1,"bbox":{"left":68,"top":438,"width":30,"height":18}}
+{"kind":"textbox","slide":8,"role":"glyph","text":"KPI","textChars":3,"textLines":1,"bbox":{"left":104,"top":486,"width":34,"height":20}}
+{"kind":"textbox","slide":8,"role":"step-title","text":"Display Management KPI","textChars":22,"textLines":1,"bbox":{"left":156,"top":457,"width":130,"height":34}}
+{"kind":"textbox","slide":8,"role":"step-detail","text":"Admin and manager dashboards present operational insights.","textChars":58,"textLines":1,"bbox":{"left":156,"top":493,"width":130,"height":35}}
+{"kind":"textbox","slide":8,"role":"step-meta","text":"Dashboard","textChars":9,"textLines":1,"bbox":{"left":162,"top":535,"width":118,"height":13}}
+{"kind":"textbox","slide":8,"role":"connector-label","text":"2. View Booking Detail","textChars":22,"textLines":1,"bbox":{"left":304,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":8,"role":"connector-label","text":"3. View Booking Vehicle","textChars":23,"textLines":1,"bbox":{"left":604,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":8,"role":"connector-label","text":"4. Cancel Eligible Booking","textChars":26,"textLines":1,"bbox":{"left":904,"top":181,"width":72,"height":27}}
+{"kind":"textbox","slide":8,"role":"connector-label","text":"5. Filter Admin Bookings","textChars":24,"textLines":1,"bbox":{"left":1098,"top":336,"width":88,"height":27}}
+{"kind":"textbox","slide":8,"role":"connector-label","text":"6. Monitor Staff Workload","textChars":25,"textLines":1,"bbox":{"left":904,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":8,"role":"connector-label","text":"7. Aggregate Reports","textChars":20,"textLines":1,"bbox":{"left":604,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":8,"role":"connector-label","text":"8. Display Management KPI","textChars":25,"textLines":1,"bbox":{"left":304,"top":462,"width":72,"height":27}}
+{"kind":"textbox","slide":8,"role":"business-rule","text":"Administrative views consume server data through dedicated APIs; booking, vehicle and KPI values must not depend on frontend mock or fallback datasets.","textChars":151,"textLines":1,"bbox":{"left":96,"top":631,"width":1088,"height":19}}
+{"kind":"textbox","slide":8,"role":"legend","text":"Solid arrow: next command/action","textChars":32,"textLines":1,"bbox":{"left":82,"top":665,"width":230,"height":16}}
+{"kind":"textbox","slide":8,"role":"legend","text":"Dashed arrow: callback/realtime update","textChars":38,"textLines":1,"bbox":{"left":325,"top":665,"width":270,"height":16}}
+{"kind":"textbox","slide":8,"role":"source","text":"Repository-aligned: origin/dev b5ad575","textChars":38,"textLines":1,"bbox":{"left":870,"top":665,"width":325,"height":16}}

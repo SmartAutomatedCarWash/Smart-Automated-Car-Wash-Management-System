@@ -5,6 +5,7 @@ import com.autowash.dto.AdjustTotalEarnedPointsResponse;
 import com.autowash.dto.LoyaltyAccountResponse;
 import com.autowash.dto.PointTransactionResponse;
 import com.autowash.dto.RedeemPointsResponse;
+import com.autowash.dto.TierConfigResponse;
 import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.Notification;
 import com.autowash.entity.PointTransaction;
@@ -22,6 +23,7 @@ import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.entity.enums.UserDiscountStatus;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.entity.enums.WashSessionStatus;
+import com.autowash.event.WebSocketEventPublisher;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.NotificationRepository;
@@ -53,6 +55,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 @Service
 public class LoyaltyServiceImpl implements LoyaltyService {
 
@@ -70,6 +74,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     private final NotificationRepository notificationRepository;
     private final TierVoucherOfferRepository tierVoucherOfferRepository;
     private final UserDiscountRepository userDiscountRepository;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     public LoyaltyServiceImpl(
             UserRepository UserRepository,
@@ -83,7 +88,8 @@ public class LoyaltyServiceImpl implements LoyaltyService {
             SystemSettingsRepository systemSettingsRepository,
             NotificationRepository notificationRepository,
             TierVoucherOfferRepository tierVoucherOfferRepository,
-            UserDiscountRepository userDiscountRepository
+            UserDiscountRepository userDiscountRepository,
+            WebSocketEventPublisher webSocketEventPublisher
     ) {
         this.UserRepository = UserRepository;
         this.bookingRepository = bookingRepository;
@@ -97,6 +103,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         this.notificationRepository = notificationRepository;
         this.tierVoucherOfferRepository = tierVoucherOfferRepository;
         this.userDiscountRepository = userDiscountRepository;
+        this.webSocketEventPublisher = webSocketEventPublisher;
     }
 
     @Transactional
@@ -404,21 +411,33 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 .createdAt(Instant.now())
                 .build();
         notificationRepository.save(notification);
+        publishCustomerNotificationAfterCommit(
+                account.getCustomer().getId(),
+                notification.getId(),
+                notification.getType(),
+                title,
+                message,
+                oldTier,
+                targetTier
+        );
         return new TierChangeResult(true, oldTier, targetTier, direction, message);
     }
 
     @Transactional
     public void updateCustomerTierByAdmin(UUID customerId, String newTier) {
         String targetTier = TierConfig.normalizeTier(newTier);
-        tierConfigService.getConfig(targetTier);
+        TierConfigResponse targetTierConfig = tierConfigService.getConfig(targetTier);
         User customer = requireCustomer(customerId);
         LoyaltyAccount account = getOrCreateAccountForUpdate(customer);
         String oldTier = account.getTier();
+        int oldTotalEarnedPoints = account.getTotalEarnedPoints();
+        int targetMinPoints = targetTierConfig.minPoints();
         
         if (oldTier.equals(targetTier)) {
             return;
         }
         
+        account.setTotalEarnedPoints(targetMinPoints);
         account.updateTier(targetTier);
         tierHistoryRepository.save(new TierHistory(account, oldTier, targetTier, account.getTotalEarnedPoints()));
         pointTransactionRepository.save(new PointTransaction(
@@ -427,7 +446,9 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 PointTransactionType.ADJUST,
                 0,
                 account.getCurrentPoints(),
-                "Tier upgraded from " + oldTier + " to " + targetTier
+                "Admin updated tier from " + oldTier + " to " + targetTier
+                        + " and synchronized total earned points from "
+                        + oldTotalEarnedPoints + " to " + targetMinPoints
         ));
         loyaltyAccountRepository.save(account);
         
@@ -443,8 +464,43 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 .createdAt(Instant.now())
                 .build();
         notificationRepository.save(notification);
+        publishCustomerNotificationAfterCommit(
+                customer.getId(),
+                notification.getId(),
+                notification.getType(),
+                title,
+                message,
+                oldTier,
+                targetTier
+        );
         
         log.info("loyalty_tier_updated_by_admin customerId={} oldTier={} newTier={}", customerId, oldTier, newTier);
+    }
+
+    private void publishCustomerNotificationAfterCommit(UUID userId, UUID notificationId, NotificationType type) {
+        publishCustomerNotificationAfterCommit(userId, notificationId, type, null, null, null, null);
+    }
+
+    private void publishCustomerNotificationAfterCommit(
+            UUID userId,
+            UUID notificationId,
+            NotificationType type,
+            String title,
+            String message,
+            String oldTier,
+            String newTier
+    ) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            webSocketEventPublisher.publishCustomerNotification(userId, notificationId, type, title, message, oldTier, newTier);
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                webSocketEventPublisher.publishCustomerNotification(userId, notificationId, type, title, message, oldTier, newTier);
+            }
+        });
     }
 
     private LoyaltyAccount getOrCreateAccount(User customer) {
@@ -496,6 +552,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 account.getCurrentPoints(),
                 account.getTotalEarnedPoints(),
                 (int) washSessionRepository.countByBookingCustomerAndStatus(account.getCustomer(), WashSessionStatus.COMPLETED),
+                bookingRepository.countByCustomer(account.getCustomer()),
                 account.getUpdatedAt()
         );
     }

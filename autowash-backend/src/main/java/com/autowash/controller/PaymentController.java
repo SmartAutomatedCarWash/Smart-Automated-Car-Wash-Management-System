@@ -3,7 +3,6 @@ package com.autowash.controller;
 import com.autowash.dto.VnpayCheckoutResponse;
 import com.autowash.dto.VnpayIpnResponse;
 import com.autowash.dto.VnpayPaymentResultResponse;
-import com.autowash.dto.VnpayRefundRequest;
 import com.autowash.service.ComboVnpayPaymentService;
 import com.autowash.service.SepayPaymentService;
 import com.autowash.service.VnpayPaymentService;
@@ -132,20 +131,6 @@ public class PaymentController {
             HttpServletRequest request
     ) {
         return ApiResponse.ok("VNPay transaction queried", vnpayPaymentService.queryTransaction(bookingId, clientIp(request)));
-    }
-
-    @PostMapping("/bookings/{bookingId}/vnpay/refund")
-    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Request VNPay refund for a paid booking")
-    public ApiResponse<VnpayPaymentResultResponse> refundVnpayPayment(
-            @PathVariable UUID bookingId,
-            @RequestBody(required = false) VnpayRefundRequest refundRequest,
-            HttpServletRequest request
-    ) {
-        Long amount = refundRequest == null ? null : refundRequest.amount();
-        String createdBy = refundRequest == null ? null : refundRequest.createdBy();
-        return ApiResponse.ok("VNPay refund requested", vnpayPaymentService.refund(bookingId, amount, createdBy, clientIp(request)));
     }
 
     private String clientIp(HttpServletRequest request) {

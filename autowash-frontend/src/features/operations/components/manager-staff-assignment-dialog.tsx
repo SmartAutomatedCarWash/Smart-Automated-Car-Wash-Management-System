@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/ui/ui/dialog";
-import { getActiveStaffOptions, transferWashSession } from "@/features/operations/lib/operations-service";
+import { assignStaffToSession, getActiveStaffOptions } from "@/features/operations/lib/operations-service";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 
 type ManagerStaffAssignmentDialogProps = {
@@ -43,9 +43,9 @@ export function ManagerStaffAssignmentDialog({
     enabled: open,
   });
 
-  const transferMutation = useMutation({
+  const assignMutation = useMutation({
     mutationFn: ({ toStaffId, reason }: { toStaffId: string; reason?: string }) =>
-      transferWashSession(sessionId, toStaffId, reason),
+      assignStaffToSession(sessionId, toStaffId, reason),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["manager-operations"] });
       void queryClient.invalidateQueries({ queryKey: ["manager-staff"] });
@@ -59,7 +59,7 @@ export function ManagerStaffAssignmentDialog({
 
   const staffOptions = staffQuery.data ?? [];
   const isLoading = staffQuery.isPending;
-  const isAssigning = transferMutation.isPending;
+  const isAssigning = assignMutation.isPending;
 
   const handleAssign = () => {
     if (!selectedStaffId) {
@@ -70,7 +70,7 @@ export function ManagerStaffAssignmentDialog({
       toast.error("This staff member is already assigned to this session.");
       return;
     }
-    transferMutation.mutate({ toStaffId: selectedStaffId, reason: "Manager reassigned" });
+    assignMutation.mutate({ toStaffId: selectedStaffId, reason: "Manager assigned staff" });
   };
 
   return (

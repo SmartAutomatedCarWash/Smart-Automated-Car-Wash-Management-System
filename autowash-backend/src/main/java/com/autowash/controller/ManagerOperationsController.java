@@ -13,6 +13,7 @@ import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.WashSessionRepository;
+import com.autowash.service.ManagerSettingsService;
 import com.autowash.service.OperationsService;
 import com.autowash.shared.dto.ApiResponse;
 import com.autowash.shared.exception.ApiException;
@@ -53,17 +54,20 @@ public class ManagerOperationsController {
     private static final int PAGE_SIZE = 5;
 
     private final OperationsService operationsService;
+    private final ManagerSettingsService managerSettingsService;
     private final WashSessionRepository washSessionRepository;
     private final UserRepository userRepository;
     private final com.autowash.repository.NotificationRepository notificationRepository;
 
     public ManagerOperationsController(
             OperationsService operationsService,
+            ManagerSettingsService managerSettingsService,
             WashSessionRepository washSessionRepository,
             UserRepository userRepository,
             com.autowash.repository.NotificationRepository notificationRepository
     ) {
         this.operationsService = operationsService;
+        this.managerSettingsService = managerSettingsService;
         this.washSessionRepository = washSessionRepository;
         this.userRepository = userRepository;
         this.notificationRepository = notificationRepository;
@@ -77,7 +81,7 @@ public class ManagerOperationsController {
             @RequestParam(defaultValue = "ALL") String staffId,
             @RequestParam(defaultValue = "ALL") String focus
     ) {
-        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(PAGE_SIZE), date, search);
+        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(1, PAGE_SIZE).data(), date, search);
         List<OperationsQueueResponse.WashSessionCard> sessions = filterSessions(flattenSessions(operationsService.getQueue()), date, search, staffId, focus);
         List<StaffOptionResponse> staff = operationsService.listActiveStaff();
         MetricsResponse metrics = buildMetrics(candidates, sessions);
@@ -108,25 +112,39 @@ public class ManagerOperationsController {
     public ApiResponse<MetricsResponse> getMetrics(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(PAGE_SIZE), date, null);
+        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(1, PAGE_SIZE).data(), date, null);
         List<OperationsQueueResponse.WashSessionCard> sessions = filterSessions(flattenSessions(operationsService.getQueue()), date, null, "ALL", "ALL");
         return ApiResponse.ok("Manager operations metrics retrieved", buildMetrics(candidates, sessions));
     }
 
     @GetMapping("/check-in-candidates")
-    public ApiResponse<List<EligibleSessionBookingResponse>> getCheckInCandidates(
+    public ApiResponse<com.autowash.shared.dto.PaginatedResponse<EligibleSessionBookingResponse>> getCheckInCandidates(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int limit,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) String search
     ) {
-        return ApiResponse.ok("Manager check-in candidates retrieved", filterBookings(operationsService.listEligibleSessionBookings(PAGE_SIZE), date, search));
+        List<EligibleSessionBookingResponse> all = filterBookings(operationsService.listEligibleSessionBookings(1, 100).data(), date, search);
+        int totalElements = all.size();
+        int totalPages = (int) Math.ceil((double) totalElements / limit);
+        int start = Math.min((page - 1) * limit, totalElements);
+        int end = Math.min(start + limit, totalElements);
+        return ApiResponse.ok("Manager check-in candidates retrieved", new com.autowash.shared.dto.PaginatedResponse<>(all.subList(start, end), totalPages, totalElements));
     }
 
     @GetMapping("/interventions")
-    public ApiResponse<List<InterventionResponse>> getInterventions(
+    public ApiResponse<com.autowash.shared.dto.PaginatedResponse<InterventionResponse>> getInterventions(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int limit,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
         List<OperationsQueueResponse.WashSessionCard> sessions = filterSessions(flattenSessions(operationsService.getQueue()), date, null, "ALL", "ALL");
-        return ApiResponse.ok("Manager interventions retrieved", buildInterventions(sessions));
+        List<InterventionResponse> all = buildInterventions(sessions);
+        int totalElements = all.size();
+        int totalPages = (int) Math.ceil((double) totalElements / limit);
+        int start = Math.min((page - 1) * limit, totalElements);
+        int end = Math.min(start + limit, totalElements);
+        return ApiResponse.ok("Manager interventions retrieved", new com.autowash.shared.dto.PaginatedResponse<>(all.subList(start, end), totalPages, totalElements));
     }
 
     @GetMapping("/staff-workload")
@@ -144,7 +162,7 @@ public class ManagerOperationsController {
             @RequestParam(defaultValue = "ALL") String staffId,
             @RequestParam(defaultValue = "ALL") String focus
     ) {
-        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(PAGE_SIZE), date, search);
+        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(1, PAGE_SIZE).data(), date, search);
         List<OperationsQueueResponse.WashSessionCard> sessions = filterSessions(flattenSessions(operationsService.getQueue()), date, search, staffId, focus);
         return ApiResponse.ok("Manager operations board retrieved", buildBoard(candidates, sessions));
     }
@@ -158,11 +176,11 @@ public class ManagerOperationsController {
         return ApiResponse.ok("Manager session detail retrieved", toSessionDetail(session));
     }
 
-    @GetMapping("/sessions/{sessionId}/transfer-options")
-    public ApiResponse<List<TransferOptionResponse>> getTransferOptions(@PathVariable UUID sessionId) {
+    @GetMapping({"/sessions/{sessionId}/assign-options", "/sessions/{sessionId}/transfer-options"})
+    public ApiResponse<List<TransferOptionResponse>> getAssignOptions(@PathVariable UUID sessionId) {
         List<OperationsQueueResponse.WashSessionCard> sessions = flattenSessions(operationsService.getQueue());
         return ApiResponse.ok(
-                "Manager transfer options retrieved",
+                "Manager assign staff options retrieved",
                 buildStaffWorkload(operationsService.listActiveStaff(), sessions).stream()
                         .map(staff -> new TransferOptionResponse(
                                 staff.staffId(),
@@ -181,7 +199,7 @@ public class ManagerOperationsController {
 
     @PostMapping("/bookings/{bookingId}/check-in")
     public ApiResponse<BookingCheckInResponse> checkInBooking(@PathVariable String bookingId) {
-        CreateWashSessionResponse created = operationsService.createSession(new CreateWashSessionRequest(bookingId, "Manager check-in"));
+        CreateWashSessionResponse created = operationsService.createSession(new CreateWashSessionRequest(bookingId, "Manager check-in", null));
         CheckInWashSessionResponse checkedIn = operationsService.checkInSession(created.sessionId());
         return ApiResponse.ok(
                 "Manager booking checked in",
@@ -197,9 +215,9 @@ public class ManagerOperationsController {
         );
     }
 
-    @PostMapping("/sessions/{sessionId}/transfer")
+    @PostMapping({"/sessions/{sessionId}/assign-staff", "/sessions/{sessionId}/transfer"})
     @Transactional
-    public ApiResponse<TransferSessionResponse> transferSession(
+    public ApiResponse<TransferSessionResponse> assignStaff(
             @PathVariable UUID sessionId,
             @Valid @RequestBody TransferSessionRequest request
     ) {
@@ -217,7 +235,7 @@ public class ManagerOperationsController {
         washSessionRepository.save(session);
 
         return ApiResponse.ok(
-                "Manager session transferred",
+                "Manager session staff assigned",
                 new TransferSessionResponse(
                         UUID.randomUUID(),
                         sessionId,
@@ -277,6 +295,8 @@ public class ManagerOperationsController {
     }
 
     private List<StaffWorkloadResponse> buildStaffWorkload(List<StaffOptionResponse> staffOptions, List<OperationsQueueResponse.WashSessionCard> sessions) {
+        int weeklyTarget = managerSettingsService.getOperationSettings().weeklyStaffKpiTarget();
+        int todayTarget = Math.max(1, Math.round(weeklyTarget / 5.0f));
         return staffOptions.stream()
                 .map(staff -> {
                     List<OperationsQueueResponse.WashSessionCard> assigned = sessions.stream()
@@ -285,7 +305,7 @@ public class ManagerOperationsController {
                     int active = (int) assigned.stream().filter(session -> List.of("QUEUED", "CHECKED_IN", "IN_PROGRESS").contains(session.status())).count();
                     int completed = (int) assigned.stream().filter(session -> "COMPLETED".equals(session.status())).count();
                     String status = active >= 3 ? "OVERLOADED" : active > 0 ? "BUSY" : "AVAILABLE";
-                    return new StaffWorkloadResponse(staff.staffId(), staff.staffName(), null, status, active, completed, 8, completed, 40, 4.8, active == 0 ? 0 : null, active >= 3 ? "Staff has high active workload" : null);
+                    return new StaffWorkloadResponse(staff.staffId(), staff.staffName(), null, status, active, completed, todayTarget, completed, weeklyTarget, 4.8, active == 0 ? 0 : null, active >= 3 ? "Staff has high active workload" : null);
                 })
                 .toList();
     }
@@ -318,7 +338,7 @@ public class ManagerOperationsController {
         List<InterventionResponse> interventions = new ArrayList<>();
         for (OperationsQueueResponse.WashSessionCard session : sessions) {
             if (session.assignedStaffId() == null && !"COMPLETED".equals(session.status())) {
-                interventions.add(new InterventionResponse("unassigned-" + session.sessionId(), "MEDIUM", "UNASSIGNED_SESSION", session.vehiclePlate() + " has no assigned staff.", session.bookingId(), session.sessionId(), "TRANSFER_STAFF", "Transfer staff"));
+                interventions.add(new InterventionResponse("unassigned-" + session.sessionId(), "MEDIUM", "UNASSIGNED_SESSION", session.vehiclePlate() + " has no assigned staff.", session.bookingId(), session.sessionId(), "ASSIGN_STAFF", "Assign staff"));
             }
             if (isOverdue(session)) {
                 interventions.add(new InterventionResponse("overdue-" + session.sessionId(), "HIGH", "SESSION_DELAYED", session.vehiclePlate() + " is taking longer than expected.", session.bookingId(), session.sessionId(), "OPEN_SESSION", "View detail"));

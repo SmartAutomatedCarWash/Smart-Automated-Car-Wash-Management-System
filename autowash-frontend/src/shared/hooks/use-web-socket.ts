@@ -1,11 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Client } from "@stomp/stompjs";
+import { isRealtimeEnabled, resolveSockJsUrl } from "@/shared/lib/websocket";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const SockJS = require("sockjs-client") as new (url: string) => WebSocket;
-
-const WS_URL = "http://localhost:8080/ws";
 const BOOKING_TOPIC = "/topic/bookings";
 
 type WsMessage = {
@@ -26,9 +25,13 @@ export function useWebSocket() {
   const clientRef = useRef<Client | null>(null);
 
   useEffect(() => {
+    if (!isRealtimeEnabled()) {
+      return;
+    }
+    const wsUrl = resolveSockJsUrl();
     const stompClient = new Client({
       // SockJS transport for maximum browser compatibility
-      webSocketFactory: () => new SockJS(WS_URL),
+      webSocketFactory: () => new SockJS(wsUrl),
       reconnectDelay: 5000,
       onConnect: () => {
         stompClient.subscribe(BOOKING_TOPIC, (frame) => {

@@ -68,6 +68,11 @@ public class LoyaltyAccount {
         this.updatedAt = Instant.now();
     }
 
+    public void setTotalEarnedPoints(int totalEarnedPoints) {
+        this.totalEarnedPoints = Math.max(0, totalEarnedPoints);
+        this.updatedAt = Instant.now();
+    }
+
     public void redeemPoints(int points) {
         this.currentPoints -= points;
         this.updatedAt = Instant.now();

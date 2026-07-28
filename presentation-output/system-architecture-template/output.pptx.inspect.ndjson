@@ -1,0 +1,116 @@
+{"kind":"deck","id":"pr/cooh56","name":"Deck"}
+{"kind":"layout","layoutId":"9fc614ee-0a00-4326-927b-17a94e45966c","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"f5a72b58-e067-4df4-aa24-10142afc851e","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/p77kz6","slide":1,"title":"3. Proposed Solutions | System Architecture","textShapes":61}
+{"kind":"shape","id":"sh/nat8nelo","slide":1,"bbox":[48,34,1184,650]}
+{"kind":"shape","id":"sh/ob29gjm9","slide":1,"bbox":[1210,150,70,190]}
+{"kind":"textbox","id":"sh/9cbqpo3u","slide":1,"text":"3. Proposed Solutions | System Architecture","textPreview":"3. Proposed Solutions | System Architecture","textChars":43,"textLines":1,"bbox":[82,58,820,52]}
+{"kind":"shape","id":"sh/el0ra94r","slide":1,"bbox":[1018,66,160,28]}
+{"kind":"textbox","id":"sh/z698julc","slide":1,"text":"GITHUB ORIGIN/DEV","textPreview":"GITHUB ORIGIN/DEV","textChars":17,"textLines":1,"bbox":[1026,69,144,20]}
+{"kind":"textbox","id":"sh/07i9czmx","slide":1,"text":"Role-based web application with a modular Spring Boot backend","textPreview":"Role-based web application with a modular Spring Boot backend","textChars":61,"textLines":1,"bbox":[84,108,650,22]}
+{"kind":"shape","id":"sh/18rql43i","slide":1,"bbox":[88,146,132,28]}
+{"kind":"textbox","id":"sh/yh4rmtkb","slide":1,"text":"ACTORS","textPreview":"ACTORS","textChars":6,"textLines":1,"bbox":[96,149,116,20]}
+{"kind":"shape","id":"sh/j2dsvylw","slide":1,"bbox":[260,146,220,28]}
+{"kind":"textbox","id":"sh/be5w3exo","slide":1,"text":"PRESENTATION","textPreview":"PRESENTATION","textChars":12,"textLines":1,"bbox":[268,149,204,20]}
+{"kind":"shape","id":"sh/adwvutg3","slide":1,"bbox":[518,146,390,28]}
+{"kind":"textbox","id":"sh/xg7e5ofe","slide":1,"text":"APPLICATION MODULES","textPreview":"APPLICATION MODULES","textChars":19,"textLines":1,"bbox":[526,149,374,20]}
+{"kind":"shape","id":"sh/cfedwjyt","slide":1,"bbox":[946,146,230,28]}
+{"kind":"textbox","id":"sh/zipw7yxk","slide":1,"text":"DATA & SERVICES","textPreview":"DATA & SERVICES","textChars":15,"textLines":1,"bbox":[954,149,214,20]}
+{"kind":"shape","id":"sh/yhgvytgz","slide":1,"bbox":[88,194,132,54]}
+{"kind":"shape","id":"sh/lk7e98fq","slide":1,"bbox":[98,203,36,36]}
+{"kind":"textbox","id":"sh/kjyd03y5","slide":1,"text":"CU","textPreview":"CU","textChars":2,"textLines":1,"bbox":[98,208,36,23]}
+{"kind":"textbox","id":"sh/76pwbyxg","slide":1,"text":"Guest /\nCustomer","textPreview":"Guest / | Customer","textChars":16,"textLines":2,"bbox":[142,207,70,26]}
+{"kind":"shape","id":"sh/m5gv2dgb","slide":1,"bbox":[88,260,132,54]}
+{"kind":"shape","id":"sh/i1kzah0j","slide":1,"bbox":[98,269,36,36]}
+{"kind":"textbox","id":"sh/32tg32ho","slide":1,"text":"ST","textPreview":"ST","textChars":2,"textLines":1,"bbox":[98,274,36,23]}
+{"kind":"textbox","id":"sh/432hc7i9","slide":1,"text":"Staff","textPreview":"Staff","textChars":5,"textLines":1,"bbox":[142,273,70,26]}
+{"kind":"shape","id":"sh/54by5czu","slide":1,"bbox":[88,326,132,54]}
+{"kind":"shape","id":"sh/ud0z6x07","slide":1,"bbox":[98,335,36,36]}
+{"kind":"textbox","id":"sh/ve9gz2hs","slide":1,"text":"MG","textPreview":"MG","textChars":2,"textLines":1,"bbox":[98,340,36,23]}
+{"kind":"textbox","id":"sh/gz2h87id","slide":1,"text":"Manager","textPreview":"Manager","textChars":7,"textLines":1,"bbox":[142,339,70,26]}
+{"kind":"shape","id":"sh/h0by1czy","slide":1,"bbox":[88,392,132,54]}
+{"kind":"shape","id":"sh/e94zi1gr","slide":1,"bbox":[98,401,36,36]}
+{"kind":"textbox","id":"sh/fad0bmhw","slide":1,"text":"AD","textPreview":"AD","textChars":2,"textLines":1,"bbox":[98,406,36,23]}
+{"kind":"textbox","id":"sh/pof210je","slide":1,"text":"Admin","textPreview":"Admin","textChars":5,"textLines":1,"bbox":[142,405,70,26]}
+{"kind":"shape","id":"sh/o3618v2t","slide":1,"bbox":[260,184,220,330]}
+{"kind":"textbox","id":"sh/n2xkzq18","slide":1,"text":"Next.js 14 Web Application","textPreview":"Next.js 14 Web Application","textChars":26,"textLines":1,"bbox":[278,202,184,40]}
+{"kind":"textbox","id":"sh/21oj6lkn","slide":1,"text":"React 18 + TypeScript","textPreview":"React 18 + TypeScript","textChars":21,"textLines":1,"bbox":[294,250,152,22]}
+{"kind":"shape","id":"sh/10f2xgj2","slide":1,"bbox":[282,286,176,34]}
+{"kind":"textbox","id":"sh/0z614b2h","slide":1,"text":"Customer Workspace","textPreview":"Customer Workspace","textChars":18,"textLines":1,"bbox":[294,292,152,20]}
+{"kind":"shape","id":"sh/fyxkv61c","slide":1,"bbox":[282,330,176,34]}
+{"kind":"textbox","id":"sh/ex4j21kr","slide":1,"text":"Staff Workspace","textPreview":"Staff Workspace","textChars":15,"textLines":1,"bbox":[294,336,152,20]}
+{"kind":"shape","id":"sh/lwz29kjm","slide":1,"bbox":[282,374,176,34]}
+{"kind":"textbox","id":"sh/kvq1gfi1","slide":1,"text":"Manager Workspace","textPreview":"Manager Workspace","textChars":17,"textLines":1,"bbox":[294,380,152,20]}
+{"kind":"shape","id":"sh/sze90f2h","slide":1,"bbox":[282,418,176,34]}
+{"kind":"textbox","id":"sh/t0na9kj2","slide":1,"text":"Admin Workspace","textPreview":"Admin Workspace","textChars":15,"textLines":1,"bbox":[294,424,152,20]}
+{"kind":"textbox","id":"sh/6xwry5kr","slide":1,"text":"React Query + Axios  |  Zustand\nSTOMP + SockJS","textPreview":"React Query + Axios  |  Zustand | STOMP + SockJS","textChars":46,"textLines":2,"bbox":[278,466,184,36]}
+{"kind":"shape","id":"sh/ry5s7a1w","slide":1,"bbox":[518,184,390,382]}
+{"kind":"textbox","id":"sh/g3yt4fit","slide":1,"text":"Spring Boot 3 REST API","textPreview":"Spring Boot 3 REST API","textChars":22,"textLines":1,"bbox":[540,200,220,28]}
+{"kind":"shape","id":"sh/147adkje","slide":1,"bbox":[770,200,68,28]}
+{"kind":"textbox","id":"sh/e1gr2p0n","slide":1,"text":"JAVA 21","textPreview":"JAVA 21","textChars":7,"textLines":1,"bbox":[778,203,52,20]}
+{"kind":"shape","id":"sh/f2psba18","slide":1,"bbox":[844,200,46,28]}
+{"kind":"textbox","id":"sh/o7yt8zip","slide":1,"text":"JWT","textPreview":"JWT","textChars":3,"textLines":1,"bbox":[852,203,30,20]}
+{"kind":"textbox","id":"sh/ps7ah4ja","slide":1,"text":"Spring Security  |  Validation  |  Spring Data JPA","textPreview":"Spring Security  |  Validation  |  Spring Data JPA","textChars":50,"textLines":1,"bbox":[540,235,340,20]}
+{"kind":"shape","id":"sh/zmtc7ylc","slide":1,"bbox":[540,270,165,58]}
+{"kind":"shape","id":"sh/y1kvytkr","slide":1,"bbox":[540,270,5,58]}
+{"kind":"textbox","id":"sh/lobu983i","slide":1,"text":"Authentication & User","textPreview":"Authentication & User","textChars":21,"textLines":1,"bbox":[553,278,143,20]}
+{"kind":"textbox","id":"sh/0n2d032x","slide":1,"text":"accounts, roles, profile","textPreview":"accounts, roles, profile","textChars":24,"textLines":1,"bbox":[553,301,143,16]}
+{"kind":"shape","id":"sh/by9c3elg","slide":1,"bbox":[721,270,165,58]}
+{"kind":"shape","id":"sh/qx0vu94v","slide":1,"bbox":[721,270,5,58]}
+{"kind":"textbox","id":"sh/d0ru5o3m","slide":1,"text":"Catalog & Promotion","textPreview":"Catalog & Promotion","textChars":19,"textLines":1,"bbox":[734,278,143,20]}
+{"kind":"textbox","id":"sh/czidwj21","slide":1,"text":"services, packages, combos","textPreview":"services, packages, combos","textChars":26,"textLines":1,"bbox":[734,301,143,16]}
+{"kind":"shape","id":"sh/vudwfilk","slide":1,"bbox":[540,340,165,58]}
+{"kind":"shape","id":"sh/at4v6dkz","slide":1,"bbox":[540,340,5,58]}
+{"kind":"textbox","id":"sh/6pofeh47","slide":1,"text":"Booking & Slot Hold","textPreview":"Booking & Slot Hold","textChars":19,"textLines":1,"bbox":[553,348,143,20]}
+{"kind":"textbox","id":"sh/rqxg7m5s","slide":1,"text":"availability and capacity","textPreview":"availability and capacity","textChars":25,"textLines":1,"bbox":[553,371,143,16]}
+{"kind":"shape","id":"sh/srqxgrmd","slide":1,"bbox":[721,340,165,58]}
+{"kind":"shape","id":"sh/tczy9wny","slide":1,"bbox":[721,340,5,58]}
+{"kind":"textbox","id":"sh/ed8zih4j","slide":1,"text":"Vehicle Management","textPreview":"Vehicle Management","textChars":18,"textLines":1,"bbox":[734,348,143,20]}
+{"kind":"textbox","id":"sh/fehgbm54","slide":1,"text":"vehicles and primary plate","textPreview":"vehicles and primary plate","textChars":26,"textLines":1,"bbox":[734,371,143,16]}
+{"kind":"shape","id":"sh/gfqhkrm9","slide":1,"bbox":[540,410,165,58]}
+{"kind":"shape","id":"sh/1gzydwnu","slide":1,"bbox":[540,410,5,58]}
+{"kind":"textbox","id":"sh/ah4f6x4z","slide":1,"text":"Wash Operations","textPreview":"Wash Operations","textChars":15,"textLines":1,"bbox":[553,418,143,20]}
+{"kind":"textbox","id":"sh/vidgz25k","slide":1,"text":"check-in and wash session","textPreview":"check-in and wash session","textChars":25,"textLines":1,"bbox":[553,441,143,16]}
+{"kind":"shape","id":"sh/dc3i5072","slide":1,"bbox":[721,410,165,58]}
+{"kind":"shape","id":"sh/cbu1cv6h","slide":1,"bbox":[721,410,5,58]}
+{"kind":"textbox","id":"sh/ba103qpc","slide":1,"text":"Staff Assignment","textPreview":"Staff Assignment","textChars":16,"textLines":1,"bbox":[734,418,143,20]}
+{"kind":"textbox","id":"sh/q9sjalor","slide":1,"text":"availability and workload","textPreview":"availability and workload","textChars":25,"textLines":1,"bbox":[734,441,143,16]}
+{"kind":"shape","id":"sh/lg32907e","slide":1,"bbox":[540,480,165,58]}
+{"kind":"shape","id":"sh/0fu1gf6t","slide":1,"bbox":[540,480,5,58]}
+{"kind":"textbox","id":"sh/zel07ap8","slide":1,"text":"Payment & Loyalty","textPreview":"Payment & Loyalty","textChars":17,"textLines":1,"bbox":[553,488,143,20]}
+{"kind":"textbox","id":"sh/ydcje5on","slide":1,"text":"voucher, points, tier","textPreview":"voucher, points, tier","textChars":21,"textLines":1,"bbox":[553,511,143,16]}
+{"kind":"shape","id":"sh/1kjixg7u","slide":1,"bbox":[721,480,165,58]}
+{"kind":"shape","id":"sh/gja14b6p","slide":1,"bbox":[721,480,5,58]}
+{"kind":"textbox","id":"sh/83654zy5","slide":1,"text":"Review & Reporting","textPreview":"Review & Reporting","textChars":18,"textLines":1,"bbox":[734,488,143,20]}
+{"kind":"textbox","id":"sh/t4z6x4fq","slide":1,"text":"ratings, KPI, analytics","textPreview":"ratings, KPI, analytics","textChars":23,"textLines":1,"bbox":[734,511,143,16]}
+{"kind":"shape","id":"sh/61on29gz","slide":1,"bbox":[224,335,32,20]}
+{"kind":"textbox","id":"sh/72xovuxk","slide":1,"text":"ROLE ROUTING","textPreview":"ROLE ROUTING","textChars":12,"textLines":1,"bbox":[204,311,72,18]}
+{"kind":"shape","id":"sh/kf650zy9","slide":1,"bbox":[482,334,32,20]}
+{"kind":"textbox","id":"sh/lgfmt4fe","slide":1,"text":"REST + WEBSOCKET","textPreview":"REST + WEBSOCKET","textChars":16,"textLines":1,"bbox":[462,310,72,18]}
+{"kind":"shape","id":"sh/ydonypg3","slide":1,"bbox":[910,334,32,20]}
+{"kind":"textbox","id":"sh/jex4ruxo","slide":1,"text":"DATA + EXTERNAL APIS","textPreview":"DATA + EXTERNAL APIS","textChars":20,"textLines":1,"bbox":[890,310,72,18]}
+{"kind":"shape","id":"sh/4bq5cjyd","slide":1,"bbox":[946,184,230,96]}
+{"kind":"shape","id":"sh/pcj65ofy","slide":1,"bbox":[966,208,46,46]}
+{"kind":"textbox","id":"sh/z6l8bih0","slide":1,"text":"DB","textPreview":"DB","textChars":2,"textLines":1,"bbox":[966,218,46,24]}
+{"kind":"textbox","id":"sh/e5cr2d0f","slide":1,"text":"PostgreSQL","textPreview":"PostgreSQL","textChars":10,"textLines":1,"bbox":[1026,202,128,26]}
+{"kind":"textbox","id":"sh/1s3qdsz6","slide":1,"text":"JPA + Flyway migrations","textPreview":"JPA + Flyway migrations","textChars":23,"textLines":1,"bbox":[1026,235,128,22]}
+{"kind":"shape","id":"sh/0ru94nil","slide":1,"bbox":[946,302,112,66]}
+{"kind":"textbox","id":"sh/nul8f2hc","slide":1,"text":"SePay + VietQR","textPreview":"SePay + VietQR","textChars":14,"textLines":1,"bbox":[954,310,96,20]}
+{"kind":"textbox","id":"sh/mtcr6x0r","slide":1,"text":"QR transfer + webhook","textPreview":"QR transfer + webhook","textChars":21,"textLines":1,"bbox":[954,334,96,24]}
+{"kind":"shape","id":"sh/9wnqhcz2","slide":1,"bbox":[1064,302,112,66]}
+{"kind":"textbox","id":"sh/ove987ih","slide":1,"text":"VNPay","textPreview":"VNPay","textChars":5,"textLines":1,"bbox":[1072,310,96,20]}
+{"kind":"textbox","id":"sh/3y183yhs","slide":1,"text":"online payment + IPN","textPreview":"online payment + IPN","textChars":20,"textLines":1,"bbox":[1072,334,96,24]}
+{"kind":"shape","id":"sh/ixs7ut07","slide":1,"bbox":[946,382,112,66]}
+{"kind":"textbox","id":"sh/3q1gvepo","slide":1,"text":"Resend","textPreview":"Resend","textChars":6,"textLines":1,"bbox":[954,390,96,20]}
+{"kind":"textbox","id":"sh/2psz2983","slide":1,"text":"email verification + OTP","textPreview":"email verification + OTP","textChars":24,"textLines":1,"bbox":[954,414,96,24]}
+{"kind":"shape","id":"sh/ps3ixo7u","slide":1,"bbox":[1064,382,112,66]}
+{"kind":"textbox","id":"sh/4ruh4j69","slide":1,"text":"AWS S3","textPreview":"AWS S3","textChars":6,"textLines":1,"bbox":[1072,390,96,20]}
+{"kind":"textbox","id":"sh/fm1greps","slide":1,"text":"avatar and image storage","textPreview":"avatar and image storage","textChars":24,"textLines":1,"bbox":[1072,414,96,24]}
+{"kind":"shape","id":"sh/ulszy987","slide":1,"bbox":[946,470,230,62]}
+{"kind":"textbox","id":"sh/hojyt47i","slide":1,"text":"Swagger / OpenAPI","textPreview":"Swagger / OpenAPI","textChars":17,"textLines":1,"bbox":[962,480,198,20]}
+{"kind":"textbox","id":"sh/gnah0jqx","slide":1,"text":"API documentation and testing","textPreview":"API documentation and testing","textChars":29,"textLines":1,"bbox":[962,504,198,16]}
+{"kind":"shape","id":"sh/zil03ypw","slide":1,"bbox":[84,588,1092,48]}
+{"kind":"textbox","id":"sh/yhczutob","slide":1,"text":"Catalog  →  Booking  →  SePay/VNPay Payment  →  Staff Check-in  →  Wash Session  →  Rating  →  Loyalty & Reporting","textPreview":"Catalog  →  Booking  →  SePay/VNPay Payment  →  Staff Check-in  →  Wash Session  →  Rating  →  Loyalty & Reporting","textChars":114,"textLines":1,"bbox":[106,601,1048,22]}
+{"kind":"textbox","id":"sh/wn6dov6t","slide":1,"text":"Solid arrows: application traffic","textPreview":"Solid arrows: application traffic","textChars":33,"textLines":1,"bbox":[86,648,230,18]}
+{"kind":"textbox","id":"sh/xofex0ne","slide":1,"text":"External services are called by the Spring Boot backend","textPreview":"External services are called by the Spring Boot backend","textChars":55,"textLines":1,"bbox":[760,648,416,18]}
+{"kind":"notes","id":"nt/p77kz6","slide":1,"text":"Architecture aligned to GitHub origin/dev at b5ad575. The repository implements one Next.js web application and one modular Spring Boot backend, not a microservice or IoT architecture."}

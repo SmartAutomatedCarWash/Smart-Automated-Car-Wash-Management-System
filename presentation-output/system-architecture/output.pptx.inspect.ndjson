@@ -1,0 +1,672 @@
+{"kind":"deck","id":"pr/djzjfw","name":"Deck"}
+{"kind":"layout","layoutId":"e6aa77f8-34c5-4eca-bd89-e35fe229bba5","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"ac6a7f9e-2863-4680-bda3-673d62106702","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/t8ljg8","slide":1,"title":"AutoWash Platform | Logical System Architecture","textShapes":70}
+{"kind":"shape","id":"sh/d03qlozi","slide":1,"bbox":[40,28,1200,664]}
+{"kind":"shape","id":"sh/6xc7a907","slide":1,"bbox":[40,28,8,664]}
+{"kind":"textbox","id":"sh/ryl8jehs","slide":1,"text":"AutoWash Platform | Logical System Architecture","textPreview":"AutoWash Platform | Logical System Architecture","textChars":47,"textLines":1,"bbox":[78,54,930,42]}
+{"kind":"textbox","id":"sh/4vap8zi1","slide":1,"text":"Role-based web application built as a Spring Boot modular monolith with transactional persistence and managed external integrations.","textPreview":"Role-based web application built as a Spring Boot modular monolith with transactional persistence and managed external integrations.","textChars":132,"textLines":1,"bbox":[80,99,1010,24]}
+{"kind":"shape","id":"sh/5wjqh4zm","slide":1,"bbox":[1073,57,126,28]}
+{"kind":"textbox","id":"sh/its76p0v","slide":1,"text":"REPOSITORY-ALIGNED","textPreview":"REPOSITORY-ALIGNED","textChars":18,"textLines":1,"bbox":[1080,62,112,17]}
+{"kind":"shape","id":"sh/ju1ofuhg","slide":1,"bbox":[76,145,300,30]}
+{"kind":"textbox","id":"sh/orepk3i5","slide":1,"text":"CHANNELS & PRESENTATION","textPreview":"CHANNELS & PRESENTATION","textChars":23,"textLines":1,"bbox":[84,150,284,20]}
+{"kind":"shape","id":"sh/psnqt8zq","slide":1,"bbox":[76,183,300,450]}
+{"kind":"shape","id":"sh/x87ih8jm","slide":1,"bbox":[405,145,488,30]}
+{"kind":"textbox","id":"sh/c7yho3i1","slide":1,"text":"APPLICATION SERVICES","textPreview":"APPLICATION SERVICES","textChars":20,"textLines":1,"bbox":[413,150,472,20]}
+{"kind":"shape","id":"sh/b6pgfy1g","slide":1,"bbox":[405,183,488,450]}
+{"kind":"shape","id":"sh/a5gzmt0b","slide":1,"bbox":[922,145,280,30]}
+{"kind":"textbox","id":"sh/p47ydojq","slide":1,"text":"DATA & INTEGRATIONS","textPreview":"DATA & INTEGRATIONS","textChars":19,"textLines":1,"bbox":[930,150,264,20]}
+{"kind":"shape","id":"sh/o3ehkji5","slide":1,"bbox":[922,183,280,450]}
+{"kind":"textbox","id":"sh/n25gby1k","slide":1,"text":"Actors","textPreview":"Actors","textChars":6,"textLines":1,"bbox":[92,194,78,20]}
+{"kind":"shape","id":"sh/2hwzit0z","slide":1,"bbox":[92,220,92,42]}
+{"kind":"shape","id":"sh/90ripsju","slide":1,"bbox":[103,231,20,20]}
+{"kind":"textbox","id":"sh/8zihwni9","slide":1,"text":"Customer","textPreview":"Customer","textChars":8,"textLines":1,"bbox":[130,229,45,24]}
+{"kind":"shape","id":"sh/svat8vux","slide":1,"bbox":[92,278,92,42]}
+{"kind":"shape","id":"sh/dgjah0bi","slide":1,"bbox":[103,289,20,20]}
+{"kind":"textbox","id":"sh/qtsb6lcr","slide":1,"text":"Staff","textPreview":"Staff","textChars":5,"textLines":1,"bbox":[130,287,45,24]}
+{"kind":"shape","id":"sh/ru1sfqtc","slide":1,"bbox":[92,336,92,42]}
+{"kind":"shape","id":"sh/4rqt4bul","slide":1,"bbox":[103,347,20,20]}
+{"kind":"textbox","id":"sh/5szadgb6","slide":1,"text":"Manager","textPreview":"Manager","textChars":7,"textLines":1,"bbox":[130,345,45,24]}
+{"kind":"shape","id":"sh/ip8r2lcf","slide":1,"bbox":[92,394,92,42]}
+{"kind":"shape","id":"sh/3qhsb6t0","slide":1,"bbox":[103,405,20,20]}
+{"kind":"textbox","id":"sh/wnq90bup","slide":1,"text":"Admin","textPreview":"Admin","textChars":5,"textLines":1,"bbox":[130,403,45,24]}
+{"kind":"shape","id":"sh/hoza9gva","slide":1,"bbox":[208,195,148,322]}
+{"kind":"textbox","id":"sh/zyxcj6xw","slide":1,"text":"NEXT.JS 14","textPreview":"NEXT.JS 14","textChars":10,"textLines":1,"bbox":[222,211,120,24]}
+{"kind":"textbox","id":"sh/yxoba1wb","slide":1,"text":"React 18 + TypeScript","textPreview":"React 18 + TypeScript","textChars":21,"textLines":1,"bbox":[222,238,120,18]}
+{"kind":"shape","id":"sh/lkfulgf2","slide":1,"bbox":[224,276,116,34]}
+{"kind":"textbox","id":"sh/kj6tcbeh","slide":1,"text":"Customer Workspace","textPreview":"Customer Workspace","textChars":18,"textLines":1,"bbox":[230,284,104,18]}
+{"kind":"shape","id":"sh/7mhcn6x8","slide":1,"bbox":[224,324,116,34]}
+{"kind":"textbox","id":"sh/mlobe1wn","slide":1,"text":"Staff Workspace","textPreview":"Staff Workspace","textChars":15,"textLines":1,"bbox":[230,332,104,18]}
+{"kind":"shape","id":"sh/9ozupgfy","slide":1,"bbox":[224,372,116,34]}
+{"kind":"textbox","id":"sh/8nqtgbed","slide":1,"text":"Manager Workspace","textPreview":"Manager Workspace","textChars":17,"textLines":1,"bbox":[230,380,104,18]}
+{"kind":"shape","id":"sh/vqhcrqx4","slide":1,"bbox":[224,420,116,34]}
+{"kind":"textbox","id":"sh/up8bilwj","slide":1,"text":"Admin Workspace","textPreview":"Admin Workspace","textChars":15,"textLines":1,"bbox":[230,428,104,18]}
+{"kind":"textbox","id":"sh/etgvup4v","slide":1,"text":"Axios + React Query\nZustand | STOMP + SockJS","textPreview":"Axios + React Query | Zustand | STOMP + SockJS","textChars":44,"textLines":2,"bbox":[222,476,120,31]}
+{"kind":"textbox","id":"sh/fupwnulg","slide":1,"text":"SPRING BOOT 3 / JAVA 21","textPreview":"SPRING BOOT 3 / JAVA 21","textChars":23,"textLines":1,"bbox":[430,194,438,20]}
+{"kind":"textbox","id":"sh/gvydwzm1","slide":1,"text":"Spring Security + JWT  |  REST API  |  WebSocket /ws","textPreview":"Spring Security + JWT  |  REST API  |  WebSocket /ws","textChars":52,"textLines":1,"bbox":[430,217,438,18]}
+{"kind":"shape","id":"sh/1w7ep436","slide":1,"bbox":[430,247,204,48]}
+{"kind":"textbox","id":"sh/2x0vy94r","slide":1,"text":"Auth & User","textPreview":"Auth & User","textChars":11,"textLines":1,"bbox":[440,254,184,19]}
+{"kind":"textbox","id":"sh/3y9wrelc","slide":1,"text":"Login, OTP, profile","textPreview":"Login, OTP, profile","textChars":19,"textLines":1,"bbox":[440,274,184,16]}
+{"kind":"shape","id":"sh/ozidkzmx","slide":1,"bbox":[650,247,204,48]}
+{"kind":"textbox","id":"sh/p0ret43i","slide":1,"text":"Catalog","textPreview":"Catalog","textChars":7,"textLines":1,"bbox":[660,254,184,19]}
+{"kind":"textbox","id":"sh/i1wvm54n","slide":1,"text":"Service, package, combo","textPreview":"Service, package, combo","textChars":23,"textLines":1,"bbox":[660,274,184,16]}
+{"kind":"shape","id":"sh/j25cfa58","slide":1,"bbox":[430,307,204,48]}
+{"kind":"textbox","id":"sh/lsvq1cr2","slide":1,"text":"Vehicle","textPreview":"Vehicle","textChars":7,"textLines":1,"bbox":[440,314,184,19]}
+{"kind":"textbox","id":"sh/krmp87ah","slide":1,"text":"CRUD and primary vehicle","textPreview":"CRUD and primary vehicle","textChars":24,"textLines":1,"bbox":[440,334,184,16]}
+{"kind":"shape","id":"sh/z6d8f2tw","slide":1,"bbox":[650,307,204,48]}
+{"kind":"textbox","id":"sh/y5476xsb","slide":1,"text":"Booking & Slot","textPreview":"Booking & Slot","textChars":14,"textLines":1,"bbox":[660,314,184,19]}
+{"kind":"textbox","id":"sh/9wfq5cry","slide":1,"text":"Hold, capacity, voucher","textPreview":"Hold, capacity, voucher","textChars":23,"textLines":1,"bbox":[660,334,184,16]}
+{"kind":"shape","id":"sh/8v6pc7ad","slide":1,"bbox":[430,367,204,48]}
+{"kind":"textbox","id":"sh/7ux83m9s","slide":1,"text":"Payment","textPreview":"Payment","textChars":7,"textLines":1,"bbox":[440,374,184,19]}
+{"kind":"textbox","id":"sh/mt47ahs7","slide":1,"text":"SePay and VNPay","textPreview":"SePay and VNPay","textChars":15,"textLines":1,"bbox":[440,394,184,16]}
+{"kind":"shape","id":"sh/p0b69sbu","slide":1,"bbox":[650,367,204,48]}
+{"kind":"textbox","id":"sh/oz2p0na9","slide":1,"text":"Staff Assignment","textPreview":"Staff Assignment","textChars":16,"textLines":1,"bbox":[660,374,184,19]}
+{"kind":"textbox","id":"sh/gj6pgni5","slide":1,"text":"Availability and workload","textPreview":"Availability and workload","textChars":25,"textLines":1,"bbox":[660,394,184,16]}
+{"kind":"shape","id":"sh/1kfqpsjq","slide":1,"bbox":[430,427,204,48]}
+{"kind":"textbox","id":"sh/eho7ed0z","slide":1,"text":"Operations","textPreview":"Operations","textChars":10,"textLines":1,"bbox":[440,434,184,19]}
+{"kind":"textbox","id":"sh/fix8ni1k","slide":1,"text":"Wash-session lifecycle","textPreview":"Wash-session lifecycle","textChars":22,"textLines":1,"bbox":[440,454,184,16]}
+{"kind":"shape","id":"sh/o7qpk7i1","slide":1,"bbox":[650,427,204,48]}
+{"kind":"textbox","id":"sh/p8zqtsjm","slide":1,"text":"Loyalty & Review","textPreview":"Loyalty & Review","textChars":16,"textLines":1,"bbox":[660,434,184,19]}
+{"kind":"textbox","id":"sh/2lo7ix0v","slide":1,"text":"Points, tier, rating","textPreview":"Points, tier, rating","textChars":20,"textLines":1,"bbox":[660,454,184,16]}
+{"kind":"shape","id":"sh/36x8r21g","slide":1,"bbox":[430,487,204,48]}
+{"kind":"textbox","id":"sh/cbqpo7id","slide":1,"text":"Notification","textPreview":"Notification","textChars":12,"textLines":1,"bbox":[440,494,184,19]}
+{"kind":"textbox","id":"sh/dczqxcji","slide":1,"text":"Customer messages","textPreview":"Customer messages","textChars":17,"textLines":1,"bbox":[440,514,184,16]}
+{"kind":"shape","id":"sh/n61sn6l0","slide":1,"bbox":[650,487,204,48]}
+{"kind":"textbox","id":"sh/m5sbe1kf","slide":1,"text":"Reports","textPreview":"Reports","textChars":7,"textLines":1,"bbox":[660,494,184,19]}
+{"kind":"textbox","id":"sh/983apg36","slide":1,"text":"Admin and manager KPI","textPreview":"Admin and manager KPI","textChars":21,"textLines":1,"bbox":[660,514,184,16]}
+{"kind":"shape","id":"sh/87utgb2l","slide":1,"bbox":[442,557,414,42]}
+{"kind":"textbox","id":"sh/z21sj6lo","slide":1,"text":"Domain events + WebSocket publisher","textPreview":"Domain events + WebSocket publisher","textChars":35,"textLines":1,"bbox":[456,564,386,18]}
+{"kind":"textbox","id":"sh/y1sba1k3","slide":1,"text":"BOOKING_UPDATE and WASH_SESSION_UPDATE -> /topic/bookings","textPreview":"BOOKING_UPDATE and WASH_SESSION_UPDATE -> /topic/bookings","textChars":57,"textLines":1,"bbox":[456,581,386,14]}
+{"kind":"shape","id":"sh/l4jalw3u","slide":1,"bbox":[946,198,232,62]}
+{"kind":"textbox","id":"sh/03atcr29","slide":1,"text":"PostgreSQL","textPreview":"PostgreSQL","textChars":10,"textLines":1,"bbox":[956,205,212,19]}
+{"kind":"textbox","id":"sh/jy5svq18","slide":1,"text":"Spring Data JPA + Flyway\nTransactional system of record","textPreview":"Spring Data JPA + Flyway | Transactional system of record","textChars":55,"textLines":2,"bbox":[956,225,212,30]}
+{"kind":"shape","id":"sh/ixcbmlkn","slide":1,"bbox":[946,277,232,50]}
+{"kind":"textbox","id":"sh/u9szed4f","slide":1,"text":"SePay + VietQR","textPreview":"SePay + VietQR","textChars":14,"textLines":1,"bbox":[956,284,212,19]}
+{"kind":"textbox","id":"sh/fa107i50","slide":1,"text":"QR payment + signed webhook","textPreview":"QR payment + signed webhook","textChars":27,"textLines":1,"bbox":[956,304,212,18]}
+{"kind":"shape","id":"sh/gbahgnml","slide":1,"bbox":[946,340,232,50]}
+{"kind":"textbox","id":"sh/hcji9sn6","slide":1,"text":"VNPay","textPreview":"VNPay","textChars":5,"textLines":1,"bbox":[956,347,212,19]}
+{"kind":"textbox","id":"sh/6l8zad4j","slide":1,"text":"Checkout + return/IPN/query","textPreview":"Checkout + return/IPN/query","textChars":27,"textLines":1,"bbox":[956,367,212,18]}
+{"kind":"shape","id":"sh/76103i54","slide":1,"bbox":[946,403,232,50]}
+{"kind":"textbox","id":"sh/s7ahc3mp","slide":1,"text":"Resend","textPreview":"Resend","textChars":6,"textLines":1,"bbox":[956,410,212,19]}
+{"kind":"textbox","id":"sh/t8ji58na","slide":1,"text":"OTP and password-reset email","textPreview":"OTP and password-reset email","textChars":28,"textLines":1,"bbox":[956,430,212,18]}
+{"kind":"shape","id":"sh/ih8z6t47","slide":1,"bbox":[946,466,232,50]}
+{"kind":"textbox","id":"sh/jih0zy5s","slide":1,"text":"AWS S3","textPreview":"AWS S3","textChars":6,"textLines":1,"bbox":[956,473,212,19]}
+{"kind":"textbox","id":"sh/lwn25w7a","slide":1,"text":"Avatar and review-image storage","textPreview":"Avatar and review-image storage","textChars":31,"textLines":1,"bbox":[956,493,212,18]}
+{"kind":"shape","id":"sh/0velcr65","slide":1,"bbox":[946,529,232,50]}
+{"kind":"textbox","id":"sh/za5k36pk","slide":1,"text":"WebSocket Clients","textPreview":"WebSocket Clients","textChars":17,"textLines":1,"bbox":[956,536,212,19]}
+{"kind":"textbox","id":"sh/y9w3a1oz","slide":1,"text":"Role dashboards subscribe to events","textPreview":"Role dashboards subscribe to events","textChars":35,"textLines":1,"bbox":[956,556,212,18]}
+{"kind":"shape","id":"sh/d8n21w7e","slide":1,"bbox":[178,425,34,8]}
+{"kind":"textbox","id":"sh/c7el8r6t","slide":1,"text":"UI action","textPreview":"UI action","textChars":9,"textLines":1,"bbox":[178,405,34,18]}
+{"kind":"shape","id":"sh/b65kzmp8","slide":1,"bbox":[192,445,7,2]}
+{"kind":"shape","id":"sh/q5w36hon","slide":1,"bbox":[204,445,7,2]}
+{"kind":"shape","id":"sh/p432xc7i","slide":1,"bbox":[178,440,17,12]}
+{"kind":"textbox","id":"sh/43ul476x","slide":1,"text":"UI state","textPreview":"UI state","textChars":8,"textLines":1,"bbox":[178,449,34,17]}
+{"kind":"shape","id":"sh/psja9sf2","slide":1,"bbox":[356,349,64,8]}
+{"kind":"textbox","id":"sh/orat0nex","slide":1,"text":"REST/JSON + JWT","textPreview":"REST/JSON + JWT","textChars":15,"textLines":1,"bbox":[356,329,64,18]}
+{"kind":"shape","id":"sh/3q1s7ixc","slide":1,"bbox":[370,369,7,2]}
+{"kind":"shape","id":"sh/258bydwr","slide":1,"bbox":[382,369,7,2]}
+{"kind":"shape","id":"sh/14za58f6","slide":1,"bbox":[394,369,7,2]}
+{"kind":"shape","id":"sh/g3qtw3el","slide":1,"bbox":[406,369,7,2]}
+{"kind":"shape","id":"sh/f2hs3yx0","slide":1,"bbox":[418,369,2,2]}
+{"kind":"shape","id":"sh/e18butgf","slide":1,"bbox":[356,364,17,12]}
+{"kind":"textbox","id":"sh/l03uhcfa","slide":1,"text":"DTO / HTTP status","textPreview":"DTO / HTTP status","textChars":17,"textLines":1,"bbox":[356,373,64,17]}
+{"kind":"shape","id":"sh/0zut87ep","slide":1,"bbox":[875,226,61,8]}
+{"kind":"textbox","id":"sh/i54729c7","slide":1,"text":"JPA transaction","textPreview":"JPA transaction","textChars":15,"textLines":1,"bbox":[875,206,61,18]}
+{"kind":"shape","id":"sh/j6d8buds","slide":1,"bbox":[889,246,7,2]}
+{"kind":"shape","id":"sh/k76p4zud","slide":1,"bbox":[901,246,7,2]}
+{"kind":"shape","id":"sh/58fqd4vy","slide":1,"bbox":[913,246,7,2]}
+{"kind":"shape","id":"sh/a147ypwb","slide":1,"bbox":[925,246,7,2]}
+{"kind":"shape","id":"sh/v2d87udw","slide":1,"bbox":[875,241,17,12]}
+{"kind":"textbox","id":"sh/w3mp0zeh","slide":1,"text":"Entities / result","textPreview":"Entities / result","textChars":17,"textLines":1,"bbox":[875,250,61,17]}
+{"kind":"shape","id":"sh/x4vq94v2","slide":1,"bbox":[875,302,61,8]}
+{"kind":"textbox","id":"sh/exoratcf","slide":1,"text":"Payment request","textPreview":"Payment request","textChars":15,"textLines":1,"bbox":[875,282,61,18]}
+{"kind":"shape","id":"sh/fyh8jed0","slide":1,"bbox":[889,322,7,2]}
+{"kind":"shape","id":"sh/r6pwfmpg","slide":1,"bbox":[901,322,7,2]}
+{"kind":"shape","id":"sh/q5gvmh8v","slide":1,"bbox":[913,322,7,2]}
+{"kind":"shape","id":"sh/d87ehw76","slide":1,"bbox":[925,322,7,2]}
+{"kind":"shape","id":"sh/c7ydorql","slide":1,"bbox":[875,317,17,12]}
+{"kind":"textbox","id":"sh/za9wjmpc","slide":1,"text":"Webhook / result","textPreview":"Webhook / result","textChars":16,"textLines":1,"bbox":[875,326,61,17]}
+{"kind":"shape","id":"sh/e9gfq1or","slide":1,"bbox":[875,427,61,8]}
+{"kind":"textbox","id":"sh/1wrelw7i","slide":1,"text":"Email request","textPreview":"Email request","textChars":13,"textLines":1,"bbox":[875,407,61,18]}
+{"kind":"shape","id":"sh/0vixsr6x","slide":1,"bbox":[889,447,7,2]}
+{"kind":"shape","id":"sh/ny9wn6p8","slide":1,"bbox":[901,447,7,2]}
+{"kind":"shape","id":"sh/mx0fu1o3","slide":1,"bbox":[913,447,7,2]}
+{"kind":"shape","id":"sh/k32d4bm1","slide":1,"bbox":[925,447,7,2]}
+{"kind":"shape","id":"sh/l4bedgnm","slide":1,"bbox":[875,442,17,12]}
+{"kind":"textbox","id":"sh/y1kv214v","slide":1,"text":"Delivery result","textPreview":"Delivery result","textChars":15,"textLines":1,"bbox":[875,451,61,17]}
+{"kind":"shape","id":"sh/j2twb65g","slide":1,"bbox":[875,491,61,8]}
+{"kind":"textbox","id":"sh/wzid0rm5","slide":1,"text":"Object upload","textPreview":"Object upload","textChars":13,"textLines":1,"bbox":[875,471,61,18]}
+{"kind":"shape","id":"sh/x0ru9wnq","slide":1,"bbox":[889,511,7,2]}
+{"kind":"shape","id":"sh/ax0vy14z","slide":1,"bbox":[901,511,7,2]}
+{"kind":"shape","id":"sh/by9c765k","slide":1,"bbox":[913,511,7,2]}
+{"kind":"shape","id":"sh/obidwrmt","slide":1,"bbox":[925,511,7,2]}
+{"kind":"shape","id":"sh/9cru5wne","slide":1,"bbox":[875,506,17,12]}
+{"kind":"textbox","id":"sh/dgnads36","slide":1,"text":"Object URL","textPreview":"Object URL","textChars":10,"textLines":1,"bbox":[875,515,61,17]}
+{"kind":"shape","id":"sh/cfet4n2l","slide":1,"bbox":[370,603,7,2]}
+{"kind":"shape","id":"sh/re5sbil0","slide":1,"bbox":[382,603,7,2]}
+{"kind":"shape","id":"sh/qdwr2dkv","slide":1,"bbox":[394,603,7,2]}
+{"kind":"shape","id":"sh/147ahs3i","slide":1,"bbox":[406,603,7,2]}
+{"kind":"shape","id":"sh/03yt872x","slide":1,"bbox":[418,603,7,2]}
+{"kind":"shape","id":"sh/zipsf2lc","slide":1,"bbox":[430,603,7,2]}
+{"kind":"shape","id":"sh/ehwb6xkr","slide":1,"bbox":[442,603,7,2]}
+{"kind":"shape","id":"sh/h83a583y","slide":1,"bbox":[454,603,7,2]}
+{"kind":"shape","id":"sh/g7u9w32d","slide":1,"bbox":[466,603,7,2]}
+{"kind":"shape","id":"sh/6ds7690b","slide":1,"bbox":[478,603,7,2]}
+{"kind":"shape","id":"sh/7e18fe1w","slide":1,"bbox":[490,603,7,2]}
+{"kind":"shape","id":"sh/8fap8jih","slide":1,"bbox":[502,603,7,2]}
+{"kind":"shape","id":"sh/tgjqhoj2","slide":1,"bbox":[514,603,7,2]}
+{"kind":"shape","id":"sh/uhs7a907","slide":1,"bbox":[526,603,7,2]}
+{"kind":"shape","id":"sh/fi18je1s","slide":1,"bbox":[538,603,7,2]}
+{"kind":"shape","id":"sh/gjupcjid","slide":1,"bbox":[550,603,7,2]}
+{"kind":"shape","id":"sh/hk3qlojy","slide":1,"bbox":[562,603,7,2]}
+{"kind":"shape","id":"sh/al87yp03","slide":1,"bbox":[574,603,7,2]}
+{"kind":"shape","id":"sh/bmho7u1o","slide":1,"bbox":[586,603,7,2]}
+{"kind":"shape","id":"sh/zqd4zqhg","slide":1,"bbox":[598,603,7,2]}
+{"kind":"shape","id":"sh/ep4n6lgv","slide":1,"bbox":[610,603,7,2]}
+{"kind":"shape","id":"sh/1sfm10zm","slide":1,"bbox":[622,603,7,2]}
+{"kind":"shape","id":"sh/0rm58vy1","slide":1,"bbox":[634,603,7,2]}
+{"kind":"shape","id":"sh/r2d4v6hk","slide":1,"bbox":[646,603,7,2]}
+{"kind":"shape","id":"sh/q14321gz","slide":1,"bbox":[658,603,7,2]}
+{"kind":"shape","id":"sh/dovmxgza","slide":1,"bbox":[670,603,7,2]}
+{"kind":"shape","id":"sh/cnml4byp","slide":1,"bbox":[682,603,7,2]}
+{"kind":"shape","id":"sh/byx47aho","slide":1,"bbox":[694,603,7,2]}
+{"kind":"shape","id":"sh/axone5g3","slide":1,"bbox":[706,603,7,2]}
+{"kind":"shape","id":"sh/8rytc3a9","slide":1,"bbox":[718,603,7,2]}
+{"kind":"shape","id":"sh/ts7al8bu","slide":1,"bbox":[730,603,7,2]}
+{"kind":"shape","id":"sh/mpgbats3","slide":1,"bbox":[742,603,7,2]}
+{"kind":"shape","id":"sh/7qpsjyto","slide":1,"bbox":[754,603,7,2]}
+{"kind":"shape","id":"sh/gvytgnal","slide":1,"bbox":[766,603,7,2]}
+{"kind":"shape","id":"sh/hwrapsb6","slide":1,"bbox":[778,603,7,2]}
+{"kind":"shape","id":"sh/utgbedsf","slide":1,"bbox":[790,603,7,2]}
+{"kind":"shape","id":"sh/vupsnit0","slide":1,"bbox":[802,603,7,2]}
+{"kind":"shape","id":"sh/4jitknah","slide":1,"bbox":[814,603,7,2]}
+{"kind":"shape","id":"sh/5kratsb2","slide":1,"bbox":[826,603,7,2]}
+{"kind":"shape","id":"sh/dwzexg36","slide":1,"bbox":[838,603,7,2]}
+{"kind":"shape","id":"sh/svqxob2l","slide":1,"bbox":[850,603,7,2]}
+{"kind":"shape","id":"sh/ruhwv6l0","slide":1,"bbox":[862,603,7,2]}
+{"kind":"shape","id":"sh/qt8fm1kf","slide":1,"bbox":[874,603,7,2]}
+{"kind":"shape","id":"sh/5szetw3u","slide":1,"bbox":[886,603,7,2]}
+{"kind":"shape","id":"sh/4rqxkb29","slide":1,"bbox":[898,603,7,2]}
+{"kind":"shape","id":"sh/3qxwr6lo","slide":1,"bbox":[910,603,7,2]}
+{"kind":"shape","id":"sh/ipovi14j","slide":1,"bbox":[922,603,7,2]}
+{"kind":"shape","id":"sh/hofepw3y","slide":1,"bbox":[934,603,2,2]}
+{"kind":"shape","id":"sh/gn6dgrmd","slide":1,"bbox":[356,598,17,12]}
+{"kind":"textbox","id":"sh/mxk3atwz","slide":1,"text":"Realtime event: /topic/bookings -> invalidate React Query caches; polling remains fallback","textPreview":"Realtime event: /topic/bookings -> invalidate React Query caches; polling remains fallback","textChars":90,"textLines":1,"bbox":[356,607,580,17]}
+{"kind":"shape","id":"sh/7itk3yxk","slide":1,"bbox":[82,660,40,8]}
+{"kind":"textbox","id":"sh/8j2lc3e5","slide":1,"text":"Request / command","textPreview":"Request / command","textChars":17,"textLines":1,"bbox":[132,651,144,20]}
+{"kind":"shape","id":"sh/9kb258fa","slide":1,"bbox":[308,664,7,2]}
+{"kind":"shape","id":"sh/yt036tgn","slide":1,"bbox":[320,664,7,2]}
+{"kind":"shape","id":"sh/zutkzyx8","slide":1,"bbox":[332,664,2,2]}
+{"kind":"shape","id":"sh/kv2l83et","slide":1,"bbox":[294,659,17,12]}
+{"kind":"textbox","id":"sh/lwb218fe","slide":1,"text":"Response / callback / event","textPreview":"Response / callback / event","textChars":27,"textLines":1,"bbox":[345,651,215,20]}
+{"kind":"textbox","id":"sh/ap0j29gr","slide":1,"text":"Next.js 14 | Spring Boot 3 / Java 21 | PostgreSQL","textPreview":"Next.js 14 | Spring Boot 3 / Java 21 | PostgreSQL","textChars":49,"textLines":1,"bbox":[760,651,430,20]}
+{"kind":"notes","id":"nt/t8ljg8","slide":1,"text":""}
+{"kind":"slide","id":"sl/dyxoi4","slide":2,"title":"Runtime Communication & Event Flow","textShapes":43}
+{"kind":"shape","id":"sh/7694f2x8","slide":2,"bbox":[40,28,1200,664]}
+{"kind":"shape","id":"sh/s7i587yt","slide":2,"bbox":[40,28,8,664]}
+{"kind":"textbox","id":"sh/t8r6hcfy","slide":2,"text":"Runtime Communication & Event Flow","textPreview":"Runtime Communication & Event Flow","textChars":34,"textLines":1,"bbox":[78,54,930,42]}
+{"kind":"textbox","id":"sh/ihgn2xgb","slide":2,"text":"Synchronous REST/JWT traffic, transactional data access, verified payment callbacks, and asynchronous dashboard updates.","textPreview":"Synchronous REST/JWT traffic, transactional data access, verified payment callbacks, and asynchronous dashboard updates.","textChars":120,"textLines":1,"bbox":[80,99,1010,24]}
+{"kind":"shape","id":"sh/ji94b2xw","slide":2,"bbox":[1073,57,126,28]}
+{"kind":"textbox","id":"sh/kji547yh","slide":2,"text":"REPOSITORY-ALIGNED","textPreview":"REPOSITORY-ALIGNED","textChars":18,"textLines":1,"bbox":[1080,62,112,17]}
+{"kind":"shape","id":"sh/5krmdsf2","slide":2,"bbox":[92,156,170,30]}
+{"kind":"textbox","id":"sh/2dknehgv","slide":2,"text":"USER / STAFF","textPreview":"USER / STAFF","textChars":12,"textLines":1,"bbox":[100,161,154,20]}
+{"kind":"textbox","id":"sh/3etonmxg","slide":2,"text":"Browser interaction","textPreview":"Browser interaction","textChars":19,"textLines":1,"bbox":[92,190,170,25]}
+{"kind":"shape","id":"sh/76dgf2lc","slide":2,"bbox":[176,220,2,8]}
+{"kind":"shape","id":"sh/m54fmxk7","slide":2,"bbox":[176,234,2,8]}
+{"kind":"shape","id":"sh/98vyhc3i","slide":2,"bbox":[176,248,2,8]}
+{"kind":"shape","id":"sh/87mxo72x","slide":2,"bbox":[176,262,2,8]}
+{"kind":"shape","id":"sh/vadgjmlo","slide":2,"bbox":[176,276,2,8]}
+{"kind":"shape","id":"sh/u94fqhk3","slide":2,"bbox":[176,290,2,8]}
+{"kind":"shape","id":"sh/hcfylc3u","slide":2,"bbox":[176,304,2,8]}
+{"kind":"shape","id":"sh/wb6xs729","slide":2,"bbox":[176,318,2,8]}
+{"kind":"shape","id":"sh/3yxgnmlk","slide":2,"bbox":[176,332,2,8]}
+{"kind":"shape","id":"sh/idofuhkz","slide":2,"bbox":[176,346,2,8]}
+{"kind":"shape","id":"sh/et8jml47","slide":2,"bbox":[176,360,2,8]}
+{"kind":"shape","id":"sh/fu10fq5s","slide":2,"bbox":[176,374,2,8]}
+{"kind":"shape","id":"sh/0va1ovmd","slide":2,"bbox":[176,388,2,8]}
+{"kind":"shape","id":"sh/1wjih0ny","slide":2,"bbox":[176,402,2,8]}
+{"kind":"shape","id":"sh/q58zil4b","slide":2,"bbox":[176,416,2,8]}
+{"kind":"shape","id":"sh/r6h0b65w","slide":2,"bbox":[176,430,2,8]}
+{"kind":"shape","id":"sh/s7q1kbmh","slide":2,"bbox":[176,444,2,8]}
+{"kind":"shape","id":"sh/dszidgn2","slide":2,"bbox":[176,458,2,8]}
+{"kind":"shape","id":"sh/a1cju54f","slide":2,"bbox":[176,472,2,8]}
+{"kind":"shape","id":"sh/b2l0na50","slide":2,"bbox":[176,486,2,8]}
+{"kind":"shape","id":"sh/lwnmt472","slide":2,"bbox":[176,500,2,8]}
+{"kind":"shape","id":"sh/kvelkz6x","slide":2,"bbox":[176,514,2,8]}
+{"kind":"shape","id":"sh/zu54rupc","slide":2,"bbox":[176,528,2,8]}
+{"kind":"shape","id":"sh/ytw3ipor","slide":2,"bbox":[176,542,2,8]}
+{"kind":"shape","id":"sh/xs32p476","slide":2,"bbox":[176,556,2,8]}
+{"kind":"shape","id":"sh/crulgz6l","slide":2,"bbox":[176,570,2,8]}
+{"kind":"shape","id":"sh/bqlknup0","slide":2,"bbox":[176,584,2,8]}
+{"kind":"shape","id":"sh/apc3epof","slide":2,"bbox":[176,598,2,8]}
+{"kind":"shape","id":"sh/ho7m1o7a","slide":2,"bbox":[176,612,2,8]}
+{"kind":"shape","id":"sh/wnylsj6p","slide":2,"bbox":[302,156,170,30]}
+{"kind":"textbox","id":"sh/ormtsj6l","slide":2,"text":"NEXT.JS","textPreview":"NEXT.JS","textChars":7,"textLines":1,"bbox":[310,161,154,20]}
+{"kind":"textbox","id":"sh/psvulo76","slide":2,"text":"Role workspace + API client","textPreview":"Role workspace + API client","textChars":27,"textLines":1,"bbox":[302,190,170,25]}
+{"kind":"shape","id":"sh/254bqtof","slide":2,"bbox":[386,220,2,8]}
+{"kind":"shape","id":"sh/3qdcjep0","slide":2,"bbox":[386,234,2,8]}
+{"kind":"shape","id":"sh/cvmtw36h","slide":2,"bbox":[386,248,2,8]}
+{"kind":"shape","id":"sh/dwfup872","slide":2,"bbox":[386,262,2,8]}
+{"kind":"shape","id":"sh/qt4butor","slide":2,"bbox":[386,276,2,8]}
+{"kind":"shape","id":"sh/budcnypc","slide":2,"bbox":[386,290,2,8]}
+{"kind":"shape","id":"sh/0z6d036t","slide":2,"bbox":[386,304,2,8]}
+{"kind":"shape","id":"sh/l0fut87e","slide":2,"bbox":[386,318,2,8]}
+{"kind":"shape","id":"sh/vuhwj29g","slide":2,"bbox":[386,332,2,8]}
+{"kind":"shape","id":"sh/at8fqh8v","slide":2,"bbox":[386,346,2,8]}
+{"kind":"shape","id":"sh/xgjelcrm","slide":2,"bbox":[386,360,2,8]}
+{"kind":"shape","id":"sh/wvaxs7q1","slide":2,"bbox":[386,374,2,8]}
+{"kind":"shape","id":"sh/nqhwf29k","slide":2,"bbox":[386,388,2,8]}
+{"kind":"shape","id":"sh/mp8fmx8z","slide":2,"bbox":[386,402,2,8]}
+{"kind":"shape","id":"sh/9szehcra","slide":2,"bbox":[386,416,2,8]}
+{"kind":"shape","id":"sh/8rqxo7qp","slide":2,"bbox":[386,430,2,8]}
+{"kind":"shape","id":"sh/rm1grmpo","slide":2,"bbox":[386,444,2,8]}
+{"kind":"shape","id":"sh/6lsfy183","slide":2,"bbox":[386,458,2,8]}
+{"kind":"shape","id":"sh/2hwzqlsb","slide":2,"bbox":[386,472,2,8]}
+{"kind":"shape","id":"sh/3i50jqtw","slide":2,"bbox":[386,486,2,8]}
+{"kind":"shape","id":"sh/ojehsvah","slide":2,"bbox":[386,500,2,8]}
+{"kind":"shape","id":"sh/pknil0b2","slide":2,"bbox":[386,514,2,8]}
+{"kind":"shape","id":"sh/q5wzu5sn","slide":2,"bbox":[386,528,2,8]}
+{"kind":"shape","id":"sh/b6p0na9s","slide":2,"bbox":[386,542,2,8]}
+{"kind":"shape","id":"sh/c7yhwfad","slide":2,"bbox":[386,556,2,8]}
+{"kind":"shape","id":"sh/d87ipkry","slide":2,"bbox":[386,570,2,8]}
+{"kind":"shape","id":"sh/69czi1s3","slide":2,"bbox":[386,584,2,8]}
+{"kind":"shape","id":"sh/ral0b6to","slide":2,"bbox":[386,598,2,8]}
+{"kind":"shape","id":"sh/94r2h4b6","slide":2,"bbox":[386,612,2,8]}
+{"kind":"shape","id":"sh/83ilojul","slide":2,"bbox":[512,156,170,30]}
+{"kind":"textbox","id":"sh/n29kved0","slide":2,"text":"SPRING BOOT","textPreview":"SPRING BOOT","textChars":11,"textLines":1,"bbox":[520,161,154,20]}
+{"kind":"textbox","id":"sh/m103m9cv","slide":2,"text":"Security + domain modules","textPreview":"Security + domain modules","textChars":25,"textLines":1,"bbox":[512,190,170,25]}
+{"kind":"shape","id":"sh/x8b2lobi","slide":2,"bbox":[596,220,2,8]}
+{"kind":"shape","id":"sh/w72lsjux","slide":2,"bbox":[596,234,2,8]}
+{"kind":"shape","id":"sh/v6tkjetc","slide":2,"bbox":[596,248,2,8]}
+{"kind":"shape","id":"sh/a5k3q9cr","slide":2,"bbox":[596,262,2,8]}
+{"kind":"shape","id":"sh/dc72pkvy","slide":2,"bbox":[596,276,2,8]}
+{"kind":"shape","id":"sh/cby1gzud","slide":2,"bbox":[596,290,2,8]}
+{"kind":"shape","id":"sh/4vepgn29","slide":2,"bbox":[596,304,2,8]}
+{"kind":"shape","id":"sh/5wn6ps3u","slide":2,"bbox":[596,318,2,8]}
+{"kind":"shape","id":"sh/i9w7edk3","slide":2,"bbox":[596,332,2,8]}
+{"kind":"shape","id":"sh/3a5onilo","slide":2,"bbox":[596,346,2,8]}
+{"kind":"shape","id":"sh/g7upc32x","slide":2,"bbox":[596,360,2,8]}
+{"kind":"shape","id":"sh/h8n6l83i","slide":2,"bbox":[596,374,2,8]}
+{"kind":"shape","id":"sh/u5c7adk7","slide":2,"bbox":[596,388,2,8]}
+{"kind":"shape","id":"sh/v6lojyls","slide":2,"bbox":[596,402,2,8]}
+{"kind":"shape","id":"sh/03ypo72h","slide":2,"bbox":[596,416,2,8]}
+{"kind":"shape","id":"sh/147qxc32","slide":2,"bbox":[596,430,2,8]}
+{"kind":"shape","id":"sh/bytsn654","slide":2,"bbox":[596,444,2,8]}
+{"kind":"shape","id":"sh/ax0re14j","slide":2,"bbox":[596,458,2,8]}
+{"kind":"shape","id":"sh/xkbapgna","slide":2,"bbox":[596,472,2,8]}
+{"kind":"shape","id":"sh/wz29gbmp","slide":2,"bbox":[596,486,2,8]}
+{"kind":"shape","id":"sh/jmtsr650","slide":2,"bbox":[596,500,2,8]}
+{"kind":"shape","id":"sh/ylkbil4f","slide":2,"bbox":[596,514,2,8]}
+{"kind":"shape","id":"sh/lobatgn6","slide":2,"bbox":[596,528,2,8]}
+{"kind":"shape","id":"sh/kn2tkbml","slide":2,"bbox":[596,542,2,8]}
+{"kind":"shape","id":"sh/zqpsfm5w","slide":2,"bbox":[596,556,2,8]}
+{"kind":"shape","id":"sh/epgr6h4b","slide":2,"bbox":[596,570,2,8]}
+{"kind":"shape","id":"sh/j2p87q9c","slide":2,"bbox":[596,584,2,8]}
+{"kind":"shape","id":"sh/i1g7el8r","slide":2,"bbox":[596,598,2,8]}
+{"kind":"shape","id":"sh/547q9gri","slide":2,"bbox":[596,612,2,8]}
+{"kind":"shape","id":"sh/43ypgvqx","slide":2,"bbox":[722,156,170,30]}
+{"kind":"textbox","id":"sh/vy58369g","slide":2,"text":"POSTGRESQL","textPreview":"POSTGRESQL","textChars":10,"textLines":1,"bbox":[730,161,154,20]}
+{"kind":"textbox","id":"sh/uxw7a18v","slide":2,"text":"Transactional state","textPreview":"Transactional state","textChars":19,"textLines":1,"bbox":[722,190,170,25]}
+{"kind":"shape","id":"sh/h07q5gr6","slide":2,"bbox":[806,220,2,8]}
+{"kind":"shape","id":"sh/wzypcbql","slide":2,"bbox":[806,234,2,8]}
+{"kind":"shape","id":"sh/fu98fa9k","slide":2,"bbox":[806,248,2,8]}
+{"kind":"shape","id":"sh/et0rm58z","slide":2,"bbox":[806,262,2,8]}
+{"kind":"shape","id":"sh/cfa5076h","slide":2,"bbox":[806,276,2,8]}
+{"kind":"shape","id":"sh/x03m9c72","slide":2,"bbox":[806,290,2,8]}
+{"kind":"shape","id":"sh/adsnyxob","slide":2,"bbox":[806,304,2,8]}
+{"kind":"shape","id":"sh/be1472pw","slide":2,"bbox":[806,318,2,8]}
+{"kind":"shape","id":"sh/k3u5476d","slide":2,"bbox":[806,332,2,8]}
+{"kind":"shape","id":"sh/l436dc7y","slide":2,"bbox":[806,346,2,8]}
+{"kind":"shape","id":"sh/y1cn2xon","slide":2,"bbox":[806,360,2,8]}
+{"kind":"shape","id":"sh/z2lob2p8","slide":2,"bbox":[806,374,2,8]}
+{"kind":"shape","id":"sh/87u58r6p","slide":2,"bbox":[806,388,2,8]}
+{"kind":"shape","id":"sh/98n6hw7a","slide":2,"bbox":[806,402,2,8]}
+{"kind":"shape","id":"sh/hcze5sv2","slide":2,"bbox":[806,416,2,8]}
+{"kind":"shape","id":"sh/wbqdcnuh","slide":2,"bbox":[806,430,2,8]}
+{"kind":"shape","id":"sh/vahw3idw","slide":2,"bbox":[806,444,2,8]}
+{"kind":"shape","id":"sh/up8vadcb","slide":2,"bbox":[806,458,2,8]}
+{"kind":"shape","id":"sh/5gze9sve","slide":2,"bbox":[806,472,2,8]}
+{"kind":"shape","id":"sh/4fqdgnut","slide":2,"bbox":[806,486,2,8]}
+{"kind":"shape","id":"sh/jehw72d8","slide":2,"bbox":[806,500,2,8]}
+{"kind":"shape","id":"sh/id8vexcn","slide":2,"bbox":[806,514,2,8]}
+{"kind":"shape","id":"sh/lkfex8vu","slide":2,"bbox":[806,528,2,8]}
+{"kind":"shape","id":"sh/kj6d43u9","slide":2,"bbox":[806,542,2,8]}
+{"kind":"shape","id":"sh/apkbe9s7","slide":2,"bbox":[806,556,2,8]}
+{"kind":"shape","id":"sh/bqds7ets","slide":2,"bbox":[806,570,2,8]}
+{"kind":"shape","id":"sh/crmtgjad","slide":2,"bbox":[806,584,2,8]}
+{"kind":"shape","id":"sh/xsvu94by","slide":2,"bbox":[806,598,2,8]}
+{"kind":"shape","id":"sh/yt4bi9s3","slide":2,"bbox":[806,612,2,8]}
+{"kind":"shape","id":"sh/zudcbeto","slide":2,"bbox":[932,156,170,30]}
+{"kind":"textbox","id":"sh/kvmtkja9","slide":2,"text":"EXTERNAL / WS","textPreview":"EXTERNAL / WS","textChars":13,"textLines":1,"bbox":[940,161,154,20]}
+{"kind":"textbox","id":"sh/lgvudobu","slide":2,"text":"Payment, email, storage, events","textPreview":"Payment, email, storage, events","textChars":31,"textLines":1,"bbox":[932,190,170,25]}
+{"kind":"shape","id":"sh/ex0b6psz","slide":2,"bbox":[1016,220,2,8]}
+{"kind":"shape","id":"sh/fy9szutk","slide":2,"bbox":[1016,234,2,8]}
+{"kind":"shape","id":"sh/ve1836l8","slide":2,"bbox":[1016,248,2,8]}
+{"kind":"shape","id":"sh/udsra14n","slide":2,"bbox":[1016,262,2,8]}
+{"kind":"shape","id":"sh/hg3q5g3e","slide":2,"bbox":[1016,276,2,8]}
+{"kind":"shape","id":"sh/gfu9cbmt","slide":2,"bbox":[1016,290,2,8]}
+{"kind":"shape","id":"sh/3il87qlk","slide":2,"bbox":[1016,304,2,8]}
+{"kind":"shape","id":"sh/ihcrel4z","slide":2,"bbox":[1016,318,2,8]}
+{"kind":"shape","id":"sh/5k3q903q","slide":2,"bbox":[1016,332,2,8]}
+{"kind":"shape","id":"sh/4ju9gvm5","slide":2,"bbox":[1016,346,2,8]}
+{"kind":"shape","id":"sh/rm5sbqlg","slide":2,"bbox":[1016,360,2,8]}
+{"kind":"shape","id":"sh/qlcrilkv","slide":2,"bbox":[1016,374,2,8]}
+{"kind":"shape","id":"sh/obepsvi9","slide":2,"bbox":[1016,388,2,8]}
+{"kind":"shape","id":"sh/9cnq10ju","slide":2,"bbox":[1016,402,2,8]}
+{"kind":"shape","id":"sh/2pw7q503","slide":2,"bbox":[1016,416,2,8]}
+{"kind":"shape","id":"sh/nq58za1o","slide":2,"bbox":[1016,430,2,8]}
+{"kind":"shape","id":"sh/0nepovix","slide":2,"bbox":[1016,444,2,8]}
+{"kind":"shape","id":"sh/1onqx0ji","slide":2,"bbox":[1016,458,2,8]}
+{"kind":"shape","id":"sh/elc7ml07","slide":2,"bbox":[1016,472,2,8]}
+{"kind":"shape","id":"sh/fm58vq1s","slide":2,"bbox":[1016,486,2,8]}
+{"kind":"shape","id":"sh/sjupkbi1","slide":2,"bbox":[1016,500,2,8]}
+{"kind":"shape","id":"sh/dk3qtgjm","slide":2,"bbox":[1016,514,2,8]}
+{"kind":"shape","id":"sh/t4be187y","slide":2,"bbox":[1016,528,2,8]}
+{"kind":"shape","id":"sh/832x8n6t","slide":2,"bbox":[1016,542,2,8]}
+{"kind":"shape","id":"sh/72twzip8","slide":2,"bbox":[1016,556,2,8]}
+{"kind":"shape","id":"sh/61kf6don","slide":2,"bbox":[1016,570,2,8]}
+{"kind":"shape","id":"sh/l0bex872","slide":2,"bbox":[1016,584,2,8]}
+{"kind":"shape","id":"sh/kz2x43qh","slide":2,"bbox":[1016,598,2,8]}
+{"kind":"shape","id":"sh/jytwvypw","slide":2,"bbox":[1016,612,2,8]}
+{"kind":"shape","id":"sh/yxkv2t8b","slide":2,"bbox":[62,221,28,28]}
+{"kind":"textbox","id":"sh/5wfy9s76","slide":2,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[62,226,28,18]}
+{"kind":"shape","id":"sh/4vmxg76l","slide":2,"bbox":[177,228,210,8]}
+{"kind":"textbox","id":"sh/mhgbapo3","slide":2,"text":"Login / catalog / vehicle action","textPreview":"Login / catalog / vehicle action","textChars":32,"textLines":1,"bbox":[177,208,210,18]}
+{"kind":"shape","id":"sh/nipc3u5o","slide":2,"bbox":[191,248,7,2]}
+{"kind":"shape","id":"sh/o3ytczm9","slide":2,"bbox":[203,248,7,2]}
+{"kind":"shape","id":"sh/947u54nu","slide":2,"bbox":[215,248,7,2]}
+{"kind":"shape","id":"sh/edwb6po7","slide":2,"bbox":[227,248,7,2]}
+{"kind":"shape","id":"sh/zepczu5s","slide":2,"bbox":[239,248,7,2]}
+{"kind":"shape","id":"sh/0fyt8z6d","slide":2,"bbox":[251,248,7,2]}
+{"kind":"shape","id":"sh/1g7u14ny","slide":2,"bbox":[263,248,7,2]}
+{"kind":"shape","id":"sh/y90vi94b","slide":2,"bbox":[275,248,7,2]}
+{"kind":"shape","id":"sh/ja9cbe5w","slide":2,"bbox":[287,248,7,2]}
+{"kind":"shape","id":"sh/7q5cvex0","slide":2,"bbox":[299,248,7,2]}
+{"kind":"shape","id":"sh/6pwb29wf","slide":2,"bbox":[311,248,7,2]}
+{"kind":"shape","id":"sh/ts7uxof6","slide":2,"bbox":[323,248,7,2]}
+{"kind":"shape","id":"sh/sret4jel","slide":2,"bbox":[335,248,7,2]}
+{"kind":"shape","id":"sh/j25crex4","slide":2,"bbox":[347,248,7,2]}
+{"kind":"shape","id":"sh/i1wby9wj","slide":2,"bbox":[359,248,7,2]}
+{"kind":"shape","id":"sh/5onut4fa","slide":2,"bbox":[371,248,7,2]}
+{"kind":"shape","id":"sh/knet0zep","slide":2,"bbox":[383,248,4,2]}
+{"kind":"shape","id":"sh/vylsnuxs","slide":2,"bbox":[177,243,17,12]}
+{"kind":"textbox","id":"sh/axcbupw7","slide":2,"text":"Rendered state or validation","textPreview":"Rendered state or validation","textChars":28,"textLines":1,"bbox":[177,252,210,17]}
+{"kind":"shape","id":"sh/0rqh8bqt","slide":2,"bbox":[387,228,210,8]}
+{"kind":"textbox","id":"sh/1szihwre","slide":2,"text":"REST /api/v1/* + JWT","textPreview":"REST /api/v1/* + JWT","textChars":20,"textLines":1,"bbox":[387,208,210,18]}
+{"kind":"shape","id":"sh/ep8z6183","slide":2,"bbox":[401,248,7,2]}
+{"kind":"shape","id":"sh/fqh0f69o","slide":2,"bbox":[413,248,7,2]}
+{"kind":"shape","id":"sh/ovahcbq5","slide":2,"bbox":[425,248,7,2]}
+{"kind":"shape","id":"sh/pwjilgrq","slide":2,"bbox":[437,248,7,2]}
+{"kind":"shape","id":"sh/2t8za18z","slide":2,"bbox":[449,248,7,2]}
+{"kind":"shape","id":"sh/nuh0j69k","slide":2,"bbox":[461,248,7,2]}
+{"kind":"shape","id":"sh/4z6h07q1","slide":2,"bbox":[473,248,7,2]}
+{"kind":"shape","id":"sh/50fy9cr6","slide":2,"bbox":[485,248,7,2]}
+{"kind":"shape","id":"sh/4fmdsjql","slide":2,"bbox":[497,248,7,2]}
+{"kind":"shape","id":"sh/5gfelo76","slide":2,"bbox":[509,248,7,2]}
+{"kind":"shape","id":"sh/it4vqt8v","slide":2,"bbox":[521,248,7,2]}
+{"kind":"shape","id":"sh/3udwjypg","slide":2,"bbox":[533,248,7,2]}
+{"kind":"shape","id":"sh/grmdojqp","slide":2,"bbox":[545,248,7,2]}
+{"kind":"shape","id":"sh/hsvehora","slide":2,"bbox":[557,248,7,2]}
+{"kind":"shape","id":"sh/up4vm98j","slide":2,"bbox":[569,248,7,2]}
+{"kind":"shape","id":"sh/vqdwfe94","slide":2,"bbox":[581,248,7,2]}
+{"kind":"shape","id":"sh/8n2dkzqt","slide":2,"bbox":[593,248,4,2]}
+{"kind":"shape","id":"sh/toved4ry","slide":2,"bbox":[387,243,17,12]}
+{"kind":"textbox","id":"sh/bitwnut0","slide":2,"text":"DTO + HTTP status","textPreview":"DTO + HTTP status","textChars":17,"textLines":1,"bbox":[387,252,210,17]}
+{"kind":"shape","id":"sh/axkfu9sf","slide":2,"bbox":[597,228,210,8]}
+{"kind":"textbox","id":"sh/xkbep4b6","slide":2,"text":"Read/write account and domain data","textPreview":"Read/write account and domain data","textChars":34,"textLines":1,"bbox":[597,208,210,18]}
+{"kind":"shape","id":"sh/wj2xwzal","slide":2,"bbox":[611,248,7,2]}
+{"kind":"shape","id":"sh/jmtwretw","slide":2,"bbox":[623,248,7,2]}
+{"kind":"shape","id":"sh/ylkfy9sb","slide":2,"bbox":[635,248,7,2]}
+{"kind":"shape","id":"sh/lobetob2","slide":2,"bbox":[647,248,7,2]}
+{"kind":"shape","id":"sh/kn2x0jah","slide":2,"bbox":[659,248,7,2]}
+{"kind":"shape","id":"sh/7qdwvet8","slide":2,"bbox":[671,248,7,2]}
+{"kind":"shape","id":"sh/6p4f2tsn","slide":2,"bbox":[683,248,7,2]}
+{"kind":"shape","id":"sh/ilozudcv","slide":2,"bbox":[695,248,7,2]}
+{"kind":"shape","id":"sh/3mx03idg","slide":2,"bbox":[707,248,7,2]}
+{"kind":"shape","id":"sh/4n6hwnu1","slide":2,"bbox":[719,248,7,2]}
+{"kind":"shape","id":"sh/58zi5sv6","slide":2,"bbox":[731,248,7,2]}
+{"kind":"shape","id":"sh/uhozqdcj","slide":2,"bbox":[743,248,7,2]}
+{"kind":"shape","id":"sh/vix0zid4","slide":2,"bbox":[755,248,7,2]}
+{"kind":"shape","id":"sh/gj6hsnup","slide":2,"bbox":[767,248,7,2]}
+{"kind":"shape","id":"sh/hkfi1sva","slide":2,"bbox":[779,248,7,2]}
+{"kind":"shape","id":"sh/ed8z2hc3","slide":2,"bbox":[791,248,7,2]}
+{"kind":"shape","id":"sh/feh0b2do","slide":2,"bbox":[803,248,4,2]}
+{"kind":"shape","id":"sh/p8321gfq","slide":2,"bbox":[597,243,17,12]}
+{"kind":"textbox","id":"sh/o7ulsbe5","slide":2,"text":"Committed entities","textPreview":"Committed entities","textChars":18,"textLines":1,"bbox":[597,252,210,17]}
+{"kind":"shape","id":"sh/n61kz6xk","slide":2,"bbox":[62,301,28,28]}
+{"kind":"textbox","id":"sh/25s3q1wz","slide":2,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[62,306,28,18]}
+{"kind":"shape","id":"sh/14j2xwfe","slide":2,"bbox":[387,308,210,8]}
+{"kind":"textbox","id":"sh/03a1ore9","slide":2,"text":"Availability -> hold -> validate -> create","textPreview":"Availability -> hold -> validate -> create","textChars":42,"textLines":1,"bbox":[387,288,210,18]}
+{"kind":"shape","id":"sh/f21kvmxo","slide":2,"bbox":[401,328,7,2]}
+{"kind":"shape","id":"sh/ehsjmhw3","slide":2,"bbox":[413,328,7,2]}
+{"kind":"shape","id":"sh/l0n290fy","slide":2,"bbox":[425,328,7,2]}
+{"kind":"shape","id":"sh/kzel0ved","slide":2,"bbox":[437,328,7,2]}
+{"kind":"shape","id":"sh/sj2t0vet","slide":2,"bbox":[449,328,7,2]}
+{"kind":"shape","id":"sh/tkbat0fe","slide":2,"bbox":[461,328,7,2]}
+{"kind":"shape","id":"sh/6h0bylw3","slide":2,"bbox":[473,328,7,2]}
+{"kind":"shape","id":"sh/ri9srqxo","slide":2,"bbox":[485,328,7,2]}
+{"kind":"shape","id":"sh/g72t4ve5","slide":2,"bbox":[497,328,7,2]}
+{"kind":"shape","id":"sh/18bux0fq","slide":2,"bbox":[509,328,7,2]}
+{"kind":"shape","id":"sh/e5kb2lwz","slide":2,"bbox":[521,328,7,2]}
+{"kind":"shape","id":"sh/f6tsvqxk","slide":2,"bbox":[533,328,7,2]}
+{"kind":"shape","id":"sh/obmt8fe1","slide":2,"bbox":[545,328,7,2]}
+{"kind":"shape","id":"sh/pcvu1kfm","slide":2,"bbox":[557,328,7,2]}
+{"kind":"shape","id":"sh/z6xwreh4","slide":2,"bbox":[569,328,7,2]}
+{"kind":"shape","id":"sh/y5ovy9gj","slide":2,"bbox":[581,328,7,2]}
+{"kind":"shape","id":"sh/l8fetozu","slide":2,"bbox":[593,328,4,2]}
+{"kind":"shape","id":"sh/k76d0jy9","slide":2,"bbox":[387,323,17,12]}
+{"kind":"textbox","id":"sh/b2xwnuhs","slide":2,"text":"PENDING booking + payment data","textPreview":"PENDING booking + payment data","textChars":30,"textLines":1,"bbox":[387,332,210,17]}
+{"kind":"shape","id":"sh/a14vupg7","slide":2,"bbox":[597,308,210,8]}
+{"kind":"textbox","id":"sh/x4fep4zy","slide":2,"text":"Capacity check + 15-minute hold","textPreview":"Capacity check + 15-minute hold","textChars":31,"textLines":1,"bbox":[597,288,210,18]}
+{"kind":"shape","id":"sh/c36dwzyd","slide":2,"bbox":[611,328,7,2]}
+{"kind":"shape","id":"sh/vyhwzyhw","slide":2,"bbox":[623,328,7,2]}
+{"kind":"shape","id":"sh/ux8f6tgr","slide":2,"bbox":[635,328,7,2]}
+{"kind":"shape","id":"sh/6tczyx0z","slide":2,"bbox":[647,328,7,2]}
+{"kind":"shape","id":"sh/rulg7214","slide":2,"bbox":[659,328,7,2]}
+{"kind":"shape","id":"sh/svuh07ip","slide":2,"bbox":[671,328,7,2]}
+{"kind":"shape","id":"sh/tw3y9sja","slide":2,"bbox":[683,328,7,2]}
+{"kind":"shape","id":"sh/excz2x0v","slide":2,"bbox":[695,328,7,2]}
+{"kind":"shape","id":"sh/fyl0b21g","slide":2,"bbox":[707,328,7,2]}
+{"kind":"shape","id":"sh/gzuh47i1","slide":2,"bbox":[719,328,7,2]}
+{"kind":"shape","id":"sh/10nidczm","slide":2,"bbox":[731,328,7,2]}
+{"kind":"shape","id":"sh/u1szqd0r","slide":2,"bbox":[743,328,7,2]}
+{"kind":"shape","id":"sh/v21gzi1c","slide":2,"bbox":[755,328,7,2]}
+{"kind":"shape","id":"sh/xsral07q","slide":2,"bbox":[767,328,7,2]}
+{"kind":"shape","id":"sh/writsf65","slide":2,"bbox":[779,328,7,2]}
+{"kind":"shape","id":"sh/bq9sjap0","slide":2,"bbox":[791,328,7,2]}
+{"kind":"shape","id":"sh/a50bq5of","slide":2,"bbox":[803,328,4,2]}
+{"kind":"shape","id":"sh/lwrapkn2","slide":2,"bbox":[597,323,17,12]}
+{"kind":"textbox","id":"sh/kvitwf6h","slide":2,"text":"Remaining capacity or BOOKING_SLOT_FULL","textPreview":"Remaining capacity or BOOKING_SLOT_FULL","textChars":39,"textLines":1,"bbox":[597,332,210,17]}
+{"kind":"shape","id":"sh/ju9snapw","slide":2,"bbox":[62,381,28,28]}
+{"kind":"textbox","id":"sh/yt0bu5ob","slide":2,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[62,386,28,18]}
+{"kind":"shape","id":"sh/107adg7i","slide":2,"bbox":[597,388,420,8]}
+{"kind":"textbox","id":"sh/0zy9kv6d","slide":2,"text":"SePay QR or VNPay checkout","textPreview":"SePay QR or VNPay checkout","textChars":26,"textLines":1,"bbox":[597,368,420,18]}
+{"kind":"shape","id":"sh/snu5ofah","slide":2,"bbox":[611,408,7,2]}
+{"kind":"shape","id":"sh/to36xkb2","slide":2,"bbox":[623,408,7,2]}
+{"kind":"shape","id":"sh/6lsnm5sr","slide":2,"bbox":[635,408,7,2]}
+{"kind":"shape","id":"sh/7mlovatw","slide":2,"bbox":[647,408,7,2]}
+{"kind":"shape","id":"sh/kja5kfal","slide":2,"bbox":[659,408,7,2]}
+{"kind":"shape","id":"sh/5kj6tkb6","slide":2,"bbox":[671,408,7,2]}
+{"kind":"shape","id":"sh/ihsni5cf","slide":2,"bbox":[683,408,7,2]}
+{"kind":"shape","id":"sh/ji1orat0","slide":2,"bbox":[695,408,7,2]}
+{"kind":"shape","id":"sh/4fepwzap","slide":2,"bbox":[707,408,7,2]}
+{"kind":"shape","id":"sh/pgn654ba","slide":2,"bbox":[719,408,7,2]}
+{"kind":"shape","id":"sh/zm90b2ho","slide":2,"bbox":[731,408,7,2]}
+{"kind":"shape","id":"sh/yl0zixg3","slide":2,"bbox":[743,408,7,2]}
+{"kind":"shape","id":"sh/loridczu","slide":2,"bbox":[755,408,7,2]}
+{"kind":"shape","id":"sh/0ni1k7y9","slide":2,"bbox":[767,408,7,2]}
+{"kind":"shape","id":"sh/nqt0f2h0","slide":2,"bbox":[779,408,7,2]}
+{"kind":"shape","id":"sh/mp0jmxgf","slide":2,"bbox":[791,408,7,2]}
+{"kind":"shape","id":"sh/9cbihczq","slide":2,"bbox":[803,408,7,2]}
+{"kind":"shape","id":"sh/8b21o7y5","slide":2,"bbox":[815,408,7,2]}
+{"kind":"shape","id":"sh/3up03ihg","slide":2,"bbox":[827,408,7,2]}
+{"kind":"shape","id":"sh/2tgzad0v","slide":2,"bbox":[839,408,7,2]}
+{"kind":"shape","id":"sh/povi1ore","slide":2,"bbox":[851,408,7,2]}
+{"kind":"shape","id":"sh/4nmh8jqt","slide":2,"bbox":[863,408,7,2]}
+{"kind":"shape","id":"sh/3mtgze98","slide":2,"bbox":[875,408,7,2]}
+{"kind":"shape","id":"sh/2lkz6t83","slide":2,"bbox":[887,408,7,2]}
+{"kind":"shape","id":"sh/hkbyxori","slide":2,"bbox":[899,408,7,2]}
+{"kind":"shape","id":"sh/gj2h4jqx","slide":2,"bbox":[911,408,7,2]}
+{"kind":"shape","id":"sh/fitgve9c","slide":2,"bbox":[923,408,7,2]}
+{"kind":"shape","id":"sh/uxkz298r","slide":2,"bbox":[935,408,7,2]}
+{"kind":"shape","id":"sh/1gfi987m","slide":2,"bbox":[947,408,7,2]}
+{"kind":"shape","id":"sh/0f6hg3q1","slide":2,"bbox":[959,408,7,2]}
+{"kind":"shape","id":"sh/ypwnelk7","slide":2,"bbox":[971,408,7,2]}
+{"kind":"shape","id":"sh/zq5on6ls","slide":2,"bbox":[983,408,7,2]}
+{"kind":"shape","id":"sh/kry5gb2d","slide":2,"bbox":[995,408,7,2]}
+{"kind":"shape","id":"sh/ls76pg3y","slide":2,"bbox":[1007,408,7,2]}
+{"kind":"shape","id":"sh/alwna1kb","slide":2,"bbox":[597,403,17,12]}
+{"kind":"textbox","id":"sh/bm54j6lw","slide":2,"text":"Verified callback -> PAID -> CONFIRMED -> assign staff","textPreview":"Verified callback -> PAID -> CONFIRMED -> assign staff","textChars":54,"textLines":1,"bbox":[597,412,420,17]}
+{"kind":"shape","id":"sh/cne5cb2h","slide":2,"bbox":[62,461,28,28]}
+{"kind":"textbox","id":"sh/xon6lg32","slide":2,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[62,466,28,18]}
+{"kind":"shape","id":"sh/uhgnm5kf","slide":2,"bbox":[387,468,210,8]}
+{"kind":"textbox","id":"sh/vi9ovql0","slide":2,"text":"Create / queue / check-in / start / complete","textPreview":"Create / queue / check-in / start / complete","textChars":44,"textLines":1,"bbox":[387,448,210,18]}
+{"kind":"shape","id":"sh/r21kn21c","slide":2,"bbox":[401,488,7,2]}
+{"kind":"shape","id":"sh/q1s3ex07","slide":2,"bbox":[413,488,7,2]}
+{"kind":"shape","id":"sh/doj2psji","slide":2,"bbox":[425,488,7,2]}
+{"kind":"shape","id":"sh/snalgnix","slide":2,"bbox":[437,488,7,2]}
+{"kind":"shape","id":"sh/fq1kr21o","slide":2,"bbox":[449,488,7,2]}
+{"kind":"shape","id":"sh/eps3ix03","slide":2,"bbox":[461,488,7,2]}
+{"kind":"shape","id":"sh/1s32tcju","slide":2,"bbox":[473,488,7,2]}
+{"kind":"shape","id":"sh/0rulk7i9","slide":2,"bbox":[485,488,7,2]}
+{"kind":"shape","id":"sh/nulkvm1k","slide":2,"bbox":[497,488,7,2]}
+{"kind":"shape","id":"sh/2tc3mh0z","slide":2,"bbox":[509,488,7,2]}
+{"kind":"shape","id":"sh/kze1cryd","slide":2,"bbox":[521,488,7,2]}
+{"kind":"shape","id":"sh/lkn25cfy","slide":2,"bbox":[533,488,7,2]}
+{"kind":"shape","id":"sh/yxcjahg7","slide":2,"bbox":[545,488,7,2]}
+{"kind":"shape","id":"sh/zylk3mxs","slide":2,"bbox":[557,488,7,2]}
+{"kind":"shape","id":"sh/cvu187y1","slide":2,"bbox":[569,488,7,2]}
+{"kind":"shape","id":"sh/xw321cfm","slide":2,"bbox":[581,488,7,2]}
+{"kind":"shape","id":"sh/atcj6xgb","slide":2,"bbox":[593,488,4,2]}
+{"kind":"shape","id":"sh/bulkz2xw","slide":2,"bbox":[387,483,17,12]}
+{"kind":"textbox","id":"sh/oru147y5","slide":2,"text":"WashSession state + lifecycle validation","textPreview":"WashSession state + lifecycle validation","textChars":40,"textLines":1,"bbox":[387,492,210,17]}
+{"kind":"shape","id":"sh/ps3idsfq","slide":2,"bbox":[597,468,210,8]}
+{"kind":"textbox","id":"sh/dwzy58vi","slide":2,"text":"Persist session, booking, assignment","textPreview":"Persist session, booking, assignment","textChars":36,"textLines":1,"bbox":[597,448,210,18]}
+{"kind":"shape","id":"sh/svqhc3ex","slide":2,"bbox":[611,488,7,2]}
+{"kind":"shape","id":"sh/rahg3ydc","slide":2,"bbox":[623,488,7,2]}
+{"kind":"shape","id":"sh/q98zatwr","slide":2,"bbox":[635,488,7,2]}
+{"kind":"shape","id":"sh/10jy98ve","slide":2,"bbox":[647,488,7,2]}
+{"kind":"shape","id":"sh/0zahg3et","slide":2,"bbox":[659,488,7,2]}
+{"kind":"shape","id":"sh/fyhg7ydo","slide":2,"bbox":[671,488,7,2]}
+{"kind":"shape","id":"sh/ex8zetw3","slide":2,"bbox":[683,488,7,2]}
+{"kind":"shape","id":"sh/h4fyx4va","slide":2,"bbox":[695,488,7,2]}
+{"kind":"shape","id":"sh/g36x4jep","slide":2,"bbox":[707,488,7,2]}
+{"kind":"shape","id":"sh/694ve5cn","slide":2,"bbox":[719,488,7,2]}
+{"kind":"shape","id":"sh/7adw7at8","slide":2,"bbox":[731,488,7,2]}
+{"kind":"shape","id":"sh/8bmdgfut","slide":2,"bbox":[743,488,7,2]}
+{"kind":"shape","id":"sh/tcve9kby","slide":2,"bbox":[755,488,7,2]}
+{"kind":"shape","id":"sh/ud4vipcj","slide":2,"bbox":[767,488,7,2]}
+{"kind":"shape","id":"sh/vedwbut4","slide":2,"bbox":[779,488,7,2]}
+{"kind":"shape","id":"sh/gfmdkzup","slide":2,"bbox":[791,488,7,2]}
+{"kind":"shape","id":"sh/hgfed4ba","slide":2,"bbox":[803,488,4,2]}
+{"kind":"shape","id":"sh/ahkv6lcf","slide":2,"bbox":[597,483,17,12]}
+{"kind":"textbox","id":"sh/bitczqd0","slide":2,"text":"Committed lifecycle state","textPreview":"Committed lifecycle state","textChars":25,"textLines":1,"bbox":[597,492,210,17]}
+{"kind":"shape","id":"sh/fa5kr25g","slide":2,"bbox":[401,526,7,2]}
+{"kind":"shape","id":"sh/e9wjixov","slide":2,"bbox":[413,526,7,2]}
+{"kind":"shape","id":"sh/1c72tcnm","slide":2,"bbox":[425,526,7,2]}
+{"kind":"shape","id":"sh/gbe1k761","slide":2,"bbox":[437,526,7,2]}
+{"kind":"shape","id":"sh/r65knipk","slide":2,"bbox":[449,526,7,2]}
+{"kind":"shape","id":"sh/65wjedoz","slide":2,"bbox":[461,526,7,2]}
+{"kind":"shape","id":"sh/t8n2ps7a","slide":2,"bbox":[473,526,7,2]}
+{"kind":"shape","id":"sh/s7e1gn6p","slide":2,"bbox":[485,526,7,2]}
+{"kind":"shape","id":"sh/b2pkzm5o","slide":2,"bbox":[497,526,7,2]}
+{"kind":"shape","id":"sh/q1g3qho3","slide":2,"bbox":[509,526,7,2]}
+{"kind":"shape","id":"sh/8nahkjml","slide":2,"bbox":[521,526,7,2]}
+{"kind":"shape","id":"sh/9ojyton6","slide":2,"bbox":[533,526,7,2]}
+{"kind":"shape","id":"sh/ml8zi94f","slide":2,"bbox":[545,526,7,2]}
+{"kind":"shape","id":"sh/7m1gre50","slide":2,"bbox":[557,526,7,2]}
+{"kind":"shape","id":"sh/wbahojmh","slide":2,"bbox":[569,526,7,2]}
+{"kind":"shape","id":"sh/hcjyxo32","slide":2,"bbox":[581,526,7,2]}
+{"kind":"shape","id":"sh/upszmt4r","slide":2,"bbox":[593,526,7,2]}
+{"kind":"shape","id":"sh/va1gvelc","slide":2,"bbox":[605,526,7,2]}
+{"kind":"shape","id":"sh/4fuhs3mt","slide":2,"bbox":[617,526,7,2]}
+{"kind":"shape","id":"sh/5g3i183e","slide":2,"bbox":[629,526,7,2]}
+{"kind":"shape","id":"sh/t0ru9sb6","slide":2,"bbox":[641,526,7,2]}
+{"kind":"shape","id":"sh/szit0nal","slide":2,"bbox":[653,526,7,2]}
+{"kind":"shape","id":"sh/7e9c7it0","slide":2,"bbox":[665,526,7,2]}
+{"kind":"shape","id":"sh/6d0bedsf","slide":2,"bbox":[677,526,7,2]}
+{"kind":"shape","id":"sh/5cru58bu","slide":2,"bbox":[689,526,7,2]}
+{"kind":"shape","id":"sh/kbitcna9","slide":2,"bbox":[701,526,7,2]}
+{"kind":"shape","id":"sh/japc3it4","slide":2,"bbox":[713,526,7,2]}
+{"kind":"shape","id":"sh/i9gbadsj","slide":2,"bbox":[725,526,7,2]}
+{"kind":"shape","id":"sh/x87u18by","slide":2,"bbox":[737,526,7,2]}
+{"kind":"shape","id":"sh/w7yt83ad","slide":2,"bbox":[749,526,7,2]}
+{"kind":"shape","id":"sh/mdwr298b","slide":2,"bbox":[761,526,7,2]}
+{"kind":"shape","id":"sh/ne58be9w","slide":2,"bbox":[773,526,7,2]}
+{"kind":"shape","id":"sh/8fe94jq1","slide":2,"bbox":[785,526,7,2]}
+{"kind":"shape","id":"sh/9gnqdorm","slide":2,"bbox":[797,526,7,2]}
+{"kind":"shape","id":"sh/ypcryp8z","slide":2,"bbox":[809,526,7,2]}
+{"kind":"shape","id":"sh/zal87u9k","slide":2,"bbox":[821,526,7,2]}
+{"kind":"shape","id":"sh/0bu90zq5","slide":2,"bbox":[833,526,7,2]}
+{"kind":"shape","id":"sh/lcnq94rq","slide":2,"bbox":[845,526,7,2]}
+{"kind":"shape","id":"sh/qlcrup83","slide":2,"bbox":[857,526,7,2]}
+{"kind":"shape","id":"sh/bml83u9o","slide":2,"bbox":[869,526,7,2]}
+{"kind":"shape","id":"sh/upcra1kf","slide":2,"bbox":[881,526,7,2]}
+{"kind":"shape","id":"sh/vql836lk","slide":2,"bbox":[893,526,7,2]}
+{"kind":"shape","id":"sh/gru9cb25","slide":2,"bbox":[905,526,7,2]}
+{"kind":"shape","id":"sh/hs3q5g3q","slide":2,"bbox":[917,526,7,2]}
+{"kind":"shape","id":"sh/itcrelkb","slide":2,"bbox":[929,526,7,2]}
+{"kind":"shape","id":"sh/3ul87qlw","slide":2,"bbox":[941,526,7,2]}
+{"kind":"shape","id":"sh/4ve9gb2h","slide":2,"bbox":[953,526,7,2]}
+{"kind":"shape","id":"sh/5wnq9g32","slide":2,"bbox":[965,526,7,2]}
+{"kind":"shape","id":"sh/yxs72hk7","slide":2,"bbox":[977,526,7,2]}
+{"kind":"shape","id":"sh/jy18vmls","slide":2,"bbox":[989,526,7,2]}
+{"kind":"shape","id":"sh/1s7u1kna","slide":2,"bbox":[1001,526,7,2]}
+{"kind":"shape","id":"sh/0ryt8fmp","slide":2,"bbox":[1013,526,4,2]}
+{"kind":"shape","id":"sh/fqpcza54","slide":2,"bbox":[387,521,17,12]}
+{"kind":"textbox","id":"sh/epgb6p4j","slide":2,"text":"BOOKING_UPDATE / WASH_SESSION_UPDATE -> /topic/bookings","textPreview":"BOOKING_UPDATE / WASH_SESSION_UPDATE -> /topic/bookings","textChars":55,"textLines":1,"bbox":[640,509,365,15]}
+{"kind":"shape","id":"sh/9gru54n6","slide":2,"bbox":[62,558,28,28]}
+{"kind":"textbox","id":"sh/ofitczml","slide":2,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[62,563,28,18]}
+{"kind":"shape","id":"sh/ne9c3u50","slide":2,"bbox":[387,565,210,8]}
+{"kind":"textbox","id":"sh/2dgbap4f","slide":2,"text":"Tracking / review / reports query","textPreview":"Tracking / review / reports query","textChars":33,"textLines":1,"bbox":[387,545,210,18]}
+{"kind":"shape","id":"sh/5knat0n2","slide":2,"bbox":[401,585,7,2]}
+{"kind":"shape","id":"sh/4jet0vmh","slide":2,"bbox":[413,585,7,2]}
+{"kind":"shape","id":"sh/gf2lwzyp","slide":2,"bbox":[425,585,7,2]}
+{"kind":"shape","id":"sh/hgb254zu","slide":2,"bbox":[437,585,7,2]}
+{"kind":"shape","id":"sh/ud03upgj","slide":2,"bbox":[449,585,7,2]}
+{"kind":"shape","id":"sh/vetk3uh4","slide":2,"bbox":[461,585,7,2]}
+{"kind":"shape","id":"sh/4j2l0jyl","slide":2,"bbox":[473,585,7,2]}
+{"kind":"shape","id":"sh/54b294z6","slide":2,"bbox":[485,585,7,2]}
+{"kind":"shape","id":"sh/ihk3y9gf","slide":2,"bbox":[497,585,7,2]}
+{"kind":"shape","id":"sh/3itk7eh0","slide":2,"bbox":[509,585,7,2]}
+{"kind":"shape","id":"sh/s7ml4jyh","slide":2,"bbox":[521,585,7,2]}
+{"kind":"shape","id":"sh/d8v2doz2","slide":2,"bbox":[533,585,7,2]}
+{"kind":"shape","id":"sh/n2xo3i1k","slide":2,"bbox":[545,585,7,2]}
+{"kind":"shape","id":"sh/m1onad0z","slide":2,"bbox":[557,585,7,2]}
+{"kind":"shape","id":"sh/94z65sja","slide":2,"bbox":[569,585,7,2]}
+{"kind":"shape","id":"sh/o365cnip","slide":2,"bbox":[581,585,7,2]}
+{"kind":"shape","id":"sh/zyx4zi18","slide":2,"bbox":[593,585,4,2]}
+{"kind":"shape","id":"sh/edon6d0n","slide":2,"bbox":[387,580,17,12]}
+{"kind":"textbox","id":"sh/10f618je","slide":2,"text":"Progress, rating, staff KPI, revenue","textPreview":"Progress, rating, staff KPI, revenue","textChars":36,"textLines":1,"bbox":[387,589,210,17]}
+{"kind":"shape","id":"sh/0z6583it","slide":2,"bbox":[597,565,210,8]}
+{"kind":"textbox","id":"sh/juhob21c","slide":2,"text":"Complete: paid + points; aggregate KPI","textPreview":"Complete: paid + points; aggregate KPI","textChars":38,"textLines":1,"bbox":[597,545,210,18]}
+{"kind":"shape","id":"sh/y98nix07","slide":2,"bbox":[611,585,7,2]}
+{"kind":"shape","id":"sh/6hor61wb","slide":2,"bbox":[623,585,7,2]}
+{"kind":"shape","id":"sh/7ix8z6xw","slide":2,"bbox":[635,585,7,2]}
+{"kind":"shape","id":"sh/sjq98beh","slide":2,"bbox":[647,585,7,2]}
+{"kind":"shape","id":"sh/tkza1wfm","slide":2,"bbox":[659,585,7,2]}
+{"kind":"shape","id":"sh/idor2hgz","slide":2,"bbox":[671,585,7,2]}
+{"kind":"shape","id":"sh/jex8vmxk","slide":2,"bbox":[683,585,7,2]}
+{"kind":"shape","id":"sh/kf694ry5","slide":2,"bbox":[695,585,7,2]}
+{"kind":"shape","id":"sh/5gfqxwfq","slide":2,"bbox":[707,585,7,2]}
+{"kind":"shape","id":"sh/298relwj","slide":2,"bbox":[719,585,7,2]}
+{"kind":"shape","id":"sh/3a1s7qx4","slide":2,"bbox":[731,585,7,2]}
+{"kind":"shape","id":"sh/d43uxkz6","slide":2,"bbox":[743,585,7,2]}
+{"kind":"shape","id":"sh/c3ut4fyl","slide":2,"bbox":[755,585,7,2]}
+{"kind":"shape","id":"sh/r2lcvah0","slide":2,"bbox":[767,585,7,2]}
+{"kind":"shape","id":"sh/q1sb25gf","slide":2,"bbox":[779,585,7,2]}
+{"kind":"shape","id":"sh/p0jut0za","slide":2,"bbox":[791,585,7,2]}
+{"kind":"shape","id":"sh/4fat0vyp","slide":2,"bbox":[803,585,4,2]}
+{"kind":"shape","id":"sh/3e1crah4","slide":2,"bbox":[597,580,17,12]}
+{"kind":"textbox","id":"sh/2dsby50j","slide":2,"text":"Tier, loyalty history, review eligibility","textPreview":"Tier, loyalty history, review eligibility","textChars":41,"textLines":1,"bbox":[597,589,210,17]}
+{"kind":"shape","id":"sh/9wnu54ze","slide":2,"bbox":[80,616,1115,28]}
+{"kind":"textbox","id":"sh/8bedczyt","slide":2,"text":"Key rule: only CONFIRMED bookings enter operations; reviews require COMPLETED status and are limited to one review per booking.","textPreview":"Key rule: only CONFIRMED bookings enter operations; reviews require COMPLETED status and are limited to one review per booking.","textChars":127,"textLines":1,"bbox":[95,621,1085,18]}
+{"kind":"shape","id":"sh/sr65o7a1","slide":2,"bbox":[82,660,40,8]}
+{"kind":"textbox","id":"sh/tsf6xcbm","slide":2,"text":"Request / command","textPreview":"Request / command","textChars":17,"textLines":1,"bbox":[132,651,144,20]}
+{"kind":"shape","id":"sh/6p4nmxsb","slide":2,"bbox":[308,664,7,2]}
+{"kind":"shape","id":"sh/7qdov2tw","slide":2,"bbox":[320,664,7,2]}
+{"kind":"shape","id":"sh/knm5kna5","slide":2,"bbox":[332,664,2,2]}
+{"kind":"shape","id":"sh/5ovmtsbq","slide":2,"bbox":[294,659,17,12]}
+{"kind":"textbox","id":"sh/il4nixsz","slide":2,"text":"Response / callback / event","textPreview":"Response / callback / event","textChars":27,"textLines":1,"bbox":[345,651,215,20]}
+{"kind":"textbox","id":"sh/jmd4ritk","slide":2,"text":"Next.js 14 | Spring Boot 3 / Java 21 | PostgreSQL","textPreview":"Next.js 14 | Spring Boot 3 / Java 21 | PostgreSQL","textChars":49,"textLines":1,"bbox":[760,651,430,20]}
+{"kind":"notes","id":"nt/dyxoi4","slide":2,"text":""}

@@ -302,10 +302,13 @@ const HOUR_OPTIONS = Array.from({ length: 18 }, (_, i) => {
 });
 
 function FieldTimeSelect({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const fieldId = label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return (
-    <label className="grid gap-1.5">
-      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+    <div className="grid gap-1.5">
+      <label htmlFor={fieldId} className="text-xs font-semibold text-muted-foreground">{label}</label>
       <select
+        id={fieldId}
+        name={fieldId}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="h-10 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
@@ -322,24 +325,28 @@ function FieldTimeSelect({ label, value, onChange }: { label: string; value: str
           </option>
         ))}
       </select>
-    </label>
+    </div>
   );
 }
 
 function FieldInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const fieldId = label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return (
-    <label className="grid gap-1.5">
-      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+    <div className="grid gap-1.5">
+      <label htmlFor={fieldId} className="text-xs font-semibold text-muted-foreground">{label}</label>
       <input
+        id={fieldId}
+        name={fieldId}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="h-10 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
       />
-    </label>
+    </div>
   );
 }
 
 function FieldFormattedCurrency({ label, value, onChange, disabled }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean }) {
+  const fieldId = label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const [displayValue, setDisplayValue] = useState(() => value ? value.toLocaleString("vi-VN") : "");
 
   useEffect(() => {
@@ -359,10 +366,12 @@ function FieldFormattedCurrency({ label, value, onChange, disabled }: { label: s
   };
 
   return (
-    <label className="grid gap-1.5">
-      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+    <div className="grid gap-1.5">
+      <label htmlFor={fieldId} className="text-xs font-semibold text-muted-foreground">{label}</label>
       <div className="relative">
         <input
+          id={fieldId}
+          name={fieldId}
           type="text"
           value={displayValue}
           disabled={disabled}
@@ -373,30 +382,36 @@ function FieldFormattedCurrency({ label, value, onChange, disabled }: { label: s
           VND = 1 Point
         </span>
       </div>
-    </label>
+    </div>
   );
 }
 
 function FieldNumber({ label, value, onChange, disabled }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean }) {
+  const fieldId = label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return (
-    <label className="grid gap-1.5">
-      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+    <div className="grid gap-1.5">
+      <label htmlFor={fieldId} className="text-xs font-semibold text-muted-foreground">{label}</label>
       <input
+        id={fieldId}
+        name={fieldId}
         type="number"
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
         className="h-10 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
       />
-    </label>
+    </div>
   );
 }
 
 function FieldSelect({ label, value, options, onChange, disabled }: { label: string; value: number; options: { label: string, value: number }[]; onChange: (v: number) => void; disabled?: boolean }) {
+  const fieldId = label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return (
-    <label className="grid gap-1.5">
-      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+    <div className="grid gap-1.5">
+      <label htmlFor={fieldId} className="text-xs font-semibold text-muted-foreground">{label}</label>
       <select
+        id={fieldId}
+        name={fieldId}
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
@@ -409,7 +424,7 @@ function FieldSelect({ label, value, options, onChange, disabled }: { label: str
           </option>
         ))}
       </select>
-    </label>
+    </div>
   );
 }
 

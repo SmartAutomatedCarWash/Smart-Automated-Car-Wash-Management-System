@@ -1,0 +1,292 @@
+{"kind":"textbox","slide":1,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":51,"width":132,"height":42}}
+{"kind":"textbox","slide":1,"role":"title","text":"Scenario 1: Main Car Wash Service Flow","textChars":38,"textLines":1,"bbox":{"left":230,"top":51,"width":790,"height":42}}
+{"kind":"textbox","slide":1,"role":"subtitle","text":"The complete customer journey from selecting a service to completing the car wash and leaving a review.","textChars":103,"textLines":1,"bbox":{"left":80,"top":96,"width":1010,"height":24}}
+{"kind":"textbox","slide":1,"role":"badge","text":"CORE BUSINESS FLOW","textChars":18,"textLines":1,"bbox":{"left":1091,"top":62,"width":102,"height":16}}
+{"kind":"textbox","slide":1,"role":"phase","text":"1  BOOKING SETUP","textChars":16,"textLines":1,"bbox":{"left":88,"top":139,"width":334,"height":18}}
+{"kind":"textbox","slide":1,"role":"phase","text":"2  CONFIRMATION","textChars":15,"textLines":1,"bbox":{"left":473,"top":139,"width":334,"height":18}}
+{"kind":"textbox","slide":1,"role":"phase","text":"3  SERVICE & AFTERCARE","textChars":22,"textLines":1,"bbox":{"left":858,"top":139,"width":334,"height":18}}
+{"kind":"textbox","slide":1,"role":"terminator","text":"START","textChars":5,"textLines":1,"bbox":{"left":80,"top":203,"width":94,"height":30}}
+{"kind":"textbox","slide":1,"role":"process","text":"1. Browse car wash services","textChars":27,"textLines":1,"bbox":{"left":266,"top":197,"width":116,"height":42}}
+{"kind":"textbox","slide":1,"role":"process","text":"2. Select a vehicle","textChars":19,"textLines":1,"bbox":{"left":452,"top":197,"width":116,"height":42}}
+{"kind":"textbox","slide":1,"role":"process","text":"3. Choose date and time","textChars":23,"textLines":1,"bbox":{"left":638,"top":197,"width":116,"height":42}}
+{"kind":"textbox","slide":1,"role":"decision","text":"4. Is the slot available?","textChars":25,"textLines":1,"bbox":{"left":842,"top":198,"width":80,"height":44}}
+{"kind":"textbox","slide":1,"role":"process","text":"5. Hold the selected slot","textChars":25,"textLines":1,"bbox":{"left":1010,"top":197,"width":116,"height":29}}
+{"kind":"textbox","slide":1,"role":"status","text":"15 minutes","textChars":10,"textLines":1,"bbox":{"left":1010,"top":226,"width":116,"height":14}}
+{"kind":"textbox","slide":1,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":945,"top":193,"width":42,"height":19}}
+{"kind":"textbox","slide":1,"role":"process","text":"Choose another time slot","textChars":24,"textLines":1,"bbox":{"left":812,"top":285,"width":124,"height":34}}
+{"kind":"textbox","slide":1,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":861,"top":260,"width":32,"height":19}}
+{"kind":"textbox","slide":1,"role":"process","text":"6. Create a booking","textChars":19,"textLines":1,"bbox":{"left":1010,"top":367,"width":116,"height":29}}
+{"kind":"textbox","slide":1,"role":"status","text":"Pending","textChars":7,"textLines":1,"bbox":{"left":1010,"top":396,"width":116,"height":14}}
+{"kind":"textbox","slide":1,"role":"decision","text":"7. Pay online?","textChars":14,"textLines":1,"bbox":{"left":842,"top":367,"width":80,"height":44}}
+{"kind":"textbox","slide":1,"role":"process","text":"8. Make online payment","textChars":22,"textLines":1,"bbox":{"left":638,"top":367,"width":116,"height":42}}
+{"kind":"textbox","slide":1,"role":"decision","text":"9. Is payment successful?","textChars":25,"textLines":1,"bbox":{"left":470,"top":367,"width":80,"height":44}}
+{"kind":"textbox","slide":1,"role":"process","text":"10. Confirm the booking","textChars":23,"textLines":1,"bbox":{"left":266,"top":367,"width":116,"height":29}}
+{"kind":"textbox","slide":1,"role":"status","text":"Confirmed","textChars":9,"textLines":1,"bbox":{"left":266,"top":396,"width":116,"height":14}}
+{"kind":"textbox","slide":1,"role":"process","text":"11. Assign staff","textChars":16,"textLines":1,"bbox":{"left":80,"top":367,"width":116,"height":42}}
+{"kind":"textbox","slide":1,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":766,"top":362,"width":42,"height":19}}
+{"kind":"textbox","slide":1,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":394,"top":362,"width":42,"height":19}}
+{"kind":"textbox","slide":1,"role":"process","text":"Pay at the service center","textChars":25,"textLines":1,"bbox":{"left":814,"top":456,"width":126,"height":32}}
+{"kind":"textbox","slide":1,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":860,"top":432,"width":32,"height":19}}
+{"kind":"textbox","slide":1,"role":"process","text":"Try again, change payment or cancel","textChars":35,"textLines":1,"bbox":{"left":442,"top":456,"width":144,"height":32}}
+{"kind":"textbox","slide":1,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":494,"top":432,"width":32,"height":19}}
+{"kind":"textbox","slide":1,"role":"process","text":"12. Check-in the vehicle","textChars":24,"textLines":1,"bbox":{"left":80,"top":533,"width":108,"height":29}}
+{"kind":"textbox","slide":1,"role":"status","text":"Checked in","textChars":10,"textLines":1,"bbox":{"left":80,"top":562,"width":108,"height":14}}
+{"kind":"textbox","slide":1,"role":"process","text":"13. Move vehicle to queue","textChars":25,"textLines":1,"bbox":{"left":238,"top":533,"width":108,"height":29}}
+{"kind":"textbox","slide":1,"role":"status","text":"Queued","textChars":6,"textLines":1,"bbox":{"left":238,"top":562,"width":108,"height":14}}
+{"kind":"textbox","slide":1,"role":"process","text":"14. Start the car wash","textChars":22,"textLines":1,"bbox":{"left":396,"top":533,"width":108,"height":29}}
+{"kind":"textbox","slide":1,"role":"status","text":"In progress","textChars":11,"textLines":1,"bbox":{"left":396,"top":562,"width":108,"height":14}}
+{"kind":"textbox","slide":1,"role":"process","text":"15. Complete the car wash","textChars":25,"textLines":1,"bbox":{"left":554,"top":533,"width":108,"height":29}}
+{"kind":"textbox","slide":1,"role":"status","text":"Completed","textChars":9,"textLines":1,"bbox":{"left":554,"top":562,"width":108,"height":14}}
+{"kind":"textbox","slide":1,"role":"process","text":"16. Get points and update tier","textChars":30,"textLines":1,"bbox":{"left":712,"top":533,"width":108,"height":42}}
+{"kind":"textbox","slide":1,"role":"decision","text":"17. Leave a review?","textChars":19,"textLines":1,"bbox":{"left":887,"top":534,"width":74,"height":42}}
+{"kind":"textbox","slide":1,"role":"terminator","text":"END","textChars":3,"textLines":1,"bbox":{"left":1028,"top":539,"width":94,"height":30}}
+{"kind":"textbox","slide":1,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":982,"top":529,"width":32,"height":19}}
+{"kind":"textbox","slide":1,"role":"process","text":"18. Submit review and get bonus points","textChars":38,"textLines":1,"bbox":{"left":870,"top":627,"width":134,"height":16}}
+{"kind":"textbox","slide":1,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":918,"top":601,"width":38,"height":19}}
+{"kind":"textbox","slide":1,"role":"terminator","text":"START / END","textChars":11,"textLines":1,"bbox":{"left":88,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":1,"role":"process","text":"PROCESS","textChars":7,"textLines":1,"bbox":{"left":213,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":1,"role":"legend","text":"DECISION","textChars":8,"textLines":1,"bbox":{"left":379,"top":653,"width":78,"height":25}}
+{"kind":"textbox","slide":1,"role":"footer","text":"Main booking, payment, car wash, loyalty and review flow.","textChars":57,"textLines":1,"bbox":{"left":600,"top":653,"width":590,"height":24}}
+{"kind":"textbox","slide":2,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":51,"width":132,"height":42}}
+{"kind":"textbox","slide":2,"role":"title","text":"Scenario 2: Booking & Payment Flow","textChars":34,"textLines":1,"bbox":{"left":230,"top":51,"width":790,"height":42}}
+{"kind":"textbox","slide":2,"role":"subtitle","text":"Select a service, reserve an available time slot, create the booking and complete the selected payment method.","textChars":110,"textLines":1,"bbox":{"left":80,"top":96,"width":1010,"height":24}}
+{"kind":"textbox","slide":2,"role":"badge","text":"CORE BUSINESS FLOW","textChars":18,"textLines":1,"bbox":{"left":1091,"top":62,"width":102,"height":16}}
+{"kind":"textbox","slide":2,"role":"phase","text":"SERVICE AND SLOT","textChars":16,"textLines":1,"bbox":{"left":88,"top":141,"width":304,"height":18}}
+{"kind":"textbox","slide":2,"role":"phase","text":"BOOKING VALIDATION","textChars":18,"textLines":1,"bbox":{"left":488,"top":141,"width":304,"height":18}}
+{"kind":"textbox","slide":2,"role":"phase","text":"PAYMENT CONFIRMATION","textChars":20,"textLines":1,"bbox":{"left":888,"top":141,"width":304,"height":18}}
+{"kind":"textbox","slide":2,"role":"terminator","text":"START BOOKING","textChars":13,"textLines":1,"bbox":{"left":88,"top":201,"width":114,"height":30}}
+{"kind":"textbox","slide":2,"role":"process","text":"1. Select a service or package","textChars":30,"textLines":1,"bbox":{"left":268,"top":195,"width":134,"height":42}}
+{"kind":"textbox","slide":2,"role":"process","text":"2. Select a vehicle","textChars":19,"textLines":1,"bbox":{"left":468,"top":195,"width":124,"height":42}}
+{"kind":"textbox","slide":2,"role":"process","text":"3. Choose date and time","textChars":23,"textLines":1,"bbox":{"left":658,"top":195,"width":144,"height":42}}
+{"kind":"textbox","slide":2,"role":"decision","text":"4. Is the slot available?","textChars":25,"textLines":1,"bbox":{"left":888,"top":195,"width":92,"height":44}}
+{"kind":"textbox","slide":2,"role":"process","text":"5. Hold the selected slot","textChars":25,"textLines":1,"bbox":{"left":1058,"top":195,"width":134,"height":29}}
+{"kind":"textbox","slide":2,"role":"status","text":"15 minutes","textChars":10,"textLines":1,"bbox":{"left":1058,"top":224,"width":134,"height":14}}
+{"kind":"textbox","slide":2,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":1002,"top":190,"width":40,"height":19}}
+{"kind":"textbox","slide":2,"role":"process","text":"Choose another time slot","textChars":24,"textLines":1,"bbox":{"left":868,"top":302,"width":134,"height":36}}
+{"kind":"textbox","slide":2,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":922,"top":278,"width":32,"height":19}}
+{"kind":"textbox","slide":2,"role":"process","text":"6. Add voucher and staff preference","textChars":35,"textLines":1,"bbox":{"left":1058,"top":387,"width":134,"height":44}}
+{"kind":"textbox","slide":2,"role":"decision","text":"7. Are booking details valid?","textChars":29,"textLines":1,"bbox":{"left":868,"top":387,"width":96,"height":44}}
+{"kind":"textbox","slide":2,"role":"process","text":"8. Create the booking","textChars":21,"textLines":1,"bbox":{"left":658,"top":387,"width":134,"height":29}}
+{"kind":"textbox","slide":2,"role":"status","text":"Pending","textChars":7,"textLines":1,"bbox":{"left":658,"top":418,"width":134,"height":14}}
+{"kind":"textbox","slide":2,"role":"decision","text":"9. Choose payment method","textChars":24,"textLines":1,"bbox":{"left":468,"top":387,"width":96,"height":44}}
+{"kind":"textbox","slide":2,"role":"process","text":"10. Make online payment","textChars":23,"textLines":1,"bbox":{"left":258,"top":387,"width":134,"height":44}}
+{"kind":"textbox","slide":2,"role":"decision","text":"11. Is payment successful?","textChars":26,"textLines":1,"bbox":{"left":88,"top":387,"width":96,"height":44}}
+{"kind":"textbox","slide":2,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":808,"top":382,"width":40,"height":19}}
+{"kind":"textbox","slide":2,"role":"branch-label","text":"ONLINE","textChars":6,"textLines":1,"bbox":{"left":405,"top":382,"width":50,"height":19}}
+{"kind":"textbox","slide":2,"role":"process","text":"Correct the booking information","textChars":31,"textLines":1,"bbox":{"left":850,"top":502,"width":148,"height":36}}
+{"kind":"textbox","slide":2,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":905,"top":478,"width":32,"height":19}}
+{"kind":"textbox","slide":2,"role":"process","text":"Pay at the service center","textChars":25,"textLines":1,"bbox":{"left":438,"top":502,"width":154,"height":36}}
+{"kind":"textbox","slide":2,"role":"branch-label","text":"AT COUNTER","textChars":10,"textLines":1,"bbox":{"left":483,"top":478,"width":66,"height":19}}
+{"kind":"textbox","slide":2,"role":"process","text":"Try again, change payment or cancel","textChars":35,"textLines":1,"bbox":{"left":68,"top":502,"width":174,"height":36}}
+{"kind":"textbox","slide":2,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":118,"top":478,"width":32,"height":19}}
+{"kind":"textbox","slide":2,"role":"process","text":"12. Confirm the booking","textChars":23,"textLines":1,"bbox":{"left":478,"top":592,"width":214,"height":29}}
+{"kind":"textbox","slide":2,"role":"status","text":"Confirmed","textChars":9,"textLines":1,"bbox":{"left":478,"top":621,"width":214,"height":14}}
+{"kind":"textbox","slide":2,"role":"terminator","text":"BOOKING READY","textChars":13,"textLines":1,"bbox":{"left":788,"top":598,"width":134,"height":30}}
+{"kind":"textbox","slide":2,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":205,"top":382,"width":38,"height":19}}
+{"kind":"textbox","slide":2,"role":"branch-label","text":"PAYMENT VERIFIED","textChars":16,"textLines":1,"bbox":{"left":617,"top":558,"width":92,"height":19}}
+{"kind":"textbox","slide":2,"role":"terminator","text":"START / END","textChars":11,"textLines":1,"bbox":{"left":88,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":2,"role":"process","text":"PROCESS","textChars":7,"textLines":1,"bbox":{"left":213,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":2,"role":"legend","text":"DECISION","textChars":8,"textLines":1,"bbox":{"left":379,"top":653,"width":78,"height":25}}
+{"kind":"textbox","slide":2,"role":"footer","text":"Main booking, payment, car wash, loyalty and review flow.","textChars":57,"textLines":1,"bbox":{"left":600,"top":653,"width":590,"height":24}}
+{"kind":"textbox","slide":3,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":51,"width":132,"height":42}}
+{"kind":"textbox","slide":3,"role":"title","text":"Scenario 3: Car Wash & Loyalty Flow","textChars":35,"textLines":1,"bbox":{"left":230,"top":51,"width":790,"height":42}}
+{"kind":"textbox","slide":3,"role":"subtitle","text":"Check in the vehicle, complete the car wash, receive loyalty points and leave an optional review.","textChars":97,"textLines":1,"bbox":{"left":80,"top":96,"width":1010,"height":24}}
+{"kind":"textbox","slide":3,"role":"badge","text":"CORE BUSINESS FLOW","textChars":18,"textLines":1,"bbox":{"left":1091,"top":62,"width":102,"height":16}}
+{"kind":"textbox","slide":3,"role":"phase","text":"PRE-SERVICE","textChars":11,"textLines":1,"bbox":{"left":88,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":3,"role":"phase","text":"WASH EXECUTION","textChars":14,"textLines":1,"bbox":{"left":478,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":3,"role":"phase","text":"COMPLETION & RETENTION","textChars":22,"textLines":1,"bbox":{"left":868,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":3,"role":"terminator","text":"CONFIRMED BOOKING","textChars":17,"textLines":1,"bbox":{"left":78,"top":197,"width":134,"height":30}}
+{"kind":"textbox","slide":3,"role":"process","text":"1. Assign staff","textChars":15,"textLines":1,"bbox":{"left":278,"top":191,"width":129,"height":42}}
+{"kind":"textbox","slide":3,"role":"decision","text":"2. Is the booking ready?","textChars":24,"textLines":1,"bbox":{"left":483,"top":191,"width":88,"height":44}}
+{"kind":"textbox","slide":3,"role":"process","text":"3. Prepare the car wash","textChars":23,"textLines":1,"bbox":{"left":648,"top":191,"width":134,"height":29}}
+{"kind":"textbox","slide":3,"role":"status","text":"Pending","textChars":7,"textLines":1,"bbox":{"left":648,"top":220,"width":134,"height":14}}
+{"kind":"textbox","slide":3,"role":"process","text":"4. Move vehicle to queue","textChars":24,"textLines":1,"bbox":{"left":848,"top":191,"width":134,"height":29}}
+{"kind":"textbox","slide":3,"role":"status","text":"Queued","textChars":6,"textLines":1,"bbox":{"left":848,"top":220,"width":134,"height":14}}
+{"kind":"textbox","slide":3,"role":"decision","text":"5. Has the vehicle arrived?","textChars":27,"textLines":1,"bbox":{"left":1058,"top":191,"width":88,"height":44}}
+{"kind":"textbox","slide":3,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":595,"top":185,"width":40,"height":19}}
+{"kind":"textbox","slide":3,"role":"process","text":"Wait, reschedule or cancel","textChars":26,"textLines":1,"bbox":{"left":458,"top":299,"width":144,"height":36}}
+{"kind":"textbox","slide":3,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":510,"top":275,"width":32,"height":19}}
+{"kind":"textbox","slide":3,"role":"process","text":"Mark as no-show or cancel booking","textChars":33,"textLines":1,"bbox":{"left":1028,"top":299,"width":164,"height":36}}
+{"kind":"textbox","slide":3,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":1090,"top":275,"width":32,"height":19}}
+{"kind":"textbox","slide":3,"role":"process","text":"6. Check-in the vehicle","textChars":23,"textLines":1,"bbox":{"left":1048,"top":397,"width":124,"height":29}}
+{"kind":"textbox","slide":3,"role":"status","text":"Checked in","textChars":10,"textLines":1,"bbox":{"left":1048,"top":426,"width":124,"height":14}}
+{"kind":"textbox","slide":3,"role":"process","text":"7. Start the car wash","textChars":21,"textLines":1,"bbox":{"left":838,"top":397,"width":124,"height":29}}
+{"kind":"textbox","slide":3,"role":"status","text":"In progress","textChars":11,"textLines":1,"bbox":{"left":838,"top":426,"width":124,"height":14}}
+{"kind":"textbox","slide":3,"role":"process","text":"8. Update wash progress","textChars":23,"textLines":1,"bbox":{"left":628,"top":397,"width":144,"height":29}}
+{"kind":"textbox","slide":3,"role":"status","text":"Live tracking","textChars":13,"textLines":1,"bbox":{"left":628,"top":426,"width":144,"height":14}}
+{"kind":"textbox","slide":3,"role":"process","text":"9. Complete the car wash","textChars":24,"textLines":1,"bbox":{"left":418,"top":397,"width":134,"height":29}}
+{"kind":"textbox","slide":3,"role":"status","text":"Completed","textChars":9,"textLines":1,"bbox":{"left":418,"top":426,"width":134,"height":14}}
+{"kind":"textbox","slide":3,"role":"process","text":"10. Complete payment","textChars":20,"textLines":1,"bbox":{"left":218,"top":397,"width":134,"height":29}}
+{"kind":"textbox","slide":3,"role":"status","text":"Paid","textChars":4,"textLines":1,"bbox":{"left":218,"top":426,"width":134,"height":14}}
+{"kind":"textbox","slide":3,"role":"process","text":"11. Show completion summary","textChars":27,"textLines":1,"bbox":{"left":58,"top":397,"width":104,"height":42}}
+{"kind":"textbox","slide":3,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":1090,"top":360,"width":36,"height":19}}
+{"kind":"textbox","slide":3,"role":"process","text":"12. Get loyalty points","textChars":22,"textLines":1,"bbox":{"left":68,"top":552,"width":134,"height":42}}
+{"kind":"textbox","slide":3,"role":"process","text":"13. Update membership tier","textChars":26,"textLines":1,"bbox":{"left":268,"top":552,"width":134,"height":42}}
+{"kind":"textbox","slide":3,"role":"decision","text":"14. Leave a review?","textChars":19,"textLines":1,"bbox":{"left":488,"top":552,"width":90,"height":44}}
+{"kind":"textbox","slide":3,"role":"process","text":"15. Submit rating and comments","textChars":30,"textLines":1,"bbox":{"left":658,"top":552,"width":144,"height":42}}
+{"kind":"textbox","slide":3,"role":"process","text":"16. Get review bonus","textChars":20,"textLines":1,"bbox":{"left":868,"top":552,"width":134,"height":29}}
+{"kind":"textbox","slide":3,"role":"status","text":"+10 points","textChars":10,"textLines":1,"bbox":{"left":868,"top":581,"width":134,"height":14}}
+{"kind":"textbox","slide":3,"role":"terminator","text":"END","textChars":3,"textLines":1,"bbox":{"left":1078,"top":558,"width":104,"height":30}}
+{"kind":"textbox","slide":3,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":605,"top":546,"width":38,"height":19}}
+{"kind":"textbox","slide":3,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":610,"top":480,"width":34,"height":19}}
+{"kind":"textbox","slide":3,"role":"rule","text":"The wash progress is updated after each service step so the latest status remains visible throughout the car wash.","textChars":114,"textLines":1,"bbox":{"left":96,"top":622,"width":1088,"height":16}}
+{"kind":"textbox","slide":3,"role":"terminator","text":"START / END","textChars":11,"textLines":1,"bbox":{"left":88,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":3,"role":"process","text":"PROCESS","textChars":7,"textLines":1,"bbox":{"left":213,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":3,"role":"legend","text":"DECISION","textChars":8,"textLines":1,"bbox":{"left":379,"top":653,"width":78,"height":25}}
+{"kind":"textbox","slide":3,"role":"footer","text":"Main booking, payment, car wash, loyalty and review flow.","textChars":57,"textLines":1,"bbox":{"left":600,"top":653,"width":590,"height":24}}
+{"kind":"textbox","slide":4,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":51,"width":132,"height":42}}
+{"kind":"textbox","slide":4,"role":"title","text":"Scenario 4: Account & Vehicle Setup Flow","textChars":40,"textLines":1,"bbox":{"left":230,"top":51,"width":790,"height":42}}
+{"kind":"textbox","slide":4,"role":"subtitle","text":"Create and verify an account, sign in, complete the profile and prepare a primary vehicle for booking.","textChars":102,"textLines":1,"bbox":{"left":80,"top":96,"width":1010,"height":24}}
+{"kind":"textbox","slide":4,"role":"badge","text":"CORE BUSINESS FLOW","textChars":18,"textLines":1,"bbox":{"left":1091,"top":62,"width":102,"height":16}}
+{"kind":"textbox","slide":4,"role":"phase","text":"ACCOUNT CREATION","textChars":16,"textLines":1,"bbox":{"left":88,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":4,"role":"phase","text":"PROFILE SETUP","textChars":13,"textLines":1,"bbox":{"left":478,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":4,"role":"phase","text":"VEHICLE SETUP","textChars":13,"textLines":1,"bbox":{"left":868,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":4,"role":"terminator","text":"START","textChars":5,"textLines":1,"bbox":{"left":78,"top":202,"width":134,"height":30}}
+{"kind":"textbox","slide":4,"role":"process","text":"1. Create an account","textChars":20,"textLines":1,"bbox":{"left":378,"top":195,"width":134,"height":50}}
+{"kind":"textbox","slide":4,"role":"process","text":"2. Receive verification code","textChars":28,"textLines":1,"bbox":{"left":678,"top":195,"width":134,"height":50}}
+{"kind":"textbox","slide":4,"role":"decision","text":"3. Is the code correct?","textChars":23,"textLines":1,"bbox":{"left":1000,"top":201,"width":90,"height":44}}
+{"kind":"textbox","slide":4,"role":"process","text":"4. Sign in to the account","textChars":25,"textLines":1,"bbox":{"left":978,"top":462,"width":134,"height":50}}
+{"kind":"textbox","slide":4,"role":"process","text":"5. Complete customer profile","textChars":28,"textLines":1,"bbox":{"left":678,"top":462,"width":134,"height":50}}
+{"kind":"textbox","slide":4,"role":"process","text":"6. Enter vehicle information","textChars":28,"textLines":1,"bbox":{"left":378,"top":462,"width":134,"height":50}}
+{"kind":"textbox","slide":4,"role":"process","text":"7. Save vehicle and set as primary","textChars":34,"textLines":1,"bbox":{"left":78,"top":462,"width":134,"height":50}}
+{"kind":"textbox","slide":4,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":1053,"top":350,"width":40,"height":19}}
+{"kind":"textbox","slide":4,"role":"alternative","text":"NO → Enter the code again or request a new verification code.","textChars":61,"textLines":1,"bbox":{"left":310,"top":344,"width":306,"height":36}}
+{"kind":"textbox","slide":4,"role":"alternative","text":"INVALID VEHICLE → Correct the information. A duplicate license plate cannot be saved.","textChars":85,"textLines":1,"bbox":{"left":664,"top":344,"width":306,"height":36}}
+{"kind":"textbox","slide":4,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":1053,"top":269,"width":32,"height":19}}
+{"kind":"textbox","slide":4,"role":"rule","text":"After a vehicle is saved, it can be selected as the primary vehicle and used as the default vehicle for future bookings.","textChars":120,"textLines":1,"bbox":{"left":96,"top":622,"width":1088,"height":17}}
+{"kind":"textbox","slide":4,"role":"terminator","text":"START / END","textChars":11,"textLines":1,"bbox":{"left":88,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":4,"role":"process","text":"PROCESS","textChars":7,"textLines":1,"bbox":{"left":213,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":4,"role":"legend","text":"DECISION","textChars":8,"textLines":1,"bbox":{"left":379,"top":653,"width":78,"height":25}}
+{"kind":"textbox","slide":4,"role":"footer","text":"Main booking, payment, car wash, loyalty and review flow.","textChars":57,"textLines":1,"bbox":{"left":600,"top":653,"width":590,"height":24}}
+{"kind":"textbox","slide":5,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":51,"width":132,"height":42}}
+{"kind":"textbox","slide":5,"role":"title","text":"Scenario 5: Booking Changes & Exception Flow","textChars":44,"textLines":1,"bbox":{"left":230,"top":51,"width":790,"height":42}}
+{"kind":"textbox","slide":5,"role":"subtitle","text":"Handle pending payment, payment changes, booking cancellation, payment timeout and no-show conditions.","textChars":102,"textLines":1,"bbox":{"left":80,"top":96,"width":1010,"height":24}}
+{"kind":"textbox","slide":5,"role":"badge","text":"CORE BUSINESS FLOW","textChars":18,"textLines":1,"bbox":{"left":1091,"top":62,"width":102,"height":16}}
+{"kind":"textbox","slide":5,"role":"phase","text":"PENDING BOOKING","textChars":15,"textLines":1,"bbox":{"left":88,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":5,"role":"phase","text":"BOOKING CHANGE","textChars":14,"textLines":1,"bbox":{"left":478,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":5,"role":"phase","text":"CANCELLATION","textChars":12,"textLines":1,"bbox":{"left":868,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":5,"role":"terminator","text":"OPEN BOOKING","textChars":12,"textLines":1,"bbox":{"left":78,"top":202,"width":134,"height":30}}
+{"kind":"textbox","slide":5,"role":"decision","text":"1. Is payment pending?","textChars":22,"textLines":1,"bbox":{"left":400,"top":201,"width":90,"height":44}}
+{"kind":"textbox","slide":5,"role":"process","text":"2. Pay or change payment method","textChars":31,"textLines":1,"bbox":{"left":678,"top":195,"width":134,"height":50}}
+{"kind":"textbox","slide":5,"role":"decision","text":"3. Paid within 15 minutes?","textChars":26,"textLines":1,"bbox":{"left":1000,"top":201,"width":90,"height":44}}
+{"kind":"textbox","slide":5,"role":"process","text":"4. Confirm the booking","textChars":22,"textLines":1,"bbox":{"left":978,"top":462,"width":134,"height":29}}
+{"kind":"textbox","slide":5,"role":"status","text":"Confirmed","textChars":9,"textLines":1,"bbox":{"left":978,"top":499,"width":134,"height":14}}
+{"kind":"textbox","slide":5,"role":"decision","text":"5. Cancel the booking?","textChars":22,"textLines":1,"bbox":{"left":700,"top":468,"width":90,"height":44}}
+{"kind":"textbox","slide":5,"role":"decision","text":"6. Is cancellation allowed?","textChars":27,"textLines":1,"bbox":{"left":400,"top":468,"width":90,"height":44}}
+{"kind":"textbox","slide":5,"role":"process","text":"7. Cancel booking and apply payment rules","textChars":41,"textLines":1,"bbox":{"left":78,"top":462,"width":134,"height":29}}
+{"kind":"textbox","slide":5,"role":"status","text":"Cancelled","textChars":9,"textLines":1,"bbox":{"left":78,"top":499,"width":134,"height":14}}
+{"kind":"textbox","slide":5,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":512,"top":195,"width":40,"height":19}}
+{"kind":"textbox","slide":5,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":1053,"top":350,"width":40,"height":19}}
+{"kind":"textbox","slide":5,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":636,"top":462,"width":40,"height":19}}
+{"kind":"textbox","slide":5,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":336,"top":462,"width":40,"height":19}}
+{"kind":"textbox","slide":5,"role":"alternative","text":"NO PAYMENT → Cancel the expired pending booking and release the reserved capacity.","textChars":82,"textLines":1,"bbox":{"left":310,"top":344,"width":306,"height":36}}
+{"kind":"textbox","slide":5,"role":"alternative","text":"NO CANCELLATION → Keep the booking or contact the service center when cancellation is restricted.","textChars":97,"textLines":1,"bbox":{"left":664,"top":344,"width":306,"height":36}}
+{"kind":"textbox","slide":5,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":1053,"top":269,"width":32,"height":19}}
+{"kind":"textbox","slide":5,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":453,"top":426,"width":32,"height":19}}
+{"kind":"textbox","slide":5,"role":"rule","text":"A confirmed booking that is not checked in may be handled as a no-show according to the configured service rules.","textChars":113,"textLines":1,"bbox":{"left":96,"top":622,"width":1088,"height":17}}
+{"kind":"textbox","slide":5,"role":"terminator","text":"START / END","textChars":11,"textLines":1,"bbox":{"left":88,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":5,"role":"process","text":"PROCESS","textChars":7,"textLines":1,"bbox":{"left":213,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":5,"role":"legend","text":"DECISION","textChars":8,"textLines":1,"bbox":{"left":379,"top":653,"width":78,"height":25}}
+{"kind":"textbox","slide":5,"role":"footer","text":"Main booking, payment, car wash, loyalty and review flow.","textChars":57,"textLines":1,"bbox":{"left":600,"top":653,"width":590,"height":24}}
+{"kind":"textbox","slide":6,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":51,"width":132,"height":42}}
+{"kind":"textbox","slide":6,"role":"title","text":"Scenario 6: Combo, Promotion & Loyalty Flow","textChars":43,"textLines":1,"bbox":{"left":230,"top":51,"width":790,"height":42}}
+{"kind":"textbox","slide":6,"role":"subtitle","text":"Check offer eligibility, purchase or apply the offer, complete services, earn points and redeem loyalty rewards.","textChars":112,"textLines":1,"bbox":{"left":80,"top":96,"width":1010,"height":24}}
+{"kind":"textbox","slide":6,"role":"badge","text":"CORE BUSINESS FLOW","textChars":18,"textLines":1,"bbox":{"left":1091,"top":62,"width":102,"height":16}}
+{"kind":"textbox","slide":6,"role":"phase","text":"OFFER SELECTION","textChars":15,"textLines":1,"bbox":{"left":88,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":6,"role":"phase","text":"SERVICE BENEFIT","textChars":15,"textLines":1,"bbox":{"left":478,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":6,"role":"phase","text":"LOYALTY REWARD","textChars":14,"textLines":1,"bbox":{"left":868,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":6,"role":"terminator","text":"VIEW OFFERS","textChars":11,"textLines":1,"bbox":{"left":78,"top":202,"width":134,"height":30}}
+{"kind":"textbox","slide":6,"role":"process","text":"1. Select a combo or promotion","textChars":30,"textLines":1,"bbox":{"left":378,"top":195,"width":134,"height":50}}
+{"kind":"textbox","slide":6,"role":"decision","text":"2. Is the membership tier eligible?","textChars":35,"textLines":1,"bbox":{"left":700,"top":201,"width":90,"height":44}}
+{"kind":"textbox","slide":6,"role":"process","text":"3. Purchase combo or apply voucher","textChars":34,"textLines":1,"bbox":{"left":978,"top":195,"width":134,"height":50}}
+{"kind":"textbox","slide":6,"role":"decision","text":"4. Is payment successful?","textChars":25,"textLines":1,"bbox":{"left":1000,"top":468,"width":90,"height":44}}
+{"kind":"textbox","slide":6,"role":"process","text":"5. Activate combo or discount","textChars":29,"textLines":1,"bbox":{"left":678,"top":462,"width":134,"height":50}}
+{"kind":"textbox","slide":6,"role":"process","text":"6. Complete an eligible service","textChars":31,"textLines":1,"bbox":{"left":378,"top":462,"width":134,"height":50}}
+{"kind":"textbox","slide":6,"role":"process","text":"7. Earn points, update tier and redeem rewards","textChars":46,"textLines":1,"bbox":{"left":78,"top":462,"width":134,"height":50}}
+{"kind":"textbox","slide":6,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":812,"top":195,"width":40,"height":19}}
+{"kind":"textbox","slide":6,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":936,"top":462,"width":40,"height":19}}
+{"kind":"textbox","slide":6,"role":"alternative","text":"NO TIER ELIGIBILITY → Select another available offer.","textChars":53,"textLines":1,"bbox":{"left":310,"top":344,"width":306,"height":36}}
+{"kind":"textbox","slide":6,"role":"alternative","text":"PAYMENT FAILED → Try again, change payment method or cancel the purchase.","textChars":73,"textLines":1,"bbox":{"left":664,"top":344,"width":306,"height":36}}
+{"kind":"textbox","slide":6,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":753,"top":269,"width":32,"height":19}}
+{"kind":"textbox","slide":6,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":1053,"top":426,"width":32,"height":19}}
+{"kind":"textbox","slide":6,"role":"rule","text":"Available points can be redeemed for eligible voucher offers when the customer has enough points and meets the required membership tier.","textChars":136,"textLines":1,"bbox":{"left":96,"top":622,"width":1088,"height":17}}
+{"kind":"textbox","slide":6,"role":"terminator","text":"START / END","textChars":11,"textLines":1,"bbox":{"left":88,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":6,"role":"process","text":"PROCESS","textChars":7,"textLines":1,"bbox":{"left":213,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":6,"role":"legend","text":"DECISION","textChars":8,"textLines":1,"bbox":{"left":379,"top":653,"width":78,"height":25}}
+{"kind":"textbox","slide":6,"role":"footer","text":"Main booking, payment, car wash, loyalty and review flow.","textChars":57,"textLines":1,"bbox":{"left":600,"top":653,"width":590,"height":24}}
+{"kind":"textbox","slide":7,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":51,"width":132,"height":42}}
+{"kind":"textbox","slide":7,"role":"title","text":"Scenario 7: Staff Assignment & Live Tracking Flow","textChars":49,"textLines":1,"bbox":{"left":230,"top":51,"width":790,"height":42}}
+{"kind":"textbox","slide":7,"role":"subtitle","text":"Select available staff, balance work assignments, start the service and keep the latest wash progress visible.","textChars":110,"textLines":1,"bbox":{"left":80,"top":96,"width":1010,"height":24}}
+{"kind":"textbox","slide":7,"role":"badge","text":"CORE BUSINESS FLOW","textChars":18,"textLines":1,"bbox":{"left":1091,"top":62,"width":102,"height":16}}
+{"kind":"textbox","slide":7,"role":"phase","text":"STAFF ASSIGNMENT","textChars":16,"textLines":1,"bbox":{"left":88,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":7,"role":"phase","text":"SERVICE PROGRESS","textChars":16,"textLines":1,"bbox":{"left":478,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":7,"role":"phase","text":"LIVE TRACKING","textChars":13,"textLines":1,"bbox":{"left":868,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":7,"role":"terminator","text":"CONFIRMED BOOKING","textChars":17,"textLines":1,"bbox":{"left":78,"top":202,"width":134,"height":30}}
+{"kind":"textbox","slide":7,"role":"process","text":"1. Check available staff","textChars":24,"textLines":1,"bbox":{"left":378,"top":195,"width":134,"height":50}}
+{"kind":"textbox","slide":7,"role":"decision","text":"2. Is a staff member available?","textChars":31,"textLines":1,"bbox":{"left":700,"top":201,"width":90,"height":44}}
+{"kind":"textbox","slide":7,"role":"process","text":"3. Assign staff by availability and workload","textChars":44,"textLines":1,"bbox":{"left":978,"top":195,"width":134,"height":50}}
+{"kind":"textbox","slide":7,"role":"process","text":"4. Queue and check-in the vehicle","textChars":33,"textLines":1,"bbox":{"left":978,"top":462,"width":134,"height":50}}
+{"kind":"textbox","slide":7,"role":"process","text":"5. Start the car wash","textChars":21,"textLines":1,"bbox":{"left":678,"top":462,"width":134,"height":50}}
+{"kind":"textbox","slide":7,"role":"process","text":"6. Update wash progress","textChars":23,"textLines":1,"bbox":{"left":378,"top":462,"width":134,"height":50}}
+{"kind":"textbox","slide":7,"role":"process","text":"7. Display the latest progress","textChars":30,"textLines":1,"bbox":{"left":78,"top":462,"width":134,"height":50}}
+{"kind":"textbox","slide":7,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":812,"top":195,"width":40,"height":19}}
+{"kind":"textbox","slide":7,"role":"alternative","text":"NO STAFF AVAILABLE → Select the next available employee, adjust the assignment or wait for availability.","textChars":104,"textLines":1,"bbox":{"left":437,"top":344,"width":406,"height":36}}
+{"kind":"textbox","slide":7,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":753,"top":269,"width":32,"height":19}}
+{"kind":"textbox","slide":7,"role":"rule","text":"Each service update refreshes the visible booking status; automatic refresh remains available when the live connection is interrupted.","textChars":134,"textLines":1,"bbox":{"left":96,"top":622,"width":1088,"height":17}}
+{"kind":"textbox","slide":7,"role":"terminator","text":"START / END","textChars":11,"textLines":1,"bbox":{"left":88,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":7,"role":"process","text":"PROCESS","textChars":7,"textLines":1,"bbox":{"left":213,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":7,"role":"legend","text":"DECISION","textChars":8,"textLines":1,"bbox":{"left":379,"top":653,"width":78,"height":25}}
+{"kind":"textbox","slide":7,"role":"footer","text":"Main booking, payment, car wash, loyalty and review flow.","textChars":57,"textLines":1,"bbox":{"left":600,"top":653,"width":590,"height":24}}
+{"kind":"textbox","slide":8,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":51,"width":132,"height":42}}
+{"kind":"textbox","slide":8,"role":"title","text":"Scenario 8: Review & Feedback Flow","textChars":34,"textLines":1,"bbox":{"left":230,"top":51,"width":790,"height":42}}
+{"kind":"textbox","slide":8,"role":"subtitle","text":"Allow one review for each completed booking, save optional images and award the review bonus.","textChars":93,"textLines":1,"bbox":{"left":80,"top":96,"width":1010,"height":24}}
+{"kind":"textbox","slide":8,"role":"badge","text":"CORE BUSINESS FLOW","textChars":18,"textLines":1,"bbox":{"left":1091,"top":62,"width":102,"height":16}}
+{"kind":"textbox","slide":8,"role":"phase","text":"REVIEW ELIGIBILITY","textChars":18,"textLines":1,"bbox":{"left":88,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":8,"role":"phase","text":"REVIEW SUBMISSION","textChars":17,"textLines":1,"bbox":{"left":478,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":8,"role":"phase","text":"FEEDBACK RESULT","textChars":15,"textLines":1,"bbox":{"left":868,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":8,"role":"terminator","text":"COMPLETED BOOKING","textChars":17,"textLines":1,"bbox":{"left":78,"top":202,"width":134,"height":30}}
+{"kind":"textbox","slide":8,"role":"decision","text":"1. Can a new review be submitted?","textChars":33,"textLines":1,"bbox":{"left":400,"top":201,"width":90,"height":44}}
+{"kind":"textbox","slide":8,"role":"process","text":"2. Enter rating and comments","textChars":28,"textLines":1,"bbox":{"left":678,"top":195,"width":134,"height":50}}
+{"kind":"textbox","slide":8,"role":"process","text":"3. Add before and after images","textChars":30,"textLines":1,"bbox":{"left":978,"top":195,"width":134,"height":50}}
+{"kind":"textbox","slide":8,"role":"process","text":"4. Submit the review","textChars":20,"textLines":1,"bbox":{"left":978,"top":462,"width":134,"height":50}}
+{"kind":"textbox","slide":8,"role":"decision","text":"5. Is the review valid?","textChars":23,"textLines":1,"bbox":{"left":700,"top":468,"width":90,"height":44}}
+{"kind":"textbox","slide":8,"role":"process","text":"6. Save feedback and award bonus","textChars":32,"textLines":1,"bbox":{"left":378,"top":462,"width":134,"height":29}}
+{"kind":"textbox","slide":8,"role":"status","text":"+10 points","textChars":10,"textLines":1,"bbox":{"left":378,"top":499,"width":134,"height":14}}
+{"kind":"textbox","slide":8,"role":"terminator","text":"VIEW REVIEW","textChars":11,"textLines":1,"bbox":{"left":78,"top":469,"width":134,"height":30}}
+{"kind":"textbox","slide":8,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":512,"top":195,"width":40,"height":19}}
+{"kind":"textbox","slide":8,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":636,"top":462,"width":40,"height":19}}
+{"kind":"textbox","slide":8,"role":"alternative","text":"NO, REVIEW EXISTS → Open the existing review instead of creating another one.","textChars":77,"textLines":1,"bbox":{"left":310,"top":344,"width":306,"height":36}}
+{"kind":"textbox","slide":8,"role":"alternative","text":"INVALID REVIEW → Correct the rating, comments or image information and submit again.","textChars":84,"textLines":1,"bbox":{"left":664,"top":344,"width":306,"height":36}}
+{"kind":"textbox","slide":8,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":453,"top":269,"width":32,"height":19}}
+{"kind":"textbox","slide":8,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":753,"top":426,"width":32,"height":19}}
+{"kind":"textbox","slide":8,"role":"rule","text":"Only completed bookings can be reviewed, and each booking can receive no more than one customer review.","textChars":103,"textLines":1,"bbox":{"left":96,"top":622,"width":1088,"height":17}}
+{"kind":"textbox","slide":8,"role":"terminator","text":"START / END","textChars":11,"textLines":1,"bbox":{"left":88,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":8,"role":"process","text":"PROCESS","textChars":7,"textLines":1,"bbox":{"left":213,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":8,"role":"legend","text":"DECISION","textChars":8,"textLines":1,"bbox":{"left":379,"top":653,"width":78,"height":25}}
+{"kind":"textbox","slide":8,"role":"footer","text":"Main booking, payment, car wash, loyalty and review flow.","textChars":57,"textLines":1,"bbox":{"left":600,"top":653,"width":590,"height":24}}
+{"kind":"textbox","slide":9,"role":"section-title","text":"6. Flows","textChars":8,"textLines":1,"bbox":{"left":78,"top":51,"width":132,"height":42}}
+{"kind":"textbox","slide":9,"role":"title","text":"Scenario 9: Management & Reporting Flow","textChars":39,"textLines":1,"bbox":{"left":230,"top":51,"width":790,"height":42}}
+{"kind":"textbox","slide":9,"role":"subtitle","text":"Find operational records, review details, apply valid changes and monitor updated business performance.","textChars":103,"textLines":1,"bbox":{"left":80,"top":96,"width":1010,"height":24}}
+{"kind":"textbox","slide":9,"role":"badge","text":"CORE BUSINESS FLOW","textChars":18,"textLines":1,"bbox":{"left":1091,"top":62,"width":102,"height":16}}
+{"kind":"textbox","slide":9,"role":"phase","text":"SEARCH AND REVIEW","textChars":17,"textLines":1,"bbox":{"left":88,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":9,"role":"phase","text":"MANAGEMENT ACTION","textChars":17,"textLines":1,"bbox":{"left":478,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":9,"role":"phase","text":"REPORTING","textChars":9,"textLines":1,"bbox":{"left":868,"top":141,"width":324,"height":18}}
+{"kind":"textbox","slide":9,"role":"terminator","text":"OPEN MANAGEMENT","textChars":15,"textLines":1,"bbox":{"left":78,"top":202,"width":134,"height":30}}
+{"kind":"textbox","slide":9,"role":"process","text":"1. Select a management area","textChars":27,"textLines":1,"bbox":{"left":378,"top":195,"width":134,"height":50}}
+{"kind":"textbox","slide":9,"role":"process","text":"2. Search and filter records","textChars":28,"textLines":1,"bbox":{"left":678,"top":195,"width":134,"height":50}}
+{"kind":"textbox","slide":9,"role":"process","text":"3. Review record details","textChars":24,"textLines":1,"bbox":{"left":978,"top":195,"width":134,"height":50}}
+{"kind":"textbox","slide":9,"role":"decision","text":"4. Is a change required?","textChars":24,"textLines":1,"bbox":{"left":1000,"top":468,"width":90,"height":44}}
+{"kind":"textbox","slide":9,"role":"process","text":"5. Update booking, service, account, promotion or content","textChars":57,"textLines":1,"bbox":{"left":678,"top":462,"width":134,"height":50}}
+{"kind":"textbox","slide":9,"role":"decision","text":"6. Are the changes valid?","textChars":25,"textLines":1,"bbox":{"left":400,"top":468,"width":90,"height":44}}
+{"kind":"textbox","slide":9,"role":"process","text":"7. Save changes and refresh reports","textChars":35,"textLines":1,"bbox":{"left":78,"top":462,"width":134,"height":50}}
+{"kind":"textbox","slide":9,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":936,"top":462,"width":40,"height":19}}
+{"kind":"textbox","slide":9,"role":"branch-label","text":"YES","textChars":3,"textLines":1,"bbox":{"left":336,"top":462,"width":40,"height":19}}
+{"kind":"textbox","slide":9,"role":"alternative","text":"NO CHANGE → Continue to dashboard and reporting.","textChars":48,"textLines":1,"bbox":{"left":310,"top":344,"width":306,"height":36}}
+{"kind":"textbox","slide":9,"role":"alternative","text":"INVALID CHANGE → Correct the information before saving.","textChars":55,"textLines":1,"bbox":{"left":664,"top":344,"width":306,"height":36}}
+{"kind":"textbox","slide":9,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":1053,"top":426,"width":32,"height":19}}
+{"kind":"textbox","slide":9,"role":"branch-label","text":"NO","textChars":2,"textLines":1,"bbox":{"left":453,"top":426,"width":32,"height":19}}
+{"kind":"textbox","slide":9,"role":"rule","text":"Management reports combine booking volume, revenue, service progress, staff performance, customer tiers, promotions and reviews.","textChars":128,"textLines":1,"bbox":{"left":96,"top":622,"width":1088,"height":17}}
+{"kind":"textbox","slide":9,"role":"terminator","text":"START / END","textChars":11,"textLines":1,"bbox":{"left":88,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":9,"role":"process","text":"PROCESS","textChars":7,"textLines":1,"bbox":{"left":213,"top":660,"width":80,"height":11}}
+{"kind":"textbox","slide":9,"role":"legend","text":"DECISION","textChars":8,"textLines":1,"bbox":{"left":379,"top":653,"width":78,"height":25}}
+{"kind":"textbox","slide":9,"role":"footer","text":"Main booking, payment, car wash, loyalty and review flow.","textChars":57,"textLines":1,"bbox":{"left":600,"top":653,"width":590,"height":24}}

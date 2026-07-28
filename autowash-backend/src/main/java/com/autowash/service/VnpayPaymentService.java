@@ -11,5 +11,4 @@ public interface VnpayPaymentService {
     VnpayPaymentResultResponse handleReturn(Map<String, String> params);
     VnpayIpnResponse handleIpn(Map<String, String> params);
     VnpayPaymentResultResponse queryTransaction(UUID bookingId, String ipAddress);
-    VnpayPaymentResultResponse refund(UUID bookingId, Long amount, String createdBy, String ipAddress);
 }

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Banknote,
   Building2,
   CalendarDays,
   Car,
@@ -64,12 +63,6 @@ const PAYMENT_OPTIONS: {
   badge?: string;
 }[] = [
   {
-    method: "CASH_AT_COUNTER",
-    label: "Cash at counter",
-    description: "Pay in cash when you arrive at the wash bay.",
-    icon: Banknote,
-  },
-  {
     method: "BANK_TRANSFER",
     label: "SePay",
     description: "Transfer with an AU payment code for automatic confirmation.",
@@ -106,8 +99,13 @@ export function BookingConfirmPage() {
   const [sepayPaymentBooking, setSepayPaymentBooking] = useState<BookingDetail | null>(null);
 
   useEffect(() => {
+    if (draft.paymentMethod === "CASH_AT_COUNTER") {
+      setPaymentMethod(null);
+      updateDraft({ paymentMethod: null });
+      return;
+    }
     setPaymentMethod(draft.paymentMethod);
-  }, [draft.paymentMethod]);
+  }, [draft.paymentMethod, updateDraft]);
 
   const vehiclesQuery = useCustomerVehicles();
   const packagesQuery = useBookingPackages();
@@ -348,7 +346,7 @@ export function BookingConfirmPage() {
     if (!isComboBooking && !selectedPaymentMethod) return;
     if (!expiresAt || expiresAt <= Date.now()) { handleExpired(); return; }
     const effectivePaymentMethod = isComboBooking ? ("CASH_AT_COUNTER" as PaymentMethod) : selectedPaymentMethod!;
-    const nextDraft = { ...sanitizedDraft, paymentMethod: effectivePaymentMethod, staffId: selectedStaffIds[0] ?? "", staffIds: selectedStaffIds };
+    const nextDraft = { ...sanitizedDraft, paymentMethod: effectivePaymentMethod, staffId: "", staffIds: [] };
     const errors = validateBookingDraft(nextDraft, summary, { requirePaymentMethod: !isComboBooking });
     if (Object.keys(errors).length > 0) {
       toast.error(Object.values(errors)[0] ?? "Please complete booking information.");
@@ -535,7 +533,7 @@ export function BookingConfirmPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3 pb-5">
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {PAYMENT_OPTIONS.map(({ method, label, description, icon: Icon, badge }) => {
                   const active = paymentMethod === method;
                   return (

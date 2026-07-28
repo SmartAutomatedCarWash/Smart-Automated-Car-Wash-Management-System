@@ -12,6 +12,7 @@ import java.util.UUID;
 public interface CatalogService {
     PackagePage getPackages(int page, int limit);
     List<ServiceResponse> getServices();
+    ServiceResponse getServiceById(String serviceId);
     List<ComboResponse> getAvailableCombos();
     Package requireActivePackage(String packageId);
     Combo requireActiveCombo(String comboId);

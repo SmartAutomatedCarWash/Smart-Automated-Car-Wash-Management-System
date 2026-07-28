@@ -1,0 +1,472 @@
+{"kind":"deck","id":"pr/nc3wtg","name":"Deck"}
+{"kind":"layout","layoutId":"689630f0-d03d-483e-afa1-07dfa69fff1a","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"8e2d8d5d-3c6b-4e9c-ae54-6e11bfe18244","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/pyp2ha","slide":1,"title":"6. Flows","textShapes":37}
+{"kind":"shape","id":"sh/gfedwn2l","slide":1,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/fe5cnil0","slide":1,"bbox":[44,28,1192,664]}
+{"kind":"shape","id":"sh/udcvudkf","slide":1,"bbox":[44,28,8,664]}
+{"kind":"textbox","id":"sh/p4netcj2","slide":1,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[80,53,136,42]}
+{"kind":"shape","id":"sh/43ed072h","slide":1,"bbox":[218,60,3,28]}
+{"kind":"textbox","id":"sh/325wr21c","slide":1,"text":"Scenario 1: Overall Functional Flow","textPreview":"Scenario 1: Overall Functional Flow","textChars":35,"textLines":1,"bbox":[236,53,810,42]}
+{"kind":"textbox","id":"sh/21wvyxkr","slide":1,"text":"The complete AutoWash journey, from customer preparation to daily operation, loyalty and management.","textPreview":"The complete AutoWash journey, from customer preparation to daily operation, loyalty and management.","textChars":100,"textLines":1,"bbox":[82,99,1040,24]}
+{"kind":"shape","id":"sh/583uh83y","slide":1,"bbox":[105,178,82,82]}
+{"kind":"textbox","id":"sh/k7udo32d","slide":1,"text":"👤","textPreview":"👤","textChars":2,"textLines":1,"bbox":[114,187,64,58]}
+{"kind":"shape","id":"sh/it03qpk3","slide":1,"bbox":[98,170,27,27]}
+{"kind":"textbox","id":"sh/ju94zalo","slide":1,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[101,173,21,21]}
+{"kind":"textbox","id":"sh/kvi5sf29","slide":1,"text":"Account & Vehicle","textPreview":"Account & Vehicle","textChars":17,"textLines":1,"bbox":[60,267,172,42]}
+{"kind":"shape","id":"sh/5wrm1k3u","slide":1,"bbox":[375,178,82,82]}
+{"kind":"textbox","id":"sh/6xknupkf","slide":1,"text":"⌕","textPreview":"⌕","textChars":1,"textLines":1,"bbox":[384,187,64,58]}
+{"kind":"shape","id":"sh/7yt43ul0","slide":1,"bbox":[368,170,27,27]}
+{"kind":"textbox","id":"sh/sz25wz2l","slide":1,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[371,173,21,21]}
+{"kind":"textbox","id":"sh/tkbm54jq","slide":1,"text":"Services, Combos & Promotions","textPreview":"Services, Combos & Promotions","textChars":29,"textLines":1,"bbox":[330,267,172,42]}
+{"kind":"shape","id":"sh/ulkny9kb","slide":1,"bbox":[645,178,82,82]}
+{"kind":"textbox","id":"sh/fmt47u1w","slide":1,"text":"📅","textPreview":"📅","textChars":2,"textLines":1,"bbox":[654,187,64,58]}
+{"kind":"shape","id":"sh/rqd4feh4","slide":1,"bbox":[638,170,27,27]}
+{"kind":"textbox","id":"sh/qp43m90j","slide":1,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[641,173,21,21]}
+{"kind":"textbox","id":"sh/dsvmh4za","slide":1,"text":"Schedule & Capacity","textPreview":"Schedule & Capacity","textChars":19,"textLines":1,"bbox":[600,267,172,42]}
+{"kind":"shape","id":"sh/crmlozip","slide":1,"bbox":[915,178,82,82]}
+{"kind":"textbox","id":"sh/3mtkbuhs","slide":1,"text":"💳","textPreview":"💳","textChars":2,"textLines":1,"bbox":[924,187,64,58]}
+{"kind":"shape","id":"sh/21k3ip0n","slide":1,"bbox":[908,170,27,27]}
+{"kind":"textbox","id":"sh/povmd4zy","slide":1,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[911,173,21,21]}
+{"kind":"textbox","id":"sh/4n2lkzid","slide":1,"text":"Booking & Payment","textPreview":"Booking & Payment","textChars":17,"textLines":1,"bbox":[870,267,172,42]}
+{"kind":"shape","id":"sh/fytk7uhw","slide":1,"bbox":[915,405,82,82]}
+{"kind":"textbox","id":"sh/uxk3ep0b","slide":1,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[924,414,64,58]}
+{"kind":"shape","id":"sh/k3y1ovy9","slide":1,"bbox":[908,397,27,27]}
+{"kind":"textbox","id":"sh/547ihgfu","slide":1,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[911,400,21,21]}
+{"kind":"textbox","id":"sh/i1gjmlg3","slide":1,"text":"Staff Assignment & Check-in","textPreview":"Staff Assignment & Check-in","textChars":27,"textLines":1,"bbox":[870,494,172,42]}
+{"kind":"shape","id":"sh/j2p0fqxo","slide":1,"bbox":[645,405,82,82]}
+{"kind":"textbox","id":"sh/s7i1svy5","slide":1,"text":"💧","textPreview":"💧","textChars":2,"textLines":1,"bbox":[654,414,64,58]}
+{"kind":"shape","id":"sh/tsril0fq","slide":1,"bbox":[638,397,27,27]}
+{"kind":"textbox","id":"sh/650jqlgf","slide":1,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[641,400,21,21]}
+{"kind":"textbox","id":"sh/7690jqxk","slide":1,"text":"Wash Progress & Completion","textPreview":"Wash Progress & Completion","textChars":26,"textLines":1,"bbox":[600,494,172,42]}
+{"kind":"shape","id":"sh/8behgry1","slide":1,"bbox":[375,405,82,82]}
+{"kind":"textbox","id":"sh/9wni9wfm","slide":1,"text":"★","textPreview":"★","textChars":1,"textLines":1,"bbox":[384,414,64,58]}
+{"kind":"shape","id":"sh/14ji50j2","slide":1,"bbox":[368,397,27,27]}
+{"kind":"textbox","id":"sh/03a1cv2h","slide":1,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[371,400,21,21]}
+{"kind":"textbox","id":"sh/f2103q1w","slide":1,"text":"Points, Tier & Rewards","textPreview":"Points, Tier & Rewards","textChars":22,"textLines":1,"bbox":[330,494,172,42]}
+{"kind":"shape","id":"sh/e1sjalkr","slide":1,"bbox":[105,405,82,82]}
+{"kind":"textbox","id":"sh/d0ji1gj6","slide":1,"text":"✦","textPreview":"✦","textChars":1,"textLines":1,"bbox":[114,414,64,58]}
+{"kind":"shape","id":"sh/sza18b2l","slide":1,"bbox":[98,397,27,27]}
+{"kind":"textbox","id":"sh/reh0zq10","slide":1,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[101,400,21,21]}
+{"kind":"textbox","id":"sh/qd8j6lkf","slide":1,"text":"Review, History & Management","textPreview":"Review, History & Management","textChars":28,"textLines":1,"bbox":[60,494,172,42]}
+{"kind":"shape","id":"sh/5czixgju","slide":1,"bbox":[187,214,188,10]}
+{"kind":"textbox","id":"sh/4bq14b29","slide":1,"text":"Prepare customer information","textPreview":"Prepare customer information","textChars":28,"textLines":1,"bbox":[187,175,188,28]}
+{"kind":"shape","id":"sh/u547idwv","slide":1,"bbox":[457,214,188,10]}
+{"kind":"textbox","id":"sh/v6doridg","slide":1,"text":"Explore available offers","textPreview":"Explore available offers","textChars":24,"textLines":1,"bbox":[457,175,188,28]}
+{"kind":"shape","id":"sh/w7mpkne1","slide":1,"bbox":[727,214,188,10]}
+{"kind":"textbox","id":"sh/h8vqtsvm","slide":1,"text":"Choose an open time slot","textPreview":"Choose an open time slot","textChars":24,"textLines":1,"bbox":[727,175,188,28]}
+{"kind":"shape","id":"sh/m1k7edwz","slide":1,"bbox":[950,260,12,145]}
+{"kind":"textbox","id":"sh/n2tonidk","slide":1,"text":"Confirm the booking","textPreview":"Confirm the booking","textChars":19,"textLines":1,"bbox":[1000,318,160,28]}
+{"kind":"shape","id":"sh/83mpgne5","slide":1,"bbox":[727,441,188,10]}
+{"kind":"textbox","id":"sh/94v6p8va","slide":1,"text":"Deliver the service","textPreview":"Deliver the service","textChars":19,"textLines":1,"bbox":[727,402,188,28]}
+{"kind":"shape","id":"sh/ydk7atwn","slide":1,"bbox":[457,441,188,10]}
+{"kind":"textbox","id":"sh/zetojyd8","slide":1,"text":"Complete and reward","textPreview":"Complete and reward","textChars":19,"textLines":1,"bbox":[457,402,188,28]}
+{"kind":"shape","id":"sh/3ip4but0","slide":1,"bbox":[187,441,188,10]}
+{"kind":"textbox","id":"sh/2hg3ipcf","slide":1,"text":"Retain and improve","textPreview":"Retain and improve","textChars":18,"textLines":1,"bbox":[187,402,188,28]}
+{"kind":"shape","id":"sh/pkrmd4b6","slide":1,"bbox":[80,585,1120,62]}
+{"kind":"textbox","id":"sh/ojylkzul","slide":1,"text":"PROJECT HIGHLIGHTS","textPreview":"PROJECT HIGHLIGHTS","textChars":18,"textLines":1,"bbox":[98,596,190,20]}
+{"kind":"textbox","id":"sh/b694fetc","slide":1,"text":"Capacity-aware booking, staff workload balancing, live wash progress, loyalty tiers, promotions and centralized management.","textPreview":"Capacity-aware booking, staff workload balancing, live wash progress, loyalty tiers, promotions and centralized management.","textChars":123,"textLines":1,"bbox":[290,593,888,28]}
+{"kind":"textbox","id":"sh/q50nm9cr","slide":1,"text":"All major features support one connected service journey rather than separate user experiences.","textPreview":"All major features support one connected service journey rather than separate user experiences.","textChars":95,"textLines":1,"bbox":[290,618,888,18]}
+{"kind":"notes","id":"nt/pyp2ha","slide":1,"text":""}
+{"kind":"slide","id":"sl/dkp8di","slide":2,"title":"6. Flows","textShapes":37}
+{"kind":"shape","id":"sh/4byxkz6p","slide":2,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/3apwbup4","slide":2,"bbox":[44,28,1192,664]}
+{"kind":"shape","id":"sh/i9gfipoj","slide":2,"bbox":[44,28,8,664]}
+{"kind":"textbox","id":"sh/dgryh476","slide":2,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[80,53,136,42]}
+{"kind":"shape","id":"sh/sfyxoz61","slide":2,"bbox":[218,60,3,28]}
+{"kind":"textbox","id":"sh/repgfupg","slide":2,"text":"Scenario 2: Account & Vehicle Preparation Flow","textPreview":"Scenario 2: Account & Vehicle Preparation Flow","textChars":46,"textLines":1,"bbox":[236,53,810,42]}
+{"kind":"textbox","id":"sh/qdgfmpov","slide":2,"text":"Prepare verified customer and vehicle information before creating a booking.","textPreview":"Prepare verified customer and vehicle information before creating a booking.","textChars":76,"textLines":1,"bbox":[82,99,1040,24]}
+{"kind":"shape","id":"sh/14rylo7i","slide":2,"bbox":[105,178,82,82]}
+{"kind":"textbox","id":"sh/03ixsj6x","slide":2,"text":"👤","textPreview":"👤","textChars":2,"textLines":1,"bbox":[114,187,64,58]}
+{"kind":"shape","id":"sh/ql0zi1s3","slide":2,"bbox":[98,170,27,27]}
+{"kind":"textbox","id":"sh/bmtgb698","slide":2,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[101,173,21,21]}
+{"kind":"textbox","id":"sh/cn2hkbat","slide":2,"text":"Create an Account","textPreview":"Create an Account","textChars":17,"textLines":1,"bbox":[60,267,172,42]}
+{"kind":"shape","id":"sh/dobydwre","slide":2,"bbox":[375,178,82,82]}
+{"kind":"textbox","id":"sh/y9kzm1sz","slide":2,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[384,187,64,58]}
+{"kind":"shape","id":"sh/zatgf69k","slide":2,"bbox":[368,170,27,27]}
+{"kind":"textbox","id":"sh/0b2h8ba5","slide":2,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[371,173,21,21]}
+{"kind":"textbox","id":"sh/lcbyhgrq","slide":2,"text":"Verify the Account","textPreview":"Verify the Account","textChars":18,"textLines":1,"bbox":[330,267,172,42]}
+{"kind":"shape","id":"sh/edgfahsv","slide":2,"bbox":[645,178,82,82]}
+{"kind":"textbox","id":"sh/fepg3m9g","slide":2,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[654,187,64,58]}
+{"kind":"shape","id":"sh/jy5wbip8","slide":2,"bbox":[638,170,27,27]}
+{"kind":"textbox","id":"sh/ixwv2d8n","slide":2,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[641,173,21,21]}
+{"kind":"textbox","id":"sh/5kneds7y","slide":2,"text":"Sign In","textPreview":"Sign In","textChars":7,"textLines":1,"bbox":[600,267,172,42]}
+{"kind":"shape","id":"sh/4jed4nqd","slide":2,"bbox":[915,178,82,82]}
+{"kind":"textbox","id":"sh/vulc7ypw","slide":2,"text":"◉","textPreview":"◉","textChars":1,"textLines":1,"bbox":[924,187,64,58]}
+{"kind":"shape","id":"sh/atcvyt8b","slide":2,"bbox":[908,170,27,27]}
+{"kind":"textbox","id":"sh/xwne9872","slide":2,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[911,173,21,21]}
+{"kind":"textbox","id":"sh/wved03qh","slide":2,"text":"Complete the Profile","textPreview":"Complete the Profile","textChars":20,"textLines":1,"bbox":[870,267,172,42]}
+{"kind":"shape","id":"sh/fqpwj2p0","slide":2,"bbox":[915,405,82,82]}
+{"kind":"textbox","id":"sh/epgvax8v","slide":2,"text":"🚗","textPreview":"🚗","textChars":2,"textLines":1,"bbox":[924,414,64,58]}
+{"kind":"shape","id":"sh/cvqt4z6d","slide":2,"bbox":[908,397,27,27]}
+{"kind":"textbox","id":"sh/dwjad4ni","slide":2,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[911,400,21,21]}
+{"kind":"textbox","id":"sh/q98b2po7","slide":2,"text":"Add a Vehicle","textPreview":"Add a Vehicle","textChars":13,"textLines":1,"bbox":[870,494,172,42]}
+{"kind":"shape","id":"sh/buhsbu5s","slide":2,"bbox":[645,405,82,82]}
+{"kind":"textbox","id":"sh/0zat8z69","slide":2,"text":"#","textPreview":"#","textChars":1,"textLines":1,"bbox":[654,414,64,58]}
+{"kind":"shape","id":"sh/l0jah4nu","slide":2,"bbox":[638,397,27,27]}
+{"kind":"textbox","id":"sh/yxsb6po3","slide":2,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[641,400,21,21]}
+{"kind":"textbox","id":"sh/zy1sfu5o","slide":2,"text":"Validate Vehicle Details","textPreview":"Validate Vehicle Details","textChars":24,"textLines":1,"bbox":[600,494,172,42]}
+{"kind":"shape","id":"sh/83atcj65","slide":2,"bbox":[375,405,82,82]}
+{"kind":"textbox","id":"sh/943alonq","slide":2,"text":"★","textPreview":"★","textChars":1,"textLines":1,"bbox":[384,414,64,58]}
+{"kind":"shape","id":"sh/90r25knu","slide":2,"bbox":[368,397,27,27]}
+{"kind":"textbox","id":"sh/8zi1cf69","slide":2,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[371,400,21,21]}
+{"kind":"textbox","id":"sh/7y9k3a5o","slide":2,"text":"Set a Primary Vehicle","textPreview":"Set a Primary Vehicle","textChars":21,"textLines":1,"bbox":[330,494,172,42]}
+{"kind":"shape","id":"sh/mx0ja5o3","slide":2,"bbox":[105,405,82,82]}
+{"kind":"textbox","id":"sh/lwr210ny","slide":2,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[114,414,64,58]}
+{"kind":"shape","id":"sh/kvi18v6d","slide":2,"bbox":[98,397,27,27]}
+{"kind":"textbox","id":"sh/zu9kzq5s","slide":2,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[101,400,21,21]}
+{"kind":"textbox","id":"sh/yt0j6lo7","slide":2,"text":"Ready for Booking","textPreview":"Ready for Booking","textChars":17,"textLines":1,"bbox":[60,494,172,42]}
+{"kind":"shape","id":"sh/5sv2d4n2","slide":2,"bbox":[187,214,188,10]}
+{"kind":"textbox","id":"sh/4r2lkz6h","slide":2,"text":"Confirm customer identity","textPreview":"Confirm customer identity","textChars":25,"textLines":1,"bbox":[187,175,188,28]}
+{"kind":"shape","id":"sh/2xwzeh4z","slide":2,"bbox":[457,214,188,10]}
+{"kind":"textbox","id":"sh/ny5g7mlk","slide":2,"text":"Access the customer area","textPreview":"Access the customer area","textChars":24,"textLines":1,"bbox":[457,175,188,28]}
+{"kind":"shape","id":"sh/ozehgrm5","slide":2,"bbox":[727,214,188,10]}
+{"kind":"textbox","id":"sh/p0ni9w3q","slide":2,"text":"Add personal information","textPreview":"Add personal information","textChars":24,"textLines":1,"bbox":[727,175,188,28]}
+{"kind":"shape","id":"sh/e9czah4n","slide":2,"bbox":[950,260,12,145]}
+{"kind":"textbox","id":"sh/fa5g3ml8","slide":2,"text":"Prepare vehicle information","textPreview":"Prepare vehicle information","textChars":27,"textLines":1,"bbox":[1000,318,160,28]}
+{"kind":"shape","id":"sh/0behcrmt","slide":2,"bbox":[727,441,188,10]}
+{"kind":"textbox","id":"sh/1wny5w3e","slide":2,"text":"Check required details","textPreview":"Check required details","textChars":22,"textLines":1,"bbox":[727,402,188,28]}
+{"kind":"shape","id":"sh/y5gzml47","slide":2,"bbox":[457,441,188,10]}
+{"kind":"textbox","id":"sh/z6p0f6ls","slide":2,"text":"Choose the default vehicle","textPreview":"Choose the default vehicle","textChars":26,"textLines":1,"bbox":[457,402,188,28]}
+{"kind":"shape","id":"sh/vahw7yl4","slide":2,"bbox":[187,441,188,10]}
+{"kind":"textbox","id":"sh/u98vydkj","slide":2,"text":"Continue to booking","textPreview":"Continue to booking","textChars":19,"textLines":1,"bbox":[187,402,188,28]}
+{"kind":"shape","id":"sh/hcje98ja","slide":2,"bbox":[80,585,1120,62]}
+{"kind":"textbox","id":"sh/wbad032p","slide":2,"text":"VEHICLE RULE","textPreview":"VEHICLE RULE","textChars":12,"textLines":1,"bbox":[98,596,190,20]}
+{"kind":"textbox","id":"sh/3e1wbi10","slide":2,"text":"A saved vehicle can be selected as the primary vehicle and reused for future bookings.","textPreview":"A saved vehicle can be selected as the primary vehicle and reused for future bookings.","textChars":86,"textLines":1,"bbox":[290,593,888,28]}
+{"kind":"textbox","id":"sh/idsf2dkf","slide":2,"text":"Duplicate or invalid vehicle information must be corrected before the vehicle is saved.","textPreview":"Duplicate or invalid vehicle information must be corrected before the vehicle is saved.","textChars":87,"textLines":1,"bbox":[290,618,888,18]}
+{"kind":"notes","id":"nt/dkp8di","slide":2,"text":""}
+{"kind":"slide","id":"sl/adv31j","slide":3,"title":"6. Flows","textShapes":37}
+{"kind":"shape","id":"sh/xszqlofm","slide":3,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/ap87q9wv","slide":3,"bbox":[44,28,1192,664]}
+{"kind":"shape","id":"sh/vqh8jexg","slide":3,"bbox":[44,28,8,664]}
+{"kind":"textbox","id":"sh/kfapw3ed","slide":3,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[80,53,136,42]}
+{"kind":"shape","id":"sh/5gjqp8fi","slide":3,"bbox":[218,60,3,28]}
+{"kind":"textbox","id":"sh/its7utw7","slide":3,"text":"Scenario 3: Service Discovery, Booking & Payment Flow","textPreview":"Scenario 3: Service Discovery, Booking & Payment Flow","textChars":53,"textLines":1,"bbox":[236,53,810,42]}
+{"kind":"textbox","id":"sh/je18nyxs","slide":3,"text":"Select the right service, reserve an available slot and confirm the booking through the chosen payment method.","textPreview":"Select the right service, reserve an available slot and confirm the booking through the chosen payment method.","textChars":110,"textLines":1,"bbox":[82,99,1040,24]}
+{"kind":"shape","id":"sh/sja903e9","slide":3,"bbox":[105,178,82,82]}
+{"kind":"textbox","id":"sh/tk3qt8fu","slide":3,"text":"⌕","textPreview":"⌕","textChars":1,"textLines":1,"bbox":[114,187,64,58]}
+{"kind":"shape","id":"sh/l0zi1ozu","slide":3,"bbox":[98,170,27,27]}
+{"kind":"textbox","id":"sh/kzq1sjyp","slide":3,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[101,173,21,21]}
+{"kind":"textbox","id":"sh/jyh0zyh4","slide":3,"text":"Explore Services","textPreview":"Explore Services","textChars":16,"textLines":1,"bbox":[60,267,172,42]}
+{"kind":"shape","id":"sh/yx8jqtgj","slide":3,"bbox":[375,178,82,82]}
+{"kind":"textbox","id":"sh/t4ji58z6","slide":3,"text":"▣","textPreview":"▣","textChars":1,"textLines":1,"bbox":[384,187,64,58]}
+{"kind":"shape","id":"sh/83a1w3yl","slide":3,"bbox":[368,170,27,27]}
+{"kind":"textbox","id":"sh/72103yh0","slide":3,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[371,173,21,21]}
+{"kind":"textbox","id":"sh/61sjutgf","slide":3,"text":"Select Service, Package or Combo","textPreview":"Select Service, Package or Combo","textChars":32,"textLines":1,"bbox":[330,267,172,42]}
+{"kind":"shape","id":"sh/p8fit4zm","slide":3,"bbox":[645,178,82,82]}
+{"kind":"textbox","id":"sh/o76hkzih","slide":3,"text":"🚗","textPreview":"🚗","textChars":2,"textLines":1,"bbox":[654,187,64,58]}
+{"kind":"shape","id":"sh/gra1gjqd","slide":3,"bbox":[638,170,27,27]}
+{"kind":"textbox","id":"sh/1sji9o7i","slide":3,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[641,173,21,21]}
+{"kind":"textbox","id":"sh/epsje987","slide":3,"text":"Choose a Vehicle","textPreview":"Choose a Vehicle","textChars":16,"textLines":1,"bbox":[600,267,172,42]}
+{"kind":"shape","id":"sh/fq107eps","slide":3,"bbox":[915,178,82,82]}
+{"kind":"textbox","id":"sh/ofu1kjq9","slide":3,"text":"📅","textPreview":"📅","textChars":2,"textLines":1,"bbox":[924,187,64,58]}
+{"kind":"shape","id":"sh/pg3ido7u","slide":3,"bbox":[908,170,27,27]}
+{"kind":"textbox","id":"sh/2dsji983","slide":3,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[911,173,21,21]}
+{"kind":"textbox","id":"sh/3e10bepo","slide":3,"text":"Choose Date & Time","textPreview":"Choose Date & Time","textChars":18,"textLines":1,"bbox":[870,267,172,42]}
+{"kind":"shape","id":"sh/cju1o365","slide":3,"bbox":[915,405,82,82]}
+{"kind":"textbox","id":"sh/xk3ih87q","slide":3,"text":"◷","textPreview":"◷","textChars":1,"textLines":1,"bbox":[924,414,64,58]}
+{"kind":"shape","id":"sh/7ep47298","slide":3,"bbox":[908,397,27,27]}
+{"kind":"textbox","id":"sh/mdw3exsn","slide":3,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[911,400,21,21]}
+{"kind":"textbox","id":"sh/9g7m9sry","slide":3,"text":"Check Slot Availability","textPreview":"Check Slot Availability","textChars":23,"textLines":1,"bbox":[870,494,172,42]}
+{"kind":"shape","id":"sh/8fylg7qd","slide":3,"bbox":[645,405,82,82]}
+{"kind":"textbox","id":"sh/za543i9w","slide":3,"text":"◇","textPreview":"◇","textChars":1,"textLines":1,"bbox":[654,414,64,58]}
+{"kind":"shape","id":"sh/y9w3adsb","slide":3,"bbox":[638,397,27,27]}
+{"kind":"textbox","id":"sh/lcnm5sr2","slide":3,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[641,400,21,21]}
+{"kind":"textbox","id":"sh/kbelcnah","slide":3,"text":"Apply Voucher or Preference","textPreview":"Apply Voucher or Preference","textChars":27,"textLines":1,"bbox":[600,494,172,42]}
+{"kind":"shape","id":"sh/j694fm90","slide":3,"bbox":[375,405,82,82]}
+{"kind":"textbox","id":"sh/i503mh8v","slide":3,"text":"💳","textPreview":"💳","textChars":2,"textLines":1,"bbox":[384,414,64,58]}
+{"kind":"shape","id":"sh/qtg7a1oz","slide":3,"bbox":[368,397,27,27]}
+{"kind":"textbox","id":"sh/rup8j65k","slide":3,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[371,400,21,21]}
+{"kind":"textbox","id":"sh/sfypcb65","slide":3,"text":"Choose a Payment Method","textPreview":"Choose a Payment Method","textChars":23,"textLines":1,"bbox":[330,494,172,42]}
+{"kind":"shape","id":"sh/dg7qlgnq","slide":3,"bbox":[105,405,82,82]}
+{"kind":"textbox","id":"sh/ipw761on","slide":3,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[114,414,64,58]}
+{"kind":"shape","id":"sh/3q5of658","slide":3,"bbox":[98,397,27,27]}
+{"kind":"textbox","id":"sh/4rep8b6t","slide":3,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[101,400,21,21]}
+{"kind":"textbox","id":"sh/5s76hgne","slide":3,"text":"Confirm the Booking","textPreview":"Confirm the Booking","textChars":19,"textLines":1,"bbox":[60,494,172,42]}
+{"kind":"shape","id":"sh/2l07ilo7","slide":3,"bbox":[187,214,188,10]}
+{"kind":"textbox","id":"sh/nm98bq5s","slide":3,"text":"Compare available offers","textPreview":"Compare available offers","textChars":24,"textLines":1,"bbox":[187,175,188,28]}
+{"kind":"shape","id":"sh/xgbahk7u","slide":3,"bbox":[457,214,188,10]}
+{"kind":"textbox","id":"sh/cf298zq9","slide":3,"text":"Prepare booking details","textPreview":"Prepare booking details","textChars":23,"textLines":1,"bbox":[457,175,188,28]}
+{"kind":"shape","id":"sh/betsfupo","slide":3,"bbox":[727,214,188,10]}
+{"kind":"textbox","id":"sh/adkr6p83","slide":3,"text":"Choose an open schedule","textPreview":"Choose an open schedule","textChars":23,"textLines":1,"bbox":[727,175,188,28]}
+{"kind":"shape","id":"sh/pcbadk7y","slide":3,"bbox":[950,260,12,145]}
+{"kind":"textbox","id":"sh/obi94fqd","slide":3,"text":"Validate capacity","textPreview":"Validate capacity","textChars":17,"textLines":1,"bbox":[1000,318,160,28]}
+{"kind":"shape","id":"sh/na9sbaps","slide":3,"bbox":[727,441,188,10]}
+{"kind":"textbox","id":"sh/290r2587","slide":3,"text":"Complete booking options","textPreview":"Complete booking options","textChars":24,"textLines":1,"bbox":[727,402,188,28]}
+{"kind":"shape","id":"sh/t8vap472","slide":3,"bbox":[457,441,188,10]}
+{"kind":"textbox","id":"sh/87mtgjqh","slide":3,"text":"Pay online or at counter","textPreview":"Pay online or at counter","textChars":24,"textLines":1,"bbox":[457,402,188,28]}
+{"kind":"shape","id":"sh/snel87ip","slide":3,"bbox":[187,441,188,10]}
+{"kind":"textbox","id":"sh/donm1cja","slide":3,"text":"Receive confirmation","textPreview":"Receive confirmation","textChars":20,"textLines":1,"bbox":[187,402,188,28]}
+{"kind":"shape","id":"sh/q1w36h0z","slide":3,"bbox":[80,585,1120,62]}
+{"kind":"textbox","id":"sh/r254zm1k","slide":3,"text":"BOOKING RULE","textPreview":"BOOKING RULE","textChars":12,"textLines":1,"bbox":[98,596,190,20]}
+{"kind":"textbox","id":"sh/4zul47it","slide":3,"text":"A full or unavailable time slot cannot be selected; the customer must choose another available time.","textPreview":"A full or unavailable time slot cannot be selected; the customer must choose another available time.","textChars":100,"textLines":1,"bbox":[290,593,888,28]}
+{"kind":"textbox","id":"sh/50nmxcje","slide":3,"text":"Pending online payments may expire, while cancellation and refund follow the booking conditions.","textPreview":"Pending online payments may expire, while cancellation and refund follow the booking conditions.","textChars":96,"textLines":1,"bbox":[290,618,888,18]}
+{"kind":"notes","id":"nt/adv31j","slide":3,"text":""}
+{"kind":"slide","id":"sl/2fx9je","slide":4,"title":"6. Flows","textShapes":37}
+{"kind":"shape","id":"sh/g765wbq1","slide":4,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/f6d4n6pg","slide":4,"bbox":[44,28,1192,664]}
+{"kind":"shape","id":"sh/u54nu18v","slide":4,"bbox":[44,28,8,664]}
+{"kind":"textbox","id":"sh/t4vmlg7a","slide":4,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[80,53,136,42]}
+{"kind":"shape","id":"sh/sjm5sbqp","slide":4,"bbox":[218,60,3,28]}
+{"kind":"textbox","id":"sh/7id4j6p4","slide":4,"text":"Scenario 4: Staff Assignment & Car Wash Flow","textPreview":"Scenario 4: Staff Assignment & Car Wash Flow","textChars":44,"textLines":1,"bbox":[236,53,810,42]}
+{"kind":"textbox","id":"sh/6h4nq18j","slide":4,"text":"Coordinate staff, vehicle check-in and each wash stage while keeping the latest service progress visible.","textPreview":"Coordinate staff, vehicle check-in and each wash stage while keeping the latest service progress visible.","textChars":105,"textLines":1,"bbox":[82,99,1040,24]}
+{"kind":"shape","id":"sh/d0z6x07e","slide":4,"bbox":[105,178,82,82]}
+{"kind":"textbox","id":"sh/cfq54vq9","slide":4,"text":"▤","textPreview":"▤","textChars":1,"textLines":1,"bbox":[114,187,64,58]}
+{"kind":"shape","id":"sh/e10vudoj","slide":4,"bbox":[98,170,27,27]}
+{"kind":"textbox","id":"sh/z29w3i54","slide":4,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[101,173,21,21]}
+{"kind":"textbox","id":"sh/03ixwn6p","slide":4,"text":"Review Confirmed Booking","textPreview":"Review Confirmed Booking","textChars":24,"textLines":1,"bbox":[60,267,172,42]}
+{"kind":"shape","id":"sh/1obe58na","slide":4,"bbox":[375,178,82,82]}
+{"kind":"textbox","id":"sh/qx0vqton","slide":4,"text":"👥","textPreview":"👥","textChars":2,"textLines":1,"bbox":[384,187,64,58]}
+{"kind":"shape","id":"sh/ry9wzy58","slide":4,"bbox":[368,170,27,27]}
+{"kind":"textbox","id":"sh/czids36t","slide":4,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[371,173,21,21]}
+{"kind":"textbox","id":"sh/d0re18ny","slide":4,"text":"Check Staff Availability","textPreview":"Check Staff Availability","textChars":24,"textLines":1,"bbox":[330,267,172,42]}
+{"kind":"shape","id":"sh/atkf2x4r","slide":4,"bbox":[645,178,82,82]}
+{"kind":"textbox","id":"sh/butwb25c","slide":4,"text":"⚖","textPreview":"⚖","textChars":1,"textLines":1,"bbox":[654,187,64,58]}
+{"kind":"shape","id":"sh/7y5s3ulo","slide":4,"bbox":[638,170,27,27]}
+{"kind":"textbox","id":"sh/6dcbup43","slide":4,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[641,173,21,21]}
+{"kind":"textbox","id":"sh/t0nu543u","slide":4,"text":"Balance Staff Workload","textPreview":"Balance Staff Workload","textChars":22,"textLines":1,"bbox":[600,267,172,42]}
+{"kind":"shape","id":"sh/szetwzm9","slide":4,"bbox":[915,178,82,82]}
+{"kind":"textbox","id":"sh/f25c7ul0","slide":4,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[924,187,64,58]}
+{"kind":"shape","id":"sh/u1wbyp4f","slide":4,"bbox":[908,170,27,27]}
+{"kind":"textbox","id":"sh/h4nu943q","slide":4,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[911,173,21,21]}
+{"kind":"textbox","id":"sh/g3et0zml","slide":4,"text":"Assign Staff","textPreview":"Assign Staff","textChars":12,"textLines":1,"bbox":[870,267,172,42]}
+{"kind":"shape","id":"sh/36pcbelw","slide":4,"bbox":[915,405,82,82]}
+{"kind":"textbox","id":"sh/25gb294b","slide":4,"text":"🚗","textPreview":"🚗","textChars":2,"textLines":1,"bbox":[924,414,64,58]}
+{"kind":"shape","id":"sh/0bytsjip","slide":4,"bbox":[908,397,27,27]}
+{"kind":"textbox","id":"sh/1wra1oja","slide":4,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[911,400,21,21]}
+{"kind":"textbox","id":"sh/e9gbq90j","slide":4,"text":"Check-in & Queue Vehicle","textPreview":"Check-in & Queue Vehicle","textChars":24,"textLines":1,"bbox":[870,494,172,42]}
+{"kind":"shape","id":"sh/zapsze14","slide":4,"bbox":[645,405,82,82]}
+{"kind":"textbox","id":"sh/c7y9ozid","slide":4,"text":"💧","textPreview":"💧","textChars":2,"textLines":1,"bbox":[654,414,64,58]}
+{"kind":"shape","id":"sh/d87ax4jy","slide":4,"bbox":[638,397,27,27]}
+{"kind":"textbox","id":"sh/q5grm90n","slide":4,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[641,400,21,21]}
+{"kind":"textbox","id":"sh/r6psvu1s","slide":4,"text":"Start the Car Wash","textPreview":"Start the Car Wash","textChars":18,"textLines":1,"bbox":[600,494,172,42]}
+{"kind":"shape","id":"sh/43e9kzih","slide":4,"bbox":[375,405,82,82]}
+{"kind":"textbox","id":"sh/p4nat4j2","slide":4,"text":"↻","textPreview":"↻","textChars":1,"textLines":1,"bbox":[384,414,64,58]}
+{"kind":"shape","id":"sh/t83ql0zu","slide":4,"bbox":[368,397,27,27]}
+{"kind":"textbox","id":"sh/87upsvy9","slide":4,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[371,400,21,21]}
+{"kind":"textbox","id":"sh/76l8jqho","slide":4,"text":"Update Wash Progress","textPreview":"Update Wash Progress","textChars":20,"textLines":1,"bbox":[330,494,172,42]}
+{"kind":"shape","id":"sh/6lc7qlg3","slide":4,"bbox":[105,405,82,82]}
+{"kind":"textbox","id":"sh/hc3qp0zq","slide":4,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[114,414,64,58]}
+{"kind":"shape","id":"sh/gbupwvy5","slide":4,"bbox":[98,397,27,27]}
+{"kind":"textbox","id":"sh/fal8nahk","slide":4,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[101,400,21,21]}
+{"kind":"textbox","id":"sh/u9c7u5gf","slide":4,"text":"Complete the Service","textPreview":"Complete the Service","textChars":20,"textLines":1,"bbox":[60,494,172,42]}
+{"kind":"shape","id":"sh/xgj6dgzm","slide":4,"bbox":[187,214,188,10]}
+{"kind":"textbox","id":"sh/wfapkby1","slide":4,"text":"Find available employees","textPreview":"Find available employees","textChars":24,"textLines":1,"bbox":[187,175,188,28]}
+{"kind":"shape","id":"sh/mlonuhwz","slide":4,"bbox":[457,214,188,10]}
+{"kind":"textbox","id":"sh/nmh4nmxk","slide":4,"text":"Distribute work fairly","textPreview":"Distribute work fairly","textChars":22,"textLines":1,"bbox":[457,175,188,28]}
+{"kind":"shape","id":"sh/onq5w7ep","slide":4,"bbox":[727,214,188,10]}
+{"kind":"textbox","id":"sh/9ozmpcfa","slide":4,"text":"Prepare the assigned team","textPreview":"Prepare the assigned team","textChars":25,"textLines":1,"bbox":[727,175,188,28]}
+{"kind":"shape","id":"sh/ap8nyhwv","slide":4,"bbox":[950,260,12,145]}
+{"kind":"textbox","id":"sh/bqh4rmxg","slide":4,"text":"Receive the vehicle","textPreview":"Receive the vehicle","textChars":19,"textLines":1,"bbox":[1000,318,160,28]}
+{"kind":"shape","id":"sh/wrq50re1","slide":4,"bbox":[727,441,188,10]}
+{"kind":"textbox","id":"sh/xczmtwfm","slide":4,"text":"Perform each wash stage","textPreview":"Perform each wash stage","textChars":23,"textLines":1,"bbox":[727,402,188,28]}
+{"kind":"shape","id":"sh/qt43mxgr","slide":4,"bbox":[457,441,188,10]}
+{"kind":"textbox","id":"sh/rud4f2xc","slide":4,"text":"Show the latest progress","textPreview":"Show the latest progress","textChars":24,"textLines":1,"bbox":[457,402,188,28]}
+{"kind":"shape","id":"sh/vm9s7u9s","slide":4,"bbox":[187,441,188,10]}
+{"kind":"textbox","id":"sh/ul0byp87","slide":4,"text":"Finish and notify","textPreview":"Finish and notify","textChars":17,"textLines":1,"bbox":[187,402,188,28]}
+{"kind":"shape","id":"sh/hora94ry","slide":4,"bbox":[80,585,1120,62]}
+{"kind":"textbox","id":"sh/gnit0zqd","slide":4,"text":"OPERATION RULE","textPreview":"OPERATION RULE","textChars":14,"textLines":1,"bbox":[98,596,190,20]}
+{"kind":"textbox","id":"sh/7i9s3u9g","slide":4,"text":"Staff are selected by availability and workload so daily assignments remain balanced.","textPreview":"Staff are selected by availability and workload so daily assignments remain balanced.","textChars":85,"textLines":1,"bbox":[290,593,888,28]}
+{"kind":"textbox","id":"sh/mhgrupsb","slide":4,"text":"The customer and management views follow the latest booking and wash status throughout the service.","textPreview":"The customer and management views follow the latest booking and wash status throughout the service.","textChars":99,"textLines":1,"bbox":[290,618,888,18]}
+{"kind":"notes","id":"nt/2fx9je","slide":4,"text":""}
+{"kind":"slide","id":"sl/zqfcu5","slide":5,"title":"6. Flows","textShapes":37}
+{"kind":"shape","id":"sh/etgz29sz","slide":5,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/1wridobq","slide":5,"bbox":[44,28,1192,664]}
+{"kind":"shape","id":"sh/gvyh4ja5","slide":5,"bbox":[44,28,8,664]}
+{"kind":"textbox","id":"sh/7qpg7eto","slide":5,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[80,53,136,42]}
+{"kind":"shape","id":"sh/6pgzy9s3","slide":5,"bbox":[218,60,3,28]}
+{"kind":"textbox","id":"sh/ts7y94be","slide":5,"text":"Scenario 5: Combo, Promotion & Loyalty Flow","textPreview":"Scenario 5: Combo, Promotion & Loyalty Flow","textChars":43,"textLines":1,"bbox":[236,53,810,42]}
+{"kind":"textbox","id":"sh/sryh0jat","slide":5,"text":"Connect promotional offers, combo benefits and membership rewards to completed car wash services.","textPreview":"Connect promotional offers, combo benefits and membership rewards to completed car wash services.","textChars":97,"textLines":1,"bbox":[82,99,1040,24]}
+{"kind":"shape","id":"sh/j25g3utc","slide":5,"bbox":[105,178,82,82]}
+{"kind":"textbox","id":"sh/i1wzupsr","slide":5,"text":"🎁","textPreview":"🎁","textChars":2,"textLines":1,"bbox":[114,187,64,58]}
+{"kind":"shape","id":"sh/gj2ton2t","slide":5,"bbox":[98,170,27,27]}
+{"kind":"textbox","id":"sh/1kbahsje","slide":5,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[101,173,21,21]}
+{"kind":"textbox","id":"sh/ehkrmdkn","slide":5,"text":"Browse Offers","textPreview":"Browse Offers","textChars":13,"textLines":1,"bbox":[60,267,172,42]}
+{"kind":"shape","id":"sh/fitsfi18","slide":5,"bbox":[375,178,82,82]}
+{"kind":"textbox","id":"sh/sfi9kn2x","slide":5,"text":"★","textPreview":"★","textChars":1,"textLines":1,"bbox":[384,187,64,58]}
+{"kind":"shape","id":"sh/tgrad8ji","slide":5,"bbox":[368,170,27,27]}
+{"kind":"textbox","id":"sh/6d0ridkr","slide":5,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[371,173,21,21]}
+{"kind":"textbox","id":"sh/re9sbi1c","slide":5,"text":"Check Tier Eligibility","textPreview":"Check Tier Eligibility","textChars":22,"textLines":1,"bbox":[330,267,172,42]}
+{"kind":"shape","id":"sh/cbmtw721","slide":5,"bbox":[645,178,82,82]}
+{"kind":"textbox","id":"sh/xcvapcjm","slide":5,"text":"▣","textPreview":"▣","textChars":1,"textLines":1,"bbox":[654,187,64,58]}
+{"kind":"shape","id":"sh/lsra9cbq","slide":5,"bbox":[638,170,27,27]}
+{"kind":"textbox","id":"sh/kri9g7a5","slide":5,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[641,173,21,21]}
+{"kind":"textbox","id":"sh/jq9s72tk","slide":5,"text":"Buy Combo or Apply Voucher","textPreview":"Buy Combo or Apply Voucher","textChars":26,"textLines":1,"bbox":[600,267,172,42]}
+{"kind":"shape","id":"sh/y50rexcz","slide":5,"bbox":[915,178,82,82]}
+{"kind":"textbox","id":"sh/x4ra5sbu","slide":5,"text":"💳","textPreview":"💳","textChars":2,"textLines":1,"bbox":[924,187,64,58]}
+{"kind":"shape","id":"sh/w3y9cnu9","slide":5,"bbox":[908,170,27,27]}
+{"kind":"textbox","id":"sh/b2ps3ito","slide":5,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[911,173,21,21]}
+{"kind":"textbox","id":"sh/a1graxc3","slide":5,"text":"Confirm Payment","textPreview":"Confirm Payment","textChars":15,"textLines":1,"bbox":[870,267,172,42]}
+{"kind":"shape","id":"sh/p07a1sbi","slide":5,"bbox":[915,405,82,82]}
+{"kind":"textbox","id":"sh/ozy98nux","slide":5,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[924,414,64,58]}
+{"kind":"shape","id":"sh/e5w72tsv","slide":5,"bbox":[908,397,27,27]}
+{"kind":"textbox","id":"sh/f658by9g","slide":5,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[911,400,21,21]}
+{"kind":"textbox","id":"sh/07ep4ja1","slide":5,"text":"Activate the Benefit","textPreview":"Activate the Benefit","textChars":20,"textLines":1,"bbox":[870,494,172,42]}
+{"kind":"shape","id":"sh/18nqdorm","slide":5,"bbox":[645,405,82,82]}
+{"kind":"textbox","id":"sh/q1c7y9sz","slide":5,"text":"💧","textPreview":"💧","textChars":2,"textLines":1,"bbox":[654,414,64,58]}
+{"kind":"shape","id":"sh/r2lo7e94","slide":5,"bbox":[638,397,27,27]}
+{"kind":"textbox","id":"sh/s3up0jap","slide":5,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[641,400,21,21]}
+{"kind":"textbox","id":"sh/d4369ora","slide":5,"text":"Complete an Eligible Service","textPreview":"Complete an Eligible Service","textChars":28,"textLines":1,"bbox":[600,494,172,42]}
+{"kind":"shape","id":"sh/idc7a9sn","slide":5,"bbox":[375,405,82,82]}
+{"kind":"textbox","id":"sh/3elo3e98","slide":5,"text":"★","textPreview":"★","textChars":1,"textLines":1,"bbox":[384,414,64,58]}
+{"kind":"shape","id":"sh/vq54fad4","slide":5,"bbox":[368,397,27,27]}
+{"kind":"textbox","id":"sh/upc365cj","slide":5,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[371,400,21,21]}
+{"kind":"textbox","id":"sh/hsnmhkvu","slide":5,"text":"Earn Points & Update Tier","textPreview":"Earn Points & Update Tier","textChars":25,"textLines":1,"bbox":[330,494,172,42]}
+{"kind":"shape","id":"sh/wrel8fu9","slide":5,"bbox":[105,405,82,82]}
+{"kind":"textbox","id":"sh/72l4bqds","slide":5,"text":"🎁","textPreview":"🎁","textChars":2,"textLines":1,"bbox":[114,414,64,58]}
+{"kind":"shape","id":"sh/m1c325c7","slide":5,"bbox":[98,397,27,27]}
+{"kind":"textbox","id":"sh/9o3md0vy","slide":5,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[101,400,21,21]}
+{"kind":"textbox","id":"sh/83ul4vud","slide":5,"text":"Redeem Rewards","textPreview":"Redeem Rewards","textChars":14,"textLines":1,"bbox":[60,494,172,42]}
+{"kind":"shape","id":"sh/zy1k7qdw","slide":5,"bbox":[187,214,188,10]}
+{"kind":"textbox","id":"sh/yxs3ylwb","slide":5,"text":"Match the customer tier","textPreview":"Match the customer tier","textChars":23,"textLines":1,"bbox":[187,175,188,28]}
+{"kind":"shape","id":"sh/4r69sn6x","slide":5,"bbox":[457,214,188,10]}
+{"kind":"textbox","id":"sh/psfals7i","slide":5,"text":"Choose an eligible benefit","textPreview":"Choose an eligible benefit","textChars":26,"textLines":1,"bbox":[457,175,188,28]}
+{"kind":"shape","id":"sh/2porqxor","slide":5,"bbox":[727,214,188,10]}
+{"kind":"textbox","id":"sh/3qxsj2pc","slide":5,"text":"Complete the purchase","textPreview":"Complete the purchase","textChars":21,"textLines":1,"bbox":[727,175,188,28]}
+{"kind":"shape","id":"sh/cvq9w76t","slide":5,"bbox":[950,260,12,145]}
+{"kind":"textbox","id":"sh/dwzapc7e","slide":5,"text":"Make the offer available","textPreview":"Make the offer available","textChars":24,"textLines":1,"bbox":[1000,318,160,28]}
+{"kind":"shape","id":"sh/qtoruxo3","slide":5,"bbox":[727,441,188,10]}
+{"kind":"textbox","id":"sh/buhsn2p8","slide":5,"text":"Use the benefit","textPreview":"Use the benefit","textChars":15,"textLines":1,"bbox":[727,402,188,28]}
+{"kind":"shape","id":"sh/szm9k3qp","slide":5,"bbox":[457,441,188,10]}
+{"kind":"textbox","id":"sh/t0vqd87a","slide":5,"text":"Add loyalty value","textPreview":"Add loyalty value","textChars":17,"textLines":1,"bbox":[457,402,188,28]}
+{"kind":"shape","id":"sh/9gnqh4zy","slide":5,"bbox":[187,441,188,10]}
+{"kind":"textbox","id":"sh/8vepozid","slide":5,"text":"Continue the reward cycle","textPreview":"Continue the reward cycle","textChars":25,"textLines":1,"bbox":[187,402,188,28]}
+{"kind":"shape","id":"sh/7u5ofuhs","slide":5,"bbox":[80,585,1120,62]}
+{"kind":"textbox","id":"sh/mtw7mp0n","slide":5,"text":"LOYALTY RULE","textPreview":"LOYALTY RULE","textChars":12,"textLines":1,"bbox":[98,596,190,20]}
+{"kind":"textbox","id":"sh/hk7qloza","slide":5,"text":"Offers may require a membership tier, enough points or a successful purchase before they can be used.","textPreview":"Offers may require a membership tier, enough points or a successful purchase before they can be used.","textChars":101,"textLines":1,"bbox":[290,593,888,28]}
+{"kind":"textbox","id":"sh/wjypsjip","slide":5,"text":"Completed services can add points, update the customer's tier and unlock future rewards.","textPreview":"Completed services can add points, update the customer's tier and unlock future rewards.","textChars":88,"textLines":1,"bbox":[290,618,888,18]}
+{"kind":"notes","id":"nt/zqfcu5","slide":5,"text":""}
+{"kind":"slide","id":"sl/aszqod","slide":6,"title":"6. Flows","textShapes":37}
+{"kind":"shape","id":"sh/4rqlwr6h","slide":6,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/jqhknmpw","slide":6,"bbox":[44,28,1192,664]}
+{"kind":"shape","id":"sh/ip83uhob","slide":6,"bbox":[44,28,8,664]}
+{"kind":"textbox","id":"sh/tgj2tg7y","slide":6,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[80,53,136,42]}
+{"kind":"shape","id":"sh/sfal0b6d","slide":6,"bbox":[218,60,3,28]}
+{"kind":"textbox","id":"sh/ru1kr6ps","slide":6,"text":"Scenario 6: Review, History & Customer Retention Flow","textPreview":"Scenario 6: Review, History & Customer Retention Flow","textChars":53,"textLines":1,"bbox":[236,53,810,42]}
+{"kind":"textbox","id":"sh/6ts3y1o7","slide":6,"text":"Capture feedback after service, reward participation and keep the customer's service journey accessible.","textPreview":"Capture feedback after service, reward participation and keep the customer's service journey accessible.","textChars":104,"textLines":1,"bbox":[82,99,1040,24]}
+{"kind":"shape","id":"sh/9kf2hc7u","slide":6,"bbox":[105,178,82,82]}
+{"kind":"textbox","id":"sh/8j61o769","slide":6,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[114,187,64,58]}
+{"kind":"shape","id":"sh/2po3m9cf","slide":6,"bbox":[98,170,27,27]}
+{"kind":"textbox","id":"sh/3qxkved0","slide":6,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[101,173,21,21]}
+{"kind":"textbox","id":"sh/or6lojul","slide":6,"text":"Open a Completed Booking","textPreview":"Open a Completed Booking","textChars":24,"textLines":1,"bbox":[60,267,172,42]}
+{"kind":"shape","id":"sh/psf2xov6","slide":6,"bbox":[375,178,82,82]}
+{"kind":"textbox","id":"sh/qto3qtcr","slide":6,"text":"★","textPreview":"★","textChars":1,"textLines":1,"bbox":[384,187,64,58]}
+{"kind":"shape","id":"sh/buxkzydw","slide":6,"bbox":[368,170,27,27]}
+{"kind":"textbox","id":"sh/cv6ls3uh","slide":6,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[371,173,21,21]}
+{"kind":"textbox","id":"sh/dwz21ov2","slide":6,"text":"Rate the Booking & Staff","textPreview":"Rate the Booking & Staff","textChars":24,"textLines":1,"bbox":[330,267,172,42]}
+{"kind":"shape","id":"sh/yx83utcn","slide":6,"bbox":[645,178,82,82]}
+{"kind":"textbox","id":"sh/zyhk3yd8","slide":6,"text":"✎","textPreview":"✎","textChars":1,"textLines":1,"bbox":[654,187,64,58]}
+{"kind":"shape","id":"sh/vmhkrytg","slide":6,"bbox":[638,170,27,27]}
+{"kind":"textbox","id":"sh/a18jitsv","slide":6,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[641,173,21,21]}
+{"kind":"textbox","id":"sh/hoj2t8r6","slide":6,"text":"Add Comments","textPreview":"Add Comments","textChars":12,"textLines":1,"bbox":[600,267,172,42]}
+{"kind":"shape","id":"sh/wna1k3a1","slide":6,"bbox":[915,178,82,82]}
+{"kind":"textbox","id":"sh/nyhknyt4","slide":6,"text":"▧","textPreview":"▧","textChars":1,"textLines":1,"bbox":[924,187,64,58]}
+{"kind":"shape","id":"sh/mx8jetsj","slide":6,"bbox":[908,170,27,27]}
+{"kind":"textbox","id":"sh/90z2p8ba","slide":6,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[911,173,21,21]}
+{"kind":"textbox","id":"sh/8zq1g3ap","slide":6,"text":"Add Service Images","textPreview":"Add Service Images","textChars":18,"textLines":1,"bbox":[870,267,172,42]}
+{"kind":"shape","id":"sh/zux0jet8","slide":6,"bbox":[915,405,82,82]}
+{"kind":"textbox","id":"sh/ytoja9sn","slide":6,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[924,414,64,58]}
+{"kind":"shape","id":"sh/ozmhkfql","slide":6,"bbox":[908,397,27,27]}
+{"kind":"textbox","id":"sh/p0vytkrq","slide":6,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[911,400,21,21]}
+{"kind":"textbox","id":"sh/2x4zip8f","slide":6,"text":"Submit the Review","textPreview":"Submit the Review","textChars":17,"textLines":1,"bbox":[870,494,172,42]}
+{"kind":"shape","id":"sh/3ydgra90","slide":6,"bbox":[645,405,82,82]}
+{"kind":"textbox","id":"sh/c3mhozqh","slide":6,"text":"+","textPreview":"+","textChars":1,"textLines":1,"bbox":[654,414,64,58]}
+{"kind":"shape","id":"sh/d4fyx4r2","slide":6,"bbox":[638,397,27,27]}
+{"kind":"textbox","id":"sh/q14zmp8b","slide":6,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[641,400,21,21]}
+{"kind":"textbox","id":"sh/b2dgvu9w","slide":6,"text":"Receive Review Bonus","textPreview":"Receive Review Bonus","textChars":20,"textLines":1,"bbox":[600,494,172,42]}
+{"kind":"shape","id":"sh/s72xcvqd","slide":6,"bbox":[375,405,82,82]}
+{"kind":"textbox","id":"sh/t8byl0ry","slide":6,"text":"◷","textPreview":"◷","textChars":1,"textLines":1,"bbox":[384,414,64,58]}
+{"kind":"shape","id":"sh/l4nql0r2","slide":6,"bbox":[368,397,27,27]}
+{"kind":"textbox","id":"sh/k3epsvqh","slide":6,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[371,400,21,21]}
+{"kind":"textbox","id":"sh/z258jq9w","slide":6,"text":"View Booking History","textPreview":"View Booking History","textChars":20,"textLines":1,"bbox":[330,494,172,42]}
+{"kind":"shape","id":"sh/y1w7ql8b","slide":6,"bbox":[105,405,82,82]}
+{"kind":"textbox","id":"sh/x03qh0r6","slide":6,"text":"↻","textPreview":"↻","textChars":1,"textLines":1,"bbox":[114,414,64,58]}
+{"kind":"shape","id":"sh/czupovql","slide":6,"bbox":[98,397,27,27]}
+{"kind":"textbox","id":"sh/byl8fq90","slide":6,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[101,400,21,21]}
+{"kind":"textbox","id":"sh/axc7ml8f","slide":6,"text":"Return for the Next Service","textPreview":"Return for the Next Service","textChars":27,"textLines":1,"bbox":[60,494,172,42]}
+{"kind":"shape","id":"sh/pw3qdgru","slide":6,"bbox":[187,214,188,10]}
+{"kind":"textbox","id":"sh/ovupkbq9","slide":6,"text":"Share the service experience","textPreview":"Share the service experience","textChars":28,"textLines":1,"bbox":[187,175,188,28]}
+{"kind":"shape","id":"sh/e18neho7","slide":6,"bbox":[457,214,188,10]}
+{"kind":"textbox","id":"sh/f21onmps","slide":6,"text":"Provide useful feedback","textPreview":"Provide useful feedback","textChars":23,"textLines":1,"bbox":[457,175,188,28]}
+{"kind":"shape","id":"sh/03a5gr6d","slide":6,"bbox":[727,214,188,10]}
+{"kind":"textbox","id":"sh/14j6pw7y","slide":6,"text":"Add optional evidence","textPreview":"Add optional evidence","textChars":21,"textLines":1,"bbox":[727,175,188,28]}
+{"kind":"shape","id":"sh/qd8nahob","slide":6,"bbox":[950,260,12,145]}
+{"kind":"textbox","id":"sh/reh4j2pg","slide":6,"text":"Validate the review","textPreview":"Validate the review","textChars":19,"textLines":1,"bbox":[1000,318,160,28]}
+{"kind":"shape","id":"sh/szq5c761","slide":6,"bbox":[727,441,188,10]}
+{"kind":"textbox","id":"sh/d0zmlc7m","slide":6,"text":"Reward participation","textPreview":"Reward participation","textChars":20,"textLines":1,"bbox":[727,402,188,28]}
+{"kind":"shape","id":"sh/i9on6xoz","slide":6,"bbox":[457,441,188,10]}
+{"kind":"textbox","id":"sh/3ah4f2pk","slide":6,"text":"Keep service records","textPreview":"Keep service records","textChars":20,"textLines":1,"bbox":[457,402,188,28]}
+{"kind":"shape","id":"sh/7edkny5c","slide":6,"bbox":[187,441,188,10]}
+{"kind":"textbox","id":"sh/md4jet4r","slide":6,"text":"Support customer retention","textPreview":"Support customer retention","textChars":26,"textLines":1,"bbox":[187,402,188,28]}
+{"kind":"shape","id":"sh/9gv2p8ni","slide":6,"bbox":[80,585,1120,62]}
+{"kind":"textbox","id":"sh/8fmlg3mx","slide":6,"text":"REVIEW RULE","textPreview":"REVIEW RULE","textChars":11,"textLines":1,"bbox":[98,596,190,20]}
+{"kind":"textbox","id":"sh/vixkry58","slide":6,"text":"Only a completed booking can be reviewed, and each booking receives no more than one customer review.","textPreview":"Only a completed booking can be reviewed, and each booking receives no more than one customer review.","textChars":101,"textLines":1,"bbox":[290,593,888,28]}
+{"kind":"textbox","id":"sh/uh43id43","slide":6,"text":"Review details help identify the assigned staff and improve service quality over time.","textPreview":"Review details help identify the assigned staff and improve service quality over time.","textChars":86,"textLines":1,"bbox":[290,618,888,18]}
+{"kind":"notes","id":"nt/aszqod","slide":6,"text":""}
+{"kind":"slide","id":"sl/5fsuyz","slide":7,"title":"6. Flows","textShapes":37}
+{"kind":"shape","id":"sh/a1kjmpwb","slide":7,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/x4bix4f2","slide":7,"bbox":[44,28,1192,664]}
+{"kind":"shape","id":"sh/w321ozeh","slide":7,"bbox":[44,28,8,664]}
+{"kind":"textbox","id":"sh/jqd0zex8","slide":7,"text":"6. Flows","textPreview":"6. Flows","textChars":8,"textLines":1,"bbox":[80,53,136,42]}
+{"kind":"shape","id":"sh/i54jq9wn","slide":7,"bbox":[218,60,3,28]}
+{"kind":"textbox","id":"sh/5svi14fy","slide":7,"text":"Scenario 7: Management & Reporting Flow","textPreview":"Scenario 7: Management & Reporting Flow","textChars":39,"textLines":1,"bbox":[236,53,810,42]}
+{"kind":"textbox","id":"sh/krm1szet","slide":7,"text":"Give administrators one place to monitor operations, maintain business data and evaluate performance.","textPreview":"Give administrators one place to monitor operations, maintain business data and evaluate performance.","textChars":101,"textLines":1,"bbox":[82,99,1040,24]}
+{"kind":"shape","id":"sh/7ud03ex4","slide":7,"bbox":[105,178,82,82]}
+{"kind":"textbox","id":"sh/6t4ju9wj","slide":7,"text":"▥","textPreview":"▥","textChars":1,"textLines":1,"bbox":[114,187,64,58]}
+{"kind":"shape","id":"sh/wvmpkj61","slide":7,"bbox":[98,170,27,27]}
+{"kind":"textbox","id":"sh/xwvqto7m","slide":7,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[101,173,21,21]}
+{"kind":"textbox","id":"sh/at47i9ov","slide":7,"text":"Open the Dashboard","textPreview":"Open the Dashboard","textChars":18,"textLines":1,"bbox":[60,267,172,42]}
+{"kind":"shape","id":"sh/bud8repg","slide":7,"bbox":[375,178,82,82]}
+{"kind":"textbox","id":"sh/kzm9oj6x","slide":7,"text":"▤","textPreview":"▤","textChars":1,"textLines":1,"bbox":[384,187,64,58]}
+{"kind":"shape","id":"sh/l0fqho7i","slide":7,"bbox":[368,170,27,27]}
+{"kind":"textbox","id":"sh/yx47mto7","slide":7,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[371,173,21,21]}
+{"kind":"textbox","id":"sh/jyd8vypc","slide":7,"text":"Manage Bookings","textPreview":"Manage Bookings","textChars":15,"textLines":1,"bbox":[330,267,172,42]}
+{"kind":"shape","id":"sh/8n69s369","slide":7,"bbox":[645,178,82,82]}
+{"kind":"textbox","id":"sh/tofql87u","slide":7,"text":"👥","textPreview":"👥","textChars":2,"textLines":1,"bbox":[654,187,64,58]}
+{"kind":"shape","id":"sh/hkbq58zy","slide":7,"bbox":[638,170,27,27]}
+{"kind":"textbox","id":"sh/gj2pc3yd","slide":7,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[641,173,21,21]}
+{"kind":"textbox","id":"sh/fit83yhs","slide":7,"text":"Manage Accounts","textPreview":"Manage Accounts","textChars":15,"textLines":1,"bbox":[600,267,172,42]}
+{"kind":"shape","id":"sh/uhk7atg7","slide":7,"bbox":[915,178,82,82]}
+{"kind":"textbox","id":"sh/p8vq98zu","slide":7,"text":"▣","textPreview":"▣","textChars":1,"textLines":1,"bbox":[924,187,64,58]}
+{"kind":"shape","id":"sh/47mpg3y9","slide":7,"bbox":[908,170,27,27]}
+{"kind":"textbox","id":"sh/36d87yho","slide":7,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[911,173,21,21]}
+{"kind":"textbox","id":"sh/25k7edgj","slide":7,"text":"Manage Services & Packages","textPreview":"Manage Services & Packages","textChars":26,"textLines":1,"bbox":[870,267,172,42]}
+{"kind":"shape","id":"sh/5crqxozq","slide":7,"bbox":[915,405,82,82]}
+{"kind":"textbox","id":"sh/kbip4jy5","slide":7,"text":"🎁","textPreview":"🎁","textChars":2,"textLines":1,"bbox":[924,414,64,58]}
+{"kind":"shape","id":"sh/ahgnepw3","slide":7,"bbox":[908,397,27,27]}
+{"kind":"textbox","id":"sh/vip47axo","slide":7,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[911,400,21,21]}
+{"kind":"textbox","id":"sh/wjy5gfet","slide":7,"text":"Manage Promotions & Tiers","textPreview":"Manage Promotions & Tiers","textChars":25,"textLines":1,"bbox":[870,494,172,42]}
+{"kind":"shape","id":"sh/xk7m9kfe","slide":7,"bbox":[645,405,82,82]}
+{"kind":"textbox","id":"sh/ilgnipwz","slide":7,"text":"⚙","textPreview":"⚙","textChars":1,"textLines":1,"bbox":[654,414,64,58]}
+{"kind":"shape","id":"sh/jmpobuxk","slide":7,"bbox":[638,397,27,27]}
+{"kind":"textbox","id":"sh/kni5kze5","slide":7,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[641,400,21,21]}
+{"kind":"textbox","id":"sh/5or6d4fq","slide":7,"text":"Monitor Staff & Operations","textPreview":"Monitor Staff & Operations","textChars":26,"textLines":1,"bbox":[600,494,172,42]}
+{"kind":"shape","id":"sh/ypwn65wv","slide":7,"bbox":[375,405,82,82]}
+{"kind":"textbox","id":"sh/zq54zqxg","slide":7,"text":"✦","textPreview":"✦","textChars":1,"textLines":1,"bbox":[384,414,64,58]}
+{"kind":"shape","id":"sh/fadcn2ls","slide":7,"bbox":[368,397,27,27]}
+{"kind":"textbox","id":"sh/u94bex47","slide":7,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[371,400,21,21]}
+{"kind":"textbox","id":"sh/hcvups3y","slide":7,"text":"Review Feedback & Content","textPreview":"Review Feedback & Content","textChars":25,"textLines":1,"bbox":[330,494,172,42]}
+{"kind":"shape","id":"sh/gbmtg72d","slide":7,"bbox":[105,405,82,82]}
+{"kind":"textbox","id":"sh/3ydcr2l4","slide":7,"text":"▥","textPreview":"▥","textChars":1,"textLines":1,"bbox":[114,414,64,58]}
+{"kind":"shape","id":"sh/2x4bixkj","slide":7,"bbox":[98,397,27,27]}
+{"kind":"textbox","id":"sh/p0futc3u","slide":7,"text":"8","textPreview":"8","textChars":1,"textLines":1,"bbox":[101,400,21,21]}
+{"kind":"textbox","id":"sh/4z6tk72p","slide":7,"text":"View Reports & Performance","textPreview":"View Reports & Performance","textChars":26,"textLines":1,"bbox":[60,494,172,42]}
+{"kind":"shape","id":"sh/b2xcvml0","slide":7,"bbox":[187,214,188,10]}
+{"kind":"textbox","id":"sh/q1obmhkf","slide":7,"text":"Track the latest activity","textPreview":"Track the latest activity","textChars":25,"textLines":1,"bbox":[187,175,188,28]}
+{"kind":"shape","id":"sh/87qtcrit","slide":7,"bbox":[457,214,188,10]}
+{"kind":"textbox","id":"sh/98za5wje","slide":7,"text":"Maintain customer records","textPreview":"Maintain customer records","textChars":25,"textLines":1,"bbox":[457,175,188,28]}
+{"kind":"shape","id":"sh/m5obah0n","slide":7,"bbox":[727,214,188,10]}
+{"kind":"textbox","id":"sh/n6hs3m18","slide":7,"text":"Update the service catalog","textPreview":"Update the service catalog","textChars":26,"textLines":1,"bbox":[727,175,188,28]}
+{"kind":"shape","id":"sh/036t87ih","slide":7,"bbox":[950,260,12,145]}
+{"kind":"textbox","id":"sh/l4fa1cj2","slide":7,"text":"Control customer offers","textPreview":"Control customer offers","textChars":23,"textLines":1,"bbox":[1000,318,160,28]}
+{"kind":"shape","id":"sh/y1ob6x0r","slide":7,"bbox":[727,441,188,10]}
+{"kind":"textbox","id":"sh/z2xsz21w","slide":7,"text":"Coordinate daily work","textPreview":"Coordinate daily work","textChars":21,"textLines":1,"bbox":[727,402,188,28]}
+{"kind":"shape","id":"sh/cz6t47il","slide":7,"bbox":[457,441,188,10]}
+{"kind":"textbox","id":"sh/d0faxcj6","slide":7,"text":"Monitor service quality","textPreview":"Monitor service quality","textChars":23,"textLines":1,"bbox":[457,402,188,28]}
+{"kind":"shape","id":"sh/tw7q1obu","slide":7,"bbox":[187,441,188,10]}
+{"kind":"textbox","id":"sh/svy98ja9","slide":7,"text":"Support business decisions","textPreview":"Support business decisions","textChars":26,"textLines":1,"bbox":[187,402,188,28]}
+{"kind":"shape","id":"sh/rup8zyto","slide":7,"bbox":[80,585,1120,62]}
+{"kind":"textbox","id":"sh/6twr6tsj","slide":7,"text":"MANAGEMENT VIEW","textPreview":"MANAGEMENT VIEW","textChars":15,"textLines":1,"bbox":[98,596,190,20]}
+{"kind":"textbox","id":"sh/5snqxoby","slide":7,"text":"Reports summarize bookings, revenue, service progress, staff performance, customer tiers, promotions and reviews.","textPreview":"Reports summarize bookings, revenue, service progress, staff performance, customer tiers, promotions and reviews.","textChars":113,"textLines":1,"bbox":[290,593,888,28]}
+{"kind":"textbox","id":"sh/47ep4jad","slide":7,"text":"Search and filters help administrators find records before reviewing or updating them.","textPreview":"Search and filters help administrators find records before reviewing or updating them.","textChars":86,"textLines":1,"bbox":[290,618,888,18]}
+{"kind":"notes","id":"nt/5fsuyz","slide":7,"text":""}

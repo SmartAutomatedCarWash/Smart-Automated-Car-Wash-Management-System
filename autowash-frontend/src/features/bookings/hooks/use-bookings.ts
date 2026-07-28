@@ -18,6 +18,7 @@ import {
   listBookingCombos,
   listBookingPackages,
   listActiveCustomerCombos,
+  listCustomerComboHistory,
   listCustomerBookings,
   listSlotAvailability,
   purchaseCustomerCombo,
@@ -155,6 +156,18 @@ export function useActiveCustomerCombos() {
   });
 }
 
+export function useCustomerComboHistory(page = 1, limit = 20) {
+  const { enabled, userId } = useBookingQueryContext();
+
+  return useQuery<{ items: CustomerCombo[]; pagination: BookingListPage["pagination"] }, ApiErrorResponse>({
+    queryKey: ["booking-catalog", "customer-combos", "history", userId, page, limit],
+    queryFn: () => listCustomerComboHistory(page, limit),
+    enabled,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+  });
+}
+
 export function useCustomerComboPaymentStatus(transactionRef: string | null | undefined, enabled = true) {
   const context = useBookingQueryContext();
 
@@ -246,7 +259,7 @@ export function useCreateCustomerBooking() {
 
   return useMutation<CreateBookingResponse, ApiErrorResponse, BookingDraft>({
     mutationFn: createCustomerBooking,
-    onSuccess: async (createdBooking) => {
+    onSuccess: (createdBooking) => {
       const newListItem: BookingListItem = {
         bookingId: createdBooking.bookingId,
         vehiclePlate: createdBooking.vehiclePlate,
@@ -284,7 +297,7 @@ export function useCreateCustomerBooking() {
         },
       );
 
-      await Promise.all([
+      void Promise.all([
         queryClient.invalidateQueries({ queryKey: bookingDetailQueryKey(userId, createdBooking.bookingId) }),
         queryClient.invalidateQueries({ queryKey: washTrackingActiveQueryKey(userId) }),
         queryClient.invalidateQueries({ queryKey: customerLoyaltyScope(userId) }),

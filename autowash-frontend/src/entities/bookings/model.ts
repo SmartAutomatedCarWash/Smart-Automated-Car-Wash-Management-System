@@ -38,6 +38,7 @@ export type BookingPackage = {
   popularity: string | null;
   averageRating?: number;
   reviewCount?: number;
+  bookingCount?: number;
 };
 
 export type BookingAddon = {
@@ -84,7 +85,10 @@ export type CustomerCombo = {
   status: string;
   totalUsages: number;
   remainingUsages: number;
+  paymentStatus?: string | null;
+  transactionRef?: string | null;
   activatedAt: string;
+  createdAt?: string | null;
   expiresAt: string;
   lastUsedAt: string | null;
 };
@@ -101,6 +105,8 @@ export type CustomerComboPaymentStatus = {
 export type DiscountValidationRequest = {
   discountCode: string;
   packageId?: string;
+  comboId?: string;
+  options?: string[];
   amount: number;
 };
 
@@ -263,6 +269,7 @@ export type BookingListItem = {
   finalAmount: number;
   status: BookingStatus;
   washStatus: string | null;
+  assignedStaffName?: string | null;
   createdAt: string;
   confirmationExpiresAt: string | null;
   completedAt: string | null;
@@ -316,6 +323,7 @@ export type BookingDetail = {
   payment: {
     method: string;
     status: string;
+    amount: number;
     transactionId: string | null;
     paidAt: string | null;
     qrUrl?: string | null;
@@ -372,9 +380,6 @@ export type CancelBookingResponse = {
   bookingId: string;
   status: string;
   cancelledAt: string;
-  refundAmount: number;
-  refundStatus: string;
-  refundMessage: string;
 };
 
 export type PurchaseCustomerComboRequest = {

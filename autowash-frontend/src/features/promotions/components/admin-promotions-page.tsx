@@ -65,6 +65,7 @@ import { useTierConfigs } from "@/features/settings/hooks/use-admin-tiers";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { useTierStore } from "@/shared/store/tier.store";
 import { DynamicTierBadge } from "@/shared/ui/workspace/dynamic-tier-badge";
+import { TierIcon } from "@/shared/ui/workspace/tier-icon";
 import type { AdminPromotionKind } from "@/features/promotions/api/admin-promotions-service";
 import { useTierStyle } from "@/shared/lib/tier-styles";
 
@@ -1024,7 +1025,7 @@ function TierSelectionOption({
     <label
       className={cn(
         "flex cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 text-sm font-bold transition-all",
-        checked ? "shadow-sm" : "bg-white text-slate-700 hover:bg-slate-50",
+        checked ? "shadow-sm ring-1 ring-current/10" : "bg-white text-slate-700 hover:bg-slate-50",
       )}
       style={
         checked
@@ -1048,11 +1049,20 @@ function TierSelectionOption({
           color: checked ? "#ffffff" : tierColor,
         }}
       />
+      <TierIcon
+        tier={tier}
+        className="h-9 w-9"
+        iconClassName="h-[18px] w-[18px]"
+        style={{
+          color: tierColor,
+          backgroundColor: checked ? `${tierColor}20` : `${tierColor}12`,
+          borderColor: `${tierColor}33`,
+        }}
+      />
       <span
-        className="inline-flex min-w-0 items-center gap-2 truncate"
+        className="inline-flex min-w-0 flex-1 items-center gap-2 truncate"
         style={checked ? undefined : { color: badge.color }}
       >
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: tierColor }} />
         <span className="truncate">{tier}</span>
       </span>
     </label>

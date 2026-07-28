@@ -45,7 +45,9 @@ public record StaffSessionHistoryResponse(
             Integer durationMinutes,
             String managerNotes,
             String customerNotes,
-            Review review
+            Review review,
+            Long totalPrice,
+            List<BookingDetailDto> services
     ) {
     }
 

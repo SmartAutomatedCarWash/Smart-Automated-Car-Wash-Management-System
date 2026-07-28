@@ -24,6 +24,7 @@ public interface CatalogMapper {
     @Mapping(target = "popularity", source = "popularity")
     @Mapping(target = "averageRating", source = "averageRating")
     @Mapping(target = "reviewCount", source = "reviewCount")
+    @Mapping(target = "bookingCount", source = "bookingCount")
     PackageResponse toPackageResponse(
             Package pkg,
             List<String> features,
@@ -31,7 +32,8 @@ public interface CatalogMapper {
             List<String> imageUrls,
             String popularity,
             Double averageRating,
-            Long reviewCount
+            Long reviewCount,
+            Long bookingCount
     );
 
     @Mapping(target = "serviceId", source = "service.id")

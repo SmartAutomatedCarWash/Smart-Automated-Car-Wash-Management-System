@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ElementType, ReactNode } from "react";
 import {
-  Banknote,
   Building2,
   CheckCircle2,
   ChevronDown,
@@ -165,12 +164,6 @@ const PAYMENT_OPTIONS: {
   icon: ElementType;
   badge?: string;
 }[] = [
-  {
-    method: "CASH_AT_COUNTER",
-    label: "Cash at counter",
-    description: "Pay directly when you arrive.",
-    icon: Banknote,
-  },
   {
     method: "BANK_TRANSFER",
     label: "SePay",
@@ -860,8 +853,13 @@ export function CustomerBookingForm() {
   const [showPaymentError, setShowPaymentError] = useState(false);
 
   useEffect(() => {
+    if (draft.paymentMethod === "CASH_AT_COUNTER") {
+      setSelectedPaymentMethod(null);
+      updateDraft({ paymentMethod: null });
+      return;
+    }
     setSelectedPaymentMethod(draft.paymentMethod);
-  }, [draft.paymentMethod]);
+  }, [draft.paymentMethod, updateDraft]);
 
   const resetValidatedDiscount = () => {
     setValidatedDiscount(null);
@@ -1132,6 +1130,8 @@ export function CustomerBookingForm() {
       const result = await discountMutation.mutateAsync({
         discountCode: normalizedCode,
         packageId: draft.mode === "PACKAGE" ? draft.packageId : undefined,
+        comboId: draft.mode === "COMBO" ? draft.comboId : undefined,
+        options: draft.addonIds,
         amount: summary.subtotal,
       });
       setValidatedDiscount(result);
@@ -1299,7 +1299,7 @@ export function CustomerBookingForm() {
             <p className="text-sm text-muted-foreground">
               Select how you want to pay before we reserve this booking slot.
             </p>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               {PAYMENT_OPTIONS.map(({ method, label, description, icon: Icon, badge }) => {
                 const active = selectedPaymentMethod === method;
                 return (

@@ -63,7 +63,10 @@ import {
   type ManagerNotificationKind,
 } from "@/features/operations/store/manager-notification.store";
 import { useCustomerNotifications, useMarkCustomerNotificationAsRead } from "@/features/notifications/hooks/use-customer-notifications";
+import { useCustomerNotificationRealtime } from "@/features/notifications/hooks/use-customer-notification-realtime";
 import { translateNotificationField } from "@/features/notifications/lib/notification-utils";
+import { MembershipTierUpgradePopup } from "@/features/loyalty/components/membership-tier-upgrade-popup";
+import { useCustomerLoyaltyAccount } from "@/features/loyalty/hooks/use-customer-loyalty";
 import { useTierStore } from "@/shared/store/tier.store";
 import { useTierStyle } from "@/shared/lib/tier-styles";
 import { WorkspaceHeaderProvider, type WorkspaceHeaderConfig } from "@/shared/ui/workspace/workspace-header-context";
@@ -111,6 +114,8 @@ const PAGE_TITLE_VI: Record<string, string> = {
   "Settings": "Cài đặt",
 };
 
+const SEEN_TIER_UPGRADE_NOTIFICATION_STORAGE_KEY = "autowash_seen_tier_upgrade_notifications";
+
 function getPageTitle(title: string, lang: "vi" | "en"): string {
   if (lang === "en") return title;
   return PAGE_TITLE_VI[title] ?? title;
@@ -125,6 +130,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const user = useAuthStore((state) => state.user);
   const authHydrated = useAuthStore((state) => state.hydrated);
   const [isMounted, setIsMounted] = useState(false);
+  const [authHydrationTimedOut, setAuthHydrationTimedOut] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [headerConfig, setHeaderConfig] = useState<WorkspaceHeaderConfig | null>(null);
@@ -147,15 +153,27 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     show: boolean;
     title: string;
     message: string;
-  }>({ show: false, title: "", message: "" });
+    oldTier?: string | null;
+    newTier?: string | null;
+  }>({ show: false, title: "", message: "", oldTier: null, newTier: null });
   const seenCustomerNotificationIds = useRef<Set<string>>(new Set());
-  const pendingTierUpgradePopup = useRef<{ title: string; message: string } | null>(null);
+  const seenTierUpgradePopupIds = useRef<Set<string>>(new Set());
+  const pendingTierUpgradePopup = useRef<{
+    title: string;
+    message: string;
+    oldTier?: string | null;
+    newTier?: string | null;
+  } | null>(null);
   const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
 
   const isStaff = requiredRole === "STAFF";
   const isCustomer = requiredRole === "CUSTOMER";
   const isManager = requiredRole === "MANAGER";
-  const tierStyleData = useTierStyle(user?.tier);
+  const customerLoyaltyAccountQuery = useCustomerLoyaltyAccount();
+  const effectiveCustomerTier = isCustomer
+    ? (customerLoyaltyAccountQuery.data?.tier ?? user?.tier ?? "MEMBER")
+    : null;
+  const tierStyleData = useTierStyle(effectiveCustomerTier);
   const tierStyle = isCustomer && user ? tierStyleData : null;
   const customerTierMetal = tierStyle?.metal;
 
@@ -173,19 +191,64 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     refetchInterval: 10_000,
   });
 
+  const persistSeenTierUpgradePopupIds = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(
+      SEEN_TIER_UPGRADE_NOTIFICATION_STORAGE_KEY,
+      JSON.stringify(Array.from(seenTierUpgradePopupIds.current)),
+    );
+  }, []);
+
+  const markTierUpgradePopupSeen = useCallback((notificationId: string) => {
+    if (!notificationId) return;
+    seenTierUpgradePopupIds.current.add(notificationId);
+    persistSeenTierUpgradePopupIds();
+  }, [persistSeenTierUpgradePopupIds]);
+
+  const showTierUpgradeNotification = useCallback((notificationId: string, popup: {
+    title: string;
+    message: string;
+    oldTier?: string | null;
+    newTier?: string | null;
+  }) => {
+    markTierUpgradePopupSeen(notificationId);
+    if (typeof document !== "undefined" && document.querySelector('[role="dialog"]')) {
+      pendingTierUpgradePopup.current = popup;
+      return;
+    }
+    setTierUpgradePopup({ show: true, ...popup });
+  }, [markTierUpgradePopupSeen]);
+
   const customerNotificationsQuery = useCustomerNotifications();
+  useCustomerNotificationRealtime(isCustomer && isMounted, {
+    onTierUpgrade: ({ notificationId, title, message, oldTier, newTier }) => {
+      if (!notificationId || !newTier) return;
+      if (seenTierUpgradePopupIds.current.has(notificationId)) return;
+      showTierUpgradeNotification(notificationId, {
+        title: translateNotificationField(title, language),
+        message: translateNotificationField(message, language),
+        oldTier,
+        newTier,
+      });
+    },
+  });
   const markCustomerNotificationAsReadMutation = useMarkCustomerNotificationAsRead();
   const unreadCustomerNotifications = useMemo(() => {
     if (!isCustomer || !customerNotificationsQuery.data) return 0;
     return customerNotificationsQuery.data.filter((n) => !n.read).length;
   }, [isCustomer, customerNotificationsQuery.data]);
 
-  const showTierUpgradeNotification = useCallback((popup: { title: string; message: string }) => {
-    if (typeof document !== "undefined" && document.querySelector('[role="dialog"]')) {
-      pendingTierUpgradePopup.current = popup;
-      return;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(SEEN_TIER_UPGRADE_NOTIFICATION_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      seenTierUpgradePopupIds.current = new Set(parsed.filter((value): value is string => typeof value === "string"));
+    } catch {
+      seenTierUpgradePopupIds.current = new Set();
     }
-    setTierUpgradePopup({ show: true, ...popup });
   }, []);
 
   useEffect(() => {
@@ -209,13 +272,21 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     const currentIds = seenCustomerNotificationIds.current;
     if (currentIds.size === 0) {
       const freshTierUpgrade = customerNotificationsQuery.data
-        .filter((notification) => !notification.read && isTierUpgradeNotification(notification) && isRecentNotification(notification.createdAt))
+        .filter((notification) =>
+          !notification.read
+          && isTierUpgradeNotification(notification)
+          && isRecentNotification(notification.createdAt)
+          && !seenTierUpgradePopupIds.current.has(notification.notificationId),
+        )
         .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0];
       customerNotificationsQuery.data.forEach((notification) => currentIds.add(notification.notificationId));
       if (freshTierUpgrade) {
-        showTierUpgradeNotification({
+        const tierUpgradeMeta = extractTierUpgradeData(freshTierUpgrade);
+        showTierUpgradeNotification(freshTierUpgrade.notificationId, {
           title: translateNotificationField(freshTierUpgrade.title, language),
           message: translateNotificationField(freshTierUpgrade.message, language),
+          oldTier: tierUpgradeMeta.oldTier,
+          newTier: tierUpgradeMeta.newTier,
         });
       }
       return;
@@ -232,7 +303,15 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       const title = translateNotificationField(latestUnread.title, language);
       const message = translateNotificationField(latestUnread.message, language);
       if (isTierUpgradeNotification(latestUnread)) {
-        showTierUpgradeNotification({ title, message });
+        if (!seenTierUpgradePopupIds.current.has(latestUnread.notificationId)) {
+          const tierUpgradeMeta = extractTierUpgradeData(latestUnread);
+          showTierUpgradeNotification(latestUnread.notificationId, {
+            title,
+            message,
+            oldTier: tierUpgradeMeta.oldTier,
+            newTier: tierUpgradeMeta.newTier,
+          });
+        }
       } else {
         toast.info(title, {
           description: message,
@@ -297,6 +376,19 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     setIsMounted(true);
     hydrateAuthSession();
   }, []);
+  useEffect(() => {
+    if (!isMounted || authHydrated) return;
+    const timer = window.setTimeout(() => {
+      setAuthHydrationTimedOut(true);
+      hydrateAuthSession();
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [authHydrated, isMounted]);
+  useEffect(() => {
+    if (authHydrated) {
+      setAuthHydrationTimedOut(false);
+    }
+  }, [authHydrated]);
   useEffect(() => {
     if (isMounted) {
       setTheme("light");
@@ -363,7 +455,9 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
   if (isExcluded) return <>{children}</>;
 
-  if (!isMounted || !authHydrated) return <WorkspaceGate message={t("Đang tải khu vực làm việc...", "Loading workspace...")} />;
+  if (!isMounted || (!authHydrated && !authHydrationTimedOut)) {
+    return <WorkspaceGate message={t("Đang tải khu vực làm việc...", "Loading workspace...")} />;
+  }
   if (!accessToken || !user) return <WorkspaceGate message={t("Đang chuyển đến trang đăng nhập...", "Redirecting to login...")} />;
   if (user.role !== requiredRole) return <WorkspaceGate message={t("Đang chuyển đến khu vực phù hợp...", "Redirecting to your workspace...")} />;
 
@@ -441,23 +535,6 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               </div>
             </div>
           )}
-
-          {requiredRole !== "CUSTOMER" && !sidebarCollapsed && (
-            <div className="rounded-md border border-cyan-900/10 bg-white/72 p-3 shadow-[0_14px_36px_rgba(6,17,26,0.05)]">
-              <div className="flex items-start gap-3">
-                <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", workspaceTheme.accent)}>
-                  <Phone className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="text-xs font-bold">{t("Hỗ trợ", "Support")}</div>
-                  <div className="mt-0.5 text-sm font-extrabold tracking-tight">1900 1234</div>
-                  <div className="mt-1 text-[10px] text-muted-foreground">
-                    {t("8:00 - 20:00 hằng ngày", "8:00 AM - 8:00 PM daily")}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
           <button
             type="button"
             disabled={logoutMutation.isPending}
@@ -494,17 +571,16 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               </button>
 
               <div className="min-w-0 flex-1">
-                <h1 className="truncate text-xl font-bold tracking-tight lg:text-2xl">
-                  {headerTitle}
-                </h1>
-                {headerConfig?.toolbar ? (
-                  <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-                    <div />
-                    <div className="shrink-0">
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                  <h1 className="truncate text-xl font-bold tracking-tight lg:text-2xl">
+                    {headerTitle}
+                  </h1>
+                  {headerConfig?.toolbar ? (
+                    <div className="min-w-0 shrink-0">
                       {headerConfig.toolbar}
                     </div>
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
             </div>
 
@@ -957,17 +1033,29 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                         <span className="absolute inset-x-3 top-px h-px bg-white/40" />
                       </>
                     ) : null}
-                    <Avatar className={cn("h-7 w-7 border shadow-sm", customerTierMetal ? "" : workspaceTheme.accentSoft)} style={customerTierMetal ? { background: "rgba(255,255,255,0.8)", borderColor: customerTierMetal.border } : {}}>
+                    <Avatar
+                      className={cn("h-7 w-7 border shadow-sm", customerTierMetal ? "" : workspaceTheme.accentSoft)}
+                      style={customerTierMetal ? { background: customerTierMetal.progress, borderColor: customerTierMetal.border } : {}}
+                    >
                       <AvatarImage src={user.avatarUrl ?? undefined} alt={user.fullName} className="object-cover" />
-                      <AvatarFallback className={cn("text-[10px] font-black", customerTierMetal ? "" : workspaceTheme.accentSoft)} style={customerTierMetal ? { color: customerTierMetal.text } : {}}>
+                      <AvatarFallback
+                        className={cn("text-[10px] font-black", customerTierMetal ? "" : workspaceTheme.accentSoft)}
+                        style={customerTierMetal ? { background: customerTierMetal.progress, color: "#ffffff" } : {}}
+                      >
                         {getUserInitials(user.fullName)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="hidden min-w-0 sm:block">
                       <div className={cn("truncate text-[13px] font-black leading-tight")} style={customerTierMetal ? { color: customerTierMetal.text } : {}}>{user.fullName}</div>
-                      <div className={cn("truncate text-[10px] font-black uppercase tracking-wide")} style={customerTierMetal ? { color: customerTierMetal.softText } : {}}>
-                        {requiredRole === "CUSTOMER" ? (user.tier ?? (t("THÀNH VIÊN", "MEMBER"))) : user.role}
-                      </div>
+                      {requiredRole === "CUSTOMER" ? (
+                        <div className="mt-0.5">
+                          <TierBadge tier={effectiveCustomerTier} />
+                        </div>
+                      ) : (
+                        <div className={cn("truncate text-[10px] font-black uppercase tracking-wide")} style={customerTierMetal ? { color: customerTierMetal.softText } : {}}>
+                          {user.role}
+                        </div>
+                      )}
                     </div>
                     <ChevronDown className={cn("hidden h-3.5 w-3.5 transition group-data-[state=open]:rotate-180 sm:block", customerTierMetal ? "" : "text-muted-foreground")} style={customerTierMetal ? { color: customerTierMetal.softText } : {}} />
                   </button>
@@ -1182,7 +1270,19 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       {activeManagerPopup ? (
         <ManagerNotificationPopup notification={activeManagerPopup} onClose={closeManagerNotificationPopup} />
       ) : null}
-      {tierUpgradePopup.show ? (
+      {tierUpgradePopup.show && tierUpgradePopup.newTier ? (
+        <MembershipTierUpgradePopup
+          open={tierUpgradePopup.show}
+          oldTier={tierUpgradePopup.oldTier}
+          newTier={tierUpgradePopup.newTier}
+          onClose={() => setTierUpgradePopup((prev) => ({ ...prev, show: false }))}
+          onViewTier={() => {
+            setTierUpgradePopup((prev) => ({ ...prev, show: false }));
+            router.push("/customer/loyalty");
+          }}
+        />
+      ) : null}
+      {false ? (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm animate-in fade-in">
           <div className="relative w-full max-w-md overflow-hidden rounded-md border border-cyan-200 bg-white p-6 text-center shadow-[0_28px_80px_-24px_rgba(8,145,178,0.55)]">
             <button
@@ -1242,10 +1342,11 @@ function WorkspaceGate({ message }: { message: string }) {
 }
 
 function isTierUpgradeNotification(notification: { type?: string; title: string; message: string }) {
-  if ((notification.type ?? "").toUpperCase() !== "LOYALTY") return false;
   const text = `${notification.title} ${notification.message}`.toLowerCase();
   return text.includes("thăng hạng")
     || text.includes("lên hạng")
+    || text.includes("membership tier")
+    || text.includes("updated to")
     || text.includes("upgraded")
     || text.includes("upgrade");
 }
@@ -1254,6 +1355,47 @@ function isRecentNotification(createdAt: string) {
   const createdTime = new Date(createdAt).getTime();
   if (!Number.isFinite(createdTime)) return false;
   return Date.now() - createdTime <= 15 * 60 * 1000;
+}
+
+function extractTierUpgradeData(notification: { title: string; message: string }) {
+  const source = `${notification.title} ${notification.message}`.replace(/\./g, " ");
+
+  const fromToVietnamese = source.match(/từ\s+([A-Z_]+)\s+lên\s+([A-Z_]+)/i);
+  if (fromToVietnamese) {
+    return {
+      oldTier: fromToVietnamese[1].toUpperCase(),
+      newTier: fromToVietnamese[2].toUpperCase(),
+    };
+  }
+
+  const fromToEnglish = source.match(/from\s+([A-Z_]+)\s+to\s+([A-Z_]+)/i);
+  if (fromToEnglish) {
+    return {
+      oldTier: fromToEnglish[1].toUpperCase(),
+      newTier: fromToEnglish[2].toUpperCase(),
+    };
+  }
+
+  const updatedToEnglish = source.match(/updated to\s+([A-Z_]+)/i);
+  if (updatedToEnglish) {
+    return {
+      oldTier: null,
+      newTier: updatedToEnglish[1].toUpperCase(),
+    };
+  }
+
+  const upgradedToVietnamese = source.match(/nâng lên\s+([A-Z_]+)/i);
+  if (upgradedToVietnamese) {
+    return {
+      oldTier: null,
+      newTier: upgradedToVietnamese[1].toUpperCase(),
+    };
+  }
+
+  return {
+    oldTier: null,
+    newTier: null,
+  };
 }
 
 function ManagerNotificationPopup({

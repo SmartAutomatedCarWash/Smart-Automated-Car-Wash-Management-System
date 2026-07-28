@@ -1,0 +1,35 @@
+{"kind":"deck","id":"pr/42ae4z","name":"Deck"}
+{"kind":"layout","layoutId":"17f1e625-ad69-4f3c-ab5d-faaf253f62f9","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"a2f4f3dc-99a6-4ac9-9838-56a686fe33f7","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/mmyk21","slide":1,"title":"AC","textShapes":17}
+{"kind":"shape","id":"sh/fi14jy58","slide":1,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/gja5s36t","slide":1,"bbox":[72,62,1136,596]}
+{"kind":"shape","id":"sh/hkjml8ne","slide":1,"bbox":[704,62,504,596]}
+{"kind":"shape","id":"sh/7uh4fypw","slide":1,"bbox":[734,474,444,116]}
+{"kind":"shape","id":"sh/sfqloj6h","slide":1,"bbox":[734,474,444,4]}
+{"kind":"shape","id":"sh/tgjmhon2","slide":1,"bbox":[104,94,54,54]}
+{"kind":"textbox","id":"sh/qpcnydov","slide":1,"text":"AC","textPreview":"AC","textChars":2,"textLines":1,"bbox":[111,107,40,28]}
+{"kind":"textbox","id":"sh/bal4ri5g","slide":1,"text":"AURA CAR CARE","textPreview":"AURA CAR CARE","textChars":13,"textLines":1,"bbox":[173,92,245,30]}
+{"kind":"textbox","id":"sh/7apsrqts","slide":1,"text":"SMART CAR WASH MANAGEMENT","textPreview":"SMART CAR WASH MANAGEMENT","textChars":25,"textLines":1,"bbox":[173,120,265,20]}
+{"kind":"shape","id":"sh/69gby5c7","slide":1,"bbox":[104,181,142,7]}
+{"kind":"shape","id":"sh/tw7at0by","slide":1,"bbox":[251,181,38,7]}
+{"kind":"shape","id":"sh/8byt0vud","slide":1,"bbox":[294,181,58,7]}
+{"kind":"textbox","id":"sh/vy9svat4","slide":1,"text":"THANK YOU","textPreview":"THANK YOU","textChars":9,"textLines":1,"bbox":[101,218,570,96]}
+{"kind":"shape","id":"sh/ux0b25cj","slide":1,"bbox":[108,332,18,18]}
+{"kind":"textbox","id":"sh/h0ruxkbu","slide":1,"text":"FOR YOUR ATTENTION","textPreview":"FOR YOUR ATTENTION","textChars":18,"textLines":1,"bbox":[137,322,330,38]}
+{"kind":"textbox","id":"sh/gzit4fup","slide":1,"text":"Questions & Discussion","textPreview":"Questions & Discussion","textChars":22,"textLines":1,"bbox":[106,374,380,43]}
+{"kind":"textbox","id":"sh/329czat0","slide":1,"text":"AutoWash Pro connects advance booking, service operations, payment and loyalty in one unified car wash management experience.","textPreview":"AutoWash Pro connects advance booking, service operations, payment and loyalty in one unified car wash management experience.","textChars":125,"textLines":1,"bbox":[106,421,520,62]}
+{"kind":"shape","id":"sh/i10b6pcf","slide":1,"bbox":[106,526,530,2]}
+{"kind":"textbox","id":"sh/ex4vy9wn","slide":1,"text":"PROJECT","textPreview":"PROJECT","textChars":7,"textLines":1,"bbox":[106,542,120,18]}
+{"kind":"textbox","id":"sh/zydw7ed8","slide":1,"text":"AutoWash Pro · SWP391","textPreview":"AutoWash Pro · SWP391","textChars":21,"textLines":1,"bbox":[106,561,165,26]}
+{"kind":"textbox","id":"sh/0zmd0jet","slide":1,"text":"SUPERVISOR","textPreview":"SUPERVISOR","textChars":10,"textLines":1,"bbox":[288,542,120,18]}
+{"kind":"textbox","id":"sh/10ve9ove","slide":1,"text":"Ms. Le Thi Quynh Chi","textPreview":"Ms. Le Thi Quynh Chi","textChars":20,"textLines":1,"bbox":[288,561,180,26]}
+{"kind":"textbox","id":"sh/qtkvu9wr","slide":1,"text":"WEBSITE","textPreview":"WEBSITE","textChars":7,"textLines":1,"bbox":[492,542,100,18]}
+{"kind":"textbox","id":"sh/rutw3edc","slide":1,"text":"auracarwash.site","textPreview":"auracarwash.site","textChars":16,"textLines":1,"bbox":[492,561,145,26]}
+{"kind":"textbox","id":"sh/cv2dwjex","slide":1,"text":"AUTO WASH PRO","textPreview":"AUTO WASH PRO","textChars":13,"textLines":1,"bbox":[760,497,360,30]}
+{"kind":"textbox","id":"sh/dwve5ov2","slide":1,"text":"Advance Booking · Smart Operations · Loyalty Program","textPreview":"Advance Booking · Smart Operations · Loyalty Program","textChars":52,"textLines":1,"bbox":[760,530,370,24]}
+{"kind":"textbox","id":"sh/apof6twv","slide":1,"text":"FPT UNIVERSITY HCMC  /  SUMMER 2026","textPreview":"FPT UNIVERSITY HCMC  /  SUMMER 2026","textChars":35,"textLines":1,"bbox":[760,557,370,18]}
+{"kind":"shape","id":"sh/bqxwfydg","slide":1,"bbox":[1090,78,86,31]}
+{"kind":"textbox","id":"sh/5wjqlwju","slide":1,"text":"Q&A  →","textPreview":"Q&A  →","textChars":6,"textLines":1,"bbox":[1100,84,66,19]}
+{"kind":"image","id":"im/zedkzexg","slide":1,"name":"","geometry":"roundRect","alt":"Dark navy car covered in wash foam","bbox":[734,96,444,494]}
+{"kind":"notes","id":"nt/mmyk21","slide":1,"text":""}

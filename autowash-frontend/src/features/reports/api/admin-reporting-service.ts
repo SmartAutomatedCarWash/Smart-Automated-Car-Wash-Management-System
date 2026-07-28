@@ -29,7 +29,7 @@ import type {
   UpdateAdminCustomerStatusPayload,
   UpdateAdminCustomerStatusResult,
 } from "@/entities/reports";
-import type { BookingDetail, BookingStatus, VnpayPaymentResultResponse } from "@/entities/bookings";
+import type { BookingDetail, BookingStatus } from "@/entities/bookings";
 
 export async function listAdminAccounts(
   filters: AdminAccountsFilters,
@@ -57,16 +57,26 @@ export async function listAdminStaff(page = 1, limit = 100): Promise<AdminAccoun
   return response.data.data;
 }
 
-export async function listAdminStaffKpi(range = "WEEK", page = 1, limit = 5): Promise<StaffKpiPage> {
+export async function listAdminStaffKpi(
+  range = "WEEK",
+  page = 1,
+  limit = 5,
+  filters: { staffId?: string; serviceName?: string; dateFrom?: string; dateTo?: string } = {},
+): Promise<StaffKpiPage> {
   const response = await apiClient.get<ApiSuccessResponse<StaffKpiPage>>("/admin/staff/kpi", {
-    params: { range, page, limit },
+    params: { range, page, limit, ...filters },
   });
   return response.data.data;
 }
 
-export async function listAdminServiceQuality(range = "WEEK", page = 1, limit = 5): Promise<ServiceQualityPage> {
+export async function listAdminServiceQuality(
+  range = "WEEK",
+  page = 1,
+  limit = 5,
+  filters: { serviceName?: string; dateFrom?: string; dateTo?: string } = {},
+): Promise<ServiceQualityPage> {
   const response = await apiClient.get<ApiSuccessResponse<ServiceQualityPage>>("/admin/reports/service-quality", {
-    params: { range, page, limit },
+    params: { range, page, limit, ...filters },
   });
   return response.data.data;
 }
@@ -139,14 +149,6 @@ export async function updateAdminBookingStaff(id: string, staffIds: string[]): P
     method: "POST",
     url: `/admin/bookings/${id}/staff`,
     data: { staffIds },
-  });
-}
-
-export async function refundAdminVnpayPayment(id: string, amount?: number): Promise<VnpayPaymentResultResponse> {
-  return apiRequest<VnpayPaymentResultResponse, { amount?: number }>({
-    method: "POST",
-    url: `/payments/bookings/${id}/vnpay/refund`,
-    data: amount ? { amount } : undefined,
   });
 }
 
@@ -296,6 +298,14 @@ export function updateAdminCustomerPoints(customerId: string, payload: { points:
   return apiRequest<void, { points: number; reason: string }>({
     method: "PUT",
     url: `/admin/customers/${customerId}/points`,
+    data: payload,
+  });
+}
+
+export function updateAdminCustomerLifetimePoints(customerId: string, payload: { pointsDelta: number; reason: string }) {
+  return apiRequest<import("@/entities/reports").UpdateAdminCustomerLifetimePointsResult, { pointsDelta: number; reason: string }>({
+    method: "PUT",
+    url: `/admin/customers/${customerId}/lifetime-points`,
     data: payload,
   });
 }

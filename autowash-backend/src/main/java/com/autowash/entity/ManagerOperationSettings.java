@@ -30,6 +30,9 @@ public class ManagerOperationSettings {
     @Column(name = "max_active_sessions_per_staff", nullable = false)
     private int maxActiveSessionsPerStaff = 4;
 
+    @Column(name = "weekly_staff_kpi_target", nullable = false)
+    private int weeklyStaffKpiTarget = 40;
+
     @Column(name = "paid_booking_priority", nullable = false)
     private boolean paidBookingPriority = true;
 
@@ -84,6 +87,7 @@ public class ManagerOperationSettings {
             boolean leastBusyStaffFirst,
             boolean respectStaffCapacity,
             int maxActiveSessionsPerStaff,
+            int weeklyStaffKpiTarget,
             boolean paidBookingPriority,
             boolean tierPriorityEnabled,
             boolean primaryVehiclePriority,
@@ -102,6 +106,7 @@ public class ManagerOperationSettings {
         this.leastBusyStaffFirst = leastBusyStaffFirst;
         this.respectStaffCapacity = respectStaffCapacity;
         this.maxActiveSessionsPerStaff = maxActiveSessionsPerStaff;
+        this.weeklyStaffKpiTarget = weeklyStaffKpiTarget;
         this.paidBookingPriority = paidBookingPriority;
         this.tierPriorityEnabled = tierPriorityEnabled;
         this.primaryVehiclePriority = primaryVehiclePriority;

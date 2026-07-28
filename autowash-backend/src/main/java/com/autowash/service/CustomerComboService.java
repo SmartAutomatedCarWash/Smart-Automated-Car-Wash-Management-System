@@ -10,9 +10,11 @@ import com.autowash.dto.PurchaseCustomerComboRequest;
 import com.autowash.dto.PurchaseCustomerComboResponse;
 import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.User;
+import com.autowash.shared.dto.PaginationMeta;
 
 public interface CustomerComboService {
     List<CustomerComboResponse> listActiveCustomerCombos(User customer);
+    CustomerComboPage listCustomerCombos(User customer, int page, int limit);
     CustomerCombo findActiveOwnedCombo(User customer, String comboId);
     CustomerCombo createOwnedCombo(User customer, String comboId, String purchaseBookingId);
     PurchaseCustomerComboResponse purchaseCombo(User customer, PurchaseCustomerComboRequest request);
@@ -22,6 +24,8 @@ public interface CustomerComboService {
     void markExpired(CustomerCombo combo);
     void markPendingPaymentAsPaid(String transactionRef);
     boolean markPendingPaymentAsPaid(String transactionRef, long paidAmount);
+
+    record CustomerComboPage(List<CustomerComboResponse> items, PaginationMeta pagination) {}
 }
 
 

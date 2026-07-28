@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, ReceiptText, ShieldAlert, XCircle } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryComboVnpayTransaction, queryVnpayTransaction, verifyVnpayReturn } from "@/features/bookings/lib/booking-service";
+import { clearCartCheckoutSnapshot, getCartCheckoutSnapshot, removeCartItemByItemId } from "@/features/cart/store/cart.store";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
 import { cn } from "@/shared/lib/utils";
@@ -50,6 +51,13 @@ export function VnpayReturnPage() {
     queryKey: ["combo-vnpay-return-sync", vnpayTxnRef, result?.responseCode, result?.transactionStatus],
     queryFn: async () => {
       const synced = await queryComboVnpayTransaction(vnpayTxnRef);
+      if (synced.success) {
+        const checkoutSnapshot = getCartCheckoutSnapshot().filter((item) => item.type === "COMBO");
+        for (const item of checkoutSnapshot) {
+          removeCartItemByItemId(item.itemId, "COMBO");
+        }
+        clearCartCheckoutSnapshot();
+      }
       await queryClient.invalidateQueries({ queryKey: ["booking-catalog", "customer-combos", "active"] });
       return synced;
     },
@@ -152,8 +160,8 @@ export function VnpayReturnPage() {
                 </Button>
               ) : null}
               <Button asChild variant="outline" className="flex-1">
-                <Link href={isComboPayment ? "/customer/member-lounge" : "/customer/bookings"}>
-                  {isComboPayment ? "Back to member lounge" : translate(language, "Về danh sách", "Back to bookings")}
+                <Link href={isComboPayment ? "/customer/services" : "/customer/bookings"}>
+                  {isComboPayment ? "Back to services" : translate(language, "Về danh sách", "Back to bookings")}
                 </Link>
               </Button>
             </div>
@@ -200,7 +208,7 @@ function vnpayResponseMessage(code: string | null | undefined, language: Languag
     "02": { vi: "Thanh toán thất bại. Ngân hàng hoặc VNPay đã từ chối giao dịch.", en: "Payment failed. The bank or VNPay declined the transaction." },
     "04": { vi: "Thanh toán đã bị đảo giao dịch. Ngân hàng đã hủy hoặc hoàn tác giao dịch này.", en: "Payment was reversed. The bank cancelled or rolled back this transaction." },
     "05": { vi: "Thanh toán vẫn đang được VNPay xử lý. Vui lòng kiểm tra lại lịch đặt trước khi thanh toán lại.", en: "Payment is still being processed by VNPay. Please check the booking again before retrying." },
-    "06": { vi: "Giao dịch này đã được gửi yêu cầu hoàn tiền.", en: "A refund request was sent for this payment." },
+    "06": { vi: "Giao dịch cần được VNPay kiểm tra thủ công.", en: "Payment requires manual review by VNPay." },
     "07": { vi: "Thanh toán bị từ chối vì VNPay đánh dấu giao dịch có dấu hiệu nghi ngờ.", en: "Payment was rejected because VNPay marked the transaction as suspicious." },
     "09": { vi: "Thanh toán thất bại vì thẻ hoặc tài khoản chưa đăng ký Internet Banking.", en: "Payment failed because the card or account is not registered for Internet Banking." },
     "10": { vi: "Thanh toán thất bại vì xác thực thẻ hoặc tài khoản sai quá số lần quy định.", en: "Payment failed because card or account authentication was entered incorrectly too many times." },
@@ -232,9 +240,9 @@ function vnpayTransactionStatusMessage(status: string, language: Language) {
     "02": { vi: "thất bại", en: "failed" },
     "04": { vi: "bị đảo", en: "reversed" },
     "05": { vi: "đang xử lý", en: "processing" },
-    "06": { vi: "đã gửi yêu cầu hoàn tiền", en: "refund request sent" },
+    "06": { vi: "cần kiểm tra thủ công", en: "manual review" },
     "07": { vi: "nghi ngờ gian lận", en: "suspected fraud" },
-    "09": { vi: "hoàn tiền bị từ chối", en: "refund rejected" },
+    "09": { vi: "không được duyệt", en: "not approved" },
     "10": { vi: "xác thực sai quá số lần quy định", en: "authentication failed too many times" },
     "11": { vi: "phiên thanh toán đã hết hạn", en: "payment session expired" },
     "12": { vi: "thẻ hoặc tài khoản bị khóa hoặc chưa kích hoạt", en: "card or account locked or inactive" },

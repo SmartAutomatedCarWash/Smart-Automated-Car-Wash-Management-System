@@ -38,6 +38,7 @@ import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { useAdminBookings, useAdminBookingSummary } from "@/features/bookings/hooks/use-admin-bookings";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { apiClient } from "@/shared/lib/api";
+import { formatIntegerRating } from "@/shared/lib/rating-format";
 import type { ApiSuccessResponse } from "@/shared/types/api.types";
 import { useWebSocket } from "@/shared/hooks/use-web-socket";
 
@@ -460,7 +461,7 @@ export function AdminBookingsPageContent() {
                       {row.rating ? (
                         <div className="inline-flex items-center gap-1 text-amber-500 font-bold text-sm bg-amber-50 px-2 py-0.5 rounded-lg">
                           <Star className="h-3.5 w-3.5 fill-amber-500 stroke-amber-500" />
-                          {row.rating.toFixed(1)}
+                          {formatIntegerRating(row.rating)}
                         </div>
                       ) : (
                         <span className="text-slate-400">-</span>

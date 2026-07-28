@@ -99,22 +99,6 @@ public class Payment {
         this.status = PaymentStatus.FAILED;
     }
 
-    public void markRefundPending() {
-        if (this.status == PaymentStatus.PAID || this.status == PaymentStatus.REFUND_FAILED) {
-            this.status = PaymentStatus.REFUND_PENDING;
-        }
-    }
-
-    public void markRefunded(boolean partial) {
-        this.status = partial ? PaymentStatus.PARTIALLY_REFUNDED : PaymentStatus.REFUNDED;
-    }
-
-    public void markRefundFailed() {
-        if (this.status == PaymentStatus.REFUND_PENDING || this.status == PaymentStatus.PAID) {
-            this.status = PaymentStatus.REFUND_FAILED;
-        }
-    }
-
     public void markPaid(String transactionRef) {
         if (this.status == PaymentStatus.PAID) {
             return;

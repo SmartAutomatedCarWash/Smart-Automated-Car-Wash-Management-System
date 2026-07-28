@@ -205,6 +205,22 @@ export function useUpdateAdminCustomerPoints(customerId: string) {
   });
 }
 
+export function useUpdateAdminCustomerLifetimePoints(customerId: string) {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminReportingContext();
+
+  return useMutation<
+    import("@/entities/reports").UpdateAdminCustomerLifetimePointsResult,
+    ApiErrorResponse,
+    import("@/entities/reports").UpdateAdminCustomerLifetimePointsPayload
+  >({
+    mutationFn: (payload) => import("@/features/reports/api/admin-reporting-service").then(m => m.updateAdminCustomerLifetimePoints(customerId, payload)),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: adminReportingScope(userId) });
+    },
+  });
+}
+
 export function useCreateAdminStaff() {
   const queryClient = useQueryClient();
   const { userId } = useAdminReportingContext();
