@@ -145,6 +145,7 @@ export type AdminAccount = {
 
 export type AdminAccountsFilters = {
   role?: AdminAccountRole;
+  roleGroup?: "STAFF_ADMIN";
   status?: AdminAccountStatus;
   searchQuery?: string;
 };
@@ -152,6 +153,19 @@ export type AdminAccountsFilters = {
 export type AdminAccountsPage = {
   items: AdminAccount[];
   pagination: PaginationMeta;
+};
+
+export type AdminAccountSummary = {
+  totalCustomers: number;
+  customerTiers: Array<{
+    tier: string;
+    displayName: string;
+    count: number;
+  }>;
+  staffRoles: Array<{
+    role: AdminAccountRole;
+    count: number;
+  }>;
 };
 
 export type CreateAdminStaffPayload = {

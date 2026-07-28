@@ -13,6 +13,7 @@ import com.autowash.dto.UpdateAdminCustomerTierRequest;
 import com.autowash.dto.UpdateAdminCustomerRoleResponse;
 
 import com.autowash.dto.AdminAccountResponse;
+import com.autowash.dto.AdminAccountSummaryResponse;
 import com.autowash.dto.AdminBookingResponse;
 import com.autowash.dto.AdminCustomerDetailResponse;
 import com.autowash.dto.AdminCustomerVehicleResponse;
@@ -61,14 +62,21 @@ public class AdminCustomerController {
     @Operation(summary = "List user accounts for admin with filters")
     public ApiResponse<List<AdminAccountResponse>> listAccounts(
             @RequestParam(required = false) String role,
+            @RequestParam(required = false) String roleGroup,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String searchQuery,
             @RequestParam(defaultValue = "1") @Min(1) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
+            @RequestParam(defaultValue = "5") @Min(1) @Max(100) int limit
     ) {
         AdminReportingService.AccountPage accountPage =
-                adminReportingService.listAccounts(role, status, searchQuery, page, limit);
+                adminReportingService.listAccounts(role, roleGroup, status, searchQuery, page, limit);
         return ApiResponse.ok("Accounts retrieved", accountPage.items(), accountPage.pagination());
+    }
+
+    @GetMapping("/accounts/summary")
+    @Operation(summary = "Get account summary for admin accounts page")
+    public ApiResponse<AdminAccountSummaryResponse> getAccountSummary() {
+        return ApiResponse.ok("Account summary retrieved", adminReportingService.getAccountSummary());
     }
 
     @GetMapping("/accounts/{accountId}")

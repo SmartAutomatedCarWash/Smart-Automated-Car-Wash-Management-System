@@ -2,6 +2,7 @@ import { apiClient, apiRequest } from "@/shared/lib/api";
 import type { ApiPaginatedResponse, ApiSuccessResponse } from "@/shared/types/api.types";
 import type {
   AdminAccount,
+  AdminAccountSummary,
   AdminAccountsFilters,
   AdminAccountsPage,
   AdminBooking,
@@ -34,7 +35,7 @@ import type { BookingDetail, BookingStatus } from "@/entities/bookings";
 export async function listAdminAccounts(
   filters: AdminAccountsFilters,
   page = 1,
-  limit = 20,
+  limit = 5,
 ): Promise<AdminAccountsPage> {
   const response = await apiClient.get<ApiPaginatedResponse<AdminAccount>>("/admin/accounts", {
     params: {
@@ -48,6 +49,13 @@ export async function listAdminAccounts(
     items: response.data.data,
     pagination: response.data.pagination,
   };
+}
+
+export async function getAdminAccountsSummary(): Promise<AdminAccountSummary> {
+  return apiRequest<AdminAccountSummary>({
+    url: "/admin/accounts/summary",
+    method: "GET",
+  });
 }
 
 export async function listAdminStaff(page = 1, limit = 100): Promise<AdminAccountsPage> {
