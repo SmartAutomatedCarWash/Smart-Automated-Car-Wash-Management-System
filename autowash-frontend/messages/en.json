@@ -4,6 +4,7 @@
     "ACCOUNT_BLOCKED": "This account has been blocked.",
     "ACCOUNT_NOT_ACTIVE": "This account is not active.",
     "ACCOUNT_NOT_FOUND": "Account not found.",
+    "INVALID_LOGIN_CREDENTIALS": "Email or password is incorrect.",
     "ACCOUNT_SUSPENDED": "This account is currently suspended.",
     "BOOKING_SLOT_FULL": "This booking slot is full.",
     "BUSINESS_RULE_VIOLATION": "This action is not allowed in the current state.",

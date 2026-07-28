@@ -4,6 +4,7 @@
     "ACCOUNT_BLOCKED": "Tài khoản đã bị khóa.",
     "ACCOUNT_NOT_ACTIVE": "Tài khoản chưa được kích hoạt.",
     "ACCOUNT_NOT_FOUND": "Không tìm thấy tài khoản.",
+    "INVALID_LOGIN_CREDENTIALS": "Email hoặc mật khẩu không chính xác.",
     "ACCOUNT_SUSPENDED": "Tài khoản đang bị tạm ngưng.",
     "BOOKING_SLOT_FULL": "Khung giờ này đã hết chỗ.",
     "BUSINESS_RULE_VIOLATION": "Thao tác không hợp lệ ở trạng thái hiện tại.",

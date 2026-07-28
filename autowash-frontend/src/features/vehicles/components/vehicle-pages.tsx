@@ -20,6 +20,7 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
+import Swal from "sweetalert2";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
@@ -336,24 +337,63 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
     }
 
     if (!hasChanges) {
-      toast.info(translate(language, "Chua co thay doi nao de luu.", "No changes to save."), VEHICLE_TOAST_OPTIONS);
-      router.push("/customer/vehicles");
+      return;
+    }
+
+    const confirmation = await Swal.fire({
+      title: "Are you sure you want to change the car's information?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: translate(language, "Xac nhan", "Confirm"),
+      cancelButtonText: translate(language, "Huy", "Cancel"),
+      buttonsStyling: false,
+      customClass: {
+        popup: "swal-notify-popup",
+        title: "swal-notify-title",
+        htmlContainer: "swal-notify-message",
+        confirmButton: "swal-notify-btn-warning",
+        cancelButton: "swal-notify-btn-info",
+      },
+    });
+
+    if (!confirmation.isConfirmed) {
       return;
     }
 
     try {
       await updateMutation.mutateAsync(buildUpdateCustomerVehicleRequest(form));
-      toast.success(translate(language, "Xe da duoc cap nhat thanh cong.", "Vehicle updated successfully."), VEHICLE_TOAST_OPTIONS);
+      await Swal.fire({
+        icon: "success",
+        title: translate(language, "Cap nhat thanh cong!", "Vehicle updated successfully!"),
+        text: translate(language, "Thong tin xe da duoc luu.", "The vehicle information has been saved."),
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        customClass: {
+          popup: "swal-notify-popup",
+          title: "swal-notify-title",
+          htmlContainer: "swal-notify-message",
+          confirmButton: "swal-notify-btn-success",
+        },
+      });
       router.push("/customer/vehicles");
     } catch (error) {
-      toast.error(
-        getVehicleToastErrorMessage(
+      await Swal.fire({
+        icon: "error",
+        title: translate(language, "Khong the cap nhat xe.", "Unable to update vehicle."),
+        text: getVehicleToastErrorMessage(
           error,
           translate(language, "Khong the cap nhat xe.", "Unable to update vehicle."),
           getErrorMessage,
         ),
-        VEHICLE_TOAST_OPTIONS,
-      );
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        customClass: {
+          popup: "swal-notify-popup",
+          title: "swal-notify-title",
+          htmlContainer: "swal-notify-message",
+          confirmButton: "swal-notify-btn-error",
+        },
+      });
     }
   };
 
@@ -783,13 +823,6 @@ function VehicleQuickActionsCard({
   return (
     <Card className="border-slate-200/80 bg-white/95 shadow-[0_18px_44px_rgba(15,23,42,0.08)]">
       <CardHeader className="border-b border-slate-200/70 bg-slate-50/70">
-        <div className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">
-          <Sparkles className="h-3.5 w-3.5" />
-          {translate(language, "Tac vu nhanh", "Quick actions")}
-        </div>
-        <CardTitle className="text-lg font-black text-slate-900">
-          {translate(language, "Quan ly vai tro cua xe", "Manage vehicle role")}
-        </CardTitle>
         <CardDescription>
           {translate(
             language,
