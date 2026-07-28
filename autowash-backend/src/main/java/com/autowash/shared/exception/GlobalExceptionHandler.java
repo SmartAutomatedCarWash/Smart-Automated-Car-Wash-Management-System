@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -111,6 +112,17 @@ public class GlobalExceptionHandler {
                 "statusCode", 403,
                 "message", "Access denied",
                 "errorCode", ErrorCode.ACCESS_DENIED.name(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<Map<String, Object>> handleAuthentication(AuthenticationException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                "success", false,
+                "statusCode", 401,
+                "message", "Session expired. Please sign in again.",
+                "errorCode", ErrorCode.UNAUTHORIZED.name(),
                 "timestamp", Instant.now().toString()
         ));
     }

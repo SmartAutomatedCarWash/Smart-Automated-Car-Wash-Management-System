@@ -387,7 +387,7 @@ function BookingRow({ booking, language, locale }: { booking: BookingListItem; l
           <div>
             <div className="truncate text-xs font-medium text-slate-900">{booking.vehiclePlate}</div>
             <div className="truncate text-xs">
-              {booking.assignedStaffName ?? translate(language, "Chưa gán staff", "No staff assigned")}
+              {booking.staffName ?? booking.assignedStaffName ?? translate(language, "Chưa gán staff", "No staff assigned")}
             </div>
           </div>
         </div>

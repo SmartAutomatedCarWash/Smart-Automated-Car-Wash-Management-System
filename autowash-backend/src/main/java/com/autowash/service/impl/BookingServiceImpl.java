@@ -361,9 +361,10 @@ public class BookingServiceImpl implements BookingService {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Maximum active bookings exceeded", ErrorCode.MAX_ACTIVE_BOOKINGS_EXCEEDED);
         }
 
+        UUID vehicleId = parseRequestUuid(request.vehicleId(), "Vehicle id is invalid");
         Vehicle vehicle = VehicleRepository.findByOwnerAndIdAndStatus(
                         user,
-                        UUID.fromString(request.vehicleId()),
+                        vehicleId,
                         VehicleStatus.ACTIVE
                 )
                 .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Vehicle not found or not owned", ErrorCode.RESOURCE_NOT_FOUND));
@@ -451,8 +452,6 @@ public class BookingServiceImpl implements BookingService {
                 .durationMinutes(opt.durationMinutes())
                 .build());
         }
-
-        booking.setPreferredStaffIds(normalizePreferredStaffIds(request.staffIds(), request.staffId()));
 
         BookingRepository.save(booking);
 
@@ -1120,6 +1119,14 @@ public class BookingServiceImpl implements BookingService {
 
     private PaymentStatus initialPaymentStatus(PaymentMethod method) {
         return method == PaymentMethod.CASH_AT_COUNTER ? PaymentStatus.UNPAID : PaymentStatus.PENDING_PAYMENT;
+    }
+
+    private UUID parseRequestUuid(String value, String message) {
+        try {
+            return UUID.fromString(value);
+        } catch (RuntimeException exception) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, message, ErrorCode.VALIDATION_ERROR);
+        }
     }
 
     private String generateSepayTransferCode() {

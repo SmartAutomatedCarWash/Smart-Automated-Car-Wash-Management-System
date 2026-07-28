@@ -183,7 +183,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public LoginResponse login(LoginRequest request) {
         User user = resolveEmailUser(request.email())
-                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Account not found", ErrorCode.ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Email or password is incorrect", ErrorCode.ACCOUNT_NOT_FOUND));
 
         if (user.getStatus() == UserStatus.BLOCKED) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Account blocked", ErrorCode.ACCOUNT_BLOCKED);
@@ -194,7 +194,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (user.getPasswordHash() == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "Incorrect password", ErrorCode.INCORRECT_PASSWORD);
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Email or password is incorrect", ErrorCode.INCORRECT_PASSWORD);
         }
 
         String accessToken = jwtService.generateAccessToken(user);

@@ -90,6 +90,7 @@ export function CustomerLoyaltyPageContent() {
 
   const [selectedOffer, setSelectedOffer] = useState<VoucherOfferState | null>(null);
   const [isSuccessVoucher, setIsSuccessVoucher] = useState(false);
+  const [infoDialog, setInfoDialog] = useState<"BENEFITS" | "EARN" | null>(null);
   const [search, setSearch] = useState("");
   const [marketFilter, setMarketFilter] = useState<(typeof MARKET_FILTERS)[number]>("ALL");
   const [voucherSection, setVoucherSection] = useState<"MARKETPLACE" | "WALLET">("MARKETPLACE");
@@ -117,6 +118,18 @@ export function CustomerLoyaltyPageContent() {
     progressPercent: 0,
   };
   const heroIcon = getTierIcon(activeTier);
+  const currentBenefits = useMemo(
+    () => buildCurrentBenefits(currentTierConfig, language),
+    [currentTierConfig, language],
+  );
+  const nextTierBenefits = useMemo(
+    () => buildNextTierBenefits(nextTierConfig, language),
+    [language, nextTierConfig],
+  );
+  const pointsGuide = useMemo(
+    () => buildHowToEarnPoints(language, currentTierConfig),
+    [currentTierConfig, language],
+  );
   const tierTrackProgressPercent = useMemo(() => {
     if (sortedTiers.length <= 1) return 0;
     const minPoints = sortedTiers[0]?.minPoints ?? 0;
@@ -277,10 +290,19 @@ export function CustomerLoyaltyPageContent() {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <Button className="h-10 rounded-xl bg-[#b97533] px-5 text-white hover:bg-[#a46528]">
+                <Button
+                  type="button"
+                  onClick={() => setInfoDialog("BENEFITS")}
+                  className="h-10 rounded-xl bg-[#b97533] px-5 text-white hover:bg-[#a46528]"
+                >
                   {translate(language, "View Benefits", "View Benefits")}
                 </Button>
-                <Button variant="outline" className="h-10 rounded-xl border-[#d8b180] bg-white/80 px-5 text-[#94612f] hover:bg-white">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setInfoDialog("EARN")}
+                  className="h-10 rounded-xl border-[#d8b180] bg-white/80 px-5 text-[#94612f] hover:bg-white"
+                >
                   {translate(language, "How to Earn Points", "How to Earn Points")}
                 </Button>
               </div>
@@ -288,7 +310,7 @@ export function CustomerLoyaltyPageContent() {
 
             <BenefitColumn
               title={translate(language, `Your Benefits (${formatTierLabel(activeTier as any, tiersQuery.data)})`, `Your Benefits (${formatTierLabel(activeTier as any, tiersQuery.data)})`)}
-              items={buildCurrentBenefits(currentTierConfig, language)}
+              items={currentBenefits}
             />
 
             <BenefitColumn
@@ -297,7 +319,7 @@ export function CustomerLoyaltyPageContent() {
                   ? translate(language, `Next Tier Benefits (${formatTierLabel(nextTierConfig.tier, tiersQuery.data)})`, `Next Tier Benefits (${formatTierLabel(nextTierConfig.tier, tiersQuery.data)})`)
                   : translate(language, "Top Tier Benefits", "Top Tier Benefits")
               }
-              items={buildNextTierBenefits(nextTierConfig, language)}
+              items={nextTierBenefits}
               faded
             />
           </div>
@@ -403,7 +425,7 @@ export function CustomerLoyaltyPageContent() {
                 )}
               </div>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {voucherSection === "MARKETPLACE" ? (
                 filteredOffers.length === 0 ? (
                   <div className="col-span-full rounded-[22px] border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center text-sm text-slate-500">
@@ -471,6 +493,108 @@ export function CustomerLoyaltyPageContent() {
             <Button type="button" onClick={handleRedeem} disabled={redeemMutation.isPending} className="bg-[#0f2342] text-white hover:bg-[#0b1b34]">
               {redeemMutation.isPending ? <Loader2 className="animate-spin" /> : <Gift />}
               Redeem
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={infoDialog === "BENEFITS"} onOpenChange={(open) => !open && setInfoDialog(null)}>
+        <DialogContent className="rounded-[28px] border-[#eadfce] bg-[linear-gradient(180deg,#fffdf7_0%,#fff9f0_100%)] sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black text-slate-950">
+              {translate(language, "Membership benefits", "Membership benefits")}
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              {translate(
+                language,
+                "Thong tin quyen loi hien tai va cap ke tiep de ban de dang theo doi.",
+                "Your current tier benefits and the next tier advantages in one place.",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-[24px] border border-[#efdac0] bg-white p-5 shadow-[0_18px_40px_-35px_rgba(122,88,40,0.35)]">
+              <div className="text-[11px] font-black uppercase tracking-[0.24em] text-[#9a6a1f]">
+                {translate(language, "Current tier", "Current tier")}
+              </div>
+              <div className="mt-2 text-2xl font-black text-slate-950">
+                {formatTierLabel(activeTier as any, tiersQuery.data)}
+              </div>
+              <div className="mt-4 space-y-3">
+                {currentBenefits.map((item) => (
+                  <div key={item} className="flex items-start gap-3 text-sm text-slate-700">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#95612d]" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_18px_40px_-35px_rgba(15,23,42,0.2)]">
+              <div className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-500">
+                {nextTierConfig
+                  ? translate(language, "Next tier", "Next tier")
+                  : translate(language, "Top tier", "Top tier")}
+              </div>
+              <div className="mt-2 text-2xl font-black text-slate-950">
+                {nextTierConfig
+                  ? formatTierLabel(nextTierConfig.tier, tiersQuery.data)
+                  : translate(language, "Highest level reached", "Highest level reached")}
+              </div>
+              <div className="mt-4 space-y-3">
+                {nextTierBenefits.map((item) => (
+                  <div key={item} className="flex items-start gap-3 text-sm text-slate-700">
+                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#b97533]" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" className="bg-[#0f2342] text-white hover:bg-[#0b1b34]" onClick={() => setInfoDialog(null)}>
+              {translate(language, "Close", "Close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={infoDialog === "EARN"} onOpenChange={(open) => !open && setInfoDialog(null)}>
+        <DialogContent className="rounded-[28px] border-[#eadfce] bg-[linear-gradient(180deg,#ffffff_0%,#f9fbff_100%)] sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black text-slate-950">
+              {translate(language, "How to earn points", "How to earn points")}
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              {translate(
+                language,
+                "Day la cac cach tich diem loyalty trong he thong hien tai.",
+                "These are the available ways to collect loyalty points in the current system.",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-3">
+            {pointsGuide.map((item) => (
+              <div key={item.title} className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_16px_36px_-34px_rgba(15,23,42,0.28)]">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#eef4ff] text-[#4068b2]">
+                    {createElement(item.icon, { className: "h-5 w-5" })}
+                  </div>
+                  <div>
+                    <div className="text-base font-black text-slate-950">{item.title}</div>
+                    <div className="mt-1 text-sm text-slate-600">{item.description}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" className="bg-[#0f2342] text-white hover:bg-[#0b1b34]" onClick={() => setInfoDialog(null)}>
+              {translate(language, "Got it", "Got it")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -612,7 +736,7 @@ function RewardVoucherCard({
   const missingPoints = Math.max(offer.pointsCost - availablePoints, 0);
 
   return (
-    <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_18px_40px_-34px_rgba(15,23,42,0.35)] transition hover:-translate-y-1 hover:shadow-[0_26px_48px_-32px_rgba(15,23,42,0.42)]">
+    <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_18px_40px_-34px_rgba(15,23,42,0.35)] transition hover:-translate-y-1 hover:shadow-[0_26px_48px_-32px_rgba(15,23,42,0.42)]">
       <div
         className="relative h-[118px] overflow-hidden px-4 py-3"
         style={{ background: `linear-gradient(135deg, ${hex} 0%, ${hex}cc 48%, #0f2342 100%)` }}
@@ -621,7 +745,7 @@ function RewardVoucherCard({
         <div className="absolute bottom-0 right-0 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
       </div>
 
-      <div className="space-y-4 p-4">
+      <div className="flex flex-1 flex-col space-y-4 p-4">
         <div>
           <div className="text-xl font-black text-slate-950">{offer.title}</div>
           <div className="mt-2 text-sm leading-6 text-slate-500">
@@ -629,12 +753,19 @@ function RewardVoucherCard({
           </div>
         </div>
 
-        <div className="flex items-end justify-between gap-3 border-t border-slate-100 pt-4">
+        <div className="mt-auto flex flex-col gap-3 border-t border-slate-100 pt-4">
+          <div className="flex items-end justify-between gap-3">
           <div>
             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Redeem points</div>
             <div className="text-[32px] font-black leading-none text-[#16a3c9]">{offer.pointsCost.toLocaleString(locale)} pts</div>
           </div>
-          <div className="flex gap-2">
+          <div className="min-w-0 text-right text-xs">
+            <span className={cn("font-bold", offer.affordable ? "text-emerald-600" : "text-rose-500")}>
+              {offer.affordable ? "Ready to redeem" : `${missingPoints} pts missing`}
+            </span>
+          </div>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Button
               type="button"
               variant="outline"
@@ -653,9 +784,6 @@ function RewardVoucherCard({
         <div className="flex items-center justify-between text-xs">
           <span className="rounded-full px-2.5 py-1 font-bold" style={{ color: badge.color, backgroundColor: badge.backgroundColor }}>
             {formatTierLabel(offer.minTier, tierConfigs)}
-          </span>
-          <span className={cn("font-bold", offer.affordable ? "text-emerald-600" : "text-rose-500")}>
-            {offer.affordable ? "Ready to redeem" : `${missingPoints} pts missing`}
           </span>
         </div>
       </div>
@@ -849,6 +977,44 @@ function buildNextTierBenefits(tier: TierConfig | null, language: string) {
     `${tier.pointMultiplier}x ${translate(language, "points for every spend", "points for every spend")}`,
     tier.priorityScore > 0 ? translate(language, "Priority booking support", "Priority booking support") : translate(language, "Standard booking support", "Standard booking support"),
     translate(language, "Exclusive tier member offers", "Exclusive tier member offers"),
+  ];
+}
+
+function buildHowToEarnPoints(language: string, tier: TierConfig | undefined) {
+  return [
+    {
+      icon: Wallet,
+      title: translate(language, "Complete a paid booking", "Complete a paid booking"),
+      description: tier
+        ? translate(
+            language,
+            `Moi giao dich hoan tat se nhan diem theo he so ${tier.pointMultiplier}x cua hang hien tai.`,
+            `Each completed purchase earns points using your current ${tier.pointMultiplier}x tier multiplier.`,
+          )
+        : translate(
+            language,
+            "Each completed purchase earns points based on your current membership tier.",
+            "Each completed purchase earns points based on your current membership tier.",
+          ),
+    },
+    {
+      icon: Star,
+      title: translate(language, "Submit a review", "Submit a review"),
+      description: translate(
+        language,
+        "Sau khi hoan tat booking, danh gia dich vu de nhan them diem thuong neu he thong co ap dung.",
+        "After a completed booking, leave a review to receive bonus points when the program applies.",
+      ),
+    },
+    {
+      icon: Sparkles,
+      title: translate(language, "Reach a higher tier", "Reach a higher tier"),
+      description: translate(
+        language,
+        "Lifetime points cang cao thi he so tich diem cang tot va quyen loi loyalty cang nhieu.",
+        "Higher lifetime points unlock better multipliers and more loyalty benefits.",
+      ),
+    },
   ];
 }
 
