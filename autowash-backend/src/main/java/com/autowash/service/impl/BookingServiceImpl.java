@@ -453,7 +453,7 @@ public class BookingServiceImpl implements BookingService {
                 .build());
         }
 
-        BookingRepository.save(booking);
+        BookingRepository.saveAndFlush(booking);
 
         // Apply discount if provided
         if (request.discountCode() != null && !request.discountCode().isBlank()) {
