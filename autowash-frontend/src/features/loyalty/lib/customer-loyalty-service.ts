@@ -33,6 +33,7 @@ export async function getCustomerLoyaltyAccount() {
     ...account,
     availablePoints: account.currentPoints,
     lifetimePoints: account.totalEarnedPoints,
+    totalBookingCount: account.totalBookingCount,
   };
 }
 

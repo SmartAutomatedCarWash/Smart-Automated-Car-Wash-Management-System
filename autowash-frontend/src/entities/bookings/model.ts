@@ -38,6 +38,7 @@ export type BookingPackage = {
   popularity: string | null;
   averageRating?: number;
   reviewCount?: number;
+  bookingCount?: number;
 };
 
 export type BookingAddon = {
@@ -84,7 +85,10 @@ export type CustomerCombo = {
   status: string;
   totalUsages: number;
   remainingUsages: number;
+  paymentStatus?: string | null;
+  transactionRef?: string | null;
   activatedAt: string;
+  createdAt?: string | null;
   expiresAt: string;
   lastUsedAt: string | null;
 };
@@ -265,6 +269,7 @@ export type BookingListItem = {
   finalAmount: number;
   status: BookingStatus;
   washStatus: string | null;
+  assignedStaffName?: string | null;
   createdAt: string;
   confirmationExpiresAt: string | null;
   completedAt: string | null;

@@ -18,6 +18,7 @@ import {
   listBookingCombos,
   listBookingPackages,
   listActiveCustomerCombos,
+  listCustomerComboHistory,
   listCustomerBookings,
   listSlotAvailability,
   purchaseCustomerCombo,
@@ -152,6 +153,18 @@ export function useActiveCustomerCombos() {
     queryKey: ["booking-catalog", "customer-combos", "active"],
     queryFn: listActiveCustomerCombos,
     enabled,
+  });
+}
+
+export function useCustomerComboHistory(page = 1, limit = 20) {
+  const { enabled, userId } = useBookingQueryContext();
+
+  return useQuery<{ items: CustomerCombo[]; pagination: BookingListPage["pagination"] }, ApiErrorResponse>({
+    queryKey: ["booking-catalog", "customer-combos", "history", userId, page, limit],
+    queryFn: () => listCustomerComboHistory(page, limit),
+    enabled,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 

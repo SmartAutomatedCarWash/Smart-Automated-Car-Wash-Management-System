@@ -65,6 +65,7 @@ public class CustomerLoyaltyServiceImpl implements CustomerLoyaltyService {
                 account.currentPoints(),
                 account.totalEarnedPoints(),
                 account.completedWashCount(),
+                account.totalBookingCount(),
                 account.updatedAt()
         );
     }
