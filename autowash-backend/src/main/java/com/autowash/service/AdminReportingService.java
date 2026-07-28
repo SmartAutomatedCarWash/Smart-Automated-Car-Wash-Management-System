@@ -41,7 +41,7 @@ public interface AdminReportingService {
     AccountPage listAccounts(String role, String status, String searchQuery, int page, int limit);
     AdminAccountResponse getAccountDetail(UUID accountId);
     AdminBusinessHealthReportResponse getBusinessHealthReport(String range, String analysisGroup, LocalDate customDateFrom, LocalDate customDateTo);
-    BookingPage listBookings(String status, LocalDate dateFrom, LocalDate dateTo, UUID customerId, String searchQuery, int page, int limit);
+    BookingPage listBookings(String status, LocalDate dateFrom, LocalDate dateTo, UUID customerId, UUID packageId, String searchQuery, int page, int limit);
     AdminBookingSummaryResponse getBookingSummary();
     BookingDetailResponse getBookingDetail(String bookingId);
     AdminCustomerDetailResponse getCustomerDetail(UUID customerId);

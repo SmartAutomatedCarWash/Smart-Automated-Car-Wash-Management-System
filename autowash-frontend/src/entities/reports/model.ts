@@ -36,6 +36,7 @@ export type AdminBookingsFilters = {
   dateFrom?: string;
   dateTo?: string;
   customerId?: string;
+  packageId?: string;
   searchQuery?: string;
 };
 

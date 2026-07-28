@@ -6,7 +6,7 @@ import type { AdminBookingsFilters, AdminBookingsPage } from "@/entities/reports
 
 export function useAdminBookings(
   page = 1,
-  limit = 20,
+  limit = 5,
   filters: AdminBookingsFilters = {},
 ) {
   const accessToken = useAuthStore((state) => state.accessToken);
