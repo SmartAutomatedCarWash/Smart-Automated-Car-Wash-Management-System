@@ -207,6 +207,46 @@ test("rejects voucher codes that are not uppercase or contain spaces", () => {
   );
 });
 
+test("requires the draft voucher to match the validated voucher", () => {
+  const summary = buildBookingSummary(
+    {
+      mode: "PACKAGE",
+      vehicleId: "vehicle_001",
+      packageId: "pkg_001",
+      comboId: "",
+      addonIds: [],
+      bookingDate: "2026-06-10",
+      bookingTime: "14:00",
+      discountCode: "WELCOME30",
+      paymentMethod: "E_WALLET",
+    },
+    {
+      packages: PACKAGES,
+      addons: ADDONS,
+      combos: COMBOS,
+      voucher: VOUCHER,
+    },
+  );
+
+  assert.equal(
+    validateBookingDraft(
+      {
+        mode: "PACKAGE",
+        vehicleId: "vehicle_001",
+        packageId: "pkg_001",
+        comboId: "",
+        addonIds: [],
+        bookingDate: "2026-06-10",
+        bookingTime: "14:00",
+        discountCode: "WELCOME30",
+        paymentMethod: "E_WALLET",
+      },
+      summary,
+    ).discountCode,
+    "Please validate the voucher before checkout.",
+  );
+});
+
 test("labels backend statuses and payment methods for customer pages", () => {
   assert.equal(getBookingStatusLabel("CHECKED_IN"), "Checked in");
   assert.equal(getPaymentMethodLabel("CASH_AT_COUNTER"), "Cash at counter");

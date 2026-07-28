@@ -164,9 +164,13 @@ export function validateBookingDraft(
   }
   if (draft.discountCode.trim().length > 0) {
     const formatError = getVoucherCodeFormatError(draft.discountCode);
+    const selectedDiscountCode = summary?.selectedDiscountCode
+      ? sanitizeVoucherCodeInput(summary.selectedDiscountCode)
+      : null;
+    const draftDiscountCode = sanitizeVoucherCodeInput(draft.discountCode);
     if (formatError) {
       errors.discountCode = formatError;
-    } else if (!summary?.selectedDiscountCode) {
+    } else if (!selectedDiscountCode || selectedDiscountCode !== draftDiscountCode) {
       errors.discountCode = "Please validate the voucher before checkout.";
     }
   }
