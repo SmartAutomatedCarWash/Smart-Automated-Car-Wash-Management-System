@@ -5,7 +5,8 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/middleware.ts",
-    "eslint.config.js"
+    "eslint.config.js",
+    ".next-dev/types/**/*.ts"
   ],
   "compilerOptions": {
     "target": "ES2022",
@@ -29,9 +30,15 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
-      "@/views/*": ["./src/views/*"],
-      "@/widgets/*": ["./src/widgets/*"],
-      "@/entities/*": ["./src/entities/*"],
+      "@/views/*": [
+        "./src/views/*"
+      ],
+      "@/widgets/*": [
+        "./src/widgets/*"
+      ],
+      "@/entities/*": [
+        "./src/entities/*"
+      ],
       "@/*": [
         "./src/*"
       ]

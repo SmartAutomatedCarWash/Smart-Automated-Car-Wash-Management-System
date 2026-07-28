@@ -16,7 +16,8 @@ public record PackageResponse(
         String status,
         String popularity,
         Double averageRating,
-        Long reviewCount
+        Long reviewCount,
+        Long bookingCount
 ) {
 }
 

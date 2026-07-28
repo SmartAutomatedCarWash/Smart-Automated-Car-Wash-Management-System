@@ -266,17 +266,6 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
   const [selectedManagerNotificationId, setSelectedManagerNotificationId] = useState<string | null>(null);
 
-  useEffect(() => {
-    console.log("[workspace-shell]", {
-      requiredRole,
-      pathname,
-      isMounted,
-      authHydrated,
-      hasAccessToken: Boolean(accessToken),
-      userRole: user?.role ?? null,
-    });
-  }, [accessToken, authHydrated, isMounted, pathname, requiredRole, user?.role]);
-
   // Monitor customer notifications for toast alerts
   useEffect(() => {
     if (!isCustomer || !isMounted || !customerNotificationsQuery.data) return;
@@ -546,23 +535,6 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               </div>
             </div>
           )}
-
-          {requiredRole !== "CUSTOMER" && !sidebarCollapsed && (
-            <div className="rounded-md border border-cyan-900/10 bg-white/72 p-3 shadow-[0_14px_36px_rgba(6,17,26,0.05)]">
-              <div className="flex items-start gap-3">
-                <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", workspaceTheme.accent)}>
-                  <Phone className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="text-xs font-bold">{t("Hỗ trợ", "Support")}</div>
-                  <div className="mt-0.5 text-sm font-extrabold tracking-tight">1900 1234</div>
-                  <div className="mt-1 text-[10px] text-muted-foreground">
-                    {t("8:00 - 20:00 hằng ngày", "8:00 AM - 8:00 PM daily")}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
           <button
             type="button"
             disabled={logoutMutation.isPending}
@@ -599,17 +571,16 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               </button>
 
               <div className="min-w-0 flex-1">
-                <h1 className="truncate text-xl font-bold tracking-tight lg:text-2xl">
-                  {headerTitle}
-                </h1>
-                {headerConfig?.toolbar ? (
-                  <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-                    <div />
-                    <div className="shrink-0">
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                  <h1 className="truncate text-xl font-bold tracking-tight lg:text-2xl">
+                    {headerTitle}
+                  </h1>
+                  {headerConfig?.toolbar ? (
+                    <div className="min-w-0 shrink-0">
                       {headerConfig.toolbar}
                     </div>
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
             </div>
 

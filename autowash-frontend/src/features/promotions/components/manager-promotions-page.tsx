@@ -1,7 +1,7 @@
 "use client";
 
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   ArrowRight,
   BadgeCheck,
@@ -47,11 +47,11 @@ import {
 } from "@/shared/ui/ui/dialog";
 import { getApiErrorFallbackMessage, getFirstFieldErrorMessage } from "@/shared/lib/api-errors";
 import {
-  useAdminPromotion,
-  useAdminPromotions,
-  useCreateAdminPromotion,
-  useUpdateAdminPromotion,
-} from "@/features/promotions/hooks/use-admin-promotions";
+  useManagerPromotion,
+  useManagerPromotions,
+  useCreateManagerPromotion,
+  useUpdateManagerPromotion,
+} from "@/features/promotions/hooks/use-manager-promotions";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type {
   Promotion,
@@ -66,7 +66,7 @@ import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { useTierStore } from "@/shared/store/tier.store";
 import { DynamicTierBadge } from "@/shared/ui/workspace/dynamic-tier-badge";
 import { TierIcon } from "@/shared/ui/workspace/tier-icon";
-import type { AdminPromotionKind } from "@/features/promotions/api/admin-promotions-service";
+import type { ManagerPromotionKind } from "@/features/promotions/api/manager-promotions-service";
 import { useTierStyle } from "@/shared/lib/tier-styles";
 
 type PromotionFormValues = {
@@ -117,7 +117,7 @@ const EMPTY_FORM: PromotionFormValues = {
   status: "ACTIVE",
 };
 
-export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Console" }: { workspaceLabel?: string }) {
+export function ManagerPromotionsPageContent({ workspaceLabel = "Admin Growth Console" }: { workspaceLabel?: string }) {
   const { language } = useLanguageStore();
   const { fetchTiers } = useTierStore();
   
@@ -125,7 +125,7 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
     fetchTiers();
   }, [fetchTiers]);
 
-  const [activeKind, setActiveKind] = useState<AdminPromotionKind>("PROMOTION");
+  const [activeKind, setActiveKind] = useState<ManagerPromotionKind>("PROMOTION");
   const [displayPage, setDisplayPage] = useState(1);
   const [filters, setFilters] = useState<PromotionFilters>({ name: "", status: "ALL", date: "" });
   const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null);
@@ -133,12 +133,22 @@ export function AdminPromotionsPageContent({ workspaceLabel = "Admin Growth Cons
   const [form, setForm] = useState<PromotionFormValues>(EMPTY_FORM);
   const [showValidation, setShowValidation] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const nameFieldId = useId();
+  const codeFieldId = useId();
+  const pointMultiplierFieldId = useId();
+  const discountTypeFieldId = useId();
+  const discountValueFieldId = useId();
+  const startDateFieldId = useId();
+  const endDateFieldId = useId();
+  const targetingModeFieldId = useId();
+  const maxUsageFieldId = useId();
+  const statusFieldId = useId();
 
-  const promotionsQuery = useAdminPromotions(1, FETCH_LIMIT, activeKind);
+  const promotionsQuery = useManagerPromotions(1, FETCH_LIMIT, activeKind);
   const tiersQuery = useTierConfigs();
-  const promotionDetailQuery = useAdminPromotion(editingPromotionId);
-  const createMutation = useCreateAdminPromotion(activeKind);
-  const updateMutation = useUpdateAdminPromotion(activeKind);
+  const promotionDetailQuery = useManagerPromotion(editingPromotionId);
+  const createMutation = useCreateManagerPromotion(activeKind);
+  const updateMutation = useUpdateManagerPromotion(activeKind);
   const tierOptions = tiersQuery.data?.map((tier) => tier.tier) ?? FALLBACK_TIERS;
   const isVoucherView = activeKind === "VOUCHER";
   const itemLabelPlural = isVoucherView
@@ -995,14 +1005,19 @@ function FormField({
   label,
   error,
   children,
+  fieldId,
 }: {
   label: string;
   error?: string;
   children: React.ReactNode;
+  fieldId?: string;
 }) {
+  const autoId = useId();
+  const resolvedFieldId = fieldId ?? autoId;
+
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm font-semibold text-slate-800">{label}</Label>
+      <Label htmlFor={resolvedFieldId} className="text-sm font-semibold text-slate-800">{label}</Label>
       {children}
       {error ? <p className="text-xs text-rose-600">{error}</p> : null}
     </div>
@@ -1297,4 +1312,6 @@ function isPromotionExpiringSoon(promotion: Promotion) {
 
   return daysLeft >= 0 && daysLeft <= 7;
 }
+
+
 

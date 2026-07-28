@@ -8,6 +8,7 @@ public record ManagerOperationSettingsPayload(
         boolean leastBusyStaffFirst,
         boolean respectStaffCapacity,
         @Min(1) @Max(12) int maxActiveSessionsPerStaff,
+        @Min(1) @Max(200) int weeklyStaffKpiTarget,
         boolean paidBookingPriority,
         boolean tierPriorityEnabled,
         boolean primaryVehiclePriority,

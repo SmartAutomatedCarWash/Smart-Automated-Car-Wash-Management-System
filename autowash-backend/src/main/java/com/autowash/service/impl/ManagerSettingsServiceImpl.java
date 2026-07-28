@@ -5,6 +5,7 @@ import com.autowash.dto.ManagerOperationSettingsPayload;
 import com.autowash.dto.ManagerSettingAuditLogResponse;
 import com.autowash.dto.ManagerSettingsResponse;
 import com.autowash.dto.UpdateManagerSettingsRequest;
+import com.autowash.dto.UpdateWeeklyStaffKpiTargetRequest;
 import com.autowash.entity.ManagerNotificationTemplate;
 import com.autowash.entity.ManagerOperationSettings;
 import com.autowash.entity.ManagerSettingAuditLog;
@@ -46,6 +47,12 @@ public class ManagerSettingsServiceImpl implements ManagerSettingsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public ManagerOperationSettingsPayload getOperationSettings() {
+        return toSettingsPayload(loadSettings());
+    }
+
+    @Override
     @Transactional
     public ManagerSettingsResponse updateSettings(UpdateManagerSettingsRequest request) {
         ManagerOperationSettings settings = loadSettings();
@@ -55,6 +62,7 @@ public class ManagerSettingsServiceImpl implements ManagerSettingsService {
                 payload.leastBusyStaffFirst(),
                 payload.respectStaffCapacity(),
                 payload.maxActiveSessionsPerStaff(),
+                payload.weeklyStaffKpiTarget(),
                 payload.paidBookingPriority(),
                 payload.tierPriorityEnabled(),
                 payload.primaryVehiclePriority(),
@@ -95,6 +103,42 @@ public class ManagerSettingsServiceImpl implements ManagerSettingsService {
     }
 
     @Override
+    @Transactional
+    public ManagerSettingsResponse updateWeeklyStaffKpiTarget(UpdateWeeklyStaffKpiTargetRequest request) {
+        ManagerOperationSettings settings = loadSettings();
+        settings.update(
+                settings.isAutoAssignEnabled(),
+                settings.isLeastBusyStaffFirst(),
+                settings.isRespectStaffCapacity(),
+                settings.getMaxActiveSessionsPerStaff(),
+                request.weeklyStaffKpiTarget(),
+                settings.isPaidBookingPriority(),
+                settings.isTierPriorityEnabled(),
+                settings.isPrimaryVehiclePriority(),
+                settings.getEarlyCheckInMinutes(),
+                settings.getLateGraceMinutes(),
+                settings.getWaitingAlertMinutes(),
+                settings.getDelayAlertMinutes(),
+                settings.getOverloadAlertSessions(),
+                settings.getCancellationRateAlert(),
+                settings.isNotifyNewBooking(),
+                settings.isNotifyDelayedSession(),
+                settings.isNotifyStaffTransfer(),
+                settings.isNotifyCompletion()
+        );
+        settingsRepository.save(settings);
+
+        User actor = currentUserService.getCurrentUser();
+        auditLogRepository.save(new ManagerSettingAuditLog(
+                actor,
+                "Weekly staff KPI target updated",
+                "Manager updated the weekly staff KPI target."
+        ));
+
+        return toResponse(settings);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<ManagerSettingAuditLogResponse> getAuditLogs() {
         return auditLogRepository.findTop20ByOrderByCreatedAtDesc().stream()
@@ -125,6 +169,7 @@ public class ManagerSettingsServiceImpl implements ManagerSettingsService {
                 settings.isLeastBusyStaffFirst(),
                 settings.isRespectStaffCapacity(),
                 settings.getMaxActiveSessionsPerStaff(),
+                settings.getWeeklyStaffKpiTarget(),
                 settings.isPaidBookingPriority(),
                 settings.isTierPriorityEnabled(),
                 settings.isPrimaryVehiclePriority(),

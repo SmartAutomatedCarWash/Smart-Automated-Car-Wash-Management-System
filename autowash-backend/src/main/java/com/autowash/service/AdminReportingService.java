@@ -34,8 +34,8 @@ public interface AdminReportingService {
     AdminAccountResponse deleteStaff(UUID staffId);
     AdminStaffWorkloadResponse getStaffWorkload(UUID staffId);
     List<StaffKpiItem> listStaffKpi(String range);
-    StaffKpiPage listStaffKpiPage(String range, UUID staffId, int page, int limit);
-    ServiceQualityPage listServiceQuality(String range, int page, int limit);
+    StaffKpiPage listStaffKpiPage(String range, UUID staffId, String serviceName, LocalDate dateFrom, LocalDate dateTo, int page, int limit);
+    ServiceQualityPage listServiceQuality(String range, String serviceName, LocalDate dateFrom, LocalDate dateTo, int page, int limit);
     AdminAccountResponse updateCustomerStatus(UUID customerId, String status);
     AdminOperationsDashboardResponse getOperationsDashboard();
     AccountPage listAccounts(String role, String status, String searchQuery, int page, int limit);

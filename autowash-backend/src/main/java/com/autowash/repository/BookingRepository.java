@@ -29,6 +29,15 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("SELECT bd.refId FROM BookingDetail bd JOIN bd.booking b WHERE bd.itemType = 'PACKAGE' AND b.status IN ('COMPLETED', 'CONFIRMED') GROUP BY bd.refId ORDER BY COUNT(bd.id) DESC LIMIT 1")
     Optional<UUID> findTopPackageId();
 
+    @Query("""
+            select count(bd.id) from BookingDetail bd
+            join bd.booking b
+            where bd.itemType = 'PACKAGE'
+              and bd.refId = :packageId
+              and b.status in ('COMPLETED', 'CONFIRMED')
+            """)
+    long countQualifiedBookingsByPackageId(@Param("packageId") UUID packageId);
+
     long countByCustomerAndStatusIn(User customer, Collection<BookingStatus> statuses);
 
     long countByAssignedStaffAndStatusIn(User assignedStaff, Collection<BookingStatus> statuses);
@@ -52,6 +61,47 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             @Param("staff") User staff,
             @Param("from") Instant from,
             @Param("to") Instant to
+    );
+
+    @Query("""
+            select coalesce(sum(booking.pricing.finalAmount), 0) from Booking booking
+            where booking.status = 'COMPLETED'
+              and booking.createdAt >= :from
+              and booking.createdAt < :to
+              and (
+                    booking.assignedStaff = :staff
+                    or exists (
+                        select assignment.id from BookingStaffAssignment assignment
+                        where assignment.booking = booking
+                          and assignment.staff = :staff
+                    )
+              )
+            """)
+    long sumCompletedRevenueForStaffKpiRange(
+            @Param("staff") User staff,
+            @Param("from") Instant from,
+            @Param("to") Instant to
+    );
+
+    @Query("""
+            select count(booking) from Booking booking
+            where booking.scheduledAt >= :dayStart
+              and booking.scheduledAt < :dayEnd
+              and booking.status in :statuses
+              and (
+                    booking.assignedStaff = :staff
+                    or exists (
+                        select assignment.id from BookingStaffAssignment assignment
+                        where assignment.booking = booking
+                          and assignment.staff = :staff
+                    )
+              )
+            """)
+    long countAssignedBookingsForStaffOnDay(
+            @Param("staff") User staff,
+            @Param("dayStart") Instant dayStart,
+            @Param("dayEnd") Instant dayEnd,
+            @Param("statuses") Collection<BookingStatus> statuses
     );
 
     @EntityGraph(attributePaths = {"customer", "vehicle", "pricing", "details", "assignedStaff"})
@@ -333,7 +383,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
               )
             order by tc.priorityScore desc, booking.scheduledAt asc, booking.createdAt desc
             """)
-    List<Booking> findEligibleForOperationsSession(
+    Page<Booking> findEligibleForOperationsSession(
             @Param("statuses") Collection<BookingStatus> statuses,
             @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
             Pageable pageable
@@ -354,7 +404,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
               )
             order by tc.priorityScore desc, booking.scheduledAt asc, booking.createdAt desc
             """)
-    List<Booking> findEligibleForOperationsSessionOnDate(
+    Page<Booking> findEligibleForOperationsSessionOnDate(
             @Param("statuses") Collection<BookingStatus> statuses,
             @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
             @Param("dayStart") Instant dayStart,
@@ -376,7 +426,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
               )
             order by tc.priorityScore desc, booking.scheduledAt asc, booking.createdAt desc
             """)
-    List<Booking> findEligibleForAssignedStaffOperationsSession(
+    Page<Booking> findEligibleForAssignedStaffOperationsSession(
             @Param("staff") User staff,
             @Param("statuses") Collection<BookingStatus> statuses,
             @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
@@ -399,7 +449,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
               )
             order by tc.priorityScore desc, booking.scheduledAt asc, booking.createdAt desc
             """)
-    List<Booking> findEligibleForAssignedStaffOperationsSessionOnDate(
+    Page<Booking> findEligibleForAssignedStaffOperationsSessionOnDate(
             @Param("staff") User staff,
             @Param("statuses") Collection<BookingStatus> statuses,
             @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,

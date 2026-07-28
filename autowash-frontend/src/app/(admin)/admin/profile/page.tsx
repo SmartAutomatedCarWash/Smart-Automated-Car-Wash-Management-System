@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   ArrowLeft,
   Calendar,
@@ -235,12 +235,15 @@ export default function AdminProfilePage() {
 }
 
 function ProfileField({ label, icon, value, onChange, error, inputMode, disabled = false, hint }: { label: string; icon: React.ReactNode; value: string; onChange: (event: ChangeEvent<HTMLInputElement>) => void; error: string | null; inputMode?: "text" | "email" | "numeric" | "tel" | "search" | "url" | "none" | "decimal"; disabled?: boolean; hint?: string }) {
+  const inputId = useId();
+  const inputName = `admin-profile-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
   return (
     <div className="relative mt-2">
-      <label className="absolute -top-2 left-3 z-10 bg-white px-1 text-[10px] font-medium text-slate-500">{label}</label>
+      <label htmlFor={inputId} className="absolute -top-2 left-3 z-10 bg-white px-1 text-[10px] font-medium text-slate-500">{label}</label>
       <div className={`relative flex h-12 items-center rounded-xl border px-3 transition-colors ${error ? "border-rose-400" : "border-slate-200 focus-within:border-[#0D3B3A]"} ${disabled ? "bg-slate-50" : "bg-white"}`}>
         {icon}
-        <input value={value} onChange={onChange} disabled={disabled} inputMode={inputMode} className="ml-3 h-full w-full bg-transparent text-sm text-slate-700 outline-none disabled:cursor-not-allowed disabled:text-slate-500" />
+        <input id={inputId} name={inputName} value={value} onChange={onChange} disabled={disabled} inputMode={inputMode} className="ml-3 h-full w-full bg-transparent text-sm text-slate-700 outline-none disabled:cursor-not-allowed disabled:text-slate-500" />
       </div>
       {hint && !error ? <p className="mt-1 pl-1 text-[10px] text-slate-400">{hint}</p> : null}
       {error ? <p className="mt-1 pl-1 text-[10px] text-rose-500">{error}</p> : null}
@@ -249,12 +252,15 @@ function ProfileField({ label, icon, value, onChange, error, inputMode, disabled
 }
 
 function PasswordField({ label, value, onChange, show, onToggle, error }: { label: string; value: string; onChange: (event: ChangeEvent<HTMLInputElement>) => void; show: boolean; onToggle: () => void; error: string | null }) {
+  const inputId = useId();
+  const inputName = `admin-password-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-slate-500">{label}</label>
+      <label htmlFor={inputId} className="mb-1.5 block text-xs font-medium text-slate-500">{label}</label>
       <div className={`flex h-14 items-center rounded-2xl border bg-white px-4 transition-colors ${error ? "border-rose-400" : "border-slate-200 focus-within:border-[#0D3B3A]"}`}>
         <Lock className="h-4 w-4 flex-shrink-0 text-slate-300" />
-        <input type={show ? "text" : "password"} value={value} onChange={onChange} autoComplete="off" className="ml-3 h-full w-full bg-transparent text-sm text-slate-700 outline-none" />
+        <input id={inputId} name={inputName} type={show ? "text" : "password"} value={value} onChange={onChange} autoComplete="off" className="ml-3 h-full w-full bg-transparent text-sm text-slate-700 outline-none" />
         <button type="button" onClick={onToggle} className="ml-2 flex-shrink-0 text-slate-300 transition-colors hover:text-slate-500" tabIndex={-1} aria-label={show ? "Ẩn mật khẩu" : "Hiện mật khẩu"}>
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>

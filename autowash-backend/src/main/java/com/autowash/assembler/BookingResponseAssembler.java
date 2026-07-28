@@ -3,6 +3,7 @@ package com.autowash.assembler;
 import com.autowash.dto.BookingDetailDto;
 import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.BookingListItemResponse;
+import com.autowash.dto.BookingPaymentInfo;
 import com.autowash.dto.BookingStatusHistoryItem;
 import com.autowash.entity.Booking;
 import com.autowash.entity.BookingStaffAssignment;
@@ -72,6 +73,7 @@ public class BookingResponseAssembler {
                 booking.getPricing().getFinalAmount(),
                 booking.getStatus().name(),
                 washStatus,
+                resolveAssignedStaffName(booking, washSession),
                 booking.getCreatedAt(),
                 resolveConfirmationExpiresAt(booking, null),
                 washSession == null ? null : washSession.getCompletedAt()
@@ -81,7 +83,7 @@ public class BookingResponseAssembler {
     public BookingDetailResponse toDetailResponse(
             Booking booking,
             WashSession washSession,
-            PaymentInfo payment,
+            BookingPaymentInfo payment,
             List<BookingStatusHistoryItem> statusHistory
     ) {
         String packageName = resolvePackageName(booking);
@@ -130,7 +132,7 @@ public class BookingResponseAssembler {
         );
     }
 
-    public BookingDetailResponse.Payment toPaymentResponse(Booking booking, PaymentInfo payment) {
+    public BookingDetailResponse.Payment toPaymentResponse(Booking booking, BookingPaymentInfo payment) {
         return new BookingDetailResponse.Payment(
                 payment.method().name(),
                 payment.status().name(),
@@ -145,7 +147,7 @@ public class BookingResponseAssembler {
         );
     }
 
-    private Instant resolveConfirmationExpiresAt(Booking booking, PaymentInfo payment) {
+    private Instant resolveConfirmationExpiresAt(Booking booking, BookingPaymentInfo payment) {
         PaymentStatus paymentStatus = payment == null ? PaymentStatus.UNPAID : payment.status();
         if (booking.getStatus().name().equals("PENDING") && paymentStatus != PaymentStatus.PAID) {
             return booking.getCreatedAt().plus(PENDING_BOOKING_HOLD_DURATION);
@@ -153,7 +155,7 @@ public class BookingResponseAssembler {
         return booking.getConfirmationExpiresAt();
     }
 
-    private String buildSepayQrUrl(Booking booking, PaymentInfo payment) {
+    private String buildSepayQrUrl(Booking booking, BookingPaymentInfo payment) {
         String description = buildSepayTransferDescription(payment);
         if (payment.method() != PaymentMethod.BANK_TRANSFER
                 || payment.status() == PaymentStatus.PAID
@@ -178,7 +180,7 @@ public class BookingResponseAssembler {
         return url.toString();
     }
 
-    private String buildSepayTransferDescription(PaymentInfo payment) {
+    private String buildSepayTransferDescription(BookingPaymentInfo payment) {
         if (payment.method() != PaymentMethod.BANK_TRANSFER || isBlank(payment.transactionRef())) {
             return null;
         }
@@ -292,12 +294,4 @@ public class BookingResponseAssembler {
                 .toList();
     }
 
-    public record PaymentInfo(
-            PaymentMethod method,
-            PaymentStatus status,
-            long amount,
-            String transactionRef,
-            Instant paidAt
-    ) {
-    }
 }

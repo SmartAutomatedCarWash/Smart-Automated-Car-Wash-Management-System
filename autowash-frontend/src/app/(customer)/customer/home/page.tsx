@@ -254,69 +254,35 @@ export default function CustomerHomePage() {
     return filteredPosts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   }, [filteredPosts, currentPage, itemsPerPage]);
 
-  // Map backend packages dynamically or fallback to mock
+// Map backend packages dynamically from real booking data
   const servicesList = useMemo(() => {
     if (packagesQuery.data && packagesQuery.data.length > 0) {
-      return packagesQuery.data.slice(0, 3).map((p, idx) => ({
-        id: p.packageId,
-        title: p.name,
-        description: p.description,
-        price: formatBookingCurrency(p.basePrice),
-        duration: `${p.duration} ${t("phút", "mins")}`,
-        rating: formatRating(p.averageRating),
-        reviews: `${p.reviewCount || 0} reviews`,
-        badge: idx === 1 ? { label: t("Bán chạy", "Best Seller"), tone: "amber" } : undefined,
-        feedback: idx === 0 
-          ? t("Xe sạch bóng như mới!", "Car looks clean as new!")
-          : idx === 1 
-            ? t("Lớp phủ ceramic quá đỉnh.", "Ceramic coat is phenomenal.")
-            : t("Chuyên nghiệp và tận tâm.", "Professional and dedicated."),
-        author: idx === 0 ? "Anh Tùng" : idx === 1 ? "Chị Mai" : "Anh Đức",
-        icon: idx === 0 ? "wash" : idx === 1 ? "ceramic" : "detail",
-      }));
+      return [...packagesQuery.data]
+        .sort((a, b) => (b.bookingCount ?? 0) - (a.bookingCount ?? 0))
+        .slice(0, 3)
+        .map((p, idx) => ({
+          id: p.packageId,
+          title: p.name,
+          description: p.description,
+          price: formatBookingCurrency(p.basePrice),
+          duration: `${p.duration} ${t("phút", "mins")}`,
+          rating: formatRating(p.averageRating),
+          reviews: `${p.reviewCount || 0} ${t("đánh giá", "reviews")}`,
+          bookingCount: p.bookingCount ?? 0,
+          badge:
+            p.popularity === "BEST_SELLER" || idx === 0
+              ? { label: t("Bán chạy", "Best Seller"), tone: "amber" }
+              : undefined,
+          icon:
+            p.category?.toUpperCase().includes("CERAMIC")
+              ? "ceramic"
+              : p.duration >= 90
+                ? "detail"
+                : "wash",
+        }));
     }
-    // Fallback Mock Services
-    return [
-      {
-        id: "s1",
-        title: t("Rửa nhanh không chạm", "Quick Touchless Wash"),
-        description: t("Quy trình rửa ngoại thất nhanh chuẩn châu Âu.", "Fast exterior wash following European standards."),
-        price: "50,000 VND",
-        duration: `15 ${t("phút", "mins")}`,
-        rating: 4.8,
-        reviews: "850+ reviews",
-        badge: { label: t("Bán chạy", "Best Seller"), tone: "amber" },
-        feedback: t("Xe sạch bóng như mới!", "Car looks clean as new!"),
-        author: "Anh Tùng",
-        icon: "wash",
-      },
-      {
-        id: "s2",
-        title: t("Phủ Ceramic bảo vệ", "Ceramic Coating Protection"),
-        description: t("Bảo vệ độ bóng sơn xe và chống tia UV cực tốt.", "Protect paint gloss and block UV rays perfectly."),
-        price: "1,200,000 VND",
-        duration: `60 ${t("phút", "mins")}`,
-        rating: 4.9,
-        reviews: "1,200+ reviews",
-        badge: { label: "Recommended", tone: "green" },
-        feedback: t("Lớp phủ ceramic quá đỉnh.", "Ceramic coat is phenomenal."),
-        author: "Chị Mai",
-        icon: "ceramic",
-      },
-      {
-        id: "s3",
-        title: t("Chăm sóc xe chuyên sâu", "Full Detailing Care"),
-        description: t("Vệ sinh tỉ mỉ từ trong ra ngoài từng chi tiết.", "Meticulous detail cleaning inside and outside."),
-        price: "350,000 VND",
-        duration: `90 ${t("phút", "mins")}`,
-        rating: 4.8,
-        reviews: "600+ reviews",
-        badge: { label: "Trending", tone: "rose" },
-        feedback: t("Chuyên nghiệp và tận tâm.", "Professional and dedicated."),
-        author: "Anh Đức",
-        icon: "detail",
-      },
-    ];
+
+    return [];
   }, [packagesQuery.data, language]);
 
   return (
@@ -519,9 +485,12 @@ export default function CustomerHomePage() {
                       )}
                     </div>
 
-                    <div>
+                    <div className="space-y-1">
                       <h4 className="text-lg font-black text-foreground tracking-tight leading-tight">{s.title}</h4>
                       <p className="mt-1 text-xs text-muted-foreground font-semibold">{s.duration} • {s.reviews}</p>
+                      <p className="text-[11px] font-semibold text-muted-foreground">
+                        {s.bookingCount} {t("lượt đặt", "bookings")}
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-1.5">
@@ -541,8 +510,7 @@ export default function CustomerHomePage() {
                     <div className="text-xl font-black text-foreground">{s.price}</div>
 
                     <p className="text-[11px] leading-relaxed text-muted-foreground bg-secondary/50 p-3 rounded-2xl border border-border/50">
-                      <span className="font-bold text-primary">{t("Đánh giá: ", "Live Feedback: ")}</span>
-                      &ldquo;{s.feedback}&rdquo; – <span className="font-semibold text-foreground">{s.author}</span>
+                      {s.description}
                     </p>
                   </div>
 

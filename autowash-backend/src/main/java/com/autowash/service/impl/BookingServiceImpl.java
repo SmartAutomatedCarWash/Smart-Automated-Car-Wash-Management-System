@@ -3,6 +3,7 @@ package com.autowash.service.impl;
 import com.autowash.entity.WashSession;
 import com.autowash.assembler.BookingResponseAssembler;
 import com.autowash.dto.EarnPointsResponse;
+import com.autowash.dto.BookingPaymentInfo;
 import com.autowash.entity.Notification;
 import com.autowash.entity.SystemSettings;
 import com.autowash.repository.NotificationRepository;
@@ -542,10 +543,21 @@ public class BookingServiceImpl implements BookingService {
     public BookingService.BookingPage listBookings(String status, LocalDate dateFrom, LocalDate dateTo, int page, int limit) {
         User user = currentUserService.getCurrentUser();
         Page<Booking> bookings;
-        if (status != null && !status.isBlank()) {
+        boolean hasStatusFilter = status != null && !status.isBlank();
+        boolean hasDateFilter = dateFrom != null || dateTo != null;
+        if (hasStatusFilter && !hasDateFilter) {
             bookings = BookingRepository.findByCustomerAndStatusOrderByCreatedAtDesc(
                     user,
                     BookingStatus.valueOf(status),
+                    PageRequest.of(Math.max(page - 1, 0), limit)
+            );
+        } else if (!hasStatusFilter && hasDateFilter) {
+            LocalDate from = dateFrom == null ? LocalDate.of(1970, 1, 1) : dateFrom;
+            LocalDate to = dateTo == null ? LocalDate.of(2999, 12, 31) : dateTo;
+            bookings = BookingRepository.findByCustomerAndBookingDateBetweenOrderByCreatedAtDesc(
+                    user,
+                    from,
+                    to,
                     PageRequest.of(Math.max(page - 1, 0), limit)
             );
         } else {
@@ -583,7 +595,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingDetailResponse toDetailResponse(Booking booking) {
         WashSession washSession = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
                 .orElse(null);
-        BookingResponseAssembler.PaymentInfo payment = resolvePaymentInfo(booking);
+        BookingPaymentInfo payment = resolvePaymentInfo(booking);
         List<BookingStatusHistoryItem> statusHistory = bookingStatusHistoryRepository
                 .findByBooking_IdOrderByChangedAtAsc(booking.getId())
                 .stream()
@@ -1137,16 +1149,16 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private BookingResponseAssembler.PaymentInfo resolvePaymentInfo(Booking booking) {
+    private BookingPaymentInfo resolvePaymentInfo(Booking booking) {
         return paymentRepository.findFirstByBookingOrderByCreatedAtDesc(booking)
-                .map(payment -> new BookingResponseAssembler.PaymentInfo(
+                .map(payment -> new BookingPaymentInfo(
                         payment.getMethod() == null ? PaymentMethod.CASH_AT_COUNTER : payment.getMethod(),
                         payment.getStatus() == null ? PaymentStatus.UNPAID : payment.getStatus(),
                         payment.getAmount(),
                         payment.getTransactionRef(),
                         payment.getPaidAt()
                 ))
-                .orElseGet(() -> new BookingResponseAssembler.PaymentInfo(PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, 0L, null, null));
+                .orElseGet(() -> new BookingPaymentInfo(PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, 0L, null, null));
     }
 
     private String resolveTransactionRef(Booking booking, String transactionRef) {

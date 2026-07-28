@@ -98,8 +98,8 @@ export function ManagerHistoryView() {
       </div>
 
       <Card className="rounded-xl border-slate-200 bg-white p-3 shadow-sm">
-        <div className="grid gap-2 xl:grid-cols-[minmax(240px,1fr)_repeat(4,minmax(130px,160px))_110px]">
-          <div className="relative">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative lg:flex-1 lg:min-w-[240px]">
             <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
             <Input
               value={searchInput}
@@ -107,14 +107,16 @@ export function ManagerHistoryView() {
               onKeyDown={(event) => event.key === "Enter" && applySearch()}
               onBlur={applySearch}
               placeholder="Search plate, customer, phone..."
-              className="h-10 rounded-lg pl-9 text-sm"
+              className="h-10 w-full rounded-lg pl-9 text-sm"
             />
           </div>
-          <Select value={staffId} onChange={(value) => { setStaffId(value); setPage(1); }} options={[[ALL_STAFF, "All staff"], ...(staffQuery.data ?? []).map((staff) => [staff.staffId, staff.staffName] as const)]} />
-          <Select value={period} onChange={(value) => { setPeriod(value as PeriodFilter); setPage(1); }} options={[["ALL", "All"], ["TODAY", "Today"], ["7DAYS", "7 days"], ["MONTH", "This month"]]} />
-          <Select value={ratingFilter} onChange={(value) => { setRatingFilter(value as RatingFilter); setPage(1); }} options={[["ALL", "All ratings"], ["5", "5 stars"], ["4", "4 stars"], ["LOW", "Below 4"], ["NONE", "No review"]]} />
-          <Select value={sortMode} onChange={(value) => { setSortMode(value as SortMode); setPage(1); }} options={[["COMPLETED_DESC", "Newest"], ["COMPLETED_ASC", "Oldest"], ["DURATION_DESC", "Longest"], ["RATING_ASC", "Lowest rating"]]} />
-          <Button variant="ghost" className="h-10 rounded-md border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50" onClick={resetFilters}>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:flex lg:w-auto lg:shrink-0 lg:items-center">
+            <Select className="w-full lg:w-[130px] xl:w-[150px]" value={staffId} onChange={(value) => { setStaffId(value); setPage(1); }} options={[[ALL_STAFF, "All staff"], ...(staffQuery.data ?? []).map((staff) => [staff.staffId, staff.staffName] as const)]} />
+            <Select className="w-full lg:w-[130px] xl:w-[150px]" value={period} onChange={(value) => { setPeriod(value as PeriodFilter); setPage(1); }} options={[["ALL", "All"], ["TODAY", "Today"], ["7DAYS", "7 days"], ["MONTH", "This month"]]} />
+            <Select className="w-full lg:w-[130px] xl:w-[150px]" value={ratingFilter} onChange={(value) => { setRatingFilter(value as RatingFilter); setPage(1); }} options={[["ALL", "All ratings"], ["5", "5 stars"], ["4", "4 stars"], ["LOW", "Below 4"], ["NONE", "No review"]]} />
+            <Select className="w-full lg:w-[130px] xl:w-[150px]" value={sortMode} onChange={(value) => { setSortMode(value as SortMode); setPage(1); }} options={[["COMPLETED_DESC", "Newest"], ["COMPLETED_ASC", "Oldest"], ["DURATION_DESC", "Longest"], ["RATING_ASC", "Lowest rating"]]} />
+          </div>
+          <Button variant="ghost" className="h-10 w-full shrink-0 rounded-md border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 lg:w-auto" onClick={resetFilters}>
             <X className="mr-1.5 h-3.5 w-3.5" />
             Clear filters
           </Button>
@@ -131,10 +133,11 @@ export function ManagerHistoryView() {
         <WorkspaceEmptyState title="No matching sessions" description="Try changing filters or search keywords." />
       ) : (
         <Card className={cn("overflow-hidden rounded-lg border-slate-200 bg-white shadow-sm transition-opacity", historyQuery.isFetching && "opacity-60")}>
-          <div className="hidden grid-cols-[1.05fr_1fr_0.8fr_0.75fr_1fr_130px] border-b border-slate-100 px-4 py-3 text-[11px] font-black uppercase text-blue-900 lg:grid">
+          <div className="hidden grid-cols-[1.05fr_1fr_0.8fr_0.8fr_0.75fr_1.1fr_100px] border-b border-slate-100 px-4 py-3 text-[11px] font-black uppercase text-blue-900 lg:grid">
             <span>Vehicle & customer</span>
             <span>Service / Staff</span>
             <span>Time</span>
+            <span>Price</span>
             <span>Rating</span>
             <span>Notes</span>
             <span className="text-right">Status</span>
@@ -171,8 +174,9 @@ export function ManagerHistoryView() {
 
 function HistoryRow({ item, onViewDetails }: { item: StaffSessionHistoryItem; onViewDetails: (item: StaffSessionHistoryItem) => void }) {
   const serviceName = item.servicePackage ?? item.packageId ?? "Wash package";
+  const durationLabel = formatDuration(item.durationMinutes, item.startedAt, item.completedAt);
   return (
-    <div className="grid gap-3 border-b border-slate-100 px-4 py-4 last:border-b-0 lg:grid-cols-[1.05fr_1fr_0.8fr_0.75fr_1fr_130px] lg:items-center">
+    <div className="grid gap-3 border-b border-slate-100 px-4 py-4 last:border-b-0 lg:grid-cols-[1.05fr_1fr_0.8fr_0.8fr_0.75fr_1.1fr_100px] lg:items-center">
       <div className="min-w-0">
         <p className="truncate text-base font-black text-slate-950">#{item.vehiclePlate}</p>
         <p className="truncate text-xs font-semibold text-slate-500">{item.customerName} · {item.customerPhone}</p>
@@ -184,13 +188,18 @@ function HistoryRow({ item, onViewDetails }: { item: StaffSessionHistoryItem; on
       </div>
       <div>
         <p className="text-sm font-black text-slate-900">{formatTime(item.startedAt)} {"->"} {formatTime(item.completedAt)}</p>
-        <p className="text-xs font-semibold text-slate-500">{item.durationMinutes != null ? `${item.durationMinutes} min` : "--"}</p>
+        <p className="text-xs font-semibold text-slate-500">{durationLabel}</p>
+      </div>
+      <div>
+        <p className="text-sm font-black text-slate-900">{formatCurrency(item.totalPrice)}</p>
       </div>
       <RatingCell review={item.review} />
-      <p className="line-clamp-2 text-xs font-semibold text-slate-600">{item.managerNotes ?? item.customerNotes ?? "No notes"}</p>
-      <div className="flex items-center justify-end gap-2">
+      <div className="min-w-0">
+        <p className="line-clamp-2 break-words text-xs font-semibold text-slate-600">{item.customerNotes || item.managerNotes || "No notes"}</p>
+      </div>
+      <div className="flex flex-col items-end gap-2">
         <StatusBadge status={item.status} />
-        <Button variant="outline" size="sm" className="h-8 rounded-md px-3 text-xs font-bold" onClick={() => onViewDetails(item)}>
+        <Button variant="outline" size="sm" className="h-8 w-full justify-center rounded-md px-3 text-xs font-bold" onClick={() => onViewDetails(item)}>
           <Eye className="mr-1.5 h-3.5 w-3.5" />
           View
         </Button>
@@ -200,23 +209,77 @@ function HistoryRow({ item, onViewDetails }: { item: StaffSessionHistoryItem; on
 }
 
 function SessionDetailDialog({ item }: { item: StaffSessionHistoryItem }) {
+  const durationLabel = formatDuration(item.durationMinutes, item.startedAt, item.completedAt);
   return (
-    <div className="bg-white p-6">
-      <div>
-        <p className="text-xs font-black uppercase tracking-wider text-cyan-700">Wash session history</p>
-        <h2 className="mt-1 text-2xl font-black text-slate-950">#{item.vehiclePlate}</h2>
-        <p className="mt-1 text-sm font-semibold text-slate-500">{item.customerName} · {formatHistoryStaff(item)}</p>
+    <div className="bg-white">
+      <div className="border-b border-slate-100 bg-slate-50/50 p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] font-black uppercase tracking-wider text-cyan-700">Session History</p>
+              <StatusBadge status={item.status} />
+            </div>
+            <h2 className="mt-2 text-3xl font-black text-slate-950">#{item.vehiclePlate}</h2>
+          </div>
+        </div>
       </div>
-      <div className="mt-5 grid gap-2 sm:grid-cols-2">
-        <Info label="Service" value={item.servicePackage ?? item.packageId ?? "Wash package"} />
-        <Info label="Phone" value={item.customerPhone || "Not available"} />
-        <Info label="Appointment" value={`${item.bookingDate} ${item.bookingTime}`} />
-        <Info label="Duration" value={item.durationMinutes != null ? `${item.durationMinutes} min` : "--"} />
-        <Info label="Check-in" value={formatDateTime(item.checkedInAt)} />
-        <Info label="Completed" value={formatDateTime(item.completedAt)} />
-      </div>
-      <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-600">
-        {item.review.hasReview && item.review.rating != null ? `Rating ${item.review.rating}/5${item.review.comment ? ` · ${item.review.comment}` : ""}` : "No review yet"}
+      
+      <div className="p-6">
+        <div className="mb-6 grid gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4 sm:grid-cols-2">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Customer</p>
+            <p className="mt-1 text-sm font-bold text-slate-900">{item.customerName}</p>
+            <p className="text-xs font-semibold text-slate-500">{item.customerPhone || "No phone"}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Assigned Staff</p>
+            <p className="mt-1 text-sm font-bold text-slate-900">{formatHistoryStaff(item)}</p>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Info label="Service Package" value={item.servicePackage ?? item.packageId ?? "Wash package"} />
+          <Info label="Appointment" value={`${item.bookingDate} ${item.bookingTime}`} />
+          <Info label="Check-in Time" value={formatDateTime(item.checkedInAt)} />
+          <Info label="Completed Time" value={formatDateTime(item.completedAt)} />
+          <Info label="Duration" value={durationLabel} />
+          <Info label="Total Price" value={formatCurrency(item.totalPrice)} />
+        </div>
+
+        {item.services && item.services.length > 0 && (
+          <div className="mt-6">
+            <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Services</p>
+            <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+              <ul className="space-y-2 text-sm text-slate-600 font-medium">
+                {item.services.map((service, index) => (
+                  <li key={index} className="flex justify-between border-b border-slate-50 pb-2 last:border-0 last:pb-0">
+                    <span>{service.snapshotName} x {service.quantity}</span>
+                    <span>{formatCurrency(service.subtotal)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6">
+          <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Review & Rating</p>
+          <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+            {item.review.hasReview && item.review.rating != null ? (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  <span className="font-black text-slate-900">{formatIntegerRating(item.review.rating)}/5</span>
+                </div>
+                <span className="text-sm font-semibold text-slate-600">
+                  {item.review.comment ? `· ${item.review.comment}` : ""}
+                </span>
+              </div>
+            ) : (
+              <p className="text-sm font-semibold text-slate-500">No review yet</p>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -240,9 +303,9 @@ function Metric({ icon: Icon, label, value, detail, tone }: { icon: typeof Check
   );
 }
 
-function Select({ value, onChange, options }: { value: string; onChange: (value: string) => void; options: ReadonlyArray<readonly [string, string]> }) {
+function Select({ value, onChange, options, className }: { value: string; onChange: (value: string) => void; options: ReadonlyArray<readonly [string, string]>; className?: string }) {
   return (
-    <select className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100" value={value} onChange={(event) => onChange(event.target.value)}>
+    <select className={cn("h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100", className)} value={value} onChange={(event) => onChange(event.target.value)}>
       {options.map(([optionValue, label]) => <option key={optionValue} value={optionValue}>{label}</option>)}
     </select>
   );
@@ -280,7 +343,7 @@ function formatHistoryStaff(item: StaffSessionHistoryItem) {
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-slate-50 px-3 py-3">
+    <div className="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
       <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{label}</p>
       <p className="mt-1 break-words text-sm font-bold text-slate-800">{value}</p>
     </div>
@@ -294,4 +357,23 @@ function formatTime(value?: string | null) {
 
 function formatDateTime(value?: string | null) {
   return value ? new Date(value).toLocaleString("en-US") : "Not available";
+}
+
+function formatCurrency(value?: number | null) {
+  return value != null ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value) : "--";
+}
+
+function formatDuration(durationMinutes?: number | null, startedAt?: string | null, completedAt?: string | null) {
+  if (durationMinutes != null) {
+    return `${durationMinutes} min`;
+  }
+  if (!startedAt || !completedAt) {
+    return "--";
+  }
+  const start = new Date(startedAt).getTime();
+  const end = new Date(completedAt).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) {
+    return "--";
+  }
+  return `${Math.max(1, Math.round((end - start) / 60000))} min`;
 }

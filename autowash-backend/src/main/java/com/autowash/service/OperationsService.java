@@ -1,5 +1,7 @@
 package com.autowash.service;
 
+import com.autowash.shared.dto.PaginatedResponse;
+
 import com.autowash.dto.CheckInWashSessionResponse;
 import com.autowash.dto.CancelWashSessionResponse;
 import com.autowash.dto.CompleteWashSessionResponse;
@@ -13,6 +15,7 @@ import com.autowash.dto.StaffOptionResponse;
 import com.autowash.dto.StaffSessionHistoryResponse;
 import com.autowash.dto.StartWashSessionResponse;
 import com.autowash.dto.StaffTodayResponse;
+import com.autowash.dto.StaffWorkloadResponse;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -20,8 +23,8 @@ import java.util.UUID;
 public interface OperationsService {
     CreateWashSessionResponse createSession(CreateWashSessionRequest request);
     OperationsQueueResponse getQueue();
-    List<EligibleSessionBookingResponse> listEligibleSessionBookings(int limit);
-    List<EligibleSessionBookingResponse> listEligibleSessionBookings(int limit, LocalDate date);
+    PaginatedResponse<EligibleSessionBookingResponse> listEligibleSessionBookings(int page, int limit);
+    PaginatedResponse<EligibleSessionBookingResponse> listEligibleSessionBookings(int page, int limit, LocalDate date);
     QueueWashSessionResponse queueSession(UUID sessionId);
     CheckInWashSessionResponse checkInSession(UUID sessionId);
     StartWashSessionResponse startSession(UUID sessionId);
@@ -30,7 +33,7 @@ public interface OperationsService {
     StaffDashboardSummaryResponse getStaffSummary();
     List<StaffOptionResponse> listActiveStaff();
     OperationsQueueResponse getOperationsQueue();
-    List<EligibleSessionBookingResponse> getEligibleSessionBookings(int limit);
+    PaginatedResponse<EligibleSessionBookingResponse> getEligibleSessionBookings(int page, int limit);
     StaffDashboardSummaryResponse getMyStaffSummary();
     StaffTodayResponse getMySessionsToday(LocalDate date);
     StaffSessionHistoryResponse getMySessionHistory(
@@ -54,5 +57,6 @@ public interface OperationsService {
             String sort,
             UUID staffId
     );
+    StaffWorkloadResponse getStaffWorkloads(int page, int limit, LocalDate date);
 }
 
