@@ -48,7 +48,7 @@ public class DiscountRedemptionServiceImpl implements DiscountRedemptionService 
         long subtotal = pricing.getSubtotal();
         
         if (discount.getMinOrderAmount() > 0 && subtotal < discount.getMinOrderAmount()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Order amount does not meet minimum requirement for this discount", ErrorCode.INVALID_INPUT);
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Order amount does not meet minimum requirement for this voucher", ErrorCode.INVALID_DISCOUNT);
         }
         
         List<DiscountApplicableService> applicableServices = discountApplicableServiceRepository.findByDiscountId(discount.getId());
@@ -67,7 +67,7 @@ public class DiscountRedemptionServiceImpl implements DiscountRedemptionService 
                 }
             }
             if (applicableSubtotal == 0) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Discount does not apply to any selected services", ErrorCode.INVALID_INPUT);
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher does not apply to selected services", ErrorCode.INVALID_DISCOUNT);
             }
         }
         
@@ -107,10 +107,10 @@ public class DiscountRedemptionServiceImpl implements DiscountRedemptionService 
     @Transactional
     public void redeemDiscount(Booking booking, Discount discount) {
         Discount lockedDiscount = discountRepository.findByIdWithLock(discount.getId())
-                .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Discount not found", ErrorCode.INVALID_INPUT));
+                .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Voucher not found", ErrorCode.INVALID_DISCOUNT));
                 
         if (lockedDiscount.getUsageLimit() != null && lockedDiscount.getUsedCount() >= lockedDiscount.getUsageLimit()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Discount usage limit reached", ErrorCode.INVALID_INPUT);
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher usage limit reached", ErrorCode.INVALID_DISCOUNT);
         }
         
         long amount = calculateDiscountAmount(booking, lockedDiscount);
@@ -131,10 +131,10 @@ public class DiscountRedemptionServiceImpl implements DiscountRedemptionService 
     @Transactional
     public void redeemUserDiscount(Booking booking, UserDiscount userDiscount) {
         if (userDiscount.getStatus() != UserDiscountStatus.AVAILABLE) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "User discount is not available", ErrorCode.INVALID_INPUT);
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher is not available", ErrorCode.INVALID_DISCOUNT);
         }
         if (userDiscount.getExpiresAt() != null && userDiscount.getExpiresAt().isBefore(Instant.now())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "User discount has expired", ErrorCode.INVALID_INPUT);
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher has expired", ErrorCode.INVALID_DISCOUNT);
         }
         
         Discount discount = userDiscount.getDiscount();
