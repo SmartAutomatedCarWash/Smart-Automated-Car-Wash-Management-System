@@ -11,6 +11,7 @@ import com.autowash.dto.AdminBookingResponse;
 import com.autowash.dto.AdminBookingSummaryResponse;
 import com.autowash.dto.AdminBusinessHealthReportResponse;
 import com.autowash.dto.AdminAccountResponse;
+import com.autowash.dto.AdminAccountSummaryResponse;
 import com.autowash.dto.AdminCustomerDetailResponse;
 import com.autowash.dto.AdminCustomerVehicleResponse;
 import com.autowash.dto.AdminOperationsDashboardResponse;
@@ -39,6 +40,8 @@ public interface AdminReportingService {
     AdminAccountResponse updateCustomerStatus(UUID customerId, String status);
     AdminOperationsDashboardResponse getOperationsDashboard();
     AccountPage listAccounts(String role, String status, String searchQuery, int page, int limit);
+    AccountPage listAccounts(String role, String roleGroup, String status, String searchQuery, int page, int limit);
+    AdminAccountSummaryResponse getAccountSummary();
     AdminAccountResponse getAccountDetail(UUID accountId);
     AdminBusinessHealthReportResponse getBusinessHealthReport(String range, String analysisGroup, LocalDate customDateFrom, LocalDate customDateTo);
     BookingPage listBookings(String status, LocalDate dateFrom, LocalDate dateTo, UUID customerId, UUID packageId, String searchQuery, int page, int limit);
