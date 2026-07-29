@@ -14,6 +14,7 @@ import com.autowash.dto.PurchaseCustomerComboRequest;
 import com.autowash.dto.PurchaseCustomerComboResponse;
 import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.enums.CustomerComboStatus;
+import com.autowash.entity.enums.CustomerComboUsageStatus;
 import com.autowash.entity.CustomerComboUsage;
 import com.autowash.repository.CustomerComboRepository;
 import com.autowash.repository.CustomerComboUsageRepository;
@@ -261,9 +262,22 @@ public class CustomerComboServiceImpl implements CustomerComboService {
     public void releaseUsageForBooking(String bookingId) {
         UUID parsedBookingId = UUID.fromString(bookingId);
         customerComboUsageRepository.findByBookingId(parsedBookingId).ifPresent(usage -> {
-            customerComboRepository.findById(usage.getCustomerCombo().getId()).ifPresent(CustomerCombo::restoreUsage);
-            customerComboUsageRepository.delete(usage);
+            if (usage.release()) {
+                customerComboRepository.findById(usage.getCustomerCombo().getId()).ifPresent(CustomerCombo::restoreUsage);
+            }
         });
+    }
+
+    @Transactional
+    public void markUsageConsumedForBooking(String bookingId) {
+        UUID parsedBookingId = UUID.fromString(bookingId);
+        customerComboUsageRepository.findByBookingId(parsedBookingId).ifPresent(CustomerComboUsage::markConsumed);
+    }
+
+    @Transactional
+    public void forfeitUsageForBooking(String bookingId) {
+        UUID parsedBookingId = UUID.fromString(bookingId);
+        customerComboUsageRepository.findByBookingId(parsedBookingId).ifPresent(CustomerComboUsage::forfeit);
     }
 
     @Transactional
@@ -328,7 +342,10 @@ public class CustomerComboServiceImpl implements CustomerComboService {
                 combo.getActivatedAt(),
                 combo.getCreatedAt(),
                 combo.getExpiresAt(),
-                customerComboUsageRepository.findFirstByCustomerComboIdOrderByUsedAtDesc(combo.getId())
+                customerComboUsageRepository.findFirstByCustomerComboIdAndStatusInOrderByUsedAtDesc(
+                                combo.getId(),
+                                List.of(CustomerComboUsageStatus.CONSUMED, CustomerComboUsageStatus.FORFEITED)
+                        )
                         .map(CustomerComboUsage::getUsedAt)
                         .orElse(null)
         );

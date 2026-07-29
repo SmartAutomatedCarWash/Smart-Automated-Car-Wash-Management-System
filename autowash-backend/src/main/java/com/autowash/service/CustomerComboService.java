@@ -21,6 +21,8 @@ public interface CustomerComboService {
     CustomerComboPaymentStatusResponse getPaymentStatus(User customer, String transactionRef);
     void recordUsage(CustomerCombo combo, String bookingId, LocalDate serviceDate);
     void releaseUsageForBooking(String bookingId);
+    void markUsageConsumedForBooking(String bookingId);
+    void forfeitUsageForBooking(String bookingId);
     void markExpired(CustomerCombo combo);
     void markPendingPaymentAsPaid(String transactionRef);
     boolean markPendingPaymentAsPaid(String transactionRef, long paidAmount);

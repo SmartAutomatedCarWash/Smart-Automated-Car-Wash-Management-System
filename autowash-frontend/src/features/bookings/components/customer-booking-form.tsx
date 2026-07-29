@@ -585,6 +585,7 @@ function DiscountSection({
   summary,
   validatedDiscount,
   discountMutation,
+  disabledReason,
   customerDiscounts,
   onApply,
   onClear,
@@ -594,6 +595,7 @@ function DiscountSection({
   summary: ReturnType<typeof buildBookingSummary>;
   validatedDiscount: DiscountValidationResult | null;
   discountMutation: { isPending: boolean; error?: unknown; reset: () => void };
+  disabledReason?: string | null;
   customerDiscounts: { code: string; name: string; discountType: string; discountValue: number }[];
   onApply: (code?: string) => void;
   onClear: () => void;
@@ -601,8 +603,12 @@ function DiscountSection({
 }) {
   const getErrorMessage = useErrorMessage();
   const [inputError, setInputError] = useState<string | null>(null);
+  const disabled = Boolean(disabledReason);
 
   function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
+    if (disabled) {
+      return;
+    }
     const v = sanitizeVoucherCodeInput(e.target.value);
     setInputError(getVoucherCodeFormatError(v));
     onCodeChange(v);
@@ -610,6 +616,11 @@ function DiscountSection({
 
   return (
     <div className="space-y-3">
+      {disabledReason ? (
+        <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-800">
+          {disabledReason}
+        </div>
+      ) : null}
       {/* Applied voucher chip */}
       {validatedDiscount ? (
         <div className="flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2">
@@ -631,13 +642,14 @@ function DiscountSection({
             autoCapitalize="characters"
             autoCorrect="off"
             spellCheck={false}
+            disabled={disabled}
             className="rounded-xl font-medium tracking-wide"
           />
           <Button
             type="button"
             variant="outline"
             onClick={() => onApply()}
-            disabled={!draft.discountCode.trim() || Boolean(inputError) || discountMutation.isPending || !summary}
+            disabled={disabled || !draft.discountCode.trim() || Boolean(inputError) || discountMutation.isPending || !summary}
             className="shrink-0 rounded-xl border-primary/30 bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground"
           >
             {discountMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
@@ -654,7 +666,7 @@ function DiscountSection({
       )}
 
       {/* Wallet vouchers */}
-      {customerDiscounts.length > 0 && !validatedDiscount && (
+      {customerDiscounts.length > 0 && !validatedDiscount && !disabled && (
         <div className="pt-1">
           <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
             <Ticket className="h-3.5 w-3.5" />
@@ -1020,6 +1032,7 @@ export function CustomerBookingForm() {
     draft.mode === "COMBO"
       ? (activeCustomerCombos.find((item) => item.comboId === draft.comboId) ?? null)
       : null;
+  const isOwnedComboBooking = Boolean(selectedCustomerCombo);
   const selectedCombo =
     draft.mode === "COMBO" && draft.comboId
       ? (combos.find((item) => item.comboId === draft.comboId) ?? null)
@@ -1045,10 +1058,10 @@ export function CustomerBookingForm() {
         packages,
         addons,
         combos,
-        voucher: validatedDiscount,
+        voucher: isOwnedComboBooking ? null : validatedDiscount,
         ownedComboApplied: Boolean(selectedCustomerCombo),
       }),
-    [addons, combos, draft, packages, selectedCustomerCombo, validatedDiscount],
+    [addons, combos, draft, isOwnedComboBooking, packages, selectedCustomerCombo, validatedDiscount],
   );
 
   const errors = useMemo(() => {
@@ -1056,6 +1069,14 @@ export function CustomerBookingForm() {
       draft.discountCode.trim().length > 0 && !validatedDiscount ? null : summary;
     return validateBookingDraft(draft, validationSummary, { requirePaymentMethod: false });
   }, [draft, summary, validatedDiscount]);
+
+  useEffect(() => {
+    if (!isOwnedComboBooking || (!draft.discountCode && !validatedDiscount)) {
+      return;
+    }
+    resetValidatedDiscount();
+    updateDraft({ discountCode: "" });
+  }, [draft.discountCode, isOwnedComboBooking, resetValidatedDiscount, updateDraft, validatedDiscount]);
 
   const selectedPackage =
     draft.mode === "PACKAGE" && draft.packageId
@@ -1124,6 +1145,12 @@ export function CustomerBookingForm() {
   ];
 
   const validateDiscount = async (codeToValidate?: string) => {
+    if (isOwnedComboBooking) {
+      resetValidatedDiscount();
+      updateDraft({ discountCode: "" });
+      toast.info("Voucher cannot be applied when using an owned combo.");
+      return;
+    }
     const code = codeToValidate ?? draft.discountCode;
     const normalizedCode = sanitizeVoucherCodeInput(code);
     const formatError = getVoucherCodeFormatError(normalizedCode);
@@ -1700,6 +1727,7 @@ export function CustomerBookingForm() {
               summary={summary}
               validatedDiscount={validatedDiscount}
               discountMutation={discountMutation}
+              disabledReason={isOwnedComboBooking ? "Owned combo bookings are already covered, so vouchers cannot be applied." : null}
               customerDiscounts={(customerDiscountsQuery.data?.items ?? []).filter((item) => Boolean(item.voucherCode)).map((item) => ({ code: item.voucherCode ?? "", name: item.discount.name, discountType: item.discount.discountType, discountValue: item.discount.discountValue }))}
               onApply={(code) => void validateDiscount(code)}
               onClear={clearDiscount}

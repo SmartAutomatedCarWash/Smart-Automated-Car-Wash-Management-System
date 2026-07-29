@@ -392,6 +392,13 @@ public class BookingServiceImpl implements BookingService {
             if (ownedCombo != null) {
                 basePrice = 0;
                 customerComboId = ownedCombo.getId().toString();
+                if (request.discountCode() != null && !request.discountCode().isBlank()) {
+                    throw new ApiException(
+                            HttpStatus.UNPROCESSABLE_ENTITY,
+                            "Voucher cannot be applied when using an owned combo",
+                            ErrorCode.BUSINESS_RULE_VIOLATION
+                    );
+                }
             } else {
                 basePrice = Combo.getPrice();
                 comboPurchased = true;
@@ -457,6 +464,10 @@ public class BookingServiceImpl implements BookingService {
         }
 
         BookingRepository.saveAndFlush(booking);
+        if (ownedCombo != null) {
+            booking.updateStatus(BookingStatus.CONFIRMED);
+            assignSingleStaffOnConfirmation(booking);
+        }
 
         // Apply discount if provided
         if (request.discountCode() != null && !request.discountCode().isBlank()) {
@@ -478,12 +489,21 @@ public class BookingServiceImpl implements BookingService {
         if (request.paymentMethod() == PaymentMethod.BANK_TRANSFER) {
             payment.prepareSepayPayment(booking.getPricing().getFinalAmount(), generateSepayTransferCode());
         }
+        if (ownedCombo != null && booking.getPricing().getFinalAmount() == 0) {
+            payment.markPaid("OWNED_COMBO");
+        }
         payment = paymentRepository.save(payment);
         
         slotHoldRepository.findByCustomerAndSlotTime(user, scheduledLocalDateTime.atZone(ZoneId.systemDefault()).toInstant())
                 .ifPresent(slotHoldRepository::delete);
 
-        recordStatusHistory(booking, null, booking.getStatus(), user, "Booking created");
+        recordStatusHistory(
+                booking,
+                null,
+                booking.getStatus(),
+                user,
+                ownedCombo != null ? "Booking created from owned combo" : "Booking created"
+        );
 
         notificationRepository.save(Notification.builder()
                 .id(UUID.randomUUID())
@@ -638,16 +658,19 @@ public class BookingServiceImpl implements BookingService {
         long hoursUntilScheduled = timeUntilScheduled.toHours();
         boolean shouldApplyVoucherPolicy = oldStatus == BookingStatus.CONFIRMED;
 
-        if (shouldApplyVoucherPolicy && hoursUntilScheduled > 24) {
+        if (oldStatus == BookingStatus.PENDING || (shouldApplyVoucherPolicy && hoursUntilScheduled > 24)) {
             customerComboService.releaseUsageForBooking(booking.getId().toString());
             if (booking.getPricing().getDiscountType() != null) {
                 discountRedemptionService.revertRedemption(booking);
             }
         } else if (shouldApplyVoucherPolicy && hoursUntilScheduled >= 6) {
+            customerComboService.forfeitUsageForBooking(booking.getId().toString());
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled between 6 and 24 hours"));
         } else if (shouldApplyVoucherPolicy && hoursUntilScheduled >= 1) {
+            customerComboService.forfeitUsageForBooking(booking.getId().toString());
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled between 1 and 6 hours"));
         } else if (shouldApplyVoucherPolicy) {
+            customerComboService.forfeitUsageForBooking(booking.getId().toString());
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled under 1 hour"));
         }
 
@@ -842,6 +865,7 @@ public class BookingServiceImpl implements BookingService {
             markBookingPaidForOperations(booking.getId().toString(), null);
             completeAdminManagedWashSession(booking);
         }
+        applyComboUsageLifecycle(booking, oldStatus, status);
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), "Booking status updated by admin");
         BookingDetailResponse updateStatusResponse = toDetailResponse(booking);
         webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), status.name());
@@ -901,8 +925,23 @@ public class BookingServiceImpl implements BookingService {
             return;
         }
         booking.updateStatus(status);
+        applyComboUsageLifecycle(booking, oldStatus, status);
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), null);
         webSocketEventPublisher.publishBookingUpdate(booking.getId().toString(), status.name());
+    }
+
+    private void applyComboUsageLifecycle(Booking booking, BookingStatus oldStatus, BookingStatus newStatus) {
+        if (newStatus == BookingStatus.CHECKED_IN || newStatus == BookingStatus.IN_PROGRESS || newStatus == BookingStatus.COMPLETED) {
+            customerComboService.markUsageConsumedForBooking(booking.getId().toString());
+            return;
+        }
+        if (newStatus == BookingStatus.NO_SHOW) {
+            customerComboService.forfeitUsageForBooking(booking.getId().toString());
+            return;
+        }
+        if (newStatus == BookingStatus.CANCELLED && oldStatus != BookingStatus.CHECKED_IN && oldStatus != BookingStatus.IN_PROGRESS) {
+            customerComboService.releaseUsageForBooking(booking.getId().toString());
+        }
     }
 
     private void validateBookingTime(LocalDate bookingDate, LocalTime bookingTime, SystemSettings settings) {
