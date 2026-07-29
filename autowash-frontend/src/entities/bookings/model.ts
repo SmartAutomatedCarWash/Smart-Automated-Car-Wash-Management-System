@@ -93,6 +93,29 @@ export type CustomerCombo = {
   lastUsedAt: string | null;
 };
 
+export type CustomerComboDetail = CustomerCombo & {
+  description: string | null;
+  purchasePrice: number;
+  durationDays: number;
+  imageUrls: string[];
+  services: {
+    serviceId: string;
+    name: string;
+    description: string | null;
+    price: number;
+    durationMinutes: number;
+    quantity: number;
+    sortOrder: number;
+  }[];
+  usages: {
+    usageId: number;
+    bookingId: string;
+    bookingDate: string;
+    vehiclePlate: string;
+    usedAt: string;
+  }[];
+};
+
 export type CustomerComboPaymentStatus = {
   transactionRef: string;
   paymentStatus: string;

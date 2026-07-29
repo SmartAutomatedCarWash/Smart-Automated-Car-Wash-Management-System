@@ -89,6 +89,7 @@ export function CustomerLoyaltyPageContent() {
   const redeemMutation = useCustomerRedeemPoints();
 
   const [selectedOffer, setSelectedOffer] = useState<VoucherOfferState | null>(null);
+  const [previewOffer, setPreviewOffer] = useState<VoucherOfferState | null>(null);
   const [isSuccessVoucher, setIsSuccessVoucher] = useState(false);
   const [infoDialog, setInfoDialog] = useState<"BENEFITS" | "EARN" | null>(null);
   const [search, setSearch] = useState("");
@@ -131,15 +132,17 @@ export function CustomerLoyaltyPageContent() {
     [currentTierConfig, language],
   );
   const tierTrackProgressPercent = useMemo(() => {
-    if (sortedTiers.length <= 1) return 0;
-    const minPoints = sortedTiers[0]?.minPoints ?? 0;
-    const maxPoints = sortedTiers[sortedTiers.length - 1]?.minPoints ?? minPoints;
-    const tierFloorPoints = currentTierConfig?.minPoints ?? minPoints;
-    const sourcePoints = Math.max(displayedLifetimePoints, tierFloorPoints);
-    const clampedPoints = Math.min(Math.max(sourcePoints, minPoints), maxPoints);
-    const span = Math.max(maxPoints - minPoints, 1);
-    return ((clampedPoints - minPoints) / span) * 100;
-  }, [currentTierConfig?.minPoints, displayedLifetimePoints, sortedTiers]);
+    if (sortedTiers.length <= 1) return 100;
+
+    const segmentCount = sortedTiers.length - 1;
+    const safeTierIndex = Math.max(currentTierIndex, 0);
+
+    if (safeTierIndex >= segmentCount) {
+      return 100;
+    }
+
+    return (safeTierIndex / segmentCount) * 100;
+  }, [currentTierIndex, sortedTiers.length]);
   const currentHex = currentTierConfig?.imageUrl || tierFallbackHex[activeTier] || tierFallbackHex.BRONZE;
   const tierMetal = generateTierMetalStyle(currentHex);
 
@@ -268,7 +271,7 @@ export function CustomerLoyaltyPageContent() {
                   <div className="text-[11px] font-black uppercase tracking-[0.24em]" style={{ color: tierMetal.text }}>
                     {formatTierLabel(activeTier as any, tiersQuery.data)} {translate(language, "Member", "Member")}
                   </div>
-                  <div className="mt-1 text-[44px] font-black leading-none" style={{ color: tierMetal.text }}>{displayedPoints.toLocaleString(locale)} pts</div>
+                  <div className="mt-1 text-[44px] font-black leading-none" style={{ color: tierMetal.text }}>{displayedLifetimePoints.toLocaleString(locale)} pts</div>
                   <p className="mt-2 text-sm text-slate-700">
                     {translate(language, "Welcome back, Customer User!", "Welcome back, Customer User!")}
                   </p>
@@ -327,12 +330,28 @@ export function CustomerLoyaltyPageContent() {
 
         <section className="rounded-[24px] border border-[#ece8df] bg-white px-4 py-4 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
           <div className="relative">
-            <div className="absolute left-[22px] right-[22px] top-5 h-[2px] rounded-full bg-slate-200" />
             <div
-              className="absolute left-[22px] top-5 h-[2px] rounded-full bg-[linear-gradient(90deg,#b67a39_0%,#d9b171_40%,#8ed0ff_100%)] transition-all duration-700"
-              style={{ width: `calc((100% - 44px) * ${Math.max(0, Math.min(tierTrackProgressPercent, 100)) / 100})` }}
+              className="absolute left-[22px] top-5 hidden h-[2px] rounded-full bg-slate-200 lg:block"
+              style={{
+                width:
+                  sortedTiers.length > 0
+                    ? `${((sortedTiers.length - 1) / sortedTiers.length) * 100}%`
+                    : "0px",
+              }}
             />
-            <div className="relative grid grid-cols-2 gap-4 lg:grid-cols-5">
+            <div
+              className="absolute left-[22px] top-5 hidden h-[2px] rounded-full bg-[linear-gradient(90deg,#b67a39_0%,#d9b171_40%,#8ed0ff_100%)] transition-all duration-700 lg:block"
+              style={{
+                width:
+                  sortedTiers.length > 0
+                    ? `${
+                        ((sortedTiers.length - 1) / sortedTiers.length) *
+                        Math.max(0, Math.min(tierTrackProgressPercent, 100))
+                      }%`
+                    : "0px",
+              }}
+            />
+            <div className="relative grid grid-cols-2 gap-4 lg:grid-cols-5 lg:gap-0">
             {sortedTiers.map((tier, index) => (
               <TierStep
                 key={tier.tier}
@@ -340,6 +359,7 @@ export function CustomerLoyaltyPageContent() {
                 isCurrent={tier.tier === activeTier}
                 isUnlocked={index <= currentTierIndex}
                 tiers={tiersQuery.data ?? []}
+                isLast={index === sortedTiers.length - 1}
               />
             ))}
             </div>
@@ -441,6 +461,7 @@ export function CustomerLoyaltyPageContent() {
                       availablePoints={displayedPoints}
                       isPending={redeemMutation.isPending}
                       onSelect={setSelectedOffer}
+                      onViewDetails={setPreviewOffer}
                       tierConfigs={tiersQuery.data ?? []}
                     />
                   ))
@@ -495,6 +516,26 @@ export function CustomerLoyaltyPageContent() {
               Redeem
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(previewOffer)} onOpenChange={(open) => !open && setPreviewOffer(null)}>
+        <DialogContent className="overflow-hidden rounded-[28px] border-slate-200 p-0 sm:max-w-2xl">
+          {previewOffer ? (
+            <VoucherOfferDetails
+              offer={previewOffer}
+              availablePoints={displayedPoints}
+              locale={locale}
+              language={language}
+              tierConfigs={tiersQuery.data ?? []}
+              isPending={redeemMutation.isPending}
+              onClose={() => setPreviewOffer(null)}
+              onRedeem={() => {
+                setPreviewOffer(null);
+                setSelectedOffer(previewOffer);
+              }}
+            />
+          ) : null}
         </DialogContent>
       </Dialog>
 
@@ -642,11 +683,13 @@ function TierStep({
   isCurrent,
   isUnlocked,
   tiers,
+  isLast,
 }: {
   tier: TierConfig;
   isCurrent: boolean;
   isUnlocked: boolean;
   tiers: TierConfig[];
+  isLast?: boolean;
 }) {
   const hex = tier.imageUrl || tierFallbackHex[tier.tier] || tierFallbackHex.BRONZE;
   const TierIcon = getTierIcon(tier.tier);
@@ -656,6 +699,7 @@ function TierStep({
         className={cn(
           "relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-xs font-black shadow-sm transition-all",
           isUnlocked ? "text-white" : "text-slate-400",
+          isLast && "ring-4 ring-cyan-100/80 shadow-[0_8px_22px_-8px_rgba(14,165,233,0.75)]",
         )}
         style={{
           background: isUnlocked ? `linear-gradient(180deg, ${hex}, ${hex}cc)` : "#f8fafc",
@@ -665,7 +709,14 @@ function TierStep({
         <TierIcon className="h-4.5 w-4.5" />
       </div>
       <div className="min-w-0">
-        <div className="text-xs font-black uppercase tracking-wide text-slate-900">{formatTierLabel(tier.tier, tiers)}</div>
+        <div
+          className={cn(
+            "text-xs font-black uppercase tracking-wide text-slate-900",
+            isLast && "text-sky-800",
+          )}
+        >
+          {formatTierLabel(tier.tier, tiers)}
+        </div>
         <div className="text-xs text-slate-500">{tier.minPoints.toLocaleString("en-US")} pts</div>
       </div>
     </div>
@@ -720,6 +771,7 @@ function RewardVoucherCard({
   availablePoints,
   isPending,
   onSelect,
+  onViewDetails,
   tierConfigs,
 }: {
   offer: VoucherOfferState;
@@ -728,6 +780,7 @@ function RewardVoucherCard({
   availablePoints: number;
   isPending: boolean;
   onSelect: (offer: VoucherOfferState) => void;
+  onViewDetails: (offer: VoucherOfferState) => void;
   tierConfigs: TierConfig[];
 }) {
   const disabled = !offer.eligible || !offer.affordable || isPending;
@@ -775,7 +828,11 @@ function RewardVoucherCard({
             >
               {disabled ? `Need ${missingPoints} pts` : "Redeem"}
             </Button>
-            <Button type="button" className="h-10 rounded-xl bg-[#0f2342] px-4 text-white hover:bg-[#0b1b34]">
+            <Button
+              type="button"
+              onClick={() => onViewDetails(offer)}
+              className="h-10 rounded-xl bg-[#0f2342] px-4 text-white hover:bg-[#0b1b34]"
+            >
               View detail
             </Button>
           </div>
@@ -786,6 +843,139 @@ function RewardVoucherCard({
             {formatTierLabel(offer.minTier, tierConfigs)}
           </span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function VoucherOfferDetails({
+  offer,
+  availablePoints,
+  locale,
+  language,
+  tierConfigs,
+  isPending,
+  onClose,
+  onRedeem,
+}: {
+  offer: VoucherOfferState;
+  availablePoints: number;
+  locale: string;
+  language: string;
+  tierConfigs: TierConfig[];
+  isPending: boolean;
+  onClose: () => void;
+  onRedeem: () => void;
+}) {
+  const hex =
+    tierConfigs.find((item) => item.tier === offer.minTier)?.imageUrl ||
+    tierFallbackHex[offer.minTier] ||
+    tierFallbackHex.BRONZE;
+  const badge = generateTierBadgeStyle(hex);
+  const missingPoints = Math.max(offer.pointsCost - availablePoints, 0);
+  const canRedeem = offer.eligible && offer.affordable && !isPending;
+  const voucherValue =
+    offer.discountType === "PERCENT"
+      ? `${offer.voucherValue}%`
+      : `${offer.voucherValue.toLocaleString("vi-VN")} ₫`;
+
+  return (
+    <div>
+      <div
+        className="relative overflow-hidden px-6 py-7 text-white"
+        style={{ background: `linear-gradient(135deg, ${hex} 0%, ${hex}cc 48%, #0f2342 100%)` }}
+      >
+        <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full bg-white/20 blur-3xl" />
+        <div className="relative">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-[#0f2342]">
+              AURA CARE
+            </span>
+            <span className="rounded-full border border-white/30 bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em]">
+              {offer.badge || "VOUCHER"}
+            </span>
+          </div>
+          <DialogHeader className="mt-5 text-left">
+            <DialogTitle className="text-3xl font-black text-white">{offer.title}</DialogTitle>
+            <DialogDescription className="text-sm leading-6 text-white/80">
+              {offer.description ||
+                `${formatTierLabel(offer.minTier, tierConfigs)} tier voucher for members who want more premium rewards.`}
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+      </div>
+
+      <div className="space-y-5 p-6">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <RuleRow label={translate(language, "Redeem points", "Redeem points")} value={`${offer.pointsCost.toLocaleString(locale)} pts`} />
+          <RuleRow label={translate(language, "Voucher value", "Voucher value")} value={voucherValue} />
+          <RuleRow
+            label={translate(language, "Required tier", "Required tier")}
+            value={formatTierLabel(offer.minTier, tierConfigs)}
+          />
+        </div>
+
+        <div className="grid gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm">
+          <RuleRow
+            label={translate(language, "Minimum order", "Minimum order")}
+            value={
+              (offer.minOrderAmount ?? 0) > 0
+                ? `${(offer.minOrderAmount ?? 0).toLocaleString("vi-VN")} ₫`
+                : translate(language, "No minimum", "No minimum")
+            }
+          />
+          <RuleRow
+            label={translate(language, "Maximum discount", "Maximum discount")}
+            value={
+              offer.maxDiscountAmount != null
+                ? `${offer.maxDiscountAmount.toLocaleString("vi-VN")} ₫`
+                : translate(language, "Based on voucher value", "Based on voucher value")
+            }
+          />
+          <RuleRow
+            label={translate(language, "Valid after redemption", "Valid after redemption")}
+            value={
+              offer.validDaysAfterClaim != null
+                ? `${offer.validDaysAfterClaim} ${translate(language, "days", "days")}`
+                : translate(language, "Until the campaign ends", "Until the campaign ends")
+            }
+          />
+          <RuleRow
+            label={translate(language, "New customers only", "New customers only")}
+            value={offer.newCustomerOnly ? translate(language, "Yes", "Yes") : translate(language, "No", "No")}
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span
+            className="rounded-full px-3 py-1.5 text-xs font-black"
+            style={{ color: badge.color, backgroundColor: badge.backgroundColor }}
+          >
+            {formatTierLabel(offer.minTier, tierConfigs)}
+          </span>
+          <span className={cn("text-sm font-bold", canRedeem ? "text-emerald-600" : "text-rose-500")}>
+            {!offer.eligible
+              ? translate(language, "Your tier is not eligible", "Your tier is not eligible")
+              : offer.affordable
+                ? translate(language, "Ready to redeem", "Ready to redeem")
+                : `${missingPoints.toLocaleString(locale)} ${translate(language, "pts missing", "pts missing")}`}
+          </span>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            {translate(language, "Close", "Close")}
+          </Button>
+          <Button
+            type="button"
+            disabled={!canRedeem}
+            onClick={onRedeem}
+            className="bg-[#0f2342] text-white hover:bg-[#0b1b34]"
+          >
+            <Gift className="h-4 w-4" />
+            {translate(language, "Redeem voucher", "Redeem voucher")}
+          </Button>
+        </DialogFooter>
       </div>
     </div>
   );
@@ -879,7 +1069,9 @@ function RedeemedVoucherCard({
 
         <div className="flex items-center justify-end">
           <Button asChild type="button" className="h-10 rounded-xl bg-[#0f2342] px-4 text-white hover:bg-[#0b1b34]">
-            <Link href="/customer/discounts">{translate(language, "View detail", "View detail")}</Link>
+            <Link href={`/customer/discounts/${voucher.id}`}>
+              {translate(language, "View detail", "View detail")}
+            </Link>
           </Button>
         </div>
       </div>

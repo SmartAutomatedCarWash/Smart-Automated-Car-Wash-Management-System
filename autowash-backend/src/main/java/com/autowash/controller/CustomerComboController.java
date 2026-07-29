@@ -3,6 +3,7 @@ package com.autowash.controller;
 
 import com.autowash.entity.User;
 import com.autowash.dto.CustomerComboPaymentStatusResponse;
+import com.autowash.dto.CustomerComboDetailResponse;
 import com.autowash.dto.CustomerComboResponse;
 import com.autowash.dto.PurchaseCustomerComboRequest;
 import com.autowash.dto.PurchaseCustomerComboResponse;
@@ -58,6 +59,16 @@ public class CustomerComboController {
         User user = currentUserService.getCurrentUser();
         CustomerComboService.CustomerComboPage comboPage = customerComboService.listCustomerCombos(user, page, limit);
         return ApiResponse.ok("Customer combo history retrieved", comboPage.items(), comboPage.pagination());
+    }
+
+    @GetMapping("/{customerComboId}")
+    @Operation(summary = "Get owned combo detail for customer")
+    public ApiResponse<CustomerComboDetailResponse> getComboDetail(@PathVariable String customerComboId) {
+        User user = currentUserService.getCurrentUser();
+        return ApiResponse.ok(
+                "Customer combo detail retrieved",
+                customerComboService.getCustomerCombo(user, customerComboId)
+        );
     }
 
     @GetMapping("/payments/{transactionRef}/status")

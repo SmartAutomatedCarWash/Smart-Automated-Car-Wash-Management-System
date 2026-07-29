@@ -9,6 +9,7 @@ import {
   createComboVnpayCheckout,
   createVnpayCheckout,
   getCustomerComboPaymentStatus,
+  getCustomerComboDetail,
   getActiveWashTracking,
   getCustomerBookingDetail,
   getWashTrackingDetail,
@@ -62,6 +63,7 @@ import type {
   BookingStaffOption,
   BookingStaffOptionsRequest,
   CustomerCombo,
+  CustomerComboDetail,
   CustomerComboPaymentStatus,
   ExtraServiceRecommendation,
   SlotAvailability,
@@ -165,6 +167,17 @@ export function useCustomerComboHistory(page = 1, limit = 20) {
     enabled,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
+  });
+}
+
+export function useCustomerComboDetail(customerComboId: string) {
+  const { enabled, userId } = useBookingQueryContext();
+
+  return useQuery<CustomerComboDetail, ApiErrorResponse>({
+    queryKey: ["booking-catalog", "customer-combos", "detail", userId, customerComboId],
+    queryFn: () => getCustomerComboDetail(customerComboId),
+    enabled: enabled && customerComboId.length > 0,
+    refetchOnMount: "always",
   });
 }
 

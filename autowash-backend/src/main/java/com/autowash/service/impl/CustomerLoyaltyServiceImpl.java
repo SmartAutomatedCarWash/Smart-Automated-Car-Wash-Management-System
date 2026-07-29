@@ -7,6 +7,7 @@ import com.autowash.service.LoyaltyService;
 import com.autowash.entity.enums.BookingItemType;
 
 import com.autowash.dto.PointTransactionResponse;
+import com.autowash.dto.BookingPointBreakdownResponse;
 
 
 import com.autowash.service.CurrentUserService;
@@ -16,11 +17,15 @@ import com.autowash.entity.Booking;
 import com.autowash.entity.Combo;
 import com.autowash.entity.Package;
 import com.autowash.repository.ComboRepository;
+import com.autowash.repository.BookingRepository;
 import com.autowash.repository.PackageRepository;
+import com.autowash.repository.PointTransactionRepository;
 import com.autowash.dto.LoyaltyAccountResponse;
 import com.autowash.dto.LoyaltyTransactionResponse;
 import com.autowash.dto.WashHistoryItemResponse;
 import com.autowash.entity.enums.WashSessionStatus;
+import com.autowash.entity.enums.PointTransactionType;
+import com.autowash.entity.PointTransaction;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import java.util.List;
@@ -39,19 +44,25 @@ public class CustomerLoyaltyServiceImpl implements CustomerLoyaltyService {
     private final PackageRepository PackageRepository;
     private final ComboRepository ComboRepository;
     private final LoyaltyService loyaltyService;
+    private final BookingRepository bookingRepository;
+    private final PointTransactionRepository pointTransactionRepository;
 
     public CustomerLoyaltyServiceImpl(
             CurrentUserService currentUserService,
             WashSessionRepository washSessionRepository,
             PackageRepository PackageRepository,
             ComboRepository ComboRepository,
-            LoyaltyService loyaltyService
+            LoyaltyService loyaltyService,
+            BookingRepository bookingRepository,
+            PointTransactionRepository pointTransactionRepository
     ) {
         this.currentUserService = currentUserService;
         this.washSessionRepository = washSessionRepository;
         this.PackageRepository = PackageRepository;
         this.ComboRepository = ComboRepository;
         this.loyaltyService = loyaltyService;
+        this.bookingRepository = bookingRepository;
+        this.pointTransactionRepository = pointTransactionRepository;
     }
 
     @Transactional
@@ -73,20 +84,59 @@ public class CustomerLoyaltyServiceImpl implements CustomerLoyaltyService {
     @Transactional(readOnly = true)
     public CustomerLoyaltyService.LoyaltyTransactionPage listTransactions(int page, int limit) {
         User user = currentUserService.getCurrentUser();
-        LoyaltyService.TransactionPage transactionPage = loyaltyService.getTransactionHistory(
-                user.getId(),
-                null,
-                null,
-                null,
-                page,
-                limit
-        );
+        LoyaltyService.TransactionPage transactionPage =
+                loyaltyService.getCustomerTransactionHistory(user.getId(), page, limit);
 
         List<LoyaltyTransactionResponse> items = transactionPage.items().stream()
                 .map(this::toTransaction)
                 .toList();
 
         return new CustomerLoyaltyService.LoyaltyTransactionPage(items, transactionPage.pagination());
+    }
+
+    @Transactional(readOnly = true)
+    public BookingPointBreakdownResponse getBookingPointBreakdown(String bookingId) {
+        User user = currentUserService.getCurrentUser();
+        UUID parsedBookingId;
+        try {
+            parsedBookingId = UUID.fromString(bookingId);
+        } catch (IllegalArgumentException exception) {
+            throw new com.autowash.shared.exception.ApiException(
+                    org.springframework.http.HttpStatus.NOT_FOUND,
+                    "Booking not found",
+                    com.autowash.shared.exception.ErrorCode.RESOURCE_NOT_FOUND
+            );
+        }
+
+        Booking booking = bookingRepository.findByCustomerAndId(user, parsedBookingId)
+                .orElseThrow(() -> new com.autowash.shared.exception.ApiException(
+                        org.springframework.http.HttpStatus.NOT_FOUND,
+                        "Booking not found",
+                        com.autowash.shared.exception.ErrorCode.RESOURCE_NOT_FOUND
+                ));
+        List<PointTransaction> transactions =
+                pointTransactionRepository.findByLoyaltyAccount_CustomerAndBooking_IdOrderByCreatedAtDesc(
+                        user,
+                        booking.getId()
+                );
+        int bookingPoints = transactions.stream()
+                .filter(transaction -> transaction.getType() == PointTransactionType.EARN)
+                .mapToInt(PointTransaction::getPoints)
+                .filter(points -> points > 0)
+                .sum();
+        int reviewPoints = transactions.stream()
+                .filter(transaction -> transaction.getType() == PointTransactionType.ADJUST)
+                .filter(transaction -> "Review bonus".equalsIgnoreCase(transaction.getReason()))
+                .mapToInt(PointTransaction::getPoints)
+                .filter(points -> points > 0)
+                .sum();
+
+        return new BookingPointBreakdownResponse(
+                booking.getId().toString(),
+                bookingPoints,
+                reviewPoints,
+                bookingPoints + reviewPoints
+        );
     }
 
     @Transactional(readOnly = true)
