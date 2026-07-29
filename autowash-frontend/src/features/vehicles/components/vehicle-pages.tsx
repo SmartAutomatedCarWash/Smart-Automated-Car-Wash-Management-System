@@ -271,7 +271,6 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
   const vehicleQuery = useCustomerVehicleDetail(vehicleId);
   const updateMutation = useUpdateCustomerVehicle(vehicleId);
   const setPrimaryMutation = useSetPrimaryCustomerVehicle(vehicleId);
-  const deleteMutation = useDeleteCustomerVehicle(vehicleId);
   const [form, setForm] = useState<CustomerVehicleFormValues>(EMPTY_CUSTOMER_VEHICLE_FORM);
   const [showValidation, setShowValidation] = useState(false);
   const locale = language === "vi" ? "vi-VN" : "en-US";
@@ -413,23 +412,6 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
     }
   };
 
-  const handleDelete = async () => {
-    try {
-      await deleteMutation.mutateAsync();
-      toast.success(translate(language, "Xe da duoc xoa.", "Vehicle removed."), VEHICLE_TOAST_OPTIONS);
-      router.push("/customer/vehicles");
-    } catch (error) {
-      toast.error(
-        getVehicleToastErrorMessage(
-          error,
-          translate(language, "Khong the xoa xe.", "Unable to delete vehicle."),
-          getErrorMessage,
-        ),
-        VEHICLE_TOAST_OPTIONS,
-      );
-    }
-  };
-
   return (
     <VehicleFormPageShell
       backHref="/customer/vehicles"
@@ -479,9 +461,7 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
             vehicle={vehicle}
             language={language}
             onSetPrimary={handleSetPrimary}
-            onDelete={handleDelete}
             isSettingPrimary={setPrimaryMutation.isPending}
-            isDeleting={deleteMutation.isPending}
           />
         </div>
       </section>
@@ -809,16 +789,12 @@ function VehicleQuickActionsCard({
   vehicle,
   language,
   onSetPrimary,
-  onDelete,
   isSettingPrimary,
-  isDeleting,
 }: {
   vehicle: CustomerVehicleDetail;
   language: "vi" | "en";
   onSetPrimary: () => Promise<void>;
-  onDelete: () => Promise<void>;
   isSettingPrimary: boolean;
-  isDeleting: boolean;
 }) {
   return (
     <Card className="border-slate-200/80 bg-white/95 shadow-[0_18px_44px_rgba(15,23,42,0.08)]">
@@ -826,8 +802,8 @@ function VehicleQuickActionsCard({
         <CardDescription>
           {translate(
             language,
-            "Dat xe nay lam mac dinh cho booking moi hoac xoa xe khoi tai khoan neu khong con su dung.",
-            "Set this vehicle as the default for new bookings or remove it from the account if it is no longer used.",
+            "Dat xe nay lam mac dinh cho cac booking moi.",
+            "Set this vehicle as the default for new bookings.",
           )}
         </CardDescription>
       </CardHeader>
@@ -852,27 +828,11 @@ function VehicleQuickActionsCard({
               </>
             )}
           </Button>
-        ) : null}
-
-        <Button
-          type="button"
-          variant="destructive"
-          className="h-11 w-full rounded-xl"
-          onClick={onDelete}
-          disabled={isDeleting}
-        >
-          {isDeleting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {translate(language, "Dang xoa...", "Removing...")}
-            </>
-          ) : (
-            <>
-              <Trash2 className="mr-2 h-4 w-4" />
-              {translate(language, "Xoa xe nay", "Delete this vehicle")}
-            </>
-          )}
-        </Button>
+        ) : (
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-center text-sm font-semibold text-emerald-700">
+            {translate(language, "Day la xe chinh hien tai.", "This is your current primary vehicle.")}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

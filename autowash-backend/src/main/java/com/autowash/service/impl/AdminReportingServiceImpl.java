@@ -57,6 +57,7 @@ import org.springframework.data.domain.PageRequest;
 
 
 import com.autowash.dto.AdminBookingResponse;
+import com.autowash.dto.AdminAccountSummaryResponse;
 import com.autowash.dto.AdminBookingSummaryResponse;
 import com.autowash.dto.AdminBusinessHealthReportResponse;
 import com.autowash.dto.AdminAccountResponse;
@@ -87,6 +88,7 @@ import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.entity.PointTransaction;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PointTransactionRepository;
+import com.autowash.repository.TierConfigRepository;
 import com.autowash.service.AdminReportingService;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.WashSessionStaffAssignmentRepository;
@@ -147,6 +149,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     private final BookingResponseAssembler bookingResponseAssembler;
     private final ReviewRepository reviewRepository;
     private final BookingStatusHistoryRepository bookingStatusHistoryRepository;
+    private final TierConfigRepository tierConfigRepository;
 
     public AdminReportingServiceImpl(
             BookingRepository bookingRepository,
@@ -164,7 +167,8 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             WashSessionStaffAssignmentRepository washSessionStaffAssignmentRepository,
             BookingResponseAssembler bookingResponseAssembler,
             ReviewRepository reviewRepository,
-            BookingStatusHistoryRepository bookingStatusHistoryRepository
+            BookingStatusHistoryRepository bookingStatusHistoryRepository,
+            TierConfigRepository tierConfigRepository
     ) {
         this.bookingRepository = bookingRepository;
         this.washSessionRepository = washSessionRepository;
@@ -182,6 +186,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         this.bookingResponseAssembler = bookingResponseAssembler;
         this.reviewRepository = reviewRepository;
         this.bookingStatusHistoryRepository = bookingStatusHistoryRepository;
+        this.tierConfigRepository = tierConfigRepository;
     }
 
     @Transactional
@@ -564,22 +569,53 @@ public class AdminReportingServiceImpl implements AdminReportingService {
 
     @Transactional(readOnly = true)
     public AccountPage listAccounts(String role, String status, String searchQuery, int page, int limit) {
+        return listAccounts(role, null, status, searchQuery, page, limit);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AccountPage listAccounts(String role, String roleGroup, String status, String searchQuery, int page, int limit) {
         UserRole parsedRole = parseRole(role);
         UserStatus parsedStatus = parseUserStatus(status);
         String normalizedSearch = normalizeSearch(searchQuery);
         String searchLike = normalizedSearch == null ? null : "%" + normalizedSearch.toLowerCase() + "%";
 
-        Page<User> accounts = UserRepository.searchAccounts(
-                parsedRole,
-                parsedStatus,
-                searchLike,
-                PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending())
-        );
+        PageRequest pageRequest = PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending());
+        Page<User> accounts = "STAFF_ADMIN".equalsIgnoreCase(roleGroup) && parsedRole == null
+                ? UserRepository.searchAccountsByRoles(List.of(UserRole.STAFF, UserRole.MANAGER, UserRole.ADMIN), parsedStatus, searchLike, pageRequest)
+                : UserRepository.searchAccounts(parsedRole, parsedStatus, searchLike, pageRequest);
 
         List<AdminAccountResponse> items = accounts.getContent().stream()
                 .map(this::toAccountResponse)
                 .toList();
         return new AccountPage(items, pagination(accounts));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AdminAccountSummaryResponse getAccountSummary() {
+        Map<String, Long> countByTier = loyaltyAccountRepository.countByTier().stream()
+                .collect(Collectors.toMap(
+                        row -> String.valueOf(row[0]),
+                        row -> (Long) row[1]
+                ));
+        List<AdminAccountSummaryResponse.TierCount> customerTiers = tierConfigRepository.findAllByOrderByRankOrderAsc().stream()
+                .map(tier -> new AdminAccountSummaryResponse.TierCount(
+                        tier.getTier(),
+                        tier.getDisplayName(),
+                        countByTier.getOrDefault(tier.getTier().toUpperCase(), 0L)
+                ))
+                .toList();
+
+        List<AdminAccountSummaryResponse.RoleCount> staffRoles = List.of(UserRole.STAFF, UserRole.MANAGER, UserRole.ADMIN).stream()
+                .map(role -> new AdminAccountSummaryResponse.RoleCount(role.name(), UserRepository.countByRole(role)))
+                .toList();
+
+        return new AdminAccountSummaryResponse(
+                UserRepository.countByRole(UserRole.CUSTOMER),
+                customerTiers,
+                staffRoles
+        );
     }
 
     @Transactional(readOnly = true)
@@ -694,6 +730,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             LocalDate dateFrom,
             LocalDate dateTo,
             UUID customerId,
+            UUID packageId,
             String searchQuery,
             int page,
             int limit
@@ -708,6 +745,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 customerId,
                 dateFrom,
                 dateTo,
+                packageId,
                 searchLike,
                 PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending())
         );

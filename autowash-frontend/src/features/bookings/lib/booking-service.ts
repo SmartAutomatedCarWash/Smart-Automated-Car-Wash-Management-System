@@ -12,6 +12,7 @@ import type {
   BookingListPage,
   BookingPackage,
   CustomerCombo,
+  CustomerComboDetail,
   CustomerComboPaymentStatus,
   ApplyBookingPointsRequest,
   ApplyBookingPointsResponse,
@@ -93,6 +94,13 @@ export async function listCustomerComboHistory(page = 1, limit = 20): Promise<{
     items: response.data.data,
     pagination: response.data.pagination,
   };
+}
+
+export async function getCustomerComboDetail(customerComboId: string): Promise<CustomerComboDetail> {
+  const response = await apiClient.get<ApiSuccessResponse<CustomerComboDetail>>(
+    `/customers/combos/${encodeURIComponent(customerComboId)}`,
+  );
+  return response.data.data;
 }
 
 export async function getCustomerComboPaymentStatus(transactionRef: string): Promise<CustomerComboPaymentStatus> {

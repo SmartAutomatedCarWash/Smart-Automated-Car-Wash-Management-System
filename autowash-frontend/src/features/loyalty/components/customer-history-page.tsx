@@ -328,9 +328,12 @@ function PointTransactionRow({
 }
 
 function cnPointValue(points: number, linked: boolean) {
-  const tone = points >= 0 ? "text-emerald-600" : "text-rose-600";
-  const linkedStyle = linked ? "rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200" : "";
-  return `text-right text-lg font-bold ${tone} ${linkedStyle}`;
+  const tone =
+    points >= 0
+      ? "bg-emerald-50 text-emerald-600 ring-emerald-200"
+      : "bg-rose-50 text-rose-600 ring-rose-200";
+  const cursor = linked ? "transition-colors group-hover:ring-slate-300" : "";
+  return `rounded-full px-3 py-1 text-right text-lg font-bold ring-1 ${tone} ${cursor}`;
 }
 
 function BookingRow({ booking, language, locale }: { booking: BookingListItem; language: string; locale: string }) {
@@ -414,7 +417,10 @@ function ComboHistoryRow({
   locale: string;
 }) {
   return (
-    <div className="flex flex-col gap-4 p-5 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between">
+    <NextLink
+      href={`/customer/history/combos/${combo.customerComboId}`}
+      className="flex flex-col gap-4 p-5 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
+    >
       <div>
         <div className="text-sm font-bold text-slate-900">{combo.comboName}</div>
         <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
@@ -435,7 +441,11 @@ function ComboHistoryRow({
           {translate(language, "Hết hạn:", "Expires:")} {new Date(combo.expiresAt).toLocaleDateString(locale)}
         </div>
       </div>
-    </div>
+      <div className="flex items-center gap-2 text-xs font-semibold text-cyan-600">
+        <span>View detail</span>
+        <ArrowRight className="h-4 w-4 text-slate-300" />
+      </div>
+    </NextLink>
   );
 }
 

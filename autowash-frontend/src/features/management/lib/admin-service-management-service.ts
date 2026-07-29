@@ -1,20 +1,45 @@
 import { apiClient, apiRequest } from "@/shared/lib/api";
-import type { ApiSuccessResponse } from "@/shared/types/api.types";
+import type { ApiPaginatedResponse } from "@/shared/types/api.types";
 import type {
   AdminCatalogPackage,
   AdminCatalogService,
   AdminCombo,
   AdminComboForm,
+  CatalogListParams,
+  CatalogPage,
 } from "@/entities/management";
 
-export async function listAdminCatalogServices() {
-  const response = await apiClient.get<ApiSuccessResponse<AdminCatalogService[]>>("/admin/services");
-  return response.data.data;
+const DEFAULT_CATALOG_LIMIT = 5;
+
+function catalogParams(params: CatalogListParams = {}) {
+  return {
+    page: params.page ?? 1,
+    limit: params.limit ?? DEFAULT_CATALOG_LIMIT,
+    status: params.status || undefined,
+    sortBy: params.sortBy ?? "name",
+    direction: params.direction ?? "asc",
+  };
 }
 
-export async function listAdminCatalogPackages() {
-  const response = await apiClient.get<ApiSuccessResponse<AdminCatalogPackage[]>>("/admin/packages");
-  return response.data.data;
+function toCatalogPage<T>(response: ApiPaginatedResponse<T>): CatalogPage<T> {
+  return {
+    items: response.data,
+    pagination: response.pagination,
+  };
+}
+
+export async function listAdminCatalogServices(params: CatalogListParams = {}) {
+  const response = await apiClient.get<ApiPaginatedResponse<AdminCatalogService>>("/admin/services", {
+    params: catalogParams(params),
+  });
+  return toCatalogPage(response.data);
+}
+
+export async function listAdminCatalogPackages(params: CatalogListParams = {}) {
+  const response = await apiClient.get<ApiPaginatedResponse<AdminCatalogPackage>>("/admin/packages", {
+    params: catalogParams(params),
+  });
+  return toCatalogPage(response.data);
 }
 
 export function createAdminService(payload: {
@@ -139,9 +164,11 @@ export function updateAdminPackage(payload: {
 
 // API Flow: Calls GET /api/v1/admin/combos in Backend
 // Handled by: AdminComboController.listCombos() -> AdminComboServiceImpl.listCombos()
-export async function listAdminCombos() {
-  const response = await apiClient.get<ApiSuccessResponse<AdminCombo[]>>("/admin/combos");
-  return response.data.data;
+export async function listAdminCombos(params: CatalogListParams = {}) {
+  const response = await apiClient.get<ApiPaginatedResponse<AdminCombo>>("/admin/combos", {
+    params: catalogParams(params),
+  });
+  return toCatalogPage(response.data);
 }
 
 export function createAdminCombo(payload: AdminComboForm) {

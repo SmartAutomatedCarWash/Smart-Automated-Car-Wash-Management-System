@@ -4,10 +4,12 @@ import com.autowash.entity.User;
 import com.autowash.entity.PointTransaction;
 import com.autowash.entity.enums.PointTransactionType;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +18,20 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
 
     @Query("select pt from PointTransaction pt where pt.loyaltyAccount.customer = :customer")
     Page<PointTransaction> findByCustomer(@Param("customer") User customer, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"booking"})
+    @Query("""
+            select pt from PointTransaction pt
+            where pt.loyaltyAccount.customer = :customer
+              and pt.points <> 0
+            order by pt.createdAt desc, pt.id desc
+            """)
+    List<PointTransaction> findVisibleCustomerHistoryTransactions(@Param("customer") User customer);
+
+    List<PointTransaction> findByLoyaltyAccount_CustomerAndBooking_IdOrderByCreatedAtDesc(
+            User customer,
+            UUID bookingId
+    );
 
     Optional<PointTransaction> findByTypeAndBookingId(PointTransactionType type, UUID bookingId);
 

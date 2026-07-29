@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -42,7 +42,7 @@ import { formatIntegerRating } from "@/shared/lib/rating-format";
 import type { ApiSuccessResponse } from "@/shared/types/api.types";
 import { useWebSocket } from "@/shared/hooks/use-web-socket";
 
-const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
+const PAGE_SIZE = 5;
 
 // Purple Ban compliant status styling
 const STATUS_TONE: Record<string, string> = {
@@ -74,7 +74,6 @@ export function AdminBookingsPageContent() {
   // Real-time updates via WebSocket
   useWebSocket();
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState({
     status: "ALL",
     date: "",
@@ -95,9 +94,10 @@ export function AdminBookingsPageContent() {
     staleTime: 5 * 60_000,
   });
 
-  const bookingsQuery = useAdminBookings(page, limit, {
+  const bookingsQuery = useAdminBookings(page, PAGE_SIZE, {
     searchQuery: filters.customerName || undefined,
     status: filters.status !== "ALL" ? filters.status : undefined,
+    packageId: filters.packageId !== "ALL" ? filters.packageId : undefined,
     dateFrom: filters.date || undefined,
     dateTo: filters.date || undefined,
   });
@@ -105,7 +105,7 @@ export function AdminBookingsPageContent() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [filters, limit]);
+  }, [filters]);
 
   const handleResetFilters = () => {
     setFilters({ status: "ALL", date: "", customerName: "", packageId: "ALL" });
@@ -117,19 +117,7 @@ export function AdminBookingsPageContent() {
     packagesQuery.refetch();
   };
 
-  // Client side filtering for package if selected
-  const filteredBookings = useMemo(() => {
-    if (!bookingsQuery.data?.items) return [];
-    if (filters.packageId === "ALL") return bookingsQuery.data.items;
-    
-    // Filter by package ID
-    return bookingsQuery.data.items.filter(item => {
-      const targetPackage = packagesQuery.data?.find(p => p.packageId === filters.packageId);
-      if (!targetPackage) return true;
-      return item.primaryItemName === targetPackage.name;
-    });
-  }, [bookingsQuery.data, filters.packageId, packagesQuery.data]);
-
+  const bookings = bookingsQuery.data?.items ?? [];
   const totalPages = Math.max(bookingsQuery.data?.pagination.totalPages || 1, 1);
   const totalItems = bookingsQuery.data?.pagination.total || 0;
 
@@ -138,23 +126,6 @@ export function AdminBookingsPageContent() {
   return (
     <div className="p-4 md:p-8 bg-slate-50/50 min-h-screen">
       <div className="mx-auto max-w-[1600px] space-y-6">
-        
-        {/* ─── Header ─────────────────────────────────────────────────── */}
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-              {translate(language, "Quản lý đặt lịch", "Booking Management")}
-            </h1>
-            <p className="text-sm text-slate-500 font-medium mt-1">
-              {translate(
-                language,
-                "Theo dõi lịch hẹn, phân công nhân viên, gói dịch vụ và trạng thái khách hàng",
-                "Track appointments, assigned staff, service packages, and customer status"
-              )}
-            </p>
-          </div>
-        </div>
-
         {/* ─── KPI Statistics Cards ───────────────────────────────────── */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="border border-slate-100 bg-white shadow-sm rounded-2xl overflow-hidden">
@@ -370,7 +341,7 @@ export function AdminBookingsPageContent() {
           <Card className="border-rose-100 bg-rose-50/50 p-12 text-center text-rose-700 rounded-2xl">
             {getErrorMessage(bookingsQuery.error)}
           </Card>
-        ) : filteredBookings.length === 0 ? (
+        ) : bookings.length === 0 ? (
           <Card className="border border-slate-100 bg-white p-12 text-center text-slate-400 rounded-2xl">
             {translate(language, "Không tìm thấy dữ liệu đặt lịch phù hợp.", "No matching booking data found.")}
           </Card>
@@ -409,7 +380,7 @@ export function AdminBookingsPageContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredBookings.map((row) => (
+                {bookings.map((row) => (
                   <TableRow key={row.bookingId} className="border-b border-slate-100 hover:bg-slate-50/40">
                     
                     {/* Booking/Customer */}
@@ -510,8 +481,8 @@ export function AdminBookingsPageContent() {
             <div className="text-sm font-semibold text-slate-500">
               {translate(
                 language,
-                `Đang hiển thị 1 đến ${filteredBookings.length} của ${totalItems} lịch đặt`,
-                `Showing 1 to ${filteredBookings.length} of ${totalItems} bookings`
+                `Đang hiển thị ${(page - 1) * PAGE_SIZE + 1} đến ${(page - 1) * PAGE_SIZE + bookings.length} của ${totalItems} lịch đặt`,
+                `Showing ${(page - 1) * PAGE_SIZE + 1} to ${(page - 1) * PAGE_SIZE + bookings.length} of ${totalItems} bookings`
               )}
             </div>
 
@@ -572,25 +543,6 @@ export function AdminBookingsPageContent() {
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
-              </div>
-
-              {/* Page size changer */}
-              <div className="flex items-center gap-2">
-                <Select
-                  value={String(limit)}
-                  onValueChange={(val) => setLimit(Number(val))}
-                >
-                  <SelectTrigger className="h-9 w-24 border-slate-200 rounded-xl text-xs font-semibold bg-white text-slate-700">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    {PAGE_SIZE_OPTIONS.map((opt) => (
-                      <SelectItem key={opt} value={String(opt)} className="text-xs">
-                        {opt} / {translate(language, "trang", "page")}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 

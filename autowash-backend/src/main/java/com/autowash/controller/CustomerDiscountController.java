@@ -39,4 +39,10 @@ public class CustomerDiscountController {
         UUID userId = currentUserService.getCurrentUser().getId();
         return discountService.getUserDiscounts(userId, pageable);
     }
+
+    @GetMapping("/my-discounts/{userDiscountId}")
+    public UserDiscountResponse getMyDiscount(@PathVariable UUID userDiscountId) {
+        UUID userId = currentUserService.getCurrentUser().getId();
+        return discountService.getUserDiscount(userId, userDiscountId);
+    }
 }

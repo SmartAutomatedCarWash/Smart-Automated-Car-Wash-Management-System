@@ -16,6 +16,18 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface UserDiscountRepository extends JpaRepository<UserDiscount, UUID> {
     Page<UserDiscount> findByUserId(UUID userId, Pageable pageable);
+
+    @Query("""
+            select userDiscount
+            from UserDiscount userDiscount
+            join fetch userDiscount.discount
+            where userDiscount.id = :userDiscountId
+              and userDiscount.user.id = :userId
+            """)
+    Optional<UserDiscount> findDetailByIdAndUserId(
+            @Param("userDiscountId") UUID userDiscountId,
+            @Param("userId") UUID userId
+    );
     
     List<UserDiscount> findByUserIdAndStatus(UUID userId, UserDiscountStatus status);
     

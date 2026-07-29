@@ -44,7 +44,7 @@ import {
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
 import { BookingCompletionPopup } from "@/features/bookings/components/booking-completion-popup";
 import { useBookingReviewCheck, useSubmitBookingReview } from "@/features/bookings/hooks/use-reviews";
-import { useCustomerLoyaltyTransactions } from "@/features/loyalty/hooks/use-customer-loyalty";
+import { useCustomerBookingPointBreakdown } from "@/features/loyalty/hooks/use-customer-loyalty";
 import type { BookingAddonSelection, BookingDetail, BookingStaffOption, BookingStaffOptionsRequest } from "@/entities/bookings";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
@@ -213,15 +213,12 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const submitReviewMutation = useSubmitBookingReview();
   const isCompleted = bookingQuery.data?.status === "COMPLETED" || bookingQuery.data?.washStatus === "COMPLETED";
   const reviewCheckQuery = useBookingReviewCheck(bookingId, isCompleted);
-  const loyaltyTransactionsQuery = useCustomerLoyaltyTransactions(1, 100);
-  const bookingPointsEarned = useMemo(() => {
-    const currentBookingId = bookingQuery.data?.bookingId ?? bookingId;
-    const bookingPoints = loyaltyTransactionsQuery.data?.items
-      .filter((transaction) => transaction.bookingId === currentBookingId && transaction.type === "EARN" && transaction.points > 0)
-      .reduce((sum, transaction) => sum + transaction.points, 0) ?? 0;
-    return bookingPoints > 0 ? bookingPoints : null;
-  }, [bookingId, bookingQuery.data?.bookingId, loyaltyTransactionsQuery.data]);
-  const reviewPointsEarned = bookingQuery.data?.review ? 10 : 0;
+  const bookingPointsQuery = useCustomerBookingPointBreakdown(bookingId);
+  const bookingPointsEarned =
+    (bookingPointsQuery.data?.bookingPoints ?? 0) > 0
+      ? bookingPointsQuery.data?.bookingPoints ?? null
+      : null;
+  const reviewPointsEarned = bookingPointsQuery.data?.reviewPoints ?? 0;
 
   // Auto-show review popup when booking is COMPLETED and not yet reviewed
   useEffect(() => {
@@ -469,6 +466,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
       comment,
       ...images,
     });
+    await Promise.all([bookingPointsQuery.refetch(), bookingQuery.refetch()]);
     notify.success(translate(language, "Đánh giá đã được gửi thành công!", "Review submitted successfully!"));
   };
 

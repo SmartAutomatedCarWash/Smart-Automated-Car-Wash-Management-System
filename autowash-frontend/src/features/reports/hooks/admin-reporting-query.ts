@@ -10,6 +10,10 @@ export function adminAccountsQueryKey(userId?: string | null, filters?: unknown,
   return [...adminReportingScope(userId), "accounts", filters ?? {}, page, limit] as const;
 }
 
+export function adminAccountsSummaryQueryKey(userId?: string | null) {
+  return [...adminReportingScope(userId), "accounts-summary"] as const;
+}
+
 export function adminCustomerDetailQueryKey(userId?: string | null, customerId?: string) {
   return [...adminReportingScope(userId), "customer-detail", customerId ?? ""] as const;
 }

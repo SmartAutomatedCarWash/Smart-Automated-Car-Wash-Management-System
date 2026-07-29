@@ -3,6 +3,7 @@ package com.autowash.repository;
 
 import com.autowash.entity.LoyaltyAccount;
 import jakarta.persistence.LockModeType;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,4 +22,7 @@ public interface LoyaltyAccountRepository extends JpaRepository<LoyaltyAccount, 
     @Override
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"customer"})
     java.util.List<LoyaltyAccount> findAll();
+
+    @Query("select upper(account.tier), count(account) from LoyaltyAccount account group by upper(account.tier)")
+    List<Object[]> countByTier();
 }

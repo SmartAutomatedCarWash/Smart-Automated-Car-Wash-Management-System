@@ -41,7 +41,13 @@ public class PublicLoyaltyController {
                 offer.getDiscount().getRequiredPoints(),
                 (int) offer.getDiscount().getDiscountValue(),
                 offer.getAccent(),
-                offer.getBadge()
+                offer.getBadge(),
+                offer.getDiscount().getDescription(),
+                offer.getDiscount().getDiscountType().name(),
+                offer.getDiscount().getMinOrderAmount(),
+                offer.getDiscount().getMaxDiscountAmount(),
+                offer.getDiscount().getValidDaysAfterClaim(),
+                offer.getDiscount().isNewCustomerOnly()
         );
     }
 }

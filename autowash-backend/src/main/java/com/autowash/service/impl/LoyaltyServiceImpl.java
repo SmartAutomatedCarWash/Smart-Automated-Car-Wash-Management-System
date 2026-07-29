@@ -42,8 +42,13 @@ import com.autowash.shared.exception.ErrorCode;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
@@ -375,6 +380,46 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         return new LoyaltyService.TransactionPage(items, pagination);
     }
 
+    @Transactional(readOnly = true)
+    public LoyaltyService.TransactionPage getCustomerTransactionHistory(UUID customerId, int page, int limit) {
+        User customer = requireCustomer(customerId);
+        List<PointTransaction> transactions =
+                pointTransactionRepository.findVisibleCustomerHistoryTransactions(customer);
+        Map<String, CustomerHistoryTransaction> grouped = new LinkedHashMap<>();
+
+        for (PointTransaction transaction : transactions) {
+            UUID bookingId = transaction.getBooking() == null ? null : transaction.getBooking().getId();
+            String groupKey = bookingId == null
+                    ? "transaction:" + transaction.getId()
+                    : "booking:" + bookingId;
+            grouped.computeIfAbsent(
+                    groupKey,
+                    ignored -> new CustomerHistoryTransaction(transaction, bookingId)
+            ).add(transaction);
+        }
+
+        List<PointTransactionResponse> visibleItems = grouped.values().stream()
+                .filter(item -> item.points != 0)
+                .map(CustomerHistoryTransaction::toResponse)
+                .toList();
+
+        int safePage = Math.max(page, 1);
+        int safeLimit = Math.max(limit, 1);
+        int total = visibleItems.size();
+        int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeLimit);
+        int fromIndex = Math.min((safePage - 1) * safeLimit, total);
+        int toIndex = Math.min(fromIndex + safeLimit, total);
+        List<PointTransactionResponse> pageItems = new ArrayList<>(visibleItems.subList(fromIndex, toIndex));
+        PaginationMeta pagination = new PaginationMeta(
+                safePage,
+                safeLimit,
+                total,
+                totalPages,
+                safePage < totalPages
+        );
+        return new LoyaltyService.TransactionPage(pageItems, pagination);
+    }
+
     TierChangeResult recalculateTierFromTotalEarnedPoints(LoyaltyAccount account) {
         String targetTier = tierConfigService.calculateTierForPoints(account.getTotalEarnedPoints());
         String oldTier = account.getTier();
@@ -596,6 +641,61 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 resolveReferenceBookingId(transaction),
                 transaction.getCreatedAt()
         );
+    }
+
+    private static final class CustomerHistoryTransaction {
+        private final Long transactionId;
+        private final String latestType;
+        private final int balanceAfter;
+        private final UUID bookingId;
+        private final Instant createdAt;
+        private final Set<String> reasons = new LinkedHashSet<>();
+        private int points;
+        private boolean includesWashPoints;
+        private boolean includesReviewPoints;
+
+        private CustomerHistoryTransaction(PointTransaction latestTransaction, UUID bookingId) {
+            this.transactionId = latestTransaction.getId();
+            this.latestType = latestTransaction.getType().name();
+            this.balanceAfter = latestTransaction.getBalanceAfter();
+            this.bookingId = bookingId;
+            this.createdAt = latestTransaction.getCreatedAt();
+        }
+
+        private void add(PointTransaction transaction) {
+            points += transaction.getPoints();
+            if (transaction.getReason() != null && !transaction.getReason().isBlank()) {
+                reasons.add(transaction.getReason());
+            }
+            includesWashPoints = includesWashPoints
+                    || transaction.getType() == PointTransactionType.EARN
+                    || "Wash completed".equalsIgnoreCase(transaction.getReason());
+            includesReviewPoints = includesReviewPoints
+                    || "Review bonus".equalsIgnoreCase(transaction.getReason());
+        }
+
+        private PointTransactionResponse toResponse() {
+            String type = bookingId != null && points > 0 ? PointTransactionType.EARN.name() : latestType;
+            return new PointTransactionResponse(
+                    transactionId,
+                    type,
+                    points,
+                    balanceAfter,
+                    description(),
+                    bookingId == null ? null : bookingId.toString(),
+                    createdAt
+            );
+        }
+
+        private String description() {
+            if (includesWashPoints && includesReviewPoints) {
+                return "Wash completed + review bonus";
+            }
+            if (reasons.isEmpty()) {
+                return "Points updated";
+            }
+            return String.join(" + ", reasons);
+        }
     }
 
     private Booking resolveOptionalBooking(UUID bookingId, User customer) {

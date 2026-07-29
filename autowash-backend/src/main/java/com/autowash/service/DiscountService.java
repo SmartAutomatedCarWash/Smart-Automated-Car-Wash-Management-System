@@ -20,4 +20,6 @@ public interface DiscountService {
     UserDiscountResponse claimDiscount(UUID userId, UUID discountId);
     
     Page<UserDiscountResponse> getUserDiscounts(UUID userId, Pageable pageable);
+
+    UserDiscountResponse getUserDiscount(UUID userId, UUID userDiscountId);
 }

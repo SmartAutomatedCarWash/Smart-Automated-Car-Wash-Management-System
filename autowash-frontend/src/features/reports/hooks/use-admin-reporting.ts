@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adminReportingScope,
   adminAccountsQueryKey,
+  adminAccountsSummaryQueryKey,
   adminBookingsQueryKey,
   adminCustomerDetailQueryKey,
   adminCustomerPointTransactionsQueryKey,
@@ -13,6 +14,7 @@ import {
 } from "@/features/reports/hooks/admin-reporting-query";
 import {
   createAdminStaff,
+  getAdminAccountsSummary,
   getAdminAccountDetail,
   getAdminCustomerDetail,
   listAdminAccounts,
@@ -29,6 +31,7 @@ import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type {
   AdminAccountsFilters,
   AdminAccountsPage,
+  AdminAccountSummary,
   AdminAccount,
   AdminBookingsFilters,
   AdminBookingsPage,
@@ -71,7 +74,7 @@ export function useAdminBookings(
 export function useAdminAccounts(
   filters: AdminAccountsFilters,
   page = 1,
-  limit = 20,
+  limit = 5,
   options?: { enabled?: boolean },
 ) {
   const { userId, enabled } = useAdminReportingContext();
@@ -79,6 +82,16 @@ export function useAdminAccounts(
   return useQuery<AdminAccountsPage, ApiErrorResponse>({
     queryKey: adminAccountsQueryKey(userId, filters, page, limit),
     queryFn: () => listAdminAccounts(filters, page, limit),
+    enabled: enabled && (options?.enabled ?? true),
+  });
+}
+
+export function useAdminAccountsSummary(options?: { enabled?: boolean }) {
+  const { userId, enabled } = useAdminReportingContext();
+
+  return useQuery<AdminAccountSummary, ApiErrorResponse>({
+    queryKey: adminAccountsSummaryQueryKey(userId),
+    queryFn: getAdminAccountsSummary,
     enabled: enabled && (options?.enabled ?? true),
   });
 }

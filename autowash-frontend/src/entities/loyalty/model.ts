@@ -31,6 +31,13 @@ export type LoyaltyTransaction = {
   createdAt: string;
 };
 
+export type BookingPointBreakdown = {
+  bookingId: string;
+  bookingPoints: number;
+  reviewPoints: number;
+  totalPoints: number;
+};
+
 export type RedeemPointsRequest = {
   offerId: string;
 };
@@ -51,8 +58,14 @@ export type TierVoucherOffer = {
   minTier: LoyaltyTier;
   pointsCost: number;
   voucherValue: number;
-  accent: "sky" | "violet" | "amber" | "rose" | "fuchsia";
+  accent: string;
   badge: string;
+  description?: string | null;
+  discountType?: "PERCENT" | "FIXED_AMOUNT";
+  minOrderAmount?: number;
+  maxDiscountAmount?: number | null;
+  validDaysAfterClaim?: number | null;
+  newCustomerOnly?: boolean;
 };
 
 export type WashHistoryItem = {

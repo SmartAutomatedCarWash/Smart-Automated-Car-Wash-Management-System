@@ -159,6 +159,14 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
               and (:#{#dateFrom == null} = true or booking.scheduledAt >= :dateFrom)
               and (:#{#dateTo == null} = true or booking.scheduledAt <= :dateTo)
               and (
+                    :#{#packageId == null} = true
+                    or exists (
+                        select detail.id from BookingDetail detail
+                        where detail.booking = booking
+                          and detail.refId = :packageId
+                    )
+              )
+              and (
                     :#{#searchLike == null} = true
                     or lower(cast(booking.id as string)) like :searchLike
                     or lower(booking.customer.fullName) like :searchLike
@@ -172,6 +180,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             @Param("customerId") UUID customerId,
             @Param("dateFrom") Instant dateFrom,
             @Param("dateTo") Instant dateTo,
+            @Param("packageId") UUID packageId,
             @Param("searchLike") String searchLike,
             Pageable pageable
     );
@@ -182,6 +191,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             UUID customerId,
             LocalDate dateFrom,
             LocalDate dateTo,
+            UUID packageId,
             String searchLike,
             Pageable pageable
     ) {
@@ -191,6 +201,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
                 customerId,
                 startOfDay(dateFrom),
                 endOfDay(dateTo),
+                packageId,
                 searchLike,
                 pageable
         );
