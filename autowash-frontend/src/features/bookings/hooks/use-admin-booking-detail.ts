@@ -34,6 +34,7 @@ export function useConfirmAdminBooking(id: string) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin-booking-detail", id] }),
         queryClient.invalidateQueries({ queryKey: ["admin-bookings"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-bookings-summary"] }),
       ]);
     },
   });
@@ -48,6 +49,7 @@ export function useUpdateAdminBookingStatus(id: string) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin-booking-detail", id] }),
         queryClient.invalidateQueries({ queryKey: ["admin-bookings"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-bookings-summary"] }),
       ]);
     },
   });
@@ -62,6 +64,7 @@ export function useUpdateAdminBookingStaff(id: string) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin-booking-detail", id] }),
         queryClient.invalidateQueries({ queryKey: ["admin-bookings"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-bookings-summary"] }),
         queryClient.invalidateQueries({ queryKey: ["manager-operations"] }),
       ]);
     },
