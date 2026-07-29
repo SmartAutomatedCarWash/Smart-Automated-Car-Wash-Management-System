@@ -18,6 +18,8 @@ export function useAdminBookings(
     queryFn: () => listAdminBookings(filters, page, limit),
     enabled,
     staleTime: 30_000,
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: true,
   });
 }
 
@@ -31,5 +33,7 @@ export function useAdminBookingSummary() {
     queryFn: () => getAdminBookingSummary(),
     enabled,
     staleTime: 30_000,
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: true,
   });
 }
