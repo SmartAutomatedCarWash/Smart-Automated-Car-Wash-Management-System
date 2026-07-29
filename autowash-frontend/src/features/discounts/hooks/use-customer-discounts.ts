@@ -71,6 +71,19 @@ export function useCustomerDiscounts() {
   });
 }
 
+export function useCustomerDiscount(userDiscountId: string) {
+  return useQuery({
+    queryKey: [...customerDiscountsQueryKey, "detail", userDiscountId],
+    queryFn: async () => {
+      const response = await apiClient.get<CustomerDiscount>(
+        `/customer/discounts/my-discounts/${userDiscountId}`,
+      );
+      return response.data;
+    },
+    enabled: Boolean(userDiscountId),
+  });
+}
+
 export function useClaimCustomerDiscount() {
   const queryClient = useQueryClient();
   return useMutation({

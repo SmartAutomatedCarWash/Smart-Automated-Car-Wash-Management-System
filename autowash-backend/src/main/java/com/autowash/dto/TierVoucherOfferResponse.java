@@ -7,6 +7,12 @@ public record TierVoucherOfferResponse(
         int pointsCost,
         int voucherValue,
         String accent,
-        String badge
+        String badge,
+        String description,
+        String discountType,
+        long minOrderAmount,
+        Long maxDiscountAmount,
+        Integer validDaysAfterClaim,
+        boolean newCustomerOnly
 ) {
 }

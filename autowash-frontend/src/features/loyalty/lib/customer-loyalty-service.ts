@@ -6,6 +6,7 @@ import type {
   RedeemPointsRequest,
   RedeemPointsResponse,
   LoyaltyTransaction,
+  BookingPointBreakdown,
   TierVoucherOffer,
   WashHistoryItem,
 } from "@/entities/loyalty";
@@ -47,6 +48,13 @@ export async function listCustomerLoyaltyTransactions(page = 1, limit = 20) {
     items: response.data.data,
     pagination: response.data.pagination,
   };
+}
+
+export function getCustomerBookingPointBreakdown(bookingId: string) {
+  return apiRequest<BookingPointBreakdown>({
+    method: "GET",
+    url: `/loyalty/bookings/${encodeURIComponent(bookingId)}/points`,
+  });
 }
 
 export function redeemCustomerLoyaltyPoints(payload: RedeemPointsRequest) {

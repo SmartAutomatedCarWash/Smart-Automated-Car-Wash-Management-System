@@ -212,6 +212,18 @@ public class DiscountServiceImpl implements DiscountService {
         return userDiscountRepository.findByUserId(userId, pageable).map(this::mapUserDiscount);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public UserDiscountResponse getUserDiscount(UUID userId, UUID userDiscountId) {
+        UserDiscount userDiscount = userDiscountRepository.findDetailByIdAndUserId(userDiscountId, userId)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "Voucher not found",
+                        ErrorCode.NOT_FOUND
+                ));
+        return mapUserDiscount(userDiscount);
+    }
+
     private void saveRelations(Discount discount, DiscountRequest request) {
         if (request.targetingMode() == DiscountTargetingMode.SPECIFIC_TIERS && request.applicableTierIds() != null) {
             for (String tierId : request.applicableTierIds()) {

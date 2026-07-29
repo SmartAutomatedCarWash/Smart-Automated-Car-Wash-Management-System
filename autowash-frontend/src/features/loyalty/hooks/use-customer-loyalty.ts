@@ -4,11 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   customerLoyaltyScope,
   loyaltyAccountQueryKey,
+  bookingPointBreakdownQueryKey,
   loyaltyTransactionsQueryKey,
   washHistoryQueryKey,
 } from "@/features/loyalty/hooks/customer-loyalty-query";
 import {
   getCustomerLoyaltyAccount,
+  getCustomerBookingPointBreakdown,
   redeemCustomerLoyaltyPoints,
   listCustomerLoyaltyTransactions,
   
@@ -23,6 +25,7 @@ import type {
   RedeemPointsRequest,
   RedeemPointsResponse,
   LoyaltyTransaction,
+  BookingPointBreakdown,
   WashHistoryItem,
 } from "@/entities/loyalty";
 
@@ -65,6 +68,18 @@ export function useCustomerLoyaltyTransactions(page = 1, limit = 20) {
     queryKey: loyaltyTransactionsQueryKey(userId, page, limit),
     queryFn: () => listCustomerLoyaltyTransactions(page, limit),
     enabled,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useCustomerBookingPointBreakdown(bookingId: string) {
+  const { enabled, userId } = useCustomerLoyaltyContext();
+
+  return useQuery<BookingPointBreakdown, ApiErrorResponse>({
+    queryKey: bookingPointBreakdownQueryKey(userId, bookingId),
+    queryFn: () => getCustomerBookingPointBreakdown(bookingId),
+    enabled: enabled && bookingId.length > 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });

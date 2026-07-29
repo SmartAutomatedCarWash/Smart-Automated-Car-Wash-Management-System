@@ -37,6 +37,17 @@ test("computes loyalty tier progress against the next threshold", () => {
   });
 });
 
+test("computes loyalty progress within the current tier range", () => {
+  assert.deepEqual(getTierProgress("SILVER", 770, MOCK_CONFIGS), {
+    currentTier: "SILVER",
+    nextTier: "GOLD",
+    currentPoints: 770,
+    nextThreshold: 1500,
+    pointsToNextTier: 730,
+    progressPercent: 27,
+  });
+});
+
 test("caps loyalty progress at 100 percent for the highest tier", () => {
   assert.deepEqual(getTierProgress("DIAMOND", 12000, MOCK_CONFIGS), {
     currentTier: "DIAMOND",
