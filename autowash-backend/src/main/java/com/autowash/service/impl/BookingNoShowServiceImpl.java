@@ -20,6 +20,7 @@ import com.autowash.repository.BookingStatusHistoryRepository;
 import com.autowash.repository.ViolationRecordRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.BookingNoShowService;
+import com.autowash.service.CustomerComboService;
 import com.autowash.service.DiscountRedemptionService;
 import com.autowash.service.WashSessionLifecycle;
 import jakarta.persistence.EntityNotFoundException;
@@ -56,6 +57,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
     private final ViolationRecordRepository violationRecordRepository;
     private final NotificationRepository notificationRepository;
     private final LoyaltyService loyaltyService;
+    private final CustomerComboService customerComboService;
     private final long noShowGraceMinutes;
 
     public BookingNoShowServiceImpl(
@@ -66,6 +68,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
             ViolationRecordRepository violationRecordRepository,
             NotificationRepository notificationRepository,
             LoyaltyService loyaltyService,
+            CustomerComboService customerComboService,
             @Value("${autowash.booking.no-show.grace-minutes:15}") long noShowGraceMinutes
     ) {
         this.bookingRepository = bookingRepository;
@@ -75,6 +78,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
         this.violationRecordRepository = violationRecordRepository;
         this.notificationRepository = notificationRepository;
         this.loyaltyService = loyaltyService;
+        this.customerComboService = customerComboService;
         this.noShowGraceMinutes = noShowGraceMinutes;
     }
 
@@ -94,6 +98,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
             try {
                 BookingStatus oldStatus = booking.getStatus();
                 booking.markNoShow();
+                customerComboService.forfeitUsageForBooking(booking.getId().toString());
                 cancelNotCheckedInSessions(booking, now);
                 int deductedPoints = applyNoShowPenalty(booking, now);
                 if (hasDiscountPricing(booking)) {

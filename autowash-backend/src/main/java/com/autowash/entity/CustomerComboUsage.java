@@ -1,5 +1,8 @@
 package com.autowash.entity;
 
+import com.autowash.entity.enums.CustomerComboUsageStatus;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import jakarta.persistence.OneToOne;
 
 import jakarta.persistence.JoinColumn;
@@ -39,9 +42,34 @@ public class CustomerComboUsage {
     @Column(name = "used_at", nullable = false)
     private Instant usedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CustomerComboUsageStatus status;
+
     public CustomerComboUsage(CustomerCombo customerCombo, Booking booking) {
         this.customerCombo = customerCombo;
         this.booking = booking;
         this.usedAt = Instant.now();
+        this.status = CustomerComboUsageStatus.RESERVED;
+    }
+
+    public void markConsumed() {
+        if (status == CustomerComboUsageStatus.RESERVED) {
+            status = CustomerComboUsageStatus.CONSUMED;
+        }
+    }
+
+    public boolean release() {
+        if (status != CustomerComboUsageStatus.RESERVED) {
+            return false;
+        }
+        status = CustomerComboUsageStatus.RELEASED;
+        return true;
+    }
+
+    public void forfeit() {
+        if (status == CustomerComboUsageStatus.RESERVED) {
+            status = CustomerComboUsageStatus.FORFEITED;
+        }
     }
 }

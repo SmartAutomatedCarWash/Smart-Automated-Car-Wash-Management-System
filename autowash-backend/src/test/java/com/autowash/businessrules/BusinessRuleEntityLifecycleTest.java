@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.autowash.entity.Booking;
 import com.autowash.entity.CustomerCombo;
+import com.autowash.entity.CustomerComboUsage;
 import com.autowash.entity.User;
 import com.autowash.entity.UserDiscount;
 import com.autowash.entity.UserPreference;
@@ -11,6 +12,7 @@ import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.BookingConfirmationStatus;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.CustomerComboStatus;
+import com.autowash.entity.enums.CustomerComboUsageStatus;
 import com.autowash.entity.enums.LanguagePreference;
 import com.autowash.entity.enums.ThemePreference;
 import com.autowash.entity.enums.UserDiscountStatus;
@@ -111,6 +113,26 @@ class BusinessRuleEntityLifecycleTest {
 
         assertThat(combo.getRemainingUsages()).isEqualTo(1);
         assertThat(combo.getStatus()).isEqualTo(CustomerComboStatus.ACTIVE);
+    }
+
+    @Test
+    void br133ComboUsageTracksReservedReleasedConsumedAndForfeitedStates() {
+        Instant now = Instant.now();
+        CustomerCombo combo = new CustomerCombo(UUID.randomUUID(), customer(), UUID.randomUUID(), 1, now, now.plusSeconds(86_400));
+        CustomerComboUsage usage = new CustomerComboUsage(combo, booking());
+
+        assertThat(usage.getStatus()).isEqualTo(CustomerComboUsageStatus.RESERVED);
+        assertThat(usage.release()).isTrue();
+        assertThat(usage.getStatus()).isEqualTo(CustomerComboUsageStatus.RELEASED);
+        assertThat(usage.release()).isFalse();
+
+        CustomerComboUsage consumedUsage = new CustomerComboUsage(combo, booking());
+        consumedUsage.markConsumed();
+        assertThat(consumedUsage.getStatus()).isEqualTo(CustomerComboUsageStatus.CONSUMED);
+
+        CustomerComboUsage forfeitedUsage = new CustomerComboUsage(combo, booking());
+        forfeitedUsage.forfeit();
+        assertThat(forfeitedUsage.getStatus()).isEqualTo(CustomerComboUsageStatus.FORFEITED);
     }
 
     private Booking booking() {

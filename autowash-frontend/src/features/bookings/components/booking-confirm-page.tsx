@@ -159,8 +159,8 @@ export function BookingConfirmPage() {
   );
   const hasStaleAddonIds = sanitizedAddonIds.length !== draft.addonIds.length;
   const sanitizedDraft = useMemo(
-    () => ({ ...draft, addonIds: sanitizedAddonIds }),
-    [draft, sanitizedAddonIds],
+    () => ({ ...draft, addonIds: sanitizedAddonIds, discountCode: selectedCustomerCombo ? "" : draft.discountCode }),
+    [draft, sanitizedAddonIds, selectedCustomerCombo],
   );
 
   const summary = useMemo(
@@ -169,7 +169,7 @@ export function BookingConfirmPage() {
         packages,
         addons,
         combos,
-        voucher: validatedDiscount,
+        voucher: selectedCustomerCombo ? null : validatedDiscount,
         ownedComboApplied: Boolean(selectedCustomerCombo),
       }),
     [addons, combos, packages, sanitizedDraft, selectedCustomerCombo, validatedDiscount],
@@ -295,14 +295,14 @@ export function BookingConfirmPage() {
     if (!isComboBooking && !selectedPaymentMethod) return;
     if (!expiresAt || expiresAt <= Date.now()) { handleExpired(); return; }
     const effectivePaymentMethod = isComboBooking ? ("CASH_AT_COUNTER" as PaymentMethod) : selectedPaymentMethod!;
-    const nextDraft = { ...sanitizedDraft, paymentMethod: effectivePaymentMethod, staffId: "", staffIds: [] };
+    const nextDraft = { ...sanitizedDraft, paymentMethod: effectivePaymentMethod, discountCode: isComboBooking ? "" : sanitizedDraft.discountCode, staffId: "", staffIds: [] };
     const errors = validateBookingDraft(nextDraft, summary, { requirePaymentMethod: !isComboBooking });
     if (Object.keys(errors).length > 0) {
       toast.error(Object.values(errors)[0] ?? "Please complete booking information.");
       return;
     }
     try {
-      updateDraft({ paymentMethod: effectivePaymentMethod });
+      updateDraft({ paymentMethod: effectivePaymentMethod, discountCode: isComboBooking ? "" : draft.discountCode });
       const booking = await createBookingMutation.mutateAsync(nextDraft);
       setIsRedirectingAfterCreate(true);
 
