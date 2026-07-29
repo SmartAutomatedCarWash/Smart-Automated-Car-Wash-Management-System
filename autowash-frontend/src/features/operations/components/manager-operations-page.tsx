@@ -133,6 +133,7 @@ export function ManagerOperationsPage() {
   const pushManagerNotification = useManagerNotificationStore((state) => state.push);
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState(getTodayInputValue());
+  const autoTodayRef = useRef(selectedDate);
   const [staffFilter, setStaffFilter] = useState("ALL");
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("ALL");
   const [selectedBoardStages, setSelectedBoardStages] = useState<BoardStage[]>(() => BOARD_COLUMNS.map((column) => column.stage));
@@ -153,6 +154,13 @@ export function ManagerOperationsPage() {
   const [interventionPage, setInterventionPage] = useState(1);
   const [staffWorkloadPage, setStaffWorkloadPage] = useState(1);
 
+  const handleSelectedDateChange = (nextDate: string) => {
+    setSelectedDate(nextDate);
+    if (nextDate === getTodayInputValue()) {
+      autoTodayRef.current = nextDate;
+    }
+  };
+
   const queueQuery = useQuery({
     queryKey: ["manager-operations", "queue"],
     queryFn: getOperationsQueue,
@@ -160,7 +168,7 @@ export function ManagerOperationsPage() {
   });
   const eligibleQuery = useQuery({
     queryKey: ["manager-operations", "eligible", selectedDate],
-    queryFn: () => getManagerCheckInCandidates(1, 100, selectedDate).then((response) => response.data),
+    queryFn: () => getManagerCheckInCandidates(1, 1000, selectedDate).then((response) => response.data),
     refetchInterval: 15_000,
   });
   const staffQuery = useQuery({
@@ -174,17 +182,17 @@ export function ManagerOperationsPage() {
   const staffOptions = staffQuery.data ?? [];
   const rows = useMemo(() => buildRows(eligibleBookings, sessions), [eligibleBookings, sessions]);
   const rowsWithOptimisticUpdates = useMemo(() => applyOptimisticSessionRows(rows, optimisticSessionRows), [optimisticSessionRows, rows]);
-  const rowsForSelectedDate = useMemo(() => rowsWithOptimisticUpdates.filter((row) => isSameDate(row.bookingDate, selectedDate)), [rowsWithOptimisticUpdates, selectedDate]);
+  const rowsForOperations = useMemo(() => rowsWithOptimisticUpdates.filter((row) => isSameDate(row.bookingDate, selectedDate)), [rowsWithOptimisticUpdates, selectedDate]);
   const filteredRows = useMemo(
-    () => applyCommandFilters(rowsForSelectedDate, search, staffFilter, focusFilter),
-    [focusFilter, rowsForSelectedDate, search, staffFilter],
+    () => applyCommandFilters(rowsForOperations, search, staffFilter, focusFilter),
+    [focusFilter, rowsForOperations, search, staffFilter],
   );
   const selectedRow = useMemo(() => {
     if (selectedRowId === null) return null;
     return filteredRows.find((row) => row.id === selectedRowId) ?? filteredRows.find((row) => row.sessionId) ?? filteredRows[0] ?? null;
   }, [filteredRows, selectedRowId]);
-  const staffWorkload = useMemo(() => buildStaffWorkload(staffOptions, rowsForSelectedDate), [staffOptions, rowsForSelectedDate]);
-  const interventions = useMemo(() => buildInterventions(rowsForSelectedDate, staffWorkload), [rowsForSelectedDate, staffWorkload]);
+  const staffWorkload = useMemo(() => buildStaffWorkload(staffOptions, rowsForOperations), [staffOptions, rowsForOperations]);
+  const interventions = useMemo(() => buildInterventions(rowsForOperations, staffWorkload), [rowsForOperations, staffWorkload]);
   const filteredInterventions = useMemo(
     () => interventions.filter((intervention) => filteredRows.some((row) => row.id === intervention.rowId)),
     [filteredRows, interventions],
@@ -223,6 +231,20 @@ export function ManagerOperationsPage() {
   }, [selectedDate, search, staffFilter, focusFilter]);
 
   useEffect(() => {
+    const syncToToday = () => {
+      const today = getTodayInputValue();
+      setSelectedDate((current) => {
+        const shouldFollowToday = current === autoTodayRef.current;
+        autoTodayRef.current = today;
+        return shouldFollowToday ? today : current;
+      });
+    };
+    syncToToday();
+    const interval = window.setInterval(syncToToday, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     setOptimisticSessionRows((current) => {
       const next = { ...current };
       let changed = false;
@@ -237,11 +259,11 @@ export function ManagerOperationsPage() {
     });
   }, [rows]);
 
-  const waitingCustomerCount = rowsForSelectedDate.filter((row) => row.type === "booking" && row.status === "PENDING").length;
-  const waitingCheckIn = rowsForSelectedDate.filter((row) => row.type === "booking" && row.status === "CONFIRMED").length;
-  const waitingStartCount = rowsForSelectedDate.filter((row) => row.type === "session" && row.status === "CHECKED_IN").length;
-  const washingCount = rowsForSelectedDate.filter((row) => row.status === "IN_PROGRESS").length;
-  const overdueCount = rowsForSelectedDate.filter(isDelayed).length;
+  const waitingCustomerCount = rowsForOperations.filter((row) => row.type === "booking" && row.status === "PENDING").length;
+  const waitingCheckIn = rowsForOperations.filter((row) => row.type === "booking" && row.status === "CONFIRMED").length;
+  const waitingStartCount = rowsForOperations.filter((row) => row.type === "session" && row.status === "CHECKED_IN").length;
+  const washingCount = rowsForOperations.filter((row) => row.status === "IN_PROGRESS").length;
+  const overdueCount = rowsForOperations.filter(isDelayed).length;
   const alertCount = filteredInterventions.filter((item) => item.severity !== "INFO").length;
   const hasError = queueQuery.isError || eligibleQuery.isError;
   const error = (queueQuery.error ?? eligibleQuery.error) as unknown as ApiErrorResponse;
@@ -487,7 +509,7 @@ export function ManagerOperationsPage() {
               </label>
               <DatePickerButton
                 value={selectedDate}
-                onChange={setSelectedDate}
+                onChange={handleSelectedDateChange}
                 label="Select date"
                 buttonClassName="w-full justify-start"
               />
@@ -550,7 +572,7 @@ export function ManagerOperationsPage() {
                         handleSelectRow(intervention.rowId);
                         return;
                       }
-                      const target = rowsForSelectedDate.find((row) => row.id === intervention.rowId);
+                      const target = rowsForOperations.find((row) => row.id === intervention.rowId);
                       if (target) runPrimaryAction(target);
                     }}
                   />

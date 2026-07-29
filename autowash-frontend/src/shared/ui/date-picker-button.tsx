@@ -198,7 +198,7 @@ export function formatDatePickerValue(value: string) {
 }
 
 export function getTodayInputValue() {
-  return new Date().toISOString().slice(0, 10);
+  return toInputDate(new Date());
 }
 
 function buildDateTimeValue(date: string, time: string) {
