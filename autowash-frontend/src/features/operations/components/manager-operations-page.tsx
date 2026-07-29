@@ -33,7 +33,7 @@ import {
   completeWashSession,
   assignStaffToSession,
   getActiveStaffOptions,
-  getEligibleSessionBookings,
+  getManagerCheckInCandidates,
   getManagerCheckInRecommendation,
   getOperationsQueue,
   managerCheckInBooking,
@@ -160,7 +160,7 @@ export function ManagerOperationsPage() {
   });
   const eligibleQuery = useQuery({
     queryKey: ["manager-operations", "eligible", selectedDate],
-    queryFn: () => getEligibleSessionBookings(selectedDate),
+    queryFn: () => getManagerCheckInCandidates(1, 100, selectedDate).then((response) => response.data),
     refetchInterval: 15_000,
   });
   const staffQuery = useQuery({
