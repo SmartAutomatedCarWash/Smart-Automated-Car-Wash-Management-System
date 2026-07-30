@@ -1111,6 +1111,7 @@ public class OperationsServiceImpl implements OperationsService {
         List<BookingDetailResponse.StaffAssignment> assignedStaffList = sessionStaffAssignments(session);
         UUID packageId = resolveBookingDetailRefId(booking, BookingItemType.PACKAGE);
         String customerTier = loyaltyService.getAccount(booking.getCustomer().getId()).tier();
+        PaymentRepository.PaymentSummary payment = paymentRepository.findLatestSummaryByBookingId(booking.getId()).orElse(null);
         return OperationsQueueResponse.WashSessionCard.builder()
                 .sessionId(session.getId())
                 .bookingId(booking.getId().toString())
@@ -1129,6 +1130,8 @@ public class OperationsServiceImpl implements OperationsService {
                 .estimatedDurationMinutes(resolveEstimatedDurationMinutes(booking))
                 .feeAmount(session.getFeeAmount())
                 .feeCurrency(session.getFeeAmount() == null ? null : currency)
+                .paymentMethod(payment == null ? null : payment.getMethod())
+                .paymentStatus(payment == null ? null : payment.getStatus())
                 .projectedLoyaltyPoints(session.getProjectedLoyaltyPoints())
                 .awardedLoyaltyPoints(session.getAwardedLoyaltyPoints())
                 .queuedAt(session.getStatus() == WashSessionStatus.QUEUED ? session.getCreatedAt() : null)
