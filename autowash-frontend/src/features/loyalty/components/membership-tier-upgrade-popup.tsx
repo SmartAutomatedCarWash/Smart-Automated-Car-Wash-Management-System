@@ -209,14 +209,14 @@ export function MembershipTierUpgradePopup({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="tier-upgrade-overlay fixed inset-0 z-[120] bg-[rgba(7,5,18,0.84)] backdrop-blur-[18px]" />
         <DialogPrimitive.Content
-          className="tier-upgrade-dialog fixed left-1/2 top-1/2 z-[121] w-[min(92vw,880px)] -translate-x-1/2 -translate-y-1/2 outline-none"
+          className="tier-upgrade-dialog fixed inset-x-2 bottom-2 top-2 z-[121] mx-auto w-auto max-w-[880px] translate-x-0 translate-y-0 overflow-y-auto overscroll-contain rounded-[24px] outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[calc(100dvh-2rem)] sm:w-[min(92vw,880px)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[34px]"
         >
           <canvas
             ref={canvasRef}
-            className="pointer-events-none absolute inset-0 z-[2] h-full w-full rounded-[34px] mix-blend-screen opacity-95"
+            className="pointer-events-none absolute inset-0 z-[2] h-full w-full rounded-[24px] mix-blend-screen opacity-95 sm:rounded-[34px]"
             aria-hidden="true"
           />
-          <div className="pointer-events-none absolute inset-0 z-[3] overflow-hidden rounded-[34px]">
+          <div className="pointer-events-none absolute inset-0 z-[3] overflow-hidden rounded-[24px] sm:rounded-[34px]">
             <div className="tier-upgrade-top-glow absolute inset-x-[10%] top-[7%] h-[2px]" />
             <div className="tier-upgrade-side-glow absolute left-[8%] top-[14%] h-[62%] w-[1px]" />
             <div className="tier-upgrade-side-glow absolute right-[8%] top-[14%] h-[62%] w-[1px]" />
@@ -271,33 +271,33 @@ export function MembershipTierUpgradePopup({
           </div>
 
           <div
-            className="relative z-[4] overflow-hidden rounded-[34px] border border-white/15 bg-[radial-gradient(circle_at_top,rgba(152,88,255,0.2),transparent_30%),linear-gradient(180deg,rgba(42,11,88,0.88),rgba(18,8,49,0.9))] px-5 pb-6 pt-14 shadow-[0_45px_120px_-45px_rgba(0,0,0,0.7)] sm:px-8 sm:pb-8 sm:pt-16"
+            className="relative z-[4] min-h-full overflow-hidden rounded-[24px] border border-white/15 bg-[radial-gradient(circle_at_top,rgba(152,88,255,0.2),transparent_30%),linear-gradient(180deg,rgba(42,11,88,0.88),rgba(18,8,49,0.9))] px-4 pb-4 pt-10 shadow-[0_45px_120px_-45px_rgba(0,0,0,0.7)] sm:rounded-[34px] sm:px-8 sm:pb-8 sm:pt-16"
           >
-            <div className="tier-upgrade-border-glow absolute inset-0 rounded-[34px]" />
+            <div className="tier-upgrade-border-glow absolute inset-0 rounded-[24px] sm:rounded-[34px]" />
             <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,240,190,0.85),transparent)]" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,212,120,0.14),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(69,212,255,0.16),transparent_22%)]" />
 
-            <DialogPrimitive.Close className="absolute right-5 top-5 z-20 rounded-full border border-white/20 bg-white/10 p-2 text-white/80 transition hover:bg-white/20 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/40">
-              <X className="h-5 w-5" />
+            <DialogPrimitive.Close className="absolute right-3 top-3 z-20 rounded-full border border-white/20 bg-white/10 p-1.5 text-white/80 transition hover:bg-white/20 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/40 sm:right-5 sm:top-5 sm:p-2">
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="sr-only">Close</span>
             </DialogPrimitive.Close>
 
             <div className="relative z-10">
-              <div className="mx-auto mb-5 flex w-fit justify-center">
-                <div className="tier-upgrade-badge-wrap relative flex h-36 w-36 items-center justify-center sm:h-40 sm:w-40">
+              <div className="mx-auto mb-3 flex w-fit justify-center sm:mb-5">
+                <div className="tier-upgrade-badge-wrap relative flex h-24 w-24 items-center justify-center sm:h-40 sm:w-40">
                   <div className="tier-upgrade-badge-rays absolute inset-[8%] rounded-full" style={{ background: nextTheme.rays }} />
                   <div className="tier-upgrade-badge-halo absolute inset-[14%] rounded-full blur-2xl" style={{ background: nextTheme.glow }} />
                   <div className="tier-upgrade-badge-orbit absolute inset-[10%] rounded-full border border-white/20" />
                   <div
-                    className="relative z-[5] flex h-24 w-24 items-center justify-center rounded-[30px] border sm:h-28 sm:w-28"
+                    className="relative z-[5] flex h-16 w-16 items-center justify-center rounded-[22px] border sm:h-28 sm:w-28 sm:rounded-[30px]"
                     style={{
                       background: nextTheme.badgeSurface,
                       borderColor: nextTheme.border,
                       boxShadow: `0 0 40px ${nextTheme.shadow}, 0 0 90px rgba(255,216,129,0.22)`,
                     }}
                   >
-                    <div className="absolute inset-0 rounded-[30px] bg-[linear-gradient(180deg,rgba(255,255,255,0.38),transparent_35%,rgba(0,0,0,0.1))]" />
-                    {createElement(TierIcon, { className: "relative z-10 h-11 w-11 text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.45)] sm:h-12 sm:w-12" })}
+                    <div className="absolute inset-0 rounded-[22px] bg-[linear-gradient(180deg,rgba(255,255,255,0.38),transparent_35%,rgba(0,0,0,0.1))] sm:rounded-[30px]" />
+                    {createElement(TierIcon, { className: "relative z-10 h-8 w-8 text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.45)] sm:h-12 sm:w-12" })}
                   </div>
                 </div>
               </div>
@@ -308,15 +308,15 @@ export function MembershipTierUpgradePopup({
                   <span>Tier Upgraded</span>
                   <Sparkles className="h-4 w-4" />
                 </div>
-                <h2 className="tier-upgrade-gold-text mt-2 text-[2rem] font-black tracking-tight drop-shadow-[0_0_20px_rgba(255,215,136,0.48)] sm:text-[3.3rem]">
+                <h2 className="tier-upgrade-gold-text mt-1 text-[1.75rem] font-black tracking-tight drop-shadow-[0_0_20px_rgba(255,215,136,0.48)] sm:mt-2 sm:text-[3.3rem]">
                   Congratulations!
                 </h2>
-                <p className="mt-2 text-base font-medium text-white/85 sm:text-lg">
+                <p className="mt-1 text-sm font-medium text-white/85 sm:mt-2 sm:text-lg">
                   You&apos;ve reached a new membership tier
                 </p>
               </div>
 
-              <div className="tier-upgrade-aurelian-card mt-8 grid gap-5 rounded-[28px] p-5 sm:grid-cols-[1fr_auto_1.15fr] sm:items-center">
+              <div className="tier-upgrade-aurelian-card mt-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 rounded-[20px] p-2 sm:mt-8 sm:grid-cols-[1fr_auto_1.15fr] sm:gap-5 sm:rounded-[28px] sm:p-5">
                 <TierStatusPanel
                   label="From"
                   tier={oldTier ?? "BRONZE"}
@@ -325,10 +325,10 @@ export function MembershipTierUpgradePopup({
                   dimmed
                 />
 
-                <div className="tier-upgrade-arrow-wrap relative mx-auto flex w-fit items-center justify-center gap-2 px-2 py-2">
-                  <ChevronRight className="tier-upgrade-arrow h-7 w-7 text-[#c987ff]" />
-                  <ChevronRight className="tier-upgrade-arrow h-7 w-7 text-[#d9a6ff]" style={{ animationDelay: "0.12s" }} />
-                  <ChevronRight className="tier-upgrade-arrow h-7 w-7 text-[#ffe08c]" style={{ animationDelay: "0.24s" }} />
+                <div className="tier-upgrade-arrow-wrap relative mx-auto flex w-fit items-center justify-center px-0 py-1 sm:gap-2 sm:px-2 sm:py-2">
+                  <ChevronRight className="tier-upgrade-arrow h-4 w-4 text-[#c987ff] sm:h-7 sm:w-7" />
+                  <ChevronRight className="tier-upgrade-arrow hidden h-7 w-7 text-[#d9a6ff] sm:block" style={{ animationDelay: "0.12s" }} />
+                  <ChevronRight className="tier-upgrade-arrow hidden h-7 w-7 text-[#ffe08c] sm:block" style={{ animationDelay: "0.24s" }} />
                 </div>
 
                 <TierStatusPanel
@@ -340,21 +340,21 @@ export function MembershipTierUpgradePopup({
                 />
               </div>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="mt-4 grid gap-2 sm:mt-6 sm:grid-cols-3 sm:gap-3">
                 {benefitCards.map((card, index) => (
                   <div
                     key={card.title}
-                    className="tier-upgrade-aurelian-card tier-upgrade-benefit-card rounded-[22px] px-4 py-4 text-left"
+                    className="tier-upgrade-aurelian-card tier-upgrade-benefit-card rounded-[18px] px-3 py-2.5 text-left sm:rounded-[22px] sm:px-4 sm:py-4"
                     style={{ animationDelay: `${0.52 + index * 0.14}s` }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-[#ffd87d]">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#ffd87d] sm:h-11 sm:w-11 sm:rounded-2xl">
                         {createElement(card.icon, { className: "h-5 w-5" })}
                       </div>
                       <div>
-                        <div className="text-sm font-bold text-white">{card.title}</div>
+                        <div className="text-xs font-bold text-white sm:text-sm">{card.title}</div>
                         <div
-                          className={cn("mt-1 text-sm", card.title === "Bonus Points" ? "font-black" : "font-medium")}
+                          className={cn("mt-0.5 text-xs sm:mt-1 sm:text-sm", card.title === "Bonus Points" ? "font-black" : "font-medium")}
                           style={{
                             color: card.title === "Bonus Points" ? "#ffd87d" : "rgba(255,255,255,0.96)",
                           }}
@@ -367,7 +367,7 @@ export function MembershipTierUpgradePopup({
                 ))}
               </div>
 
-              <div className="mt-6 text-center">
+              <div className="mt-6 hidden text-center sm:block">
                 <div className="text-[2rem] italic tracking-tight text-[#ffd996] drop-shadow-[0_0_18px_rgba(255,217,150,0.35)]">
                   Keep shining!
                 </div>
@@ -376,11 +376,11 @@ export function MembershipTierUpgradePopup({
                 </p>
               </div>
 
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-7 sm:flex sm:gap-3 sm:justify-center">
                 <Button
                   type="button"
                   onClick={onViewTier}
-                  className="tier-upgrade-primary-btn relative h-12 overflow-hidden rounded-2xl border border-white/20 bg-transparent px-7 text-base font-bold text-white shadow-[0_18px_40px_-24px_rgba(144,88,255,0.85)]"
+                  className="tier-upgrade-primary-btn relative h-10 w-full overflow-hidden rounded-xl border border-white/20 bg-transparent px-3 text-sm font-bold text-white shadow-[0_18px_40px_-24px_rgba(144,88,255,0.85)] sm:h-12 sm:w-auto sm:rounded-2xl sm:px-7 sm:text-base"
                 >
                   <span className="absolute inset-0 opacity-90" style={{ background: nextTheme.button }} />
                   <span className="tier-upgrade-btn-shimmer absolute inset-y-0 left-[-32%] w-[30%] bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.42),transparent)]" />
@@ -390,7 +390,7 @@ export function MembershipTierUpgradePopup({
                 <Button
                   type="button"
                   onClick={onClose}
-                  className="tier-upgrade-secondary-btn relative h-12 overflow-hidden rounded-2xl border border-[#ffd67a]/30 bg-[linear-gradient(180deg,#ffd978,#ffb938)] px-7 text-base font-black text-[#4e2b00] shadow-[0_18px_40px_-24px_rgba(255,188,61,0.8)] hover:brightness-105"
+                  className="tier-upgrade-secondary-btn relative h-10 w-full overflow-hidden rounded-xl border border-[#ffd67a]/30 bg-[linear-gradient(180deg,#ffd978,#ffb938)] px-3 text-sm font-black text-[#4e2b00] shadow-[0_18px_40px_-24px_rgba(255,188,61,0.8)] hover:brightness-105 sm:h-12 sm:w-auto sm:rounded-2xl sm:px-7 sm:text-base"
                 >
                   <span className="tier-upgrade-btn-shimmer absolute inset-y-0 left-[-32%] w-[30%] bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.42),transparent)]" />
                   <span className="relative z-10">Awesome!</span>
@@ -422,25 +422,25 @@ function TierStatusPanel({
   return (
     <div
       className={cn(
-        "tier-upgrade-aurelian-card relative rounded-[24px] px-4 py-4 text-center",
+        "tier-upgrade-aurelian-card relative rounded-[16px] px-1.5 py-2 text-center sm:rounded-[24px] sm:px-4 sm:py-4",
         dimmed ? "opacity-70" : "",
         highlight ? "tier-upgrade-tier-highlight scale-[1.02] shadow-[0_0_40px_rgba(84,218,255,0.25)]" : "",
       )}
     >
-      <div className="tier-upgrade-space-label text-[11px] font-black text-white/45">{label}</div>
-      <div className="mt-3 flex justify-center">
+      <div className="tier-upgrade-space-label text-[9px] font-black text-white/45 sm:text-[11px]">{label}</div>
+      <div className="mt-1.5 flex justify-center sm:mt-3">
         <div
-          className={cn("flex h-16 w-16 items-center justify-center rounded-[22px] border", highlight ? "tier-upgrade-tier-badge" : "")}
+          className={cn("flex h-10 w-10 items-center justify-center rounded-[14px] border sm:h-16 sm:w-16 sm:rounded-[22px]", highlight ? "tier-upgrade-tier-badge" : "")}
           style={{
             background: theme.badgeSurface,
             borderColor: theme.border,
           }}
         >
-          {createElement(icon, { className: "h-8 w-8 text-white" })}
+          {createElement(icon, { className: "h-5 w-5 text-white sm:h-8 sm:w-8" })}
         </div>
       </div>
-      <div className={cn("tier-upgrade-space-label mt-3 text-sm font-semibold", dimmed ? "text-white/45" : "text-white/65")}>Tier</div>
-      <div className={cn("mt-1 text-2xl font-black uppercase tracking-tight", highlight ? "text-[#63d6ff]" : "text-white")}>{formatTierName(tier)}</div>
+      <div className={cn("tier-upgrade-space-label mt-1.5 text-[9px] font-semibold sm:mt-3 sm:text-sm", dimmed ? "text-white/45" : "text-white/65")}>Tier</div>
+      <div className={cn("mt-0.5 truncate text-sm font-black uppercase tracking-tight sm:mt-1 sm:text-2xl", highlight ? "text-[#63d6ff]" : "text-white")}>{formatTierName(tier)}</div>
     </div>
   );
 }
