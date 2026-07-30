@@ -19,6 +19,7 @@ import com.autowash.entity.enums.VehicleStatus;
 import com.autowash.mapper.VehicleMapper;
 import com.autowash.repository.VehicleRepository;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class VehicleServiceImpl implements VehicleService {
+    private static final Pattern VIETNAM_VEHICLE_PLATE_PATTERN =
+            Pattern.compile("^(?:1[1-9]|[2-9][0-9])[A-Z]-[0-9]{6}$");
 
     private final CurrentUserService currentUserService;
     private final VehicleRepository VehicleRepository;
@@ -49,6 +52,10 @@ public class VehicleServiceImpl implements VehicleService {
     public CreateVehicleResponse createVehicle(CreateVehicleRequest request) {
         User user = currentUserService.getCurrentUser();
         String normalizedPlate = normalizePlate(request.plate());
+
+        if (!VIETNAM_VEHICLE_PLATE_PATTERN.matcher(normalizedPlate).matches()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Plate must match formats like 30H-123456", ErrorCode.VALIDATION_ERROR);
+        }
 
         if (VehicleRepository.existsByPlate(normalizedPlate)) {
             throw new ApiException(HttpStatus.CONFLICT, "Plate already exists in the system", ErrorCode.DUPLICATE_PLATE);
@@ -146,7 +153,7 @@ public class VehicleServiceImpl implements VehicleService {
     }
 
     private String normalizePlate(String plate) {
-        return plate.trim().toUpperCase();
+        return plate.trim().toUpperCase().replaceAll("\\s+", "").replace(".", "");
     }
 
     private String trimToNull(String value) {
