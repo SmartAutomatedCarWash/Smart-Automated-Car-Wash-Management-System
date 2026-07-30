@@ -1,6 +1,11 @@
 import { apiClient } from "@/shared/lib/api";
 import type { ApiSuccessResponse } from "@/shared/types/api.types";
 import type { PaginationMeta } from "@/entities/reports";
+import {
+  normalizeDashboardPage,
+  type DashboardPageWire,
+  type NormalizedDashboardPage,
+} from "@/features/dashboard/lib/dashboard-page-normalizer";
 
 export type DashboardMetrics = {
   totalBookings: number;
@@ -50,7 +55,7 @@ export type TierBucket = { tier: string; displayName: string; count: number; per
 export type LoyaltyTierDist = { tiers: TierBucket[] };
 
 export type VoucherStats = { issued: number; redeemed: number; expired: number; revoked: number };
-export type DashboardPage<T> = { items: T[]; pagination: PaginationMeta };
+export type DashboardPage<T> = NormalizedDashboardPage<T>;
 
 export type ServiceItem = { serviceId: string | null; serviceName: string; bookingCount: number; percentage: number };
 export type TopServices = { items: ServiceItem[] };
@@ -142,11 +147,43 @@ export async function fetchAdminDashboardMetrics(): Promise<DashboardMetrics> {
 }
 
 export async function fetchAdminDashboardFull(params?: AdminDashboardFullParams): Promise<AdminDashboardFull> {
-  const response = await apiClient.get<ApiSuccessResponse<AdminDashboardFull>>(
+  type PaginatedSection =
+    | "noShowAlerts"
+    | "recentBookings"
+    | "voucherUsageStats"
+    | "pointRedemptionHistory";
+  type AdminDashboardFullWire = Omit<AdminDashboardFull, PaginatedSection> & {
+    noShowAlerts: DashboardPageWire<NoShowAlert>;
+    recentBookings: DashboardPageWire<RecentBooking>;
+    voucherUsageStats: DashboardPageWire<VoucherUsageItem>;
+    pointRedemptionHistory: DashboardPageWire<PointRedemptionItem>;
+  };
+
+  const response = await apiClient.get<ApiSuccessResponse<AdminDashboardFullWire>>(
     "/admin/dashboard/full",
     { params }
   );
-  return response.data.data;
+  const data = response.data.data;
+  const limit = params?.limit ?? 5;
+  return {
+    ...data,
+    noShowAlerts: normalizeDashboardPage(data.noShowAlerts, {
+      page: params?.noShowPage ?? 1,
+      limit,
+    }),
+    recentBookings: normalizeDashboardPage(data.recentBookings, {
+      page: params?.recentBookingPage ?? 1,
+      limit,
+    }),
+    voucherUsageStats: normalizeDashboardPage(data.voucherUsageStats, {
+      page: params?.voucherUsagePage ?? 1,
+      limit,
+    }),
+    pointRedemptionHistory: normalizeDashboardPage(data.pointRedemptionHistory, {
+      page: params?.pointRedemptionPage ?? 1,
+      limit,
+    }),
+  };
 }
 
 // ── Staff KPI types ───────────────────────────────────────────────────────────

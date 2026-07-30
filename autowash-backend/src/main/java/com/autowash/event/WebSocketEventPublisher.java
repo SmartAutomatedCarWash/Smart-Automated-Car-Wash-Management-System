@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -60,18 +61,32 @@ public class WebSocketEventPublisher {
     ) {
         try {
             log.info("Broadcasting customer notification: userId={} notificationId={} type={}", userId, notificationId, type);
-            messagingTemplate.convertAndSend("/topic/notifications/" + userId, Map.of(
-                "eventType", "NOTIFICATION_CREATED",
-                "notificationId", notificationId.toString(),
-                "type", type.name(),
-                "title", title,
-                "message", message,
-                "oldTier", oldTier == null ? "" : oldTier,
-                "newTier", newTier == null ? "" : newTier,
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("eventType", "NOTIFICATION_CREATED");
+            payload.put("notificationId", notificationId.toString());
+            payload.put("type", type.name());
+            payload.put("title", title == null ? "" : title);
+            payload.put("message", message == null ? "" : message);
+            payload.put("oldTier", oldTier == null ? "" : oldTier);
+            payload.put("newTier", newTier == null ? "" : newTier);
+            payload.put("timestamp", System.currentTimeMillis());
+            messagingTemplate.convertAndSend("/topic/notifications/" + userId, payload);
+        } catch (Exception e) {
+            log.error("Failed to broadcast customer notification via WebSocket", e);
+        }
+    }
+
+    public void publishAnnouncementChanged(UUID announcementId, String changeType) {
+        try {
+            log.info("Broadcasting announcement change: announcementId={} changeType={}", announcementId, changeType);
+            messagingTemplate.convertAndSend("/topic/announcements", Map.of(
+                "eventType", "ANNOUNCEMENT_CHANGED",
+                "announcementId", announcementId.toString(),
+                "changeType", changeType,
                 "timestamp", System.currentTimeMillis()
             ));
         } catch (Exception e) {
-            log.error("Failed to broadcast customer notification via WebSocket", e);
+            log.error("Failed to broadcast announcement change via WebSocket", e);
         }
     }
 }

@@ -208,10 +208,12 @@ export function AdminDashboardView() {
   const vouchers = data?.voucherStats;
   const topServices = data?.topServices?.items ?? [];
   const insights = data?.customerInsights;
-  const noShows = data?.noShowAlerts?.items ?? [];
-  const recentBookings = data?.recentBookings?.items ?? [];
-  const voucherUsageStats = data?.voucherUsageStats?.items ?? [];
-  const pointRedemptionHistory = data?.pointRedemptionHistory?.items ?? [];
+  const noShows = Array.isArray(data?.noShowAlerts?.items) ? data.noShowAlerts.items : [];
+  const recentBookings = Array.isArray(data?.recentBookings?.items) ? data.recentBookings.items : [];
+  const voucherUsageStats = Array.isArray(data?.voucherUsageStats?.items) ? data.voucherUsageStats.items : [];
+  const pointRedemptionHistory = Array.isArray(data?.pointRedemptionHistory?.items)
+    ? data.pointRedemptionHistory.items
+    : [];
   const reviews = data?.reviewSummary;
 
   // Booking status chart data

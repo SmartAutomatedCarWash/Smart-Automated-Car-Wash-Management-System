@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Megaphone } from "lucide-react";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
-import { fetchActiveAnnouncements } from "@/features/public/components/api/announcements-service";
 import type { Announcement } from "@/features/public/components/api/announcements-service";
+import { useActiveAnnouncements } from "@/features/public/components/hooks/use-announcements";
 
 const FALLBACK_MESSAGES: Announcement[] = [
   {
@@ -39,18 +39,13 @@ const SPEED_PX_PER_MS = 0.07; // scroll speed
 
 export function MarqueeTicker() {
   const { language } = useLanguageStore();
-  const [items, setItems] = useState<Announcement[]>(FALLBACK_MESSAGES);
+  const { data: activeAnnouncements } = useActiveAnnouncements();
+  const items = activeAnnouncements?.length ? activeAnnouncements : FALLBACK_MESSAGES;
 
   const trackRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const pauseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRunning = useRef(false);
-
-  useEffect(() => {
-    fetchActiveAnnouncements()
-      .then((data) => { if (data && data.length > 0) setItems(data); })
-      .catch(() => {});
-  }, []);
 
   const stopAnim = useCallback(() => {
     isRunning.current = false;
