@@ -1,13 +1,12 @@
 package com.autowash.service.impl;
 
 import com.autowash.entity.Notification;
-
-import com.autowash.repository.NotificationRepository;
-
 import com.autowash.entity.NotificationCampaign;
 import com.autowash.entity.User;
 import com.autowash.entity.enums.CampaignStatus;
+import com.autowash.event.WebSocketEventPublisher;
 import com.autowash.repository.NotificationCampaignRepository;
+import com.autowash.repository.NotificationRepository;
 import com.autowash.repository.UserRepository;
 import com.autowash.service.NotificationCampaignProcessor;
 import java.time.Instant;
@@ -19,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -28,6 +29,7 @@ public class NotificationCampaignProcessorImpl implements NotificationCampaignPr
     private final UserRepository userRepository;
     private final NotificationRepository notificationRepository;
     private final NotificationCampaignRepository campaignRepository;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     @Async
     @Override
@@ -73,12 +75,39 @@ public class NotificationCampaignProcessorImpl implements NotificationCampaignPr
             campaign.setSentAt(Instant.now());
             campaignRepository.save(campaign);
 
+            publishNotificationsAfterCommit(notifications);
             log.info("Campaign {} completed. Sent to {} users.", campaign.getId(), notifications.size());
         } catch (Exception e) {
             log.error("Failed to process campaign {}", campaign.getId(), e);
             campaign.setStatus(CampaignStatus.FAILED);
             campaignRepository.save(campaign);
         }
+    }
+
+    private void publishNotificationsAfterCommit(List<Notification> notifications) {
+        Runnable publish = () -> notifications.forEach(notification ->
+                webSocketEventPublisher.publishCustomerNotification(
+                        notification.getUser().getId(),
+                        notification.getId(),
+                        notification.getType(),
+                        notification.getTitle(),
+                        notification.getMessage(),
+                        null,
+                        null
+                )
+        );
+
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            publish.run();
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                publish.run();
+            }
+        });
     }
 
     private List<User> getTargetUsers(NotificationCampaign campaign) {

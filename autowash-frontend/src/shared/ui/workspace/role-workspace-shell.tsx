@@ -66,6 +66,7 @@ import {
 import { useCustomerNotifications, useMarkCustomerNotificationAsRead } from "@/features/notifications/hooks/use-customer-notifications";
 import { useCustomerNotificationRealtime } from "@/features/notifications/hooks/use-customer-notification-realtime";
 import { translateNotificationField } from "@/features/notifications/lib/notification-utils";
+import { showCustomerRealtimeNotification } from "@/features/notifications/lib/customer-realtime-notification-alert";
 import { MembershipTierUpgradePopup } from "@/features/loyalty/components/membership-tier-upgrade-popup";
 import { useCustomerLoyaltyAccount } from "@/features/loyalty/hooks/use-customer-loyalty";
 import { useTierStore } from "@/shared/store/tier.store";
@@ -223,6 +224,16 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
   const customerNotificationsQuery = useCustomerNotifications();
   useCustomerNotificationRealtime(isCustomer && isMounted, {
+    onNotification: ({ notificationId, type, title, message }) => {
+      if (!notificationId || seenCustomerNotificationIds.current.has(notificationId)) return;
+      seenCustomerNotificationIds.current.add(notificationId);
+      void showCustomerRealtimeNotification({
+        type,
+        title: translateNotificationField(title, language),
+        message: translateNotificationField(message, language),
+        confirmButtonText: t("Đã hiểu", "Got it"),
+      });
+    },
     onTierUpgrade: ({ notificationId, title, message, oldTier, newTier }) => {
       if (!notificationId || !newTier) return;
       if (seenTierUpgradePopupIds.current.has(notificationId)) return;

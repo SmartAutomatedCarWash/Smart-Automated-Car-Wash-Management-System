@@ -6,6 +6,7 @@ import com.autowash.shared.exception.ErrorCode;
 import com.autowash.dto.AnnouncementRequest;
 import com.autowash.dto.AnnouncementResponse;
 import com.autowash.entity.Announcement;
+import com.autowash.event.WebSocketEventPublisher;
 import com.autowash.repository.AnnouncementRepository;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,9 +33,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class AnnouncementController {
 
     private final AnnouncementRepository announcementRepository;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
-    public AnnouncementController(AnnouncementRepository announcementRepository) {
+    public AnnouncementController(
+            AnnouncementRepository announcementRepository,
+            WebSocketEventPublisher webSocketEventPublisher
+    ) {
         this.announcementRepository = announcementRepository;
+        this.webSocketEventPublisher = webSocketEventPublisher;
     }
 
     // ── Public ────────────────────────────────────────────────────────────────
@@ -75,6 +81,7 @@ public class AnnouncementController {
                 request.type(), request.active(), request.priority(), request.expiresAt()
         );
         announcementRepository.save(announcement);
+        webSocketEventPublisher.publishAnnouncementChanged(announcement.getId(), "CREATED");
         return ApiResponse.ok("Announcement created", toResponse(announcement));
     }
 
@@ -92,6 +99,7 @@ public class AnnouncementController {
                 request.type(), request.active(), request.priority(), request.expiresAt()
         );
         announcementRepository.save(announcement);
+        webSocketEventPublisher.publishAnnouncementChanged(announcement.getId(), "UPDATED");
         return ApiResponse.ok("Announcement updated", toResponse(announcement));
     }
 
@@ -104,6 +112,7 @@ public class AnnouncementController {
             throw new ApiException(HttpStatus.NOT_FOUND, "Announcement not found", ErrorCode.RESOURCE_NOT_FOUND);
         }
         announcementRepository.deleteById(id);
+        webSocketEventPublisher.publishAnnouncementChanged(id, "DELETED");
         return ApiResponse.ok("Announcement deleted", null);
     }
 
