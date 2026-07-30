@@ -5,6 +5,7 @@ export type PublicSettings = {
   operatingStartTime: string; // "HH:mm"
   operatingEndTime: string;   // "HH:mm"
   maxBookingsPerTimeSlot: number;
+  maxAdvanceBookingDays: number;
 };
 
 export async function getPublicSettings(): Promise<PublicSettings> {

@@ -16,6 +16,8 @@ public record BookingListItemResponse(
         Instant createdAt,
         Instant confirmationExpiresAt,
         Instant completedAt,
-        String staffName
+        String staffName,
+        String notes,
+        String customerNotes
 ) {
 }

@@ -8,6 +8,7 @@ type DatePickerButtonProps = {
   value: string;
   onChange: (value: string) => void;
   min?: string;
+  max?: string;
   label?: string;
   className?: string;
   buttonClassName?: string;
@@ -27,6 +28,7 @@ export function DatePickerButton({
   value,
   onChange,
   min,
+  max,
   label,
   className,
   buttonClassName,
@@ -38,13 +40,15 @@ export function DatePickerButton({
 
   const handleSelectDate = (date: string) => {
     if (min && date < min) return;
+    if (max && date > max) return;
     onChange(date);
     setOpen(false);
   };
 
   const handleToday = () => {
     const today = getTodayInputValue();
-    const nextDate = min && today < min ? min : today;
+    const minDate = min && today < min ? min : today;
+    const nextDate = max && minDate > max ? max : minDate;
     onChange(nextDate);
     setVisibleMonth(monthStart(parseInputDate(nextDate)));
     setOpen(false);
@@ -73,6 +77,7 @@ export function DatePickerButton({
           selectedDate={safeValue}
           visibleMonth={visibleMonth}
           min={min}
+          max={max}
           align={align}
           onPreviousMonth={() => setVisibleMonth((current) => addMonths(current, -1))}
           onNextMonth={() => setVisibleMonth((current) => addMonths(current, 1))}
@@ -115,6 +120,7 @@ function CalendarPopover({
   selectedDate,
   visibleMonth,
   min,
+  max,
   align,
   onPreviousMonth,
   onNextMonth,
@@ -124,6 +130,7 @@ function CalendarPopover({
   selectedDate: string;
   visibleMonth: Date;
   min?: string;
+  max?: string;
   align: "left" | "right";
   onPreviousMonth: () => void;
   onNextMonth: () => void;
@@ -161,7 +168,7 @@ function CalendarPopover({
           const inputValue = toInputDate(day.date);
           const selected = inputValue === selectedDate;
           const inMonth = day.date.getMonth() === visibleMonth.getMonth();
-          const disabled = Boolean(min && inputValue < min);
+          const disabled = Boolean((min && inputValue < min) || (max && inputValue > max));
 
           return (
             <button

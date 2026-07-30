@@ -39,6 +39,8 @@ import {
 } from "@/shared/ui/ui/popover";
 import { DatePickerButton } from "@/shared/ui/date-picker-button";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
+import { useCustomerLoyaltyAccount, usePublicTierConfigs } from "@/features/loyalty/hooks/use-customer-loyalty";
+import type { TierConfig } from "@/features/settings/lib/admin-tiers-service";
 import { CustomerBookingSelect, CustomerBookingMultiSelect } from "@/features/bookings/components/customer-booking-select";
 import {
   generateTimeSlotsFromRange,
@@ -85,6 +87,20 @@ import { VEHICLE_COLOR_OPTIONS } from "@/features/vehicles/lib/vehicle-colors";
 
 function getTodayDate() {
   return formatLocalDateInput(0);
+}
+
+function resolveTierAdvanceBookingDays(tier: string | null | undefined, tiers: TierConfig[] | undefined, systemMaxDays: number | undefined) {
+  const maxDays = Math.max(systemMaxDays ?? 30, 1);
+  const activeTiers = (tiers ?? [])
+    .filter((item) => item.active !== false)
+    .sort((a, b) => a.rankOrder - b.rankOrder);
+  if (activeTiers.length === 0) {
+    return maxDays;
+  }
+
+  const normalizedTier = (tier ?? "BRONZE").trim().toUpperCase();
+  const tierConfig = activeTiers.find((item) => item.tier.toUpperCase() === normalizedTier) ?? activeTiers[0];
+  return Math.max(1, Math.min(tierConfig.advanceBookingDays ?? maxDays, maxDays));
 }
 
 function optionCardClass(active: boolean, disabled = false) {
@@ -862,6 +878,8 @@ export function CustomerBookingForm() {
   const discountMutation = useValidateBookingDiscount();
   const createBookingMutation = useCreateCustomerBooking();
   const publicSettingsQuery = usePublicSettings();
+  const loyaltyAccountQuery = useCustomerLoyaltyAccount();
+  const tierConfigsQuery = usePublicTierConfigs();
   const { holdSlot, isHolding, holdError } = useSlotHold();
   const setExpiresAt = useBookingStore((state) => state.setExpiresAt);
   const setStoredValidatedDiscount = useBookingStore((state) => state.setValidatedDiscount);
@@ -918,6 +936,19 @@ export function CustomerBookingForm() {
     }
     return ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
   }, [publicSettingsQuery.data]);
+  const tierAdvanceBookingDays = useMemo(
+    () =>
+      resolveTierAdvanceBookingDays(
+        loyaltyAccountQuery.data?.tier,
+        tierConfigsQuery.data,
+        publicSettingsQuery.data?.maxAdvanceBookingDays,
+      ),
+    [loyaltyAccountQuery.data?.tier, publicSettingsQuery.data?.maxAdvanceBookingDays, tierConfigsQuery.data],
+  );
+  const maxBookingDate = useMemo(
+    () => formatLocalDateInput(tierAdvanceBookingDays),
+    [tierAdvanceBookingDays],
+  );
   const slotAvailabilityQuery = useSlotAvailability(draft.bookingDate, timeSlots);
   const availabilityByTime = useMemo(
     () => new Map((slotAvailabilityQuery.data ?? []).map((slot) => [slot.bookingTime, slot] as const)),
@@ -950,8 +981,10 @@ export function CustomerBookingForm() {
     const today = getTodayDate();
     if (!draft.bookingDate || draft.bookingDate < today) {
       updateDraft({ bookingDate: today, bookingTime: "", staffId: "", staffIds: [] });
+    } else if (draft.bookingDate > maxBookingDate) {
+      updateDraft({ bookingDate: maxBookingDate, bookingTime: "", staffId: "", staffIds: [] });
     }
-  }, [draft.bookingDate, updateDraft]);
+  }, [draft.bookingDate, maxBookingDate, updateDraft]);
 
   useEffect(() => {
     if (vehicles.length === 0) {
@@ -1075,8 +1108,12 @@ export function CustomerBookingForm() {
   const errors = useMemo(() => {
     const validationSummary =
       draft.discountCode.trim().length > 0 && !validatedDiscount ? null : summary;
-    return validateBookingDraft(draft, validationSummary, { requirePaymentMethod: false });
-  }, [draft, summary, validatedDiscount]);
+    const nextErrors = validateBookingDraft(draft, validationSummary, { requirePaymentMethod: false });
+    if (draft.bookingDate && draft.bookingDate > maxBookingDate) {
+      nextErrors.bookingDate = `Your tier can book up to ${tierAdvanceBookingDays} days ahead.`;
+    }
+    return nextErrors;
+  }, [draft, maxBookingDate, summary, tierAdvanceBookingDays, validatedDiscount]);
 
   useEffect(() => {
     if (!isOwnedComboBooking || (!draft.discountCode && !validatedDiscount)) {
@@ -1652,10 +1689,14 @@ export function CustomerBookingForm() {
                 <DatePickerButton
                   value={draft.bookingDate}
                   min={getTodayDate()}
+                  max={maxBookingDate}
                   onChange={(bookingDate) => updateDraft({ bookingDate, staffId: "", staffIds: [] })}
                   label="Select a day"
                   buttonClassName="h-11 w-full justify-start rounded-xl border-input bg-background text-sm"
                 />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Your tier can book up to {tierAdvanceBookingDays} days ahead.
+                </p>
                 <FieldError message={showValidation ? errors.bookingDate : null} />
               </div>
 

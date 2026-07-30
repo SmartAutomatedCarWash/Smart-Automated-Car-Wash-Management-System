@@ -53,6 +53,7 @@ import com.autowash.shared.exception.ApiException;
 import com.autowash.shared.exception.ErrorCode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -1164,16 +1165,16 @@ public class OperationsServiceImpl implements OperationsService {
                 + washSessionRepository.countByAssignedStaffAndStatus(staff, WashSessionStatus.CHECKED_IN);
         long activeCount = washSessionRepository.countByAssignedStaffAndStatus(staff, WashSessionStatus.IN_PROGRESS);
         long openCount = waitingCount + activeCount + bookingStaffAssignmentRepository.countByStaffAndBooking_StatusIn(staff, ELIGIBLE_BOOKING_STATUSES);
-        Instant weekStart = LocalDate.now()
-                .with(java.time.DayOfWeek.MONDAY)
+        Instant monthStart = YearMonth.now(ZoneId.systemDefault())
+                .atDay(1)
                 .atStartOfDay(ZoneId.systemDefault())
                 .toInstant();
-        Instant weekEnd = LocalDate.now()
-                .with(java.time.DayOfWeek.MONDAY)
-                .plusWeeks(1)
+        Instant monthEnd = YearMonth.now(ZoneId.systemDefault())
+                .plusMonths(1)
+                .atDay(1)
                 .atStartOfDay(ZoneId.systemDefault())
                 .toInstant();
-        long weeklyKpiRevenue = BookingRepository.sumCompletedRevenueForStaffKpiRange(staff, weekStart, weekEnd);
+        long monthlyKpiRevenue = BookingRepository.sumCompletedRevenueForStaffKpiRange(staff, monthStart, monthEnd);
 
         return new ManagerCheckInRecommendationResponse.ManagerCheckInRecommendationItem(
                 staff.getId(),
@@ -1183,7 +1184,7 @@ public class OperationsServiceImpl implements OperationsService {
                 Math.toIntExact(waitingCount),
                 0,
                 Math.toIntExact(openCount),
-                weeklyKpiRevenue,
+                monthlyKpiRevenue,
                 0,
                 available,
                 available ? "Available for this booking time" : "Busy during this booking time",

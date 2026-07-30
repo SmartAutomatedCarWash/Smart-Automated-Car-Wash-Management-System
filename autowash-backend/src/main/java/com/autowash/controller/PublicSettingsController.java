@@ -38,7 +38,8 @@ public class PublicSettingsController {
         return ApiResponse.ok("Public settings retrieved", new PublicSettingsResponse(
                 settings.getOperatingStartTime(),
                 settings.getOperatingEndTime(),
-                settings.getMaxBookingsPerTimeSlot()
+                settings.getMaxBookingsPerTimeSlot(),
+                settings.getMaxAdvanceBookingDays()
         ));
     }
 }
