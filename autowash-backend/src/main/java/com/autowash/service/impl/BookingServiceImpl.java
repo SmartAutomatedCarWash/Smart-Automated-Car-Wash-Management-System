@@ -159,6 +159,7 @@ public class BookingServiceImpl implements BookingService {
     private final NotificationRepository notificationRepository;
     private final BookingResponseAssembler bookingResponseAssembler;
     private final StaffAssignmentService staffAssignmentService;
+    private final BookingAdvanceWindowPolicy bookingAdvanceWindowPolicy;
     private final WebSocketEventPublisher webSocketEventPublisher;
 
     @Value("${autowash.payment.sepay.payment-code-prefix:AU}")
@@ -189,6 +190,7 @@ public class BookingServiceImpl implements BookingService {
             NotificationRepository notificationRepository,
             BookingResponseAssembler bookingResponseAssembler,
             StaffAssignmentService staffAssignmentService,
+            BookingAdvanceWindowPolicy bookingAdvanceWindowPolicy,
             WebSocketEventPublisher webSocketEventPublisher
     ) {
         this.currentUserService = currentUserService;
@@ -215,6 +217,7 @@ public class BookingServiceImpl implements BookingService {
         this.notificationRepository = notificationRepository;
         this.bookingResponseAssembler = bookingResponseAssembler;
         this.staffAssignmentService = staffAssignmentService;
+        this.bookingAdvanceWindowPolicy = bookingAdvanceWindowPolicy;
         this.webSocketEventPublisher = webSocketEventPublisher;
     }
 
@@ -353,7 +356,7 @@ public class BookingServiceImpl implements BookingService {
         validateCustomerCanCreateBooking(user);
         LocalTime requestedBookingTime = LocalTime.parse(request.bookingTime());
         SystemSettings settings = loadSettings();
-        validateBookingTime(request.bookingDate(), requestedBookingTime, settings);
+        validateBookingTime(user, request.bookingDate(), requestedBookingTime, settings);
         LocalDateTime scheduledLocalDateTime = request.bookingDate().atTime(requestedBookingTime);
         Instant scheduledAt = scheduledLocalDateTime.atZone(ZoneId.systemDefault()).toInstant();
         validateSlotCapacity(scheduledLocalDateTime, settings.getMaxBookingsPerTimeSlot(), user);
@@ -995,7 +998,7 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private void validateBookingTime(LocalDate bookingDate, LocalTime bookingTime, SystemSettings settings) {
+    private void validateBookingTime(User customer, LocalDate bookingDate, LocalTime bookingTime, SystemSettings settings) {
         LocalTime operatingStartTime = LocalTime.parse(settings.getOperatingStartTime());
         LocalTime operatingEndTime = LocalTime.parse(settings.getOperatingEndTime());
         if (bookingTime.isBefore(operatingStartTime) || !bookingTime.isBefore(operatingEndTime)) {
@@ -1005,14 +1008,7 @@ public class BookingServiceImpl implements BookingService {
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
-        LocalDate today = LocalDate.now();
-        if (bookingDate.isAfter(today.plusDays(settings.getMaxAdvanceBookingDays()))) {
-            throw new ApiException(
-                    HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Booking date exceeds maximum advance booking window",
-                    ErrorCode.BUSINESS_RULE_VIOLATION
-            );
-        }
+        bookingAdvanceWindowPolicy.validateWithinAdvanceWindow(customer, bookingDate, settings);
         if (bookingDate.atTime(bookingTime).isBefore(LocalDateTime.now().plus(MIN_ADVANCE_BOOKING_DURATION))) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,

@@ -8,6 +8,7 @@ export type TierConfig = {
   pointMultiplier: number;
   priorityScore: number;
   rankOrder: number;
+  advanceBookingDays: number;
   systemTier: boolean;
   imageUrl?: string | null;
   active: boolean;
@@ -20,6 +21,7 @@ export type TierConfigRequest = {
   pointMultiplier: number;
   priorityScore: number;
   rankOrder: number;
+  advanceBookingDays: number;
   imageUrl?: string | null;
   active: boolean;
 };

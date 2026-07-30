@@ -9,6 +9,7 @@ public record TierConfigResponse(
         double pointMultiplier,
         int priorityScore,
         int rankOrder,
+        int advanceBookingDays,
         boolean systemTier,
         String imageUrl,
         boolean active,

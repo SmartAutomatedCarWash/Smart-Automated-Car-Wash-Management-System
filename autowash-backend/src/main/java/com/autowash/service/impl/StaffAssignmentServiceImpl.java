@@ -16,9 +16,9 @@ import com.autowash.repository.WashSessionStaffAssignmentRepository;
 import com.autowash.service.StaffAssignmentService;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.shared.exception.ErrorCode;
-import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -83,8 +83,8 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
     public Optional<User> tryPickStaffForBookingAssignment() {
         Instant dayStart = startOfToday();
         Instant dayEnd = startOfTomorrow();
-        Instant weekStart = startOfCurrentWeek();
-        Instant weekEnd = startOfNextWeek();
+        Instant monthStart = startOfCurrentMonth();
+        Instant monthEnd = startOfNextMonth();
         return userRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE)
                 .stream()
                 .filter(staff -> !washSessionRepository.existsByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES))
@@ -92,8 +92,8 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
                 .min(Comparator
                         .comparingLong((User staff) -> bookingRepository.sumCompletedRevenueForStaffKpiRange(
                                 staff,
-                                weekStart,
-                                weekEnd
+                                monthStart,
+                                monthEnd
                         ))
                         .thenComparingLong(staff -> bookingRepository.countAssignedBookingsForStaffOnDay(
                                 staff,
@@ -162,7 +162,7 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
     private List<List<User>> rankStaffByPriorityGroupsForBooking(Booking booking) {
         return rankStaffSnapshotsForBooking(booking).stream()
                 .collect(Collectors.groupingBy(
-                        snapshot -> new StaffPriorityKey(snapshot.weeklyKpiRevenue(), snapshot.dailyBookingCount()),
+                        snapshot -> new StaffPriorityKey(snapshot.monthlyKpiRevenue(), snapshot.dailyBookingCount()),
                         LinkedHashMap::new,
                         Collectors.mapping(StaffLoadSnapshot::staff, Collectors.toList())
                 ))
@@ -172,22 +172,22 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
     }
 
     private List<StaffLoadSnapshot> rankStaffSnapshotsForBooking(Booking booking) {
-        Instant weekStart = startOfCurrentWeek();
-        Instant weekEnd = startOfNextWeek();
+        Instant monthStart = startOfCurrentMonth();
+        Instant monthEnd = startOfNextMonth();
         Instant dayStart = startOfDay(booking.getScheduledAt());
         Instant dayEnd = startOfNextDay(booking.getScheduledAt());
         return userRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE)
                 .stream()
                 .map(staff -> new StaffLoadSnapshot(
                         staff,
-                        bookingRepository.sumCompletedRevenueForStaffKpiRange(staff, weekStart, weekEnd),
+                        bookingRepository.sumCompletedRevenueForStaffKpiRange(staff, monthStart, monthEnd),
                         bookingRepository.countAssignedBookingsForStaffOnDay(staff, dayStart, dayEnd, DAILY_WORKLOAD_STATUSES),
                         bookingStaffAssignmentRepository.countByStaffAndBooking_StatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES),
                         washSessionRepository.countByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES),
                         washSessionStaffAssignmentRepository.findByStaffAndSession_StatusIn(staff, BUSY_SESSION_STATUSES).size()
                 ))
                 .sorted(Comparator
-                        .comparingLong(StaffLoadSnapshot::weeklyKpiRevenue)
+                        .comparingLong(StaffLoadSnapshot::monthlyKpiRevenue)
                         .thenComparingLong(StaffLoadSnapshot::dailyBookingCount)
                         .thenComparingLong(StaffLoadSnapshot::activeBookingCount)
                         .thenComparingLong(StaffLoadSnapshot::busySessionCount)
@@ -304,17 +304,18 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
         return LocalDate.now(ASSIGNMENT_ZONE).plusDays(1).atStartOfDay(ASSIGNMENT_ZONE).toInstant();
     }
 
-    private static Instant startOfCurrentWeek() {
-        return LocalDate.now(ASSIGNMENT_ZONE)
-                .with(DayOfWeek.MONDAY)
+    private static Instant startOfCurrentMonth() {
+        YearMonth currentMonth = YearMonth.now(ASSIGNMENT_ZONE);
+        return currentMonth
+                .atDay(1)
                 .atStartOfDay(ASSIGNMENT_ZONE)
                 .toInstant();
     }
 
-    private static Instant startOfNextWeek() {
-        return LocalDate.now(ASSIGNMENT_ZONE)
-                .with(DayOfWeek.MONDAY)
-                .plusWeeks(1)
+    private static Instant startOfNextMonth() {
+        return YearMonth.now(ASSIGNMENT_ZONE)
+                .plusMonths(1)
+                .atDay(1)
                 .atStartOfDay(ASSIGNMENT_ZONE)
                 .toInstant();
     }
@@ -333,12 +334,12 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
 
     private record StaffLoadSnapshot(
             User staff,
-            long weeklyKpiRevenue,
+            long monthlyKpiRevenue,
             long dailyBookingCount,
             long activeBookingCount,
             long busySessionCount,
             long multiStaffBusySessionCount
     ) {}
 
-    private record StaffPriorityKey(long weeklyKpiRevenue, long dailyBookingCount) {}
+    private record StaffPriorityKey(long monthlyKpiRevenue, long dailyBookingCount) {}
 }

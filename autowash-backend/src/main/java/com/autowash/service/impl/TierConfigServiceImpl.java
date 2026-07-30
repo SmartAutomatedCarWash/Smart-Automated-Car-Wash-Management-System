@@ -64,6 +64,7 @@ public class TierConfigServiceImpl implements TierConfigService {
         if (tierConfigRepository.existsByRankOrder(rankOrder)) {
             shiftRanksAtOrAbove(rankOrder);
         }
+        int advanceBookingDays = request.advanceBookingDays() == null ? 30 : request.advanceBookingDays();
         TierConfig config = new TierConfig(
                 code,
                 request.name().trim(),
@@ -71,11 +72,12 @@ public class TierConfigServiceImpl implements TierConfigService {
                 BigDecimal.valueOf(request.pointMultiplier()),
                 request.priorityScore(),
                 rankOrder,
+                advanceBookingDays,
                 false,
                 request.active() == null || request.active(),
                 normalizeUrl(request.imageUrl())
         );
-        validateTierConfig(config.getTier(), config.getMinPoints(), config.getPointMultiplier(), config.getRankOrder());
+        validateTierConfig(config.getTier(), config.getMinPoints(), config.getPointMultiplier(), config.getRankOrder(), config.getAdvanceBookingDays());
         return tierConfigMapper.toResponse(tierConfigRepository.save(config));
     }
 
@@ -95,19 +97,21 @@ public class TierConfigServiceImpl implements TierConfigService {
                 : BigDecimal.valueOf(request.pointMultiplier());
         int priorityScore = request.priorityScore() == null ? config.getPriorityScore() : request.priorityScore();
         int rankOrder = request.rankOrder() == null ? config.getRankOrder() : request.rankOrder();
+        int advanceBookingDays = request.advanceBookingDays() == null ? config.getAdvanceBookingDays() : request.advanceBookingDays();
         boolean active = request.active() == null ? config.isActive() : request.active();
         String imageUrl = request.imageUrl() == null ? config.getImageUrl() : normalizeUrl(request.imageUrl());
 
         if (rankOrder != config.getRankOrder() && tierConfigRepository.existsByRankOrder(rankOrder)) {
             shiftRanksAtOrAbove(rankOrder);
         }
-        validateTierConfig(code, minPoints, pointMultiplier, rankOrder);
+        validateTierConfig(code, minPoints, pointMultiplier, rankOrder, advanceBookingDays);
         config.update(
                 name,
                 minPoints,
                 pointMultiplier,
                 priorityScore,
                 rankOrder,
+                advanceBookingDays,
                 active,
                 imageUrl
         );
@@ -193,7 +197,7 @@ public class TierConfigServiceImpl implements TierConfigService {
         return imageUrl.trim();
     }
 
-    private void validateTierConfig(String tier, int minPoints, BigDecimal pointMultiplier, int rankOrder) {
+    private void validateTierConfig(String tier, int minPoints, BigDecimal pointMultiplier, int rankOrder, int advanceBookingDays) {
         if (BRONZE.equals(tier) && minPoints != 0) {
             throw validationError("minPoints", "BRONZE tier min points must be 0");
         }
@@ -202,6 +206,9 @@ public class TierConfigServiceImpl implements TierConfigService {
         }
         if (rankOrder < 0) {
             throw validationError("rankOrder", "Rank order cannot be negative");
+        }
+        if (advanceBookingDays < 1) {
+            throw validationError("advanceBookingDays", "Advance booking days must be at least 1");
         }
     }
 
@@ -217,7 +224,9 @@ public class TierConfigServiceImpl implements TierConfigService {
                     tier.getPointMultiplier(),
                     tier.getPriorityScore(),
                     tier.getRankOrder() + 1,
-                    tier.isActive()
+                    tier.getAdvanceBookingDays(),
+                    tier.isActive(),
+                    tier.getImageUrl()
             );
         }
     }
@@ -233,6 +242,7 @@ public class TierConfigServiceImpl implements TierConfigService {
                     tier.getPointMultiplier(),
                     tier.getPriorityScore(),
                     tier.getRankOrder() - 1,
+                    tier.getAdvanceBookingDays(),
                     tier.isActive(),
                     tier.getImageUrl()
             );
