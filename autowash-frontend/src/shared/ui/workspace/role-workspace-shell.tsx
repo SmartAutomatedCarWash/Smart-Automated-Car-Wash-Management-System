@@ -1,5 +1,7 @@
 "use client";
 
+
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { TierBadge } from "@/shared/ui/customer/customer-experience";
@@ -477,6 +479,21 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     : "/admin/profile";
 
   const quickActions = getProfileQuickActions(requiredRole);
+  const customerBalance = requiredRole === "CUSTOMER"
+    ? (customerLoyaltyAccountQuery.data?.availablePoints ?? user.loyaltyBalance ?? 0)
+    : 0;
+  const customerTierLabel = requiredRole === "CUSTOMER"
+    ? formatCustomerTierLabel(effectiveCustomerTier ?? user.tier ?? "MEMBER", language)
+    : user.role;
+  const customerMenuActions = requiredRole === "CUSTOMER"
+    ? [
+        { href: profileHref, label: "Account", icon: UserCog },
+        { href: "/customer/vehicles/add", label: "Add vehicle", icon: Car },
+        { href: "/customer/bookings", label: "Bookings", icon: ClipboardList },
+        { href: "/customer/history", label: "History", icon: History },
+        { href: "/customer/loyalty", label: "Membership", icon: Sparkles },
+      ]
+    : [];
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -489,7 +506,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       {/* ── Sidebar ── */}
       <aside
         className={cn(
-          "sticky top-0 z-20 hidden h-full shrink-0 flex-col border-r border-cyan-900/10 bg-white/88 shadow-[0_24px_80px_rgba(6,17,26,0.08)] backdrop-blur-xl transition-all duration-300 lg:flex",
+          "sticky top-0 z-20 hidden h-full shrink-0 flex-col border-r border-cyan-900/10 bg-[linear-gradient(180deg,rgba(235,253,255,0.96),rgba(242,253,255,0.92))] shadow-[0_24px_80px_rgba(6,17,26,0.08)] backdrop-blur-xl transition-all duration-300 lg:flex",
           requiredRole === "CUSTOMER"
             ? (sidebarCollapsed ? "w-[5.25rem]" : "w-64")
             : (sidebarCollapsed ? "w-[5.25rem]" : "w-72"),
@@ -502,7 +519,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           onToggle={() => setSidebarCollapsed((v) => !v)}
         />
 
-        <nav className={cn("min-h-0 flex-1 overflow-y-auto", !sidebarCollapsed ? "px-3 py-4" : "px-2 py-4")}>
+        <nav className={cn("min-h-0 flex-1 overflow-y-auto", !sidebarCollapsed ? "px-4 py-5" : "px-2 py-4")}>
           <ul className={cn(!sidebarCollapsed ? "space-y-1" : "space-y-3")}>
             {navItems.map((item) => (
               <SidebarNavLink
@@ -626,7 +643,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverContent
                     align="end"
                     sideOffset={10}
-                    className="w-80 rounded-md border-cyan-900/10 bg-white/95 p-3 shadow-[0_22px_60px_rgba(6,17,26,0.12)] backdrop-blur-xl"
+                    className="w-[26rem] rounded-[1.5rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,255,0.96))] p-4 shadow-[0_28px_70px_rgba(15,23,42,0.14)] backdrop-blur-xl"
                   >
                     <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
                       <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
@@ -741,41 +758,43 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                     className="w-80 rounded-md border-cyan-900/10 bg-white/95 p-3 shadow-[0_22px_60px_rgba(6,17,26,0.12)] backdrop-blur-xl"
                   >
                     {selectedNotification ? (
-                      <div className="flex flex-col h-full animate-in slide-in-from-right-4 duration-200">
-                        <div className="flex items-center gap-2 border-b border-border/50 pb-2 mb-2">
+                      <div className="flex h-full flex-col animate-in slide-in-from-right-4 duration-200">
+                        <div className="mb-3 flex items-center gap-2 border-b border-slate-200/80 pb-3">
                           <button
                             type="button"
                             onClick={() => setSelectedNotificationId(null)}
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-cyan-50 dark:hover:bg-cyan-950/40 text-muted-foreground transition"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-sky-50 hover:text-sky-700"
                             aria-label={t("Quay lại", "Back")}
                           >
                             <ChevronLeft className="h-4 w-4" />
                           </button>
-                          <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground flex-1">
+                          <h3 className="flex-1 text-[0.72rem] font-black uppercase tracking-[0.14em] text-slate-500">
                             {t("Chi tiết thông báo", "Notification Detail")}
                           </h3>
                         </div>
-                        <div className="flex flex-col gap-2 p-1 overflow-y-auto max-h-64">
-                          <div className="text-sm font-bold text-cyan-950 dark:text-cyan-100">
-                            {translateNotificationField(selectedNotification.title, language)}
-                          </div>
-                          <div className="text-[10px] font-semibold text-muted-foreground">
-                            {new Date(selectedNotification.createdAt).toLocaleString(language === "vi" ? "vi-VN" : "en-US")}
-                          </div>
-                          <div className="text-xs leading-relaxed text-foreground dark:text-slate-300 mt-2 whitespace-pre-wrap">
-                            {translateNotificationField(selectedNotification.message, language)}
+                        <div className="max-h-[22rem] overflow-y-auto pr-1">
+                          <div className="rounded-[1.2rem] bg-[linear-gradient(180deg,#ffffff,#f8fbff)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] ring-1 ring-slate-100">
+                            <div className="text-base font-black text-slate-800">
+                              {translateNotificationField(selectedNotification.title, language)}
+                            </div>
+                            <div className="mt-1 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                              {new Date(selectedNotification.createdAt).toLocaleString(language === "vi" ? "vi-VN" : "en-US")}
+                            </div>
+                            <div className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">
+                              {translateNotificationField(selectedNotification.message, language)}
+                            </div>
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col h-full animate-in slide-in-from-left-4 duration-200">
-                        <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
+                      <div className="flex h-full flex-col animate-in slide-in-from-left-4 duration-200">
+                        <div className="mb-3 flex items-center justify-between border-b border-slate-200/80 pb-3">
                           <div className="flex items-center gap-2">
-                            <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                            <h3 className="text-[0.8rem] font-black uppercase tracking-[0.08em] text-slate-500">
                               {t("Thông báo", "Notifications")}
                             </h3>
                             {unreadCustomerNotifications > 0 && (
-                              <span className="rounded-full bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 text-[9px] font-black text-cyan-800 dark:text-cyan-400">
+                              <span className="rounded-full bg-sky-100 px-2.5 py-1 text-[0.68rem] font-black leading-none text-sky-700">
                                 {unreadCustomerNotifications}
                               </span>
                             )}
@@ -790,7 +809,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                                   toast.success(t("Đã đọc tất cả thông báo", "All notifications marked as read"));
                                 } catch (e) {}
                               }}
-                              className="text-[10px] font-bold text-[#0566D9] dark:text-sky-400 hover:underline"
+                              className="rounded-full border border-sky-200 bg-white px-3 py-1 text-[0.72rem] font-bold text-[#0566D9] shadow-sm transition hover:border-sky-300 hover:bg-sky-50"
                             >
                               {t("Đọc tất cả", "Mark all read")}
                             </button>
@@ -798,11 +817,11 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                         </div>
 
                         {(!customerNotificationsQuery.data || customerNotificationsQuery.data.length === 0) ? (
-                          <div className="py-6 text-center text-xs font-semibold text-muted-foreground">
+                          <div className="rounded-[1.2rem] bg-slate-50/80 py-10 text-center text-sm font-semibold text-slate-400">
                             {t("Không có thông báo nào", "No notifications")}
                           </div>
                         ) : (
-                          <div className="max-h-64 overflow-y-auto space-y-2">
+                          <div className="max-h-[23rem] overflow-y-auto space-y-3 pr-1">
                             {customerNotificationsQuery.data.slice(0, 5).map((notification) => (
                               <button
                                 key={notification.notificationId}
@@ -813,29 +832,32 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                                   setSelectedNotificationId(notification.notificationId);
                                 }}
                                 className={cn(
-                                  "flex w-full flex-col gap-1 rounded-sm p-2 text-left text-xs transition",
+                                  "flex w-full flex-col gap-2 rounded-[1.15rem] p-3.5 text-left transition",
                                   notification.read 
-                                    ? "bg-muted/30 dark:bg-slate-900/40 hover:bg-muted/50 dark:hover:bg-slate-800/40" 
-                                    : "bg-cyan-50/70 dark:bg-cyan-950/20 hover:bg-cyan-50 dark:hover:bg-cyan-950/30"
+                                    ? "bg-slate-50/85 ring-1 ring-slate-100 hover:bg-slate-100/80" 
+                                    : "bg-[linear-gradient(180deg,#f8fcff,#eef9ff)] ring-1 ring-sky-100 hover:bg-[linear-gradient(180deg,#f3fbff,#e8f6ff)]"
                                 )}
                               >
                                 <div className="flex items-center justify-between">
-                                  <span className={cn("font-bold", notification.read ? "text-muted-foreground" : "text-cyan-955 dark:text-cyan-200")}>
+                                  <span className={cn("pr-3 text-[1rem] font-black leading-6", notification.read ? "text-slate-700" : "text-slate-800")}>
                                     {translateNotificationField(notification.title, language)}
                                   </span>
                                   {!notification.read && (
-                                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
+                                    <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_0_4px_rgba(34,211,238,0.12)]" />
                                   )}
                                 </div>
-                                <div className={cn("line-clamp-2 text-[11px]", notification.read ? "text-muted-foreground" : "text-foreground dark:text-slate-300")}>
+                                <div className={cn("line-clamp-2 text-[0.95rem] leading-6", notification.read ? "text-slate-500" : "text-slate-600")}>
                                   {translateNotificationField(notification.message, language)}
+                                </div>
+                                <div className="text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                                  {new Date(notification.createdAt).toLocaleString(language === "vi" ? "vi-VN" : "en-US")}
                                 </div>
                               </button>
                             ))}
-                            <div className="pt-2 border-t border-border/50">
+                            <div className="pt-3 border-t border-slate-200/80">
                               <Link
                                 href="/customer/notifications"
-                                className="flex w-full items-center justify-center rounded-sm bg-muted dark:bg-slate-900 py-2 text-center text-[11px] font-bold text-foreground dark:text-slate-350 hover:bg-accent dark:hover:bg-slate-800 transition"
+                                className="flex w-full items-center justify-center rounded-[0.95rem] bg-slate-100 py-2.5 text-center text-[0.82rem] font-black uppercase tracking-[0.08em] text-slate-700 transition hover:bg-sky-50 hover:text-sky-700"
                               >
                                 {t("Xem tất cả", "View all")}
                               </Link>
@@ -1135,8 +1157,25 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 <PopoverContent
                   align="end"
                   sideOffset={10}
-                  className="w-72 rounded-md border-border/70 bg-card/95 p-2 shadow-[0_22px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl"
+                  className={cn(
+                    "border-border/70 backdrop-blur-xl",
+                    requiredRole === "CUSTOMER"
+                      ? "w-[22rem] rounded-[1.75rem] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,250,255,0.95))] p-3 shadow-[0_30px_80px_rgba(15,23,42,0.18)]"
+                      : "w-72 rounded-md bg-card/95 p-2 shadow-[0_22px_60px_rgba(15,23,42,0.16)]",
+                  )}
                 >
+                  {requiredRole === "CUSTOMER" ? (
+                    <CustomerAvatarMenuCard
+                      user={user}
+                      profileHref={profileHref}
+                      balance={customerBalance}
+                      tierLabel={customerTierLabel}
+                      actions={customerMenuActions}
+                      logoutPending={logoutMutation.isPending}
+                      onLogout={handleLogout}
+                    />
+                  ) : (
+                  <>
                   <div className="px-2 py-2">
                     <div className="flex items-center gap-3">
                       <Avatar className={cn("h-10 w-10 border", workspaceTheme.accentSoft)}>
@@ -1148,14 +1187,8 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                       <div className="min-w-0">
                         <div className="truncate text-sm font-extrabold">{user.fullName}</div>
                         <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          {requiredRole === "CUSTOMER" ? (
-                            <TierBadge tier={user.tier || "MEMBER"} />
-                          ) : (
-                            <>
-                              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                              {user.role}
-                            </>
-                          )}
+                          <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                          {user.role}
                         </div>
                       </div>
                     </div>
@@ -1207,6 +1240,8 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                       ? t("Đang đăng xuất...", "Signing out...")
                       : t("Đăng xuất", "Sign out")}
                   </button>
+                  </>
+                  )}
                 </PopoverContent>
               </Popover>
 
@@ -1590,6 +1625,87 @@ function getProfileQuickActions(role: UserRole) {
   ];
 }
 
+
+function WaterSpray() {
+  const [isSpraying, setIsSpraying] = useState(true);
+
+  useEffect(() => {
+    let timeoutId;
+    const runCycle = () => {
+      setIsSpraying(true);
+      timeoutId = setTimeout(() => {
+        setIsSpraying(false);
+        timeoutId = setTimeout(() => {
+          runCycle();
+        }, 1000);
+      }, 5000);
+    };
+    runCycle();
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  return (
+    <div className="relative mt-1 mb-1 h-3 w-full flex items-center pl-1">
+      <div className="relative z-10 flex items-center rotate-[-15deg]">
+        <div className="h-1.5 w-3 bg-gray-700 rounded-l-[1px] shadow-sm"></div>
+        <div className="h-2 w-1.5 bg-sky-500 rounded-r-[1px] shadow-sm"></div>
+      </div>
+      <div className="relative ml-0.5 h-full flex-1 overflow-visible">
+        <style>{`
+          @keyframes spray-water-anim {
+            0% { transform: translate(0px, 0px) scale(0.5) rotate(var(--angle)); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(var(--scale)) rotate(var(--angle)); opacity: 0; }
+          }
+          .water-droplet {
+            position: absolute;
+            left: 0px;
+            top: 50%;
+            background-color: #0ea5e9;
+            border-radius: 2px 4px 4px 2px;
+            animation: spray-water-anim var(--duration) cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+            animation-delay: var(--delay);
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+          }
+          .water-droplet.hidden-spray {
+            opacity: 0 !important;
+            animation: none !important;
+          }
+        `}</style>
+        {[...Array(25)].map((_, i) => {
+          const angle = -20 + (i * 137.5) % 40;
+          const distance = 40 + (i * 93) % 80;
+          const tx = Math.cos(angle * Math.PI / 180) * distance;
+          const ty = Math.sin(angle * Math.PI / 180) * distance;
+          const delay = (i * 0.04) + "s";
+          const duration = 0.4 + ((i * 37) % 5) * 0.1 + "s";
+          
+          const width = 4 + (i * 17) % 6 + "px";
+          const height = 1.5 + (i * 11) % 2.5 + "px";
+          const scale = 1 + (i * 11) % 1.5;
+          
+          return (
+            <div
+              key={i}
+              className={`water-droplet shadow-[0_0_3px_rgba(14,165,233,0.8)] ${!isSpraying ? 'hidden-spray' : ''}`}
+              style={{
+                width: width,
+                height: height,
+                '--tx': `${tx}px`,
+                '--ty': `${ty}px`,
+                '--delay': delay,
+                '--duration': duration,
+                '--scale': scale,
+                '--angle': `${angle}deg`,
+              }}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function SidebarBrand({
   collapsed,
   theme,
@@ -1612,12 +1728,12 @@ function SidebarBrand({
 
   if (collapsed) {
     return (
-      <div className="border-b border-border/70 px-2.5 py-4">
+      <div className="border-b border-cyan-900/10 bg-[rgba(225,251,255,0.78)] px-2.5 py-4">
         <div className="mx-auto flex h-11 w-full items-center justify-center">
           <button
             type="button"
             onClick={onToggle}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary/15 bg-card text-primary shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-cyan-900/12 bg-white/65 text-slate-600 shadow-[0_8px_22px_rgba(15,23,42,0.06)] transition hover:bg-white hover:text-slate-800"
             aria-label={translate(language, "Mở rộng thanh bên", "Expand sidebar")}
           >
             <PanelLeftOpen className="h-5 w-5" />
@@ -1628,30 +1744,34 @@ function SidebarBrand({
   }
 
   return (
-    <div className="border-b border-border/70 px-4 py-5">
+    <div className="border-b border-cyan-900/10 bg-[rgba(225,251,255,0.78)] px-5 py-5">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-[10px] font-black tracking-tighter", theme.accent)}>
-            {isCustomer ? "AR" : "AC"}
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[1rem] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_12px_24px_rgba(15,23,42,0.06)] ring-1 ring-cyan-900/8">
+            <Image
+              src="/logo.png"
+              alt="AURA CAR CARE logo"
+              width={34}
+              height={34}
+              className="h-[2.15rem] w-[2.15rem] rounded-lg object-cover"
+              priority
+            />
           </div>
-          <div className="min-w-0 animate-in fade-in">
-            <div className="font-black tracking-[-0.02em] text-lg text-slate-900">
-              {isCustomer ? "AURA CAR CARE" : "AURA CAR CARE"}
-            </div>
-            <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {description}
+          <div className="min-w-0 flex-1 animate-in fade-in">
+            <div className="whitespace-nowrap bg-[linear-gradient(90deg,#0f7fb2_0%,#26a8dc_48%,#0978a7_100%)] bg-[length:180%_180%] bg-clip-text text-[0.82rem] font-black uppercase leading-none tracking-[-0.04em] text-transparent drop-shadow-[0_1px_0_rgba(255,255,255,0.55)] animate-[pulse_3.2s_ease-in-out_infinite]">
+              {isCustomer ? "AURA CARWASH" : theme.label}
             </div>
           </div>
         </div>
         <button
           type="button"
           onClick={onToggle}
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/70 text-muted-foreground transition hover:bg-accent"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan-900/12 bg-white/65 text-slate-500 shadow-[0_8px_22px_rgba(15,23,42,0.06)] transition hover:bg-white hover:text-slate-700"
           aria-label={closeIcon
             ? translate(language, "Đóng", "Close")
             : translate(language, "Thu gọn thanh bên", "Collapse sidebar")}
         >
-          {closeIcon ? <X className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          {closeIcon ? <X className="h-[0.95rem] w-[0.95rem]" /> : <PanelLeftClose className="h-[0.95rem] w-[0.95rem]" />}
         </button>
       </div>
     </div>
@@ -1691,20 +1811,21 @@ function SidebarNavLink({
         onClick={onNavigate}
         title={collapsed ? displayLabel : undefined}
         className={cn(
-          "group flex items-center rounded-sm text-sm font-medium transition-all",
-          collapsed ? "mx-auto h-12 w-12 justify-center rounded-full" : "gap-3 px-3 py-2.5",
-          active ? activeClassName : "text-muted-foreground hover:bg-accent hover:text-foreground",
+          "group flex items-center text-sm font-medium transition-all",
+          collapsed ? "mx-auto h-12 w-12 justify-center rounded-2xl" : "gap-3 rounded-[1.1rem] px-4 py-3.5",
+          active ? activeClassName : "text-slate-500 hover:bg-white/70 hover:text-slate-900",
         )}
       >
         {isLoyaltyItem && tierStyle ? (
           <TierNavIcon tier={customerTier} active={active} tierStyle={tierStyle} />
         ) : (
-          <Icon className="h-4 w-4 shrink-0" />
+          <Icon className={cn("h-4 w-4 shrink-0", active ? "text-cyan-100" : "text-slate-500")} />
         )}
         {!collapsed && (
           <span
             className={cn(
-              isLoyaltyItem && tierStyle && "tier-nav-label relative inline-block font-semibold tracking-[0.01em]",
+              "font-semibold tracking-[0.01em]",
+              isLoyaltyItem && tierStyle && "tier-nav-label relative inline-block",
               loyaltyLabelClassName,
             )}
             style={loyaltyLabelStyle}
@@ -2038,5 +2159,130 @@ function getUserInitials(fullName: string) {
     .join("");
 
   return initials || "U";
+}
+
+function formatCustomerBalance(value: number) {
+  return `${Math.max(0, Math.round(value)).toLocaleString("en-US")} pts`;
+}
+
+function formatCustomerTierLabel(tier: string, language: "vi" | "en") {
+  const normalized = (tier || "MEMBER").toUpperCase();
+  const viMap: Record<string, string> = {
+    MEMBER: "Thành viên",
+    BRONZE: "Đồng",
+    SILVER: "Bạc",
+    GOLD: "Vàng",
+    PLATINUM: "Bạch kim",
+    DIAMOND: "Kim cương",
+  };
+  const enMap: Record<string, string> = {
+    MEMBER: "Member",
+    BRONZE: "Bronze",
+    SILVER: "Silver",
+    GOLD: "Gold",
+    PLATINUM: "Platinum",
+    DIAMOND: "Diamond",
+  };
+
+  return language === "vi" ? (viMap[normalized] ?? normalized) : (enMap[normalized] ?? normalized);
+}
+
+function CustomerAvatarMenuCard({
+  user,
+  profileHref,
+  balance,
+  tierLabel,
+  actions,
+  logoutPending,
+  onLogout,
+}: {
+  user: {
+    fullName: string;
+    phone: string;
+    email: string | null;
+    avatarUrl: string | null;
+  };
+  profileHref: string;
+  balance: number;
+  tierLabel: string;
+  actions: Array<{
+    href: string;
+    label: string;
+    icon: WorkspaceNavItem["icon"];
+  }>;
+  logoutPending: boolean;
+  onLogout: () => void;
+}) {
+  const normalizedActions = actions.length > 0
+    ? actions
+    : [{ href: profileHref, label: "Account", icon: UserCog }];
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-[1.45rem] bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(240,248,255,0.94))] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.82)]">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-14 w-14 border border-fuchsia-200 bg-[linear-gradient(135deg,#f0abfc,#d8b4fe)] shadow-[0_12px_28px_rgba(217,70,239,0.18)]">
+            <AvatarImage src={user.avatarUrl ?? undefined} alt={user.fullName} className="object-cover" />
+            <AvatarFallback className="bg-[linear-gradient(135deg,#f0abfc,#d8b4fe)] text-base font-black text-white">
+              {getUserInitials(user.fullName)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[1rem] font-black text-slate-900">{user.fullName}</div>
+            <div className="mt-0.5 text-sm font-medium text-slate-500">{user.phone || user.email || "0888888888"}</div>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="rounded-[1.15rem] bg-white/80 px-4 py-3 shadow-[0_10px_24px_rgba(148,163,184,0.10)] ring-1 ring-slate-100">
+            <div className="text-xs font-semibold text-slate-500">Points</div>
+            <div className="mt-1 text-[1.15rem] font-black text-sky-700">
+              {formatCustomerBalance(balance)}
+            </div>
+          </div>
+          <div className="rounded-[1.15rem] bg-white/80 px-4 py-3 shadow-[0_10px_24px_rgba(148,163,184,0.10)] ring-1 ring-slate-100">
+            <div className="text-xs font-semibold text-slate-500">Tier</div>
+            <div className="mt-1 text-[1.1rem] font-black text-amber-600">
+              {tierLabel}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-x-3 gap-y-4 px-1 pb-1">
+        {normalizedActions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="group flex flex-col items-center gap-2 text-center"
+            >
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(180deg,#f5f9ff,#edf4ff)] text-[#5b8def] shadow-[0_12px_26px_rgba(91,141,239,0.14)] transition group-hover:-translate-y-0.5 group-hover:shadow-[0_18px_32px_rgba(91,141,239,0.22)]">
+                <Icon className="h-5 w-5" />
+              </span>
+              <span className="text-[0.92rem] font-semibold leading-5 text-slate-700">
+                {action.label}
+              </span>
+            </Link>
+          );
+        })}
+
+        <button
+          type="button"
+          disabled={logoutPending}
+          className="group flex flex-col items-center gap-2 text-center disabled:opacity-60"
+          onClick={onLogout}
+        >
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(180deg,#f5f9ff,#edf4ff)] text-[#5b8def] shadow-[0_12px_26px_rgba(91,141,239,0.14)] transition group-hover:-translate-y-0.5 group-hover:shadow-[0_18px_32px_rgba(91,141,239,0.22)]">
+            <LogOut className="h-5 w-5" />
+          </span>
+          <span className="text-[0.92rem] font-semibold leading-5 text-slate-700">
+            {logoutPending ? "Signing out..." : "Sign out"}
+          </span>
+        </button>
+      </div>
+    </div>
+  );
 }
 

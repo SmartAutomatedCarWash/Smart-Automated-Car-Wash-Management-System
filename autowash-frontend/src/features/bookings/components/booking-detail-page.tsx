@@ -647,105 +647,107 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
           )}
 
           {showAssignedStaffCard ? (
-            <Card className="border-emerald-200 bg-emerald-50 shadow-md">
-              <CardHeader>
-                <div className="flex items-center gap-3 text-emerald-800">
-                  <Users className="h-5 w-5" />
-                  <CardTitle>{translate(language, "Nhân viên đã được phân công", "Assigned staff")}</CardTitle>
+            <Card className="border-emerald-100 bg-emerald-50/50 shadow-sm">
+              <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <h3 className="flex items-center gap-2 font-semibold text-emerald-800">
+                    <UserCheck className="h-4 w-4" />
+                    {translate(language, "Nhân viên phụ trách", "Assigned staff")}
+                  </h3>
+                  <p className="text-sm text-emerald-600/80">
+                    {canEditAssignedStaff
+                      ? translate(language, "Bạn có thể thay đổi nhân viên cho lịch đặt này", "You can reassign staff for this booking")
+                      : translate(language, "Nhân viên phụ trách lịch đặt này", "Staff assigned to this booking")}
+                  </p>
                 </div>
-                <CardDescription>
-                  {canEditAssignedStaff
-                    ? translate(language, "Bạn có thể đổi nhân viên đang rảnh, sau đó bấm Confirm để lưu.", "You can replace the assigned staff with an available staff member, then press Confirm to save.")
-                    : translate(language, "Nhân viên phụ trách lịch đặt này.", "Staff assigned to this booking.")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {canEditAssignedStaff && staffOptionsQuery.isPending ? (
-                  <div className="h-20 animate-pulse rounded-2xl bg-white/70" />
-                ) : (
-                  <div className="max-w-md rounded-2xl border border-emerald-100 bg-white/80 p-3">
-                    <span className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-700">
-                      <UserCheck className="h-3.5 w-3.5" />
-                      {translate(language, "Nhân viên phụ trách", "Assigned staff")}
-                    </span>
-                    {canEditAssignedStaff ? (
-                      <Select
-                        value={selectedStaffIds[0] || undefined}
-                        onValueChange={(staffId) => setSelectedStaffIds([staffId])}
-                      >
-                        <SelectTrigger className="h-auto min-h-12 rounded-xl bg-white px-3 py-2 text-left [&>span]:line-clamp-none">
-                          <SelectValue placeholder={translate(language, "Chọn nhân viên", "Select staff")}>
-                            {staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "") ? (
-                              <StaffSelectLabel
-                                staff={staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "")!}
-                                statusLabel={selectedStaffIds[0] === originalAssignedStaffIds[0] ? translate(language, "Đang được gán", "Current assignment") : undefined}
-                                statusTone={selectedStaffIds[0] === originalAssignedStaffIds[0] ? "locked" : undefined}
-                              />
-                            ) : null}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent
-                          position="item-aligned"
-                          className="min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)]"
+                
+                <div className="flex-1 sm:max-w-xs w-full">
+                  {canEditAssignedStaff && staffOptionsQuery.isPending ? (
+                    <div className="h-10 animate-pulse rounded-lg bg-emerald-100/50" />
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {canEditAssignedStaff ? (
+                        <Select
+                          value={selectedStaffIds[0] || undefined}
+                          onValueChange={(staffId) => setSelectedStaffIds([staffId])}
                         >
-                          {staffOptions.map((staff) => (
-                            <SelectItem
-                              key={staff.staffId}
-                              value={staff.staffId}
-                              disabled={staff.available === false && staff.staffId !== originalAssignedStaffIds[0]}
-                              className="py-2 pr-8 [&>span:last-child]:w-full"
-                            >
-                              <StaffSelectLabel
-                                staff={staff}
-                                statusLabel={
-                                  staff.staffId === originalAssignedStaffIds[0]
-                                    ? translate(language, "Đang được gán", "Current assignment")
-                                    : staff.staffId === recommendedStaffId
-                                      ? translate(language, "Đề xuất", "Recommended")
-                                      : undefined
-                                }
-                                statusTone={staff.staffId === originalAssignedStaffIds[0] ? "locked" : staff.staffId === recommendedStaffId ? "available" : undefined}
-                              />
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "") ? (
-                      <div className="rounded-xl border border-emerald-100 bg-white px-3 py-2">
-                        <StaffSelectLabel
-                          staff={staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "")!}
-                          statusLabel={translate(language, "Đang được gán", "Assigned")}
-                          statusTone="available"
-                        />
-                      </div>
-                    ) : (
-                      <p className="text-sm font-semibold text-slate-500">
-                        {translate(language, "Chưa có nhân viên phụ trách.", "No assigned staff yet.")}
-                      </p>
-                    )}
-                  </div>
-                )}
-                {staffOptionsQuery.isError ? (
-                  <p className="text-xs font-semibold text-rose-600">{getErrorMessage(staffOptionsQuery.error)}</p>
-                ) : null}
-                {canEditAssignedStaff ? (
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      type="button"
-                      onClick={() => void handleSaveAssignedStaff()}
-                      disabled={!canSaveAssignedStaff || updateBookingStaffMutation.isPending}
-                    >
-                      {updateBookingStaffMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {translate(language, "Confirm staff change", "Confirm staff change")}
-                    </Button>
-                    <Button type="button" variant="outline" onClick={() => void bookingQuery.refetch()}>
-                      {translate(language, "Tải lại từ máy chủ", "Refresh from server")}
-                    </Button>
-                    <Button type="button" variant="ghost" onClick={() => setSelectedStaffIds(originalAssignedStaffIds)}>
-                      {translate(language, "Hủy đổi nhân viên", "Cancel staff change")}
-                    </Button>
-                  </div>
-                ) : null}
+                          <SelectTrigger className="h-auto min-h-10 rounded-lg bg-white px-3 py-2 text-left [&>span]:line-clamp-none border-emerald-200">
+                            <SelectValue placeholder={translate(language, "Chọn nhân viên", "Select staff")}>
+                              {staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "") ? (
+                                <StaffSelectLabel
+                                  staff={staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "")!}
+                                />
+                              ) : null}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent
+                            position="item-aligned"
+                            className="min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)]"
+                          >
+                            {staffOptions.map((staff) => (
+                              <SelectItem
+                                key={staff.staffId}
+                                value={staff.staffId}
+                                disabled={staff.available === false && staff.staffId !== originalAssignedStaffIds[0]}
+                                className="py-2 pr-8 [&>span:last-child]:w-full"
+                              >
+                                <StaffSelectLabel
+                                  staff={staff}
+                                  statusLabel={
+                                    staff.staffId === originalAssignedStaffIds[0]
+                                      ? translate(language, "Đang được gán", "Current assignment")
+                                      : staff.staffId === recommendedStaffId
+                                        ? translate(language, "Đề xuất", "Recommended")
+                                        : undefined
+                                  }
+                                  statusTone={staff.staffId === originalAssignedStaffIds[0] ? "locked" : staff.staffId === recommendedStaffId ? "available" : undefined}
+                                />
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "") ? (
+                        <div className="flex min-h-10 items-center rounded-lg border border-emerald-100 bg-white px-3 py-2 shadow-sm">
+                          <StaffSelectLabel
+                            staff={staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "")!}
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-sm font-semibold text-slate-500">
+                          {translate(language, "Chưa có nhân viên.", "No assigned staff.")}
+                        </p>
+                      )}
+                      
+                      {staffOptionsQuery.isError ? (
+                        <p className="text-xs font-semibold text-rose-600">{getErrorMessage(staffOptionsQuery.error)}</p>
+                      ) : null}
+                      
+                      {canEditAssignedStaff && selectedStaffIds[0] !== originalAssignedStaffIds[0] ? (
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                            onClick={() => void handleSaveAssignedStaff()}
+                            disabled={!canSaveAssignedStaff || updateBookingStaffMutation.isPending}
+                          >
+                            {updateBookingStaffMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                            {translate(language, "Lưu", "Save")}
+                          </Button>
+                          <Button 
+                            type="button" 
+                            size="sm"
+                            variant="ghost" 
+                            className="text-emerald-700 hover:text-emerald-800 hover:bg-emerald-100"
+                            onClick={() => setSelectedStaffIds(originalAssignedStaffIds)}
+                          >
+                            {translate(language, "Hủy", "Cancel")}
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ) : null}
@@ -853,9 +855,6 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 <SummaryLine label={translate(language, "Tạm tính", "Subtotal")} value={formatBookingCurrency(booking.pricing.subtotal)} muted />
                 {booking.pricing.discountAmount > 0 ? (
                   <SummaryLine label={translate(language, "Giảm giá voucher", "Voucher discount")} value={`-${formatBookingCurrency(booking.pricing.discountAmount)}`} muted />
-                ) : null}
-                {booking.pricing.discountAmount > 0 ? (
-                  <SummaryLine label={translate(language, "Giảm điểm", "Points discount")} value={`-${formatBookingCurrency(booking.pricing.discountAmount)}`} muted />
                 ) : null}
                 <SummaryLine label={translate(language, "Tổng cộng", "Total")} value={formatBookingCurrency(booking.pricing.finalAmount)} strong />
               </SidebarBlock>

@@ -83,6 +83,7 @@ import {
   buildCreateCustomerVehicleRequest,
 } from "@/features/vehicles/lib/vehicle-form";
 import { VEHICLE_COLOR_OPTIONS } from "@/features/vehicles/lib/vehicle-colors";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -823,6 +824,7 @@ export function CustomerBookingForm() {
   const router = useRouter();
   const getErrorMessage = useErrorMessage();
   const searchParams = useSearchParams();
+  const userEmail = useAuthStore((state) => state.user?.email?.trim() ?? "");
   const queryMode = searchParams.get("mode");
   const queryPackageId = searchParams.get("packageId");
   const queryComboId = searchParams.get("comboId");
@@ -901,6 +903,12 @@ export function CustomerBookingForm() {
     }
     setSelectedPaymentMethod(draft.paymentMethod);
   }, [draft.paymentMethod, updateDraft]);
+
+  useEffect(() => {
+    if (!userEmail) return;
+    if (draft.confirmationEmail?.trim()) return;
+    updateDraft({ confirmationEmail: userEmail });
+  }, [draft.confirmationEmail, updateDraft, userEmail]);
 
   const resetValidatedDiscount = () => {
     setValidatedDiscount(null);

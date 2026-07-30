@@ -209,14 +209,14 @@ export function MembershipTierUpgradePopup({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="tier-upgrade-overlay fixed inset-0 z-[120] bg-[rgba(7,5,18,0.84)] backdrop-blur-[18px]" />
         <DialogPrimitive.Content
-          className="tier-upgrade-dialog fixed inset-x-2 bottom-2 top-2 z-[121] mx-auto w-auto max-w-[620px] translate-x-0 translate-y-0 overflow-y-auto overscroll-contain rounded-[22px] outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[calc(100dvh-3rem)] sm:w-[min(84vw,620px)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[24px] lg:max-h-[560px] 2xl:max-h-[720px]"
+          className="tier-upgrade-dialog fixed left-1/2 top-1/2 z-[121] w-[min(calc(100vw-1.5rem),26rem)] max-w-[26rem] -translate-x-1/2 -translate-y-1/2 overflow-y-auto overscroll-contain rounded-[20px] outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:w-[min(calc(100vw-3rem),30rem)] sm:max-h-[calc(100dvh-3rem)] sm:max-w-[30rem] sm:rounded-[22px] lg:w-[min(calc(100vw-6rem),34rem)] lg:max-h-[min(calc(100dvh-4rem),42rem)] lg:max-w-[34rem] 2xl:max-h-[44rem]"
         >
           <canvas
             ref={canvasRef}
-            className="pointer-events-none absolute inset-0 z-[2] h-full w-full rounded-[22px] mix-blend-screen opacity-95 sm:rounded-[24px]"
+            className="pointer-events-none absolute inset-0 z-[2] h-full w-full rounded-[20px] mix-blend-screen opacity-95 sm:rounded-[22px]"
             aria-hidden="true"
           />
-          <div className="pointer-events-none absolute inset-0 z-[3] overflow-hidden rounded-[22px] sm:rounded-[24px]">
+          <div className="pointer-events-none absolute inset-0 z-[3] overflow-hidden rounded-[20px] sm:rounded-[22px]">
             <div className="tier-upgrade-top-glow absolute inset-x-[10%] top-[7%] h-[2px]" />
             <div className="tier-upgrade-side-glow absolute left-[8%] top-[14%] h-[62%] w-[1px]" />
             <div className="tier-upgrade-side-glow absolute right-[8%] top-[14%] h-[62%] w-[1px]" />
@@ -271,9 +271,9 @@ export function MembershipTierUpgradePopup({
           </div>
 
           <div
-            className="relative z-[4] min-h-full overflow-hidden rounded-[22px] border border-white/15 bg-[radial-gradient(circle_at_top,rgba(152,88,255,0.2),transparent_30%),linear-gradient(180deg,rgba(42,11,88,0.9),rgba(18,8,49,0.92))] px-4 pb-4 pt-8 shadow-[0_34px_80px_-45px_rgba(0,0,0,0.68)] sm:rounded-[24px] sm:px-5 sm:pb-4 sm:pt-8"
+            className="relative z-[4] overflow-hidden rounded-[20px] border border-white/15 bg-[radial-gradient(circle_at_top,rgba(152,88,255,0.2),transparent_30%),linear-gradient(180deg,rgba(42,11,88,0.9),rgba(18,8,49,0.92))] px-3.5 pb-3.5 pt-7 shadow-[0_34px_80px_-45px_rgba(0,0,0,0.68)] sm:rounded-[22px] sm:px-4.5 sm:pb-4 sm:pt-8 lg:px-5"
           >
-            <div className="tier-upgrade-border-glow absolute inset-0 rounded-[22px] sm:rounded-[24px]" />
+            <div className="tier-upgrade-border-glow absolute inset-0 rounded-[20px] sm:rounded-[22px]" />
             <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,240,190,0.85),transparent)]" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,212,120,0.14),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(69,212,255,0.16),transparent_22%)]" />
 
