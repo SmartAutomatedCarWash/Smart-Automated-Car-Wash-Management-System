@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ElementType, ReactNode } from "react";
 import {
   Building2,
+  Banknote,
   CheckCircle2,
   ChevronDown,
   Clock,
@@ -21,6 +22,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import {
@@ -38,6 +40,8 @@ import {
 } from "@/shared/ui/ui/popover";
 import { DatePickerButton } from "@/shared/ui/date-picker-button";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
+import { useCustomerLoyaltyAccount, usePublicTierConfigs } from "@/features/loyalty/hooks/use-customer-loyalty";
+import type { TierConfig } from "@/features/settings/lib/admin-tiers-service";
 import { CustomerBookingSelect, CustomerBookingMultiSelect } from "@/features/bookings/components/customer-booking-select";
 import {
   generateTimeSlotsFromRange,
@@ -86,6 +90,20 @@ function getTodayDate() {
   return formatLocalDateInput(0);
 }
 
+function resolveTierAdvanceBookingDays(tier: string | null | undefined, tiers: TierConfig[] | undefined, systemMaxDays: number | undefined) {
+  const maxDays = Math.max(systemMaxDays ?? 30, 1);
+  const activeTiers = (tiers ?? [])
+    .filter((item) => item.active !== false)
+    .sort((a, b) => a.rankOrder - b.rankOrder);
+  if (activeTiers.length === 0) {
+    return maxDays;
+  }
+
+  const normalizedTier = (tier ?? "BRONZE").trim().toUpperCase();
+  const tierConfig = activeTiers.find((item) => item.tier.toUpperCase() === normalizedTier) ?? activeTiers[0];
+  return Math.max(1, Math.min(tierConfig.advanceBookingDays ?? maxDays, maxDays));
+}
+
 function optionCardClass(active: boolean, disabled = false) {
   return [
     "group relative overflow-hidden rounded-xl border p-3 text-left transition-all duration-200",
@@ -100,11 +118,10 @@ function optionCardClass(active: boolean, disabled = false) {
 function SelectionMark({ active }: { active: boolean }) {
   return (
     <span
-      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all ${
-        active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-muted/50 text-transparent group-hover:border-primary/40"
-      }`}
+      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all ${active
+        ? "border-primary bg-primary text-primary-foreground"
+        : "border-border bg-muted/50 text-transparent group-hover:border-primary/40"
+        }`}
       aria-hidden="true"
     >
       <CheckCircle2 className="h-3 w-3" />
@@ -165,21 +182,28 @@ const PAYMENT_OPTIONS: {
   icon: ElementType;
   badge?: string;
 }[] = [
-  {
-    method: "BANK_TRANSFER",
-    label: "SePay",
-    description: "Transfer with an AU payment code.",
-    icon: Building2,
-    badge: "QR",
-  },
-  {
-    method: "E_WALLET",
-    label: "VNPay",
-    description: "Pay online through VNPay.",
-    icon: Wallet,
-    badge: "Online",
-  },
-];
+    {
+      method: "BANK_TRANSFER",
+      label: "SePay",
+      description: "Transfer with an AU payment code.",
+      icon: Building2,
+      badge: "QR",
+    },
+    {
+      method: "E_WALLET",
+      label: "VNPay",
+      description: "Pay online through VNPay.",
+      icon: Wallet,
+      badge: "Online",
+    },
+    {
+      method: "CASH_AT_COUNTER",
+      label: "Cash at counter",
+      description: "Pay at the store when you arrive for check-in.",
+      icon: Banknote,
+      badge: "Store",
+    },
+  ];
 
 function AddVehicleModal({
   open,
@@ -585,6 +609,7 @@ function DiscountSection({
   summary,
   validatedDiscount,
   discountMutation,
+  disabledReason,
   customerDiscounts,
   onApply,
   onClear,
@@ -594,6 +619,7 @@ function DiscountSection({
   summary: ReturnType<typeof buildBookingSummary>;
   validatedDiscount: DiscountValidationResult | null;
   discountMutation: { isPending: boolean; error?: unknown; reset: () => void };
+  disabledReason?: string | null;
   customerDiscounts: { code: string; name: string; discountType: string; discountValue: number }[];
   onApply: (code?: string) => void;
   onClear: () => void;
@@ -601,8 +627,12 @@ function DiscountSection({
 }) {
   const getErrorMessage = useErrorMessage();
   const [inputError, setInputError] = useState<string | null>(null);
+  const disabled = Boolean(disabledReason);
 
   function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
+    if (disabled) {
+      return;
+    }
     const v = sanitizeVoucherCodeInput(e.target.value);
     setInputError(getVoucherCodeFormatError(v));
     onCodeChange(v);
@@ -610,6 +640,11 @@ function DiscountSection({
 
   return (
     <div className="space-y-3">
+      {disabledReason ? (
+        <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-800">
+          {disabledReason}
+        </div>
+      ) : null}
       {/* Applied voucher chip */}
       {validatedDiscount ? (
         <div className="flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2">
@@ -631,13 +666,14 @@ function DiscountSection({
             autoCapitalize="characters"
             autoCorrect="off"
             spellCheck={false}
+            disabled={disabled}
             className="rounded-xl font-medium tracking-wide"
           />
           <Button
             type="button"
             variant="outline"
             onClick={() => onApply()}
-            disabled={!draft.discountCode.trim() || Boolean(inputError) || discountMutation.isPending || !summary}
+            disabled={disabled || !draft.discountCode.trim() || Boolean(inputError) || discountMutation.isPending || !summary}
             className="shrink-0 rounded-xl border-primary/30 bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground"
           >
             {discountMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
@@ -654,7 +690,7 @@ function DiscountSection({
       )}
 
       {/* Wallet vouchers */}
-      {customerDiscounts.length > 0 && !validatedDiscount && (
+      {customerDiscounts.length > 0 && !validatedDiscount && !disabled && (
         <div className="pt-1">
           <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
             <Ticket className="h-3.5 w-3.5" />
@@ -715,7 +751,7 @@ function TimeSlotGrid({
       const availability = availabilityByTime?.get(t);
       const remaining = availability?.remaining;
       const isAvailable = !isPast && !isTooSoon && (availability ? availability.available : true);
-      
+
       return {
         id: idx + 1,
         timeStart: t,
@@ -757,7 +793,7 @@ function TimeSlotGrid({
               )}
             >
               <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Lượt {slot.id}
+                Slot {slot.id}
               </div>
               <div className={cn("mt-1 text-xs font-bold tabular-nums", slot.isAvailable ? "text-foreground" : "text-muted-foreground")}>
                 {slot.timeStart} - {slot.timeEnd}
@@ -765,11 +801,11 @@ function TimeSlotGrid({
               <div className="mt-2">
                 {slot.isAvailable ? (
                   <span className="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
-                    {typeof slot.remaining === "number" ? `${slot.remaining} chỗ` : "Còn trống"}
+                    {typeof slot.remaining === "number" ? `${slot.remaining} slots` : "Available"}
                   </span>
                 ) : (
                   <span className="inline-flex items-center rounded-full border border-rose-500/20 bg-rose-500/10 px-2 py-0.5 text-[9px] font-bold text-rose-600 dark:text-rose-400">
-                    {slot.isTooSoon ? "Cần đặt trước 30p" : slot.isFull ? "Đã full" : "Không khả dụng"}
+                    {slot.isTooSoon ? "Book 30m ahead" : slot.isFull ? "Full" : "Unavailable"}
                   </span>
                 )}
               </div>
@@ -842,6 +878,8 @@ export function CustomerBookingForm() {
   const discountMutation = useValidateBookingDiscount();
   const createBookingMutation = useCreateCustomerBooking();
   const publicSettingsQuery = usePublicSettings();
+  const loyaltyAccountQuery = useCustomerLoyaltyAccount();
+  const tierConfigsQuery = usePublicTierConfigs();
   const { holdSlot, isHolding, holdError } = useSlotHold();
   const setExpiresAt = useBookingStore((state) => state.setExpiresAt);
   const setStoredValidatedDiscount = useBookingStore((state) => state.setValidatedDiscount);
@@ -856,7 +894,7 @@ export function CustomerBookingForm() {
   const [showPaymentError, setShowPaymentError] = useState(false);
 
   useEffect(() => {
-    if (draft.paymentMethod === "CASH_AT_COUNTER") {
+    if (draft.paymentMethod === "OWNED_COMBO") {
       setSelectedPaymentMethod(null);
       updateDraft({ paymentMethod: null });
       return;
@@ -898,6 +936,19 @@ export function CustomerBookingForm() {
     }
     return ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
   }, [publicSettingsQuery.data]);
+  const tierAdvanceBookingDays = useMemo(
+    () =>
+      resolveTierAdvanceBookingDays(
+        loyaltyAccountQuery.data?.tier,
+        tierConfigsQuery.data,
+        publicSettingsQuery.data?.maxAdvanceBookingDays,
+      ),
+    [loyaltyAccountQuery.data?.tier, publicSettingsQuery.data?.maxAdvanceBookingDays, tierConfigsQuery.data],
+  );
+  const maxBookingDate = useMemo(
+    () => formatLocalDateInput(tierAdvanceBookingDays),
+    [tierAdvanceBookingDays],
+  );
   const slotAvailabilityQuery = useSlotAvailability(draft.bookingDate, timeSlots);
   const availabilityByTime = useMemo(
     () => new Map((slotAvailabilityQuery.data ?? []).map((slot) => [slot.bookingTime, slot] as const)),
@@ -909,7 +960,7 @@ export function CustomerBookingForm() {
     const slot = availabilityByTime.get(draft.bookingTime);
     if (slot && !slot.available) {
       updateDraft({ bookingTime: "", staffId: "", staffIds: [] });
-      toast.error("Booking slot is full");
+      notify.error("Booking slot is full");
     }
   }, [availabilityByTime, draft.bookingTime, updateDraft]);
 
@@ -930,8 +981,10 @@ export function CustomerBookingForm() {
     const today = getTodayDate();
     if (!draft.bookingDate || draft.bookingDate < today) {
       updateDraft({ bookingDate: today, bookingTime: "", staffId: "", staffIds: [] });
+    } else if (draft.bookingDate > maxBookingDate) {
+      updateDraft({ bookingDate: maxBookingDate, bookingTime: "", staffId: "", staffIds: [] });
     }
-  }, [draft.bookingDate, updateDraft]);
+  }, [draft.bookingDate, maxBookingDate, updateDraft]);
 
   useEffect(() => {
     if (vehicles.length === 0) {
@@ -1020,6 +1073,7 @@ export function CustomerBookingForm() {
     draft.mode === "COMBO"
       ? (activeCustomerCombos.find((item) => item.comboId === draft.comboId) ?? null)
       : null;
+  const isOwnedComboBooking = Boolean(selectedCustomerCombo);
   const selectedCombo =
     draft.mode === "COMBO" && draft.comboId
       ? (combos.find((item) => item.comboId === draft.comboId) ?? null)
@@ -1045,17 +1099,29 @@ export function CustomerBookingForm() {
         packages,
         addons,
         combos,
-        voucher: validatedDiscount,
+        voucher: isOwnedComboBooking ? null : validatedDiscount,
         ownedComboApplied: Boolean(selectedCustomerCombo),
       }),
-    [addons, combos, draft, packages, selectedCustomerCombo, validatedDiscount],
+    [addons, combos, draft, isOwnedComboBooking, packages, selectedCustomerCombo, validatedDiscount],
   );
 
   const errors = useMemo(() => {
     const validationSummary =
       draft.discountCode.trim().length > 0 && !validatedDiscount ? null : summary;
-    return validateBookingDraft(draft, validationSummary, { requirePaymentMethod: false });
-  }, [draft, summary, validatedDiscount]);
+    const nextErrors = validateBookingDraft(draft, validationSummary, { requirePaymentMethod: false });
+    if (draft.bookingDate && draft.bookingDate > maxBookingDate) {
+      nextErrors.bookingDate = `Your tier can book up to ${tierAdvanceBookingDays} days ahead.`;
+    }
+    return nextErrors;
+  }, [draft, maxBookingDate, summary, tierAdvanceBookingDays, validatedDiscount]);
+
+  useEffect(() => {
+    if (!isOwnedComboBooking || (!draft.discountCode && !validatedDiscount)) {
+      return;
+    }
+    resetValidatedDiscount();
+    updateDraft({ discountCode: "" });
+  }, [draft.discountCode, isOwnedComboBooking, resetValidatedDiscount, updateDraft, validatedDiscount]);
 
   const selectedPackage =
     draft.mode === "PACKAGE" && draft.packageId
@@ -1107,7 +1173,7 @@ export function CustomerBookingForm() {
     }
 
     resetValidatedDiscount();
-      updateDraft({ addonIds: validAddonIds, discountCode: "", staffId: "", staffIds: [] });
+    updateDraft({ addonIds: validAddonIds, discountCode: "", staffId: "", staffIds: [] });
   }, [addons, draft.addonIds, draft.mode, selectedCombo, selectedComboServiceIds, selectedPackageServiceIds, updateDraft]);
 
   const vehicleOptions = [
@@ -1124,6 +1190,12 @@ export function CustomerBookingForm() {
   ];
 
   const validateDiscount = async (codeToValidate?: string) => {
+    if (isOwnedComboBooking) {
+      resetValidatedDiscount();
+      updateDraft({ discountCode: "" });
+      toast.info("Voucher cannot be applied when using an owned combo.");
+      return;
+    }
     const code = codeToValidate ?? draft.discountCode;
     const normalizedCode = sanitizeVoucherCodeInput(code);
     const formatError = getVoucherCodeFormatError(normalizedCode);
@@ -1269,7 +1341,7 @@ export function CustomerBookingForm() {
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-72px)] overflow-x-hidden bg-background px-4 py-6 sm:px-6 lg:px-8">
+    <div className="relative min-h-[calc(100vh-72px)] bg-background px-4 py-6 sm:px-6 lg:px-8">
       {/* Sticky horizontal progress bar */}
       <div className="sticky top-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 mb-6 h-1.5 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)] lg:w-[calc(100%+4rem)] bg-border/20 backdrop-blur-md">
         <div
@@ -1500,13 +1572,13 @@ export function CustomerBookingForm() {
                           </div>
                           {ownedCombo && (
                             <span className="mt-1.5 inline-flex items-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                              Owned · {ownedCombo.remainingUsages} left · expires {new Date(ownedCombo.expiresAt).toLocaleDateString("vi-VN")}
+                              Owned · {ownedCombo.remainingUsages} left · expires {new Date(ownedCombo.expiresAt).toLocaleDateString("en-US")}
                             </span>
                           )}
                           {active && item.services && item.services.length > 0 && (
                             <div className="mt-3 rounded-xl border border-border bg-muted/30 p-2.5">
                               <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                Dịch vụ trong combo
+                                Services in combo
                               </div>
                               <div className="space-y-1.5">
                                 {item.services.map((service) => (
@@ -1544,7 +1616,7 @@ export function CustomerBookingForm() {
                   <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3 dark:border-sky-900/60 dark:bg-sky-950/30">
                     <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-sky-700 dark:text-sky-300">
                       <Sparkles className="h-3.5 w-3.5" />
-                      Đề xuất phù hợp
+                      Recommended
                     </div>
                     <div className="grid gap-2 sm:grid-cols-3">
                       {visibleSmartExtraServiceRecommendations.map((service) => (
@@ -1617,16 +1689,20 @@ export function CustomerBookingForm() {
                 <DatePickerButton
                   value={draft.bookingDate}
                   min={getTodayDate()}
+                  max={maxBookingDate}
                   onChange={(bookingDate) => updateDraft({ bookingDate, staffId: "", staffIds: [] })}
                   label="Select a day"
                   buttonClassName="h-11 w-full justify-start rounded-xl border-input bg-background text-sm"
                 />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Your tier can book up to {tierAdvanceBookingDays} days ahead.
+                </p>
                 <FieldError message={showValidation ? errors.bookingDate : null} />
               </div>
 
               <div>
                 <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Khung giờ khả dụng (Lượt)
+                  Available time slots
                 </label>
                 <TimeSlotGrid
                   timeSlots={timeSlots}
@@ -1647,28 +1723,42 @@ export function CustomerBookingForm() {
           </StepCard>
 
           {/* Step 6 — Confirmation email */}
-          <StepCard step={6} title="Confirmation email (optional)">
-            <div className="space-y-2">
-              <Label htmlFor="booking-confirmation-email" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Gmail / Email nhận xác nhận (không bắt buộc)
-              </Label>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="booking-confirmation-email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="example@gmail.com"
-                  value={draft.confirmationEmail ?? ""}
-                  onChange={(event) => updateDraft({ confirmationEmail: event.target.value })}
-                  className="h-12 rounded-xl pl-10"
-                />
+          <StepCard step={6} title="Confirmation details">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="booking-confirmation-email" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Confirmation email (optional)
+                </Label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="booking-confirmation-email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="Enter email"
+                    value={draft.confirmationEmail ?? ""}
+                    onChange={(event) => updateDraft({ confirmationEmail: event.target.value })}
+                    className="h-12 rounded-xl pl-10"
+                  />
+                </div>
+                <FieldError message={showValidation ? errors.confirmationEmail : null} />
               </div>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                Nếu để trống, email xác nhận booking sẽ gửi về email tài khoản đăng ký.
-              </p>
-              <FieldError message={showValidation ? errors.confirmationEmail : null} />
+
+              <div className="space-y-2">
+                <Label htmlFor="booking-customer-note" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Note (optional)
+                </Label>
+                <textarea
+                  id="booking-customer-note"
+                  value={draft.note ?? ""}
+                  maxLength={500}
+                  onChange={(event) => updateDraft({ note: event.target.value })}
+                  placeholder="Example: car has a scratch on the right, please check interior carefully..."
+                  className="min-h-24 w-full resize-none rounded-xl border border-input bg-background px-3 py-3 text-sm outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <FieldError message={showValidation ? errors.note : null} />
+              </div>
             </div>
           </StepCard>
 
@@ -1679,6 +1769,7 @@ export function CustomerBookingForm() {
               summary={summary}
               validatedDiscount={validatedDiscount}
               discountMutation={discountMutation}
+              disabledReason={isOwnedComboBooking ? "Owned combo bookings are already covered, so vouchers cannot be applied." : null}
               customerDiscounts={(customerDiscountsQuery.data?.items ?? []).filter((item) => Boolean(item.voucherCode)).map((item) => ({ code: item.voucherCode ?? "", name: item.discount.name, discountType: item.discount.discountType, discountValue: item.discount.discountValue }))}
               onApply={(code) => void validateDiscount(code)}
               onClear={clearDiscount}
@@ -1724,21 +1815,6 @@ export function CustomerBookingForm() {
                     <SummaryItem label="Total" value={formatBookingCurrency(summary.finalAmount)} emphasize />
                   </div>
 
-                  <BookingButton
-                    onClick={() => void handleSubmit()}
-                    isLoading={isHolding || createBookingMutation.isPending}
-                    errors={errors}
-                    showValidation={showValidation}
-                    summary={summary}
-                  />
-
-                  <div className="mt-4 rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
-                    <div className="flex items-center gap-2 font-bold">
-                      <Phone className="h-4 w-4" />
-                      Liên hệ hỗ trợ: 1900 5566
-                    </div>
-                    
-                  </div>
                 </>
               ) : (
                 <div className="rounded-xl border border-dashed border-border bg-muted/40 p-5 text-center">
@@ -1883,6 +1959,7 @@ function BookingButton({
     bookingDate: "Please select a date",
     bookingTime: "Please select a time",
     confirmationEmail: "Please enter a valid confirmation email",
+    note: "Customer note must be at most 500 characters",
     paymentMethod: "Please select a payment method",
   };
   const hintText = firstErrorKey ? errorHintMap[firstErrorKey] : null;

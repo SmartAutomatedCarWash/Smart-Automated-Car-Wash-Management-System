@@ -50,6 +50,7 @@ export type OperationsQueueSession = {
   bookingId: string;
   customerName: string;
   customerPhone: string;
+  customerTier?: string | null;
   vehiclePlate: string;
   packageId?: string | null;
   servicePackage?: string | null;
@@ -62,6 +63,8 @@ export type OperationsQueueSession = {
   estimatedDurationMinutes?: number | null;
   feeAmount?: number | null;
   feeCurrency?: string | null;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
   projectedLoyaltyPoints?: number | null;
   awardedLoyaltyPoints?: number | null;
   queuedAt?: string | null;
@@ -69,6 +72,7 @@ export type OperationsQueueSession = {
   startedAt?: string | null;
   completedAt?: string | null;
   notes?: string | null;
+  customerNotes?: string | null;
   rating?: number | null;
 };
 
@@ -129,12 +133,40 @@ export type EligibleSessionBooking = {
   bookingDate: string;
   bookingTime: string;
   finalAmount: number;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
   estimatedDurationMinutes: number;
   assignedStaffId: string | null;
   assignedStaffName: string | null;
   assignedStaff?: OperationStaffAssignment[];
   customerTier: string | null;
   customerPriorityScore: number;
+  customerNotes?: string | null;
+};
+
+export type ManagerCheckInRecommendationItem = {
+  staffId: string;
+  staffName: string;
+  status: "AVAILABLE" | "BUSY" | "OVERLOADED" | string;
+  activeCount: number;
+  waitingCount: number;
+  delayedCount: number;
+  openCount: number;
+  weeklyKpiRevenue: number;
+  weeklyKpiTarget: number;
+  available: boolean;
+  reason: string;
+  selectable: boolean;
+};
+
+export type ManagerCheckInRecommendation = {
+  bookingId: string;
+  currentStaffId?: string | null;
+  currentStaffName?: string | null;
+  currentStaffStatus: "AVAILABLE" | "BUSY" | "UNASSIGNED" | string;
+  needsReassignment: boolean;
+  message: string;
+  candidates: ManagerCheckInRecommendationItem[];
 };
 
 export type CreateWashSessionResponse = {

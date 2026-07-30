@@ -4,6 +4,7 @@ import com.autowash.dto.CheckInWashSessionResponse;
 import com.autowash.dto.CreateWashSessionRequest;
 import com.autowash.dto.CreateWashSessionResponse;
 import com.autowash.dto.EligibleSessionBookingResponse;
+import com.autowash.dto.ManagerCheckInRecommendationResponse;
 import com.autowash.dto.OperationsQueueResponse;
 import com.autowash.dto.StaffOptionResponse;
 import com.autowash.entity.Notification;
@@ -13,6 +14,7 @@ import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.WashSessionRepository;
+import com.autowash.service.BookingService;
 import com.autowash.service.ManagerSettingsService;
 import com.autowash.service.OperationsService;
 import com.autowash.shared.dto.ApiResponse;
@@ -53,6 +55,7 @@ public class ManagerOperationsController {
 
     private static final int PAGE_SIZE = 5;
 
+    private final BookingService bookingService;
     private final OperationsService operationsService;
     private final ManagerSettingsService managerSettingsService;
     private final WashSessionRepository washSessionRepository;
@@ -60,12 +63,14 @@ public class ManagerOperationsController {
     private final com.autowash.repository.NotificationRepository notificationRepository;
 
     public ManagerOperationsController(
+            BookingService bookingService,
             OperationsService operationsService,
             ManagerSettingsService managerSettingsService,
             WashSessionRepository washSessionRepository,
             UserRepository userRepository,
             com.autowash.repository.NotificationRepository notificationRepository
     ) {
+        this.bookingService = bookingService;
         this.operationsService = operationsService;
         this.managerSettingsService = managerSettingsService;
         this.washSessionRepository = washSessionRepository;
@@ -81,7 +86,7 @@ public class ManagerOperationsController {
             @RequestParam(defaultValue = "ALL") String staffId,
             @RequestParam(defaultValue = "ALL") String focus
     ) {
-        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(1, PAGE_SIZE).data(), date, search);
+        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(1, PAGE_SIZE, date).data(), null, search);
         List<OperationsQueueResponse.WashSessionCard> sessions = filterSessions(flattenSessions(operationsService.getQueue()), date, search, staffId, focus);
         List<StaffOptionResponse> staff = operationsService.listActiveStaff();
         MetricsResponse metrics = buildMetrics(candidates, sessions);
@@ -112,7 +117,7 @@ public class ManagerOperationsController {
     public ApiResponse<MetricsResponse> getMetrics(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(1, PAGE_SIZE).data(), date, null);
+        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(1, PAGE_SIZE, date).data(), null, null);
         List<OperationsQueueResponse.WashSessionCard> sessions = filterSessions(flattenSessions(operationsService.getQueue()), date, null, "ALL", "ALL");
         return ApiResponse.ok("Manager operations metrics retrieved", buildMetrics(candidates, sessions));
     }
@@ -124,7 +129,7 @@ public class ManagerOperationsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) String search
     ) {
-        List<EligibleSessionBookingResponse> all = filterBookings(operationsService.listEligibleSessionBookings(1, 100).data(), date, search);
+        List<EligibleSessionBookingResponse> all = filterBookings(operationsService.listEligibleSessionBookings(1, 1000, date).data(), null, search);
         int totalElements = all.size();
         int totalPages = (int) Math.ceil((double) totalElements / limit);
         int start = Math.min((page - 1) * limit, totalElements);
@@ -162,7 +167,7 @@ public class ManagerOperationsController {
             @RequestParam(defaultValue = "ALL") String staffId,
             @RequestParam(defaultValue = "ALL") String focus
     ) {
-        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(1, PAGE_SIZE).data(), date, search);
+        List<EligibleSessionBookingResponse> candidates = filterBookings(operationsService.listEligibleSessionBookings(1, PAGE_SIZE, date).data(), null, search);
         List<OperationsQueueResponse.WashSessionCard> sessions = filterSessions(flattenSessions(operationsService.getQueue()), date, search, staffId, focus);
         return ApiResponse.ok("Manager operations board retrieved", buildBoard(candidates, sessions));
     }
@@ -198,8 +203,25 @@ public class ManagerOperationsController {
     }
 
     @PostMapping("/bookings/{bookingId}/check-in")
-    public ApiResponse<BookingCheckInResponse> checkInBooking(@PathVariable String bookingId) {
-        CreateWashSessionResponse created = operationsService.createSession(new CreateWashSessionRequest(bookingId, "Manager check-in", null));
+    public ApiResponse<BookingCheckInResponse> checkInBooking(
+            @PathVariable String bookingId,
+            @RequestBody(required = false) ManagerBookingCheckInRequest request
+    ) {
+        if (bookingService.requiresCashCollectionForCheckIn(bookingId)) {
+            if (request == null || !Boolean.TRUE.equals(request.cashCollected())) {
+                throw new ApiException(
+                        org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Cash payment must be collected before check-in",
+                        com.autowash.shared.exception.ErrorCode.BUSINESS_RULE_VIOLATION
+                );
+            }
+            bookingService.markBookingPaidForOperations(bookingId, "CASH_AT_COUNTER");
+        }
+        CreateWashSessionResponse created = operationsService.createSession(new CreateWashSessionRequest(
+                bookingId,
+                "Manager check-in",
+                request == null ? null : request.preferredStaffId()
+        ));
         CheckInWashSessionResponse checkedIn = operationsService.checkInSession(created.sessionId());
         return ApiResponse.ok(
                 "Manager booking checked in",
@@ -212,6 +234,14 @@ public class ManagerOperationsController {
                         "AUTO",
                         checkedIn.checkedInAt()
                 )
+        );
+    }
+
+    @GetMapping("/bookings/{bookingId}/check-in-preview")
+    public ApiResponse<ManagerCheckInRecommendationResponse> previewCheckInBooking(@PathVariable String bookingId) {
+        return ApiResponse.ok(
+                "Manager check-in recommendation retrieved",
+                operationsService.previewManagerCheckInRecommendation(bookingId)
         );
     }
 
@@ -433,6 +463,7 @@ public class ManagerOperationsController {
     public record TimelineItemResponse(String step, String label, String status, LocalTime time, String date, String note) {}
     public record TransferOptionResponse(UUID staffId, String fullName, String status, int todayKpiCompleted, int todayKpiTarget, double rating, String recommendationLevel, String reason, boolean selectable) {}
     public record BookingCheckInResponse(String bookingId, UUID sessionId, String status, UUID assignedStaffId, String assignedStaffName, String assignedBay, Instant checkedInAt) {}
+    public record ManagerBookingCheckInRequest(UUID preferredStaffId, Boolean cashCollected) {}
     public record TransferSessionRequest(UUID toStaffId, String reason) {}
     public record TransferSessionResponse(UUID auditId, UUID sessionId, String bookingId, UUID fromStaffId, String fromStaffName, UUID toStaffId, String toStaffName, String reason, Instant transferredAt) {}
 

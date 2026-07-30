@@ -25,21 +25,24 @@ import { Card } from "@/shared/ui/ui/card";
 import { DatePickerButton, getTodayInputValue } from "@/shared/ui/date-picker-button";
 import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useWorkspaceHeader } from "@/shared/ui/workspace/workspace-header-context";
+import { TierIcon } from "@/shared/ui/workspace/tier-icon";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
+import { getPaymentMethodLabel, getPaymentStatusLabel } from "@/features/bookings/lib/booking-format";
 import {
   cancelWashSession,
   checkInWashSession,
   completeWashSession,
   assignStaffToSession,
   getActiveStaffOptions,
-  getEligibleSessionBookings,
+  getManagerCheckInCandidates,
+  getManagerCheckInRecommendation,
   getOperationsQueue,
   managerCheckInBooking,
   startWashSession,
 } from "@/features/operations/lib/operations-service";
 import { useManagerNotificationStore } from "@/features/operations/store/manager-notification.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
-import type { BookingStatus, EligibleSessionBooking, OperationStaffAssignment, OperationsQueueSession, StaffOption, WashSessionStatus } from "@/entities/operations";
+import type { BookingStatus, EligibleSessionBooking, ManagerCheckInRecommendation, OperationStaffAssignment, OperationsQueueSession, StaffOption, WashSessionStatus } from "@/entities/operations";
 import { useWebSocket } from "@/shared/hooks/use-web-socket";
 
 type FocusFilter = "ALL" | "NEEDS_ACTION" | "DELAYED" | "UNASSIGNED";
@@ -52,6 +55,7 @@ type OperationRow = {
   sessionId?: string;
   customerName: string;
   customerPhone: string;
+  customerTier: string | null;
   vehiclePlate: string;
   servicePackage: string;
   bookingDate: string;
@@ -61,8 +65,11 @@ type OperationRow = {
   assignedStaffName: string | null;
   assignedStaff: OperationStaffAssignment[];
   amount: number | null;
+  paymentMethod: string | null;
+  paymentStatus: string | null;
   estimatedDurationMinutes: number | null;
   notes: string | null;
+  customerNotes: string | null;
   queuedAt: string | null;
   checkedInAt: string | null;
   startedAt: string | null;
@@ -119,6 +126,8 @@ const BOARD_STAGE_LABELS: Record<BoardStage, string> = {
   COMPLETED: "Completed",
 };
 
+const VIP_TIERS = new Set(["GOLD", "PLATINUM", "DIAMOND"]);
+
 export function ManagerOperationsPage() {
   const getErrorMessage = useErrorMessage();
   const queryClient = useQueryClient();
@@ -127,12 +136,17 @@ export function ManagerOperationsPage() {
   const pushManagerNotification = useManagerNotificationStore((state) => state.push);
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState(getTodayInputValue());
+  const autoTodayRef = useRef(selectedDate);
   const [staffFilter, setStaffFilter] = useState("ALL");
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("ALL");
   const [selectedBoardStages, setSelectedBoardStages] = useState<BoardStage[]>(() => BOARD_COLUMNS.map((column) => column.stage));
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [optimisticSessionRows, setOptimisticSessionRows] = useState<Record<string, OperationRow>>({});
+  const [checkInPreviewRow, setCheckInPreviewRow] = useState<OperationRow | null>(null);
+  const [checkInPreview, setCheckInPreview] = useState<ManagerCheckInRecommendation | null>(null);
+  const [checkInPreferredStaffId, setCheckInPreferredStaffId] = useState<string | null>(null);
+  const [checkInCashCollected, setCheckInCashCollected] = useState(false);
 
   const handleSelectRow = (id: string | null) => {
     setSelectedRowId(id);
@@ -144,6 +158,13 @@ export function ManagerOperationsPage() {
   const [interventionPage, setInterventionPage] = useState(1);
   const [staffWorkloadPage, setStaffWorkloadPage] = useState(1);
 
+  const handleSelectedDateChange = (nextDate: string) => {
+    setSelectedDate(nextDate);
+    if (nextDate === getTodayInputValue()) {
+      autoTodayRef.current = nextDate;
+    }
+  };
+
   const queueQuery = useQuery({
     queryKey: ["manager-operations", "queue"],
     queryFn: getOperationsQueue,
@@ -151,7 +172,7 @@ export function ManagerOperationsPage() {
   });
   const eligibleQuery = useQuery({
     queryKey: ["manager-operations", "eligible", selectedDate],
-    queryFn: () => getEligibleSessionBookings(selectedDate),
+    queryFn: () => getManagerCheckInCandidates(1, 1000, selectedDate).then((response) => response.data),
     refetchInterval: 15_000,
   });
   const staffQuery = useQuery({
@@ -165,17 +186,17 @@ export function ManagerOperationsPage() {
   const staffOptions = staffQuery.data ?? [];
   const rows = useMemo(() => buildRows(eligibleBookings, sessions), [eligibleBookings, sessions]);
   const rowsWithOptimisticUpdates = useMemo(() => applyOptimisticSessionRows(rows, optimisticSessionRows), [optimisticSessionRows, rows]);
-  const rowsForSelectedDate = useMemo(() => rowsWithOptimisticUpdates.filter((row) => isSameDate(row.bookingDate, selectedDate)), [rowsWithOptimisticUpdates, selectedDate]);
+  const rowsForOperations = useMemo(() => rowsWithOptimisticUpdates.filter((row) => isSameDate(row.bookingDate, selectedDate)), [rowsWithOptimisticUpdates, selectedDate]);
   const filteredRows = useMemo(
-    () => applyCommandFilters(rowsForSelectedDate, search, staffFilter, focusFilter),
-    [focusFilter, rowsForSelectedDate, search, staffFilter],
+    () => applyCommandFilters(rowsForOperations, search, staffFilter, focusFilter),
+    [focusFilter, rowsForOperations, search, staffFilter],
   );
   const selectedRow = useMemo(() => {
     if (selectedRowId === null) return null;
     return filteredRows.find((row) => row.id === selectedRowId) ?? filteredRows.find((row) => row.sessionId) ?? filteredRows[0] ?? null;
   }, [filteredRows, selectedRowId]);
-  const staffWorkload = useMemo(() => buildStaffWorkload(staffOptions, rowsForSelectedDate), [staffOptions, rowsForSelectedDate]);
-  const interventions = useMemo(() => buildInterventions(rowsForSelectedDate, staffWorkload), [rowsForSelectedDate, staffWorkload]);
+  const staffWorkload = useMemo(() => buildStaffWorkload(staffOptions, rowsForOperations), [staffOptions, rowsForOperations]);
+  const interventions = useMemo(() => buildInterventions(rowsForOperations, staffWorkload), [rowsForOperations, staffWorkload]);
   const filteredInterventions = useMemo(
     () => interventions.filter((intervention) => filteredRows.some((row) => row.id === intervention.rowId)),
     [filteredRows, interventions],
@@ -214,6 +235,20 @@ export function ManagerOperationsPage() {
   }, [selectedDate, search, staffFilter, focusFilter]);
 
   useEffect(() => {
+    const syncToToday = () => {
+      const today = getTodayInputValue();
+      setSelectedDate((current) => {
+        const shouldFollowToday = current === autoTodayRef.current;
+        autoTodayRef.current = today;
+        return shouldFollowToday ? today : current;
+      });
+    };
+    syncToToday();
+    const interval = window.setInterval(syncToToday, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     setOptimisticSessionRows((current) => {
       const next = { ...current };
       let changed = false;
@@ -228,11 +263,11 @@ export function ManagerOperationsPage() {
     });
   }, [rows]);
 
-  const waitingCustomerCount = rowsForSelectedDate.filter((row) => row.type === "booking" && row.status === "PENDING").length;
-  const waitingCheckIn = rowsForSelectedDate.filter((row) => row.type === "booking" && row.status === "CONFIRMED").length;
-  const waitingStartCount = rowsForSelectedDate.filter((row) => row.type === "session" && row.status === "CHECKED_IN").length;
-  const washingCount = rowsForSelectedDate.filter((row) => row.status === "IN_PROGRESS").length;
-  const overdueCount = rowsForSelectedDate.filter(isDelayed).length;
+  const waitingCustomerCount = rowsForOperations.filter((row) => row.type === "booking" && row.status === "PENDING").length;
+  const waitingCheckIn = rowsForOperations.filter((row) => row.type === "booking" && row.status === "CONFIRMED").length;
+  const waitingStartCount = rowsForOperations.filter((row) => row.type === "session" && row.status === "CHECKED_IN").length;
+  const washingCount = rowsForOperations.filter((row) => row.status === "IN_PROGRESS").length;
+  const overdueCount = rowsForOperations.filter(isDelayed).length;
   const alertCount = filteredInterventions.filter((item) => item.severity !== "INFO").length;
   const hasError = queueQuery.isError || eligibleQuery.isError;
   const error = (queueQuery.error ?? eligibleQuery.error) as unknown as ApiErrorResponse;
@@ -271,9 +306,25 @@ export function ManagerOperationsPage() {
     });
   };
 
+  const previewCheckInMutation = useMutation({
+    mutationFn: (bookingId: string) => getManagerCheckInRecommendation(bookingId),
+    onSuccess: (preview) => {
+      setCheckInPreview(preview);
+      setCheckInPreferredStaffId(preview.needsReassignment ? (preview.candidates.find((item) => item.selectable)?.staffId ?? null) : null);
+    },
+    onError: (actionError: ApiErrorResponse) => {
+      setCheckInPreviewRow(null);
+      setCheckInPreview(null);
+      setCheckInPreferredStaffId(null);
+      setCheckInCashCollected(false);
+      handleActionError("Unable to preview check-in", actionError);
+    },
+  });
+
   const createMutation = useMutation({
-    mutationFn: (bookingId: string) => managerCheckInBooking(bookingId),
-    onMutate: (bookingId) => {
+    mutationFn: ({ bookingId, preferredStaffId, cashCollected }: { bookingId: string; preferredStaffId?: string | null; cashCollected?: boolean }) =>
+      managerCheckInBooking(bookingId, preferredStaffId, cashCollected),
+    onMutate: ({ bookingId }) => {
       const booking = eligibleBookings.find((item) => item.bookingId === bookingId);
       if (booking) {
         const now = new Date().toISOString();
@@ -286,7 +337,7 @@ export function ManagerOperationsPage() {
         }));
       }
     },
-    onSuccess: (_data, bookingId) => {
+    onSuccess: (_data, { bookingId }) => {
       setOptimisticSessionRows((current) => {
         const existing = current[bookingId];
         if (!existing) return current;
@@ -299,6 +350,9 @@ export function ManagerOperationsPage() {
             status: _data.status as WashSessionStatus,
             assignedStaffId: _data.assignedStaffId,
             assignedStaffName: _data.assignedStaffName,
+            assignedStaff: _data.assignedStaffId
+              ? [{ staffId: _data.assignedStaffId, staffName: _data.assignedStaffName ?? "Assigned staff", sortOrder: 1 }]
+              : existing.assignedStaff,
             checkedInAt: _data.checkedInAt ?? existing.checkedInAt,
           },
         };
@@ -314,7 +368,7 @@ export function ManagerOperationsPage() {
         href: "/manager/operations",
       });
     },
-    onError: (actionError: ApiErrorResponse, bookingId) => {
+    onError: (actionError: ApiErrorResponse, { bookingId }) => {
       setOptimisticSessionRows((current) => removeOptimisticSessionRow(current, bookingId));
       handleActionError("Unable to create session", actionError);
     },
@@ -403,14 +457,34 @@ export function ManagerOperationsPage() {
 
   const runPrimaryAction = (row: OperationRow) => {
     if (row.type === "booking") {
-      if (row.status !== "CONFIRMED") return;
-      createMutation.mutate(row.bookingId);
+      if (!canCheckInBooking(row)) return;
+      setCheckInPreviewRow(row);
+      setCheckInPreview(null);
+      setCheckInPreferredStaffId(null);
+      setCheckInCashCollected(false);
+      previewCheckInMutation.mutate(row.bookingId);
       return;
     }
     if (!row.sessionId) return;
     if (row.status === "QUEUED" || row.status === "PENDING") checkInMutation.mutate(row.sessionId);
     if (row.status === "CHECKED_IN") startMutation.mutate(row.sessionId);
     if (row.status === "IN_PROGRESS") completeMutation.mutate(row.sessionId);
+  };
+
+  const confirmPreviewCheckIn = () => {
+    if (!checkInPreviewRow) return;
+    if (requiresCashCollection(checkInPreviewRow) && !checkInCashCollected) {
+      toast.warning("Confirm cash collection before check-in.");
+      return;
+    }
+    const bookingId = checkInPreviewRow.bookingId;
+    const preferredStaffId = checkInPreferredStaffId;
+    const cashCollected = requiresCashCollection(checkInPreviewRow) ? checkInCashCollected : false;
+    setCheckInPreviewRow(null);
+    setCheckInPreview(null);
+    setCheckInPreferredStaffId(null);
+    setCheckInCashCollected(false);
+    createMutation.mutate({ bookingId, preferredStaffId, cashCollected });
   };
 
   const transferSelectedRow = (toStaffId: string) => {
@@ -448,7 +522,7 @@ export function ManagerOperationsPage() {
               </label>
               <DatePickerButton
                 value={selectedDate}
-                onChange={setSelectedDate}
+                onChange={handleSelectedDateChange}
                 label="Select date"
                 buttonClassName="w-full justify-start"
               />
@@ -474,7 +548,7 @@ export function ManagerOperationsPage() {
                     key={row.id}
                     row={row}
                     index={(safeCheckInPage - 1) * TOP_PANEL_PAGE_SIZE + index}
-                    loading={isActionLoading(row, createMutation.variables, checkInMutation.variables, createMutation.isPending, checkInMutation.isPending)}
+                    loading={isActionLoading(row, createMutation.variables?.bookingId, checkInMutation.variables, createMutation.isPending, checkInMutation.isPending)}
                     onSelect={() => handleSelectRow(row.id)}
                     onAction={() => runPrimaryAction(row)}
                   />
@@ -511,7 +585,7 @@ export function ManagerOperationsPage() {
                         handleSelectRow(intervention.rowId);
                         return;
                       }
-                      const target = rowsForSelectedDate.find((row) => row.id === intervention.rowId);
+                      const target = rowsForOperations.find((row) => row.id === intervention.rowId);
                       if (target) runPrimaryAction(target);
                     }}
                   />
@@ -655,7 +729,179 @@ export function ManagerOperationsPage() {
           />
         ) : null}
       </div>
+      <CheckInPreviewDialog
+        row={checkInPreviewRow}
+        preview={checkInPreview}
+        loading={previewCheckInMutation.isPending}
+        submitting={createMutation.isPending}
+        selectedStaffId={checkInPreferredStaffId}
+        cashCollected={checkInCashCollected}
+        onSelectStaff={setCheckInPreferredStaffId}
+        onCashCollectedChange={setCheckInCashCollected}
+        onClose={() => {
+          setCheckInPreviewRow(null);
+          setCheckInPreview(null);
+          setCheckInPreferredStaffId(null);
+          setCheckInCashCollected(false);
+        }}
+        onConfirm={confirmPreviewCheckIn}
+      />
     </WorkspacePage>
+  );
+}
+
+function CheckInPreviewDialog({
+  row,
+  preview,
+  loading,
+  submitting,
+  selectedStaffId,
+  cashCollected,
+  onSelectStaff,
+  onCashCollectedChange,
+  onClose,
+  onConfirm,
+}: {
+  row: OperationRow | null;
+  preview: ManagerCheckInRecommendation | null;
+  loading: boolean;
+  submitting: boolean;
+  selectedStaffId: string | null;
+  cashCollected: boolean;
+  onSelectStaff: (staffId: string | null) => void;
+  onCashCollectedChange: (collected: boolean) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  if (!row) return null;
+  const mustCollectCash = requiresCashCollection(row);
+  const availableCandidates = preview?.candidates.filter((item) => item.selectable) ?? [];
+  const unavailableCandidates = preview?.candidates.filter((item) => !item.selectable) ?? [];
+  const visibleCandidates = [...availableCandidates, ...unavailableCandidates];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
+      <div role="dialog" aria-modal="true" aria-labelledby="check-in-preview-title" className="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col rounded-2xl border border-slate-200 bg-white shadow-xl">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 p-4">
+          <div>
+            <h2 id="check-in-preview-title" className="text-base font-black text-slate-950">Assign staff for check-in</h2>
+            <p className="mt-1 text-xs font-bold text-slate-500">
+              {row.vehiclePlate} · {row.customerName}
+            </p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+          <div className="grid gap-2 sm:grid-cols-3">
+            <MiniInfo label="Schedule" value={formatBookingTime(row.bookingTime)} />
+            <MiniInfo label="Service" value={row.servicePackage} />
+            <MiniInfo label="Current staff" value={row.assignedStaffName ?? "Unassigned"} />
+          </div>
+
+          {loading || !preview ? (
+            <div className="flex min-h-48 items-center justify-center rounded-xl bg-slate-50 text-sm font-bold text-slate-500">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading staff recommendation...
+            </div>
+          ) : (
+            <>
+              <div className={`rounded-xl border p-3 ${preview.needsReassignment ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"}`}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    {preview.needsReassignment ? <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" /> : <Check className="h-4 w-4 shrink-0 text-emerald-600" />}
+                    <p className={`truncate text-sm font-black ${preview.needsReassignment ? "text-amber-800" : "text-emerald-800"}`}>
+                      {preview.currentStaffName ?? "No assigned staff"}
+                    </p>
+                  </div>
+                  <StaffStatusPill status={preview.currentStaffStatus} selectable={!preview.needsReassignment} />
+                </div>
+                <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">{preview.message}</p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Available staff</p>
+                  <span className="text-[10px] font-black text-slate-400">{availableCandidates.length}/{preview.candidates.length} selectable</span>
+                </div>
+                {visibleCandidates.length > 0 ? (
+                  <div className="space-y-2">
+                    {visibleCandidates.map((staff) => (
+                      <button
+                      key={staff.staffId}
+                      type="button"
+                      disabled={!staff.selectable}
+                      onClick={() => onSelectStaff(staff.selectable ? staff.staffId : null)}
+                      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
+                        selectedStaffId === staff.staffId
+                          ? "border-[#00236f] bg-blue-50/40"
+                          : staff.selectable
+                            ? "border-emerald-100 bg-white hover:border-[#00236f]/40"
+                            : "border-slate-100 bg-slate-50 opacity-70"
+                      }`}
+                    >
+                      <span className="relative shrink-0">
+                        <Avatar name={staff.staffName} />
+                        {selectedStaffId === staff.staffId ? (
+                          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#00236f] text-white shadow-sm">
+                            <Check className="h-3 w-3" />
+                          </span>
+                        ) : null}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="truncate text-sm font-black text-slate-950">{staff.staffName}</p>
+                          <StaffStatusPill status={staff.status} selectable={staff.selectable} />
+                        </div>
+                        <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">{staff.reason}</p>
+                        <div className="mt-2 grid grid-cols-4 gap-1.5">
+                          <StaffMetric label="Waiting" value={staff.waitingCount} />
+                          <StaffMetric label="Washing" value={staff.activeCount} tone={staff.activeCount > 0 ? "amber" : "slate"} />
+                          <StaffMetric label="Open" value={staff.openCount} />
+                          <StaffMetric label="Delayed" value={staff.delayedCount} tone={staff.delayedCount > 0 ? "rose" : "slate"} />
+                        </div>
+                      </div>
+                    </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-xl bg-slate-50 p-3 text-xs font-bold text-slate-500">No staff recommendation available.</p>
+                )}
+              </div>
+
+              {mustCollectCash ? (
+                <label className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={cashCollected}
+                    onChange={(event) => onCashCollectedChange(event.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-amber-300 text-[#00236f]"
+                  />
+                  <span>
+                    <span className="block text-sm font-black text-amber-900">Cash payment collected</span>
+                    <span className="mt-1 block text-xs font-semibold leading-5 text-amber-800">
+                      This booking is cash at counter and still unpaid. Confirm that the customer paid before check-in.
+                    </span>
+                  </span>
+                </label>
+              ) : null}
+            </>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-slate-100 p-4">
+          <Button type="button" variant="outline" className="rounded-xl" onClick={onClose} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button type="button" className="rounded-xl bg-[#00236f] text-white hover:bg-[#001b55]" onClick={onConfirm} disabled={loading || !preview || submitting || (mustCollectCash && !cashCollected)}>
+            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Confirm check-in
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -720,7 +966,7 @@ function getCheckInDisplay(row: OperationRow, index: number) {
       tone: "danger" as const,
     };
   }
-  if (row.type === "booking" && row.status === "CONFIRMED") {
+  if (canCheckInBooking(row)) {
     return {
       statusLabel: index === 0 ? "Ready now" : "Ready",
       actionLabel: "Check-in",
@@ -932,6 +1178,13 @@ function BoardCard({
       </div>
       <p className="font-mono text-sm font-black text-slate-950">{row.vehiclePlate}</p>
       <p className="mt-0.5 truncate text-xs font-bold text-slate-600">{row.customerName}</p>
+      <div className="mt-1 flex items-center gap-1.5">
+        <span className="truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-black text-slate-600">{formatPaymentMethod(row.paymentMethod)}</span>
+        {row.paymentStatus ? <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${getPaymentStatusClass(row.paymentStatus)}`}>{getPaymentStatusLabel(row.paymentStatus)}</span> : null}
+      </div>
+      <div className="mt-1 min-h-[24px]">
+        <VipTierBadge tier={row.customerTier} />
+      </div>
       <p className="truncate text-[11px] font-semibold text-slate-400">{row.servicePackage}</p>
       <div className="mt-2 flex items-center justify-between gap-2 text-[11px] font-bold">
         <span className={isDelayed(row) ? "text-rose-600" : "text-slate-400"}>{getWaitLabel(row)}</span>
@@ -951,6 +1204,33 @@ function BoardCard({
         {getPrimaryAction(row)}
       </Button>
     </button>
+  );
+}
+
+function VipTierBadge({ tier }: { tier: string | null }) {
+  const normalizedTier = tier?.toUpperCase() ?? null;
+  if (!normalizedTier || !VIP_TIERS.has(normalizedTier)) return null;
+
+  const palette = {
+    GOLD: {
+      wrap: "border-amber-200 bg-amber-50 text-amber-800",
+      icon: { background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)", color: "#ffffff" },
+    },
+    PLATINUM: {
+      wrap: "border-slate-200 bg-slate-100 text-slate-700",
+      icon: { background: "linear-gradient(135deg, #cbd5e1 0%, #64748b 100%)", color: "#ffffff" },
+    },
+    DIAMOND: {
+      wrap: "border-cyan-200 bg-cyan-50 text-cyan-800",
+      icon: { background: "linear-gradient(135deg, #67e8f9 0%, #2563eb 100%)", color: "#ffffff" },
+    },
+  }[normalizedTier as "GOLD" | "PLATINUM" | "DIAMOND"];
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${palette.wrap}`}>
+      <TierIcon tier={normalizedTier} className="h-5 w-5 border-0 bg-transparent" iconClassName="h-3 w-3" style={palette.icon} />
+      {normalizedTier}
+    </span>
   );
 }
 
@@ -977,6 +1257,10 @@ function SessionDetailPanel({
   const transferOptions = staffOptions.filter((staff) => !row || !rowHasStaff(row, staff.staffId));
   const canTransfer = Boolean(row?.sessionId) && row?.status !== "COMPLETED" && row?.status !== "CANCELLED";
   const panelRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    setSelectedStaffId("");
+  }, [row?.id]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -1027,16 +1311,28 @@ function SessionDetailPanel({
                   <span className="rounded-lg bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">{getStatusLabel(row.status)}</span>
                 </div>
                 <p className="mt-1 text-xs font-semibold text-slate-500">{row.customerName} · Phone: {row.customerPhone || "—"}</p>
+                <div className="mt-2">
+                  <VipTierBadge tier={row.customerTier} />
+                </div>
                 <p className="text-xs font-semibold text-slate-500">Service package: <span className="font-black text-slate-700">{row.servicePackage}</span></p>
               </div>
             </div>
           </div>
 
+          {row.customerNotes ? (
+            <div className="rounded-xl border border-cyan-100 bg-cyan-50/60 p-3">
+              <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-cyan-700">Customer note</p>
+              <p className="whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-slate-700">{row.customerNotes}</p>
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-2 gap-2">
             <MiniInfo label="Status" value={getStatusLabel(row.status)} />
             <MiniInfo label="ETA" value={row.estimatedDurationMinutes ? `${row.estimatedDurationMinutes} min` : "—"} />
             <MiniInfo label="Schedule" value={formatBookingTime(row.bookingTime)} />
-            <MiniInfo label="Payment" value={row.amount ? formatCurrency(row.amount) : "Not calculated"} />
+            <MiniInfo label="Amount" value={row.amount ? formatCurrency(row.amount) : "Not calculated"} />
+            <MiniInfo label="Payment method" value={formatPaymentMethod(row.paymentMethod)} />
+            <MiniInfo label="Payment status" value={formatPaymentStatus(row.paymentStatus)} />
           </div>
 
           <div className="rounded-xl bg-slate-50 p-3">
@@ -1079,41 +1375,64 @@ function SessionDetailPanel({
 
           {canTransfer ? (
             <div>
-              <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">Staff assignment suggestions</p>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-xs font-black uppercase tracking-wide text-slate-400">Assign staff</p>
+                <span className="text-[10px] font-black text-slate-400">
+                  {transferOptions.filter((staff) => {
+                    const workload = staffWorkload.find((item) => item.staffId === staff.staffId);
+                    return !workload || workload.status === "AVAILABLE";
+                  }).length} available
+                </span>
+              </div>
               <div className="space-y-2">
-                {transferOptions.slice(0, 4).map((staff) => {
+                {transferOptions.map((staff) => {
                   const workload = staffWorkload.find((item) => item.staffId === staff.staffId);
-                  const recommended = workload?.status === "AVAILABLE";
+                  const canSelectStaff = !workload || workload.status === "AVAILABLE";
                   const workloadSummary = workload
                     ? `${workload.waitingCount} waiting · ${workload.activeCount} washing${workload.delayedCount > 0 ? ` · ${workload.delayedCount} delayed` : ""}`
                     : "No workload data";
                   return (
-                    <label
+                    <button
                       key={staff.staffId}
-                      className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-2.5 transition ${
-                        selectedStaffId === staff.staffId ? "border-[#00236f] bg-blue-50/40" : "border-slate-100 hover:bg-slate-50"
+                      type="button"
+                      disabled={!canSelectStaff}
+                      onClick={() => {
+                        if (canSelectStaff) setSelectedStaffId(staff.staffId);
+                      }}
+                      className={`flex w-full items-center gap-3 rounded-2xl border p-2.5 text-left transition ${
+                        selectedStaffId === staff.staffId
+                          ? "border-[#00236f] bg-blue-50/40 ring-1 ring-[#00236f]/20"
+                          : canSelectStaff
+                            ? "border-slate-100 bg-white hover:border-[#00236f]/30 hover:bg-blue-50/20"
+                            : "cursor-not-allowed border-slate-100 bg-slate-50 opacity-70"
                       }`}
                     >
-                      <input
-                        type="radio"
-                        name="assign-staff"
-                        checked={selectedStaffId === staff.staffId}
-                        onChange={() => setSelectedStaffId(staff.staffId)}
-                        className="h-4 w-4 accent-[#00236f]"
-                      />
-                      <Avatar name={staff.staffName} />
+                      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                        selectedStaffId === staff.staffId ? "border-[#00236f] bg-[#00236f] text-white" : "border-slate-300 bg-white text-transparent"
+                      }`}>
+                        <Check className="h-3 w-3" />
+                      </span>
+                      <span className="shrink-0">
+                        <Avatar name={staff.staffName} />
+                      </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-black text-slate-950">{staff.staffName}</p>
+                        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                          <p className="truncate text-xs font-black text-slate-950">{staff.staffName}</p>
+                          <StaffStatusPill status={workload?.status ?? "UNKNOWN"} selectable={Boolean(canSelectStaff)} />
+                        </div>
                         <p className="truncate text-[11px] font-semibold text-slate-500">{workloadSummary}</p>
                       </div>
-                      {recommended ? (
-                        <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">Best match</span>
+                      {canSelectStaff ? (
+                        <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">Ready</span>
                       ) : (
-                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-black text-amber-700">Busy</span>
                       )}
-                    </label>
+                    </button>
                   );
                 })}
+                {transferOptions.length === 0 ? (
+                  <p className="rounded-xl bg-slate-50 p-3 text-xs font-bold text-slate-500">No other active staff available.</p>
+                ) : null}
               </div>
             </div>
           ) : (
@@ -1198,9 +1517,62 @@ function MiniInfo({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-slate-50 p-3">
       <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 text-sm font-black text-slate-950">{value}</p>
+      <p className="mt-1 truncate text-sm font-black text-slate-950">{value}</p>
     </div>
   );
+}
+
+function StaffStatusPill({ status, selectable }: { status: string; selectable: boolean }) {
+  const normalizedStatus = status.toUpperCase();
+  const tone =
+    normalizedStatus === "AVAILABLE"
+      ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+      : normalizedStatus === "OVERLOADED"
+        ? "bg-rose-50 text-rose-700 ring-rose-100"
+        : normalizedStatus === "BUSY"
+          ? "bg-amber-50 text-amber-700 ring-amber-100"
+          : selectable
+            ? "bg-blue-50 text-blue-700 ring-blue-100"
+            : "bg-slate-100 text-slate-500 ring-slate-200";
+
+  return (
+    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase ring-1 ${tone}`}>
+      {humanizeStatusText(status)}
+    </span>
+  );
+}
+
+function StaffMetric({
+  label,
+  value,
+  tone = "slate",
+}: {
+  label: string;
+  value: number;
+  tone?: "slate" | "amber" | "rose";
+}) {
+  const toneClass =
+    tone === "rose"
+      ? "bg-rose-50 text-rose-700"
+      : tone === "amber"
+        ? "bg-amber-50 text-amber-700"
+        : "bg-slate-50 text-slate-600";
+
+  return (
+    <span className={`min-w-0 rounded-lg px-2 py-1 text-center ${toneClass}`}>
+      <span className="block text-[11px] font-black leading-none">{value}</span>
+      <span className="mt-0.5 block truncate text-[9px] font-bold leading-none">{label}</span>
+    </span>
+  );
+}
+
+function humanizeStatusText(status: string) {
+  return status
+    .toLowerCase()
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 function applyOptimisticSessionRows(rows: OperationRow[], optimisticSessionRows: Record<string, OperationRow>) {
@@ -1237,6 +1609,7 @@ function buildOptimisticSessionRowFromBooking(
     sessionId,
     customerName: booking.customerName,
     customerPhone: booking.customerPhone,
+    customerTier: booking.customerTier,
     vehiclePlate: booking.vehiclePlate,
     servicePackage: getServiceName(booking.packageId),
     bookingDate: booking.bookingDate,
@@ -1246,8 +1619,11 @@ function buildOptimisticSessionRowFromBooking(
     assignedStaffName: booking.assignedStaffName,
     assignedStaff,
     amount: booking.finalAmount,
+    paymentMethod: booking.paymentMethod ?? null,
+    paymentStatus: booking.paymentStatus ?? null,
     estimatedDurationMinutes: booking.estimatedDurationMinutes,
     notes: patch.notes ?? null,
+    customerNotes: booking.customerNotes ?? null,
     queuedAt: null,
     checkedInAt: patch.checkedInAt ?? null,
     startedAt: patch.startedAt ?? null,
@@ -1262,6 +1638,14 @@ function removeOptimisticSessionRow(current: Record<string, OperationRow>, booki
   return next;
 }
 
+function requiresCashCollection(row: OperationRow) {
+  return row.paymentMethod === "CASH_AT_COUNTER" && row.paymentStatus !== "PAID" && (row.amount ?? 0) > 0;
+}
+
+function canCheckInBooking(row: OperationRow) {
+  return row.type === "booking" && (row.status === "CONFIRMED" || (row.status === "PENDING" && row.paymentMethod === "CASH_AT_COUNTER"));
+}
+
 function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueueSession[]): OperationRow[] {
   const sessionBookingIds = new Set(sessions.map((session) => session.bookingId));
   const bookingRows: OperationRow[] = bookings
@@ -1274,6 +1658,7 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
         bookingId: booking.bookingId,
         customerName: booking.customerName,
         customerPhone: booking.customerPhone,
+        customerTier: booking.customerTier,
         vehiclePlate: booking.vehiclePlate,
         servicePackage: getServiceName(booking.packageId),
         bookingDate: booking.bookingDate,
@@ -1283,8 +1668,11 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
         assignedStaffName: booking.assignedStaffName,
         assignedStaff,
         amount: booking.finalAmount,
+        paymentMethod: booking.paymentMethod ?? null,
+        paymentStatus: booking.paymentStatus ?? null,
         estimatedDurationMinutes: booking.estimatedDurationMinutes,
         notes: null,
+        customerNotes: booking.customerNotes ?? null,
         queuedAt: null,
         checkedInAt: null,
         startedAt: null,
@@ -1299,6 +1687,7 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
     sessionId: session.sessionId,
     customerName: session.customerName,
     customerPhone: session.customerPhone,
+    customerTier: session.customerTier ?? null,
     vehiclePlate: session.vehiclePlate,
     servicePackage: session.servicePackage ?? "Car wash package",
     bookingDate: session.bookingDate,
@@ -1308,8 +1697,11 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
     assignedStaffName: session.assignedStaffName ?? null,
     assignedStaff: normalizeAssignedStaff(session.assignedStaff, session.assignedStaffId, session.assignedStaffName),
     amount: session.feeAmount ?? null,
+    paymentMethod: session.paymentMethod ?? null,
+    paymentStatus: session.paymentStatus ?? null,
     estimatedDurationMinutes: session.estimatedDurationMinutes ?? null,
     notes: session.notes ?? null,
+    customerNotes: session.customerNotes ?? null,
     queuedAt: session.queuedAt ?? null,
     checkedInAt: session.checkedInAt ?? null,
     startedAt: session.startedAt ?? null,
@@ -1487,7 +1879,7 @@ function getStatusLabel(status: BookingStatus | WashSessionStatus) {
 }
 
 function getPrimaryAction(row: OperationRow) {
-  if (row.type === "booking") return row.status === "CONFIRMED" ? "Check-in" : "Await payment";
+  if (row.type === "booking") return canCheckInBooking(row) ? "Check-in" : "Await payment";
   if (row.status === "PENDING" || row.status === "QUEUED") return "Check-in";
   if (row.status === "CHECKED_IN") return "Start";
   if (row.status === "IN_PROGRESS") return "Complete";
@@ -1497,7 +1889,7 @@ function getPrimaryAction(row: OperationRow) {
 
 function canRunPrimaryAction(row: OperationRow) {
   if (row.type === "booking") {
-    return row.status === "CONFIRMED";
+    return canCheckInBooking(row);
   }
   return row.status === "PENDING" || row.status === "QUEUED" || row.status === "CHECKED_IN" || row.status === "IN_PROGRESS";
 }
@@ -1534,13 +1926,13 @@ function isActionLoading(row: OperationRow, creatingId: string | undefined, chec
 
 function isMutatingRow(
   row: OperationRow,
-  createMutation: { isPending: boolean; variables?: string },
+  createMutation: { isPending: boolean; variables?: { bookingId: string; preferredStaffId?: string | null } },
   checkInMutation: { isPending: boolean; variables?: string },
   startMutation: { isPending: boolean; variables?: string },
   completeMutation: { isPending: boolean; variables?: string },
 ) {
   return (
-    (createMutation.isPending && createMutation.variables === row.bookingId) ||
+    (createMutation.isPending && createMutation.variables?.bookingId === row.bookingId) ||
     Boolean(row.sessionId && checkInMutation.isPending && checkInMutation.variables === row.sessionId) ||
     Boolean(row.sessionId && startMutation.isPending && startMutation.variables === row.sessionId) ||
     Boolean(row.sessionId && completeMutation.isPending && completeMutation.variables === row.sessionId)
@@ -1622,6 +2014,21 @@ function formatCurrency(value: number) {
     currency: "VND",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function formatPaymentMethod(method: string | null | undefined) {
+  return method ? getPaymentMethodLabel(method) : "No payment info";
+}
+
+function formatPaymentStatus(status: string | null | undefined) {
+  return status ? getPaymentStatusLabel(status) : "No status";
+}
+
+function getPaymentStatusClass(status: string) {
+  if (status === "PAID") return "bg-emerald-50 text-emerald-700";
+  if (status === "UNPAID" || status === "PENDING" || status === "PENDING_PAYMENT") return "bg-amber-50 text-amber-700";
+  if (status === "FAILED" || status === "CANCELLED" || status === "REFUND_FAILED") return "bg-rose-50 text-rose-700";
+  return "bg-slate-100 text-slate-600";
 }
 
 function formatDate(value: string) {

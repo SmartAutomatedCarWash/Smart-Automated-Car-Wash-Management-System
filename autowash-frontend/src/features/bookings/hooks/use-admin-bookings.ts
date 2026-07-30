@@ -6,7 +6,7 @@ import type { AdminBookingsFilters, AdminBookingsPage } from "@/entities/reports
 
 export function useAdminBookings(
   page = 1,
-  limit = 20,
+  limit = 5,
   filters: AdminBookingsFilters = {},
 ) {
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -18,6 +18,8 @@ export function useAdminBookings(
     queryFn: () => listAdminBookings(filters, page, limit),
     enabled,
     staleTime: 30_000,
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: true,
   });
 }
 
@@ -31,5 +33,7 @@ export function useAdminBookingSummary() {
     queryFn: () => getAdminBookingSummary(),
     enabled,
     staleTime: 30_000,
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: true,
   });
 }

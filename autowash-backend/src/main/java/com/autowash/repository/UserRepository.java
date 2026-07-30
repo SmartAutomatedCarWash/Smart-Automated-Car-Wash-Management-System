@@ -5,6 +5,7 @@ import com.autowash.entity.enums.UserStatus;
 import com.autowash.entity.User;
 import java.util.List;
 import java.util.Optional;
+import java.util.Collection;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,6 +52,24 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             """)
     Page<User> searchAccounts(
             @Param("role") UserRole role,
+            @Param("status") UserStatus status,
+            @Param("searchLike") String searchLike,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT account FROM User account
+            WHERE account.role IN :roles
+              AND (:#{#status == null} = true OR account.status = :status)
+              AND (
+                :#{#searchLike == null} = true
+                OR LOWER(account.fullName) LIKE :searchLike
+                OR LOWER(account.phone) LIKE :searchLike
+                OR LOWER(COALESCE(account.email, '')) LIKE :searchLike
+              )
+            """)
+    Page<User> searchAccountsByRoles(
+            @Param("roles") Collection<UserRole> roles,
             @Param("status") UserStatus status,
             @Param("searchLike") String searchLike,
             Pageable pageable

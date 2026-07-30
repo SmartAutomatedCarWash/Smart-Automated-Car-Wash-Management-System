@@ -26,6 +26,16 @@ import { notify } from "@/shared/lib/notify";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/ui/ui/alert-dialog";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
   formatBookingCurrency,
@@ -44,7 +54,7 @@ import {
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
 import { BookingCompletionPopup } from "@/features/bookings/components/booking-completion-popup";
 import { useBookingReviewCheck, useSubmitBookingReview } from "@/features/bookings/hooks/use-reviews";
-import { useCustomerLoyaltyTransactions } from "@/features/loyalty/hooks/use-customer-loyalty";
+import { useCustomerBookingPointBreakdown } from "@/features/loyalty/hooks/use-customer-loyalty";
 import type { BookingAddonSelection, BookingDetail, BookingStaffOption, BookingStaffOptionsRequest } from "@/entities/bookings";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
@@ -93,6 +103,26 @@ function getStepIndex(status: string) {
 
 // ── Countdown to appointment ─────────────────────────────────────────────────
 const HOLD_DURATION_MS = 15 * 60 * 1000;
+const CUSTOMER_CANCEL_LOCK_MS = 2 * 60 * 60 * 1000;
+const CUSTOMER_ASSIGNED_STAFF_VISIBLE_STATUSES = new Set(["CONFIRMED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED"]);
+
+function getScheduledAtMs(bookingDate: string, bookingTime: string) {
+  const normalizedTime = bookingTime.length === 5 ? `${bookingTime}:00` : bookingTime;
+  const scheduledAtMs = new Date(`${bookingDate}T${normalizedTime}`).getTime();
+  return Number.isFinite(scheduledAtMs) ? scheduledAtMs : null;
+}
+
+function isCustomerCancelLocked(booking: BookingDetail) {
+  if (booking.status !== "CONFIRMED") {
+    return false;
+  }
+  const scheduledAtMs = getScheduledAtMs(booking.scheduling.bookingDate, booking.scheduling.bookingTime);
+  return scheduledAtMs !== null && scheduledAtMs - Date.now() <= CUSTOMER_CANCEL_LOCK_MS;
+}
+
+function canShowCustomerAssignedStaff(booking: BookingDetail) {
+  return CUSTOMER_ASSIGNED_STAFF_VISIBLE_STATUSES.has((booking.washStatus ?? booking.status).toUpperCase());
+}
 
 function useCountdownUntil(expiresAtMs: number | null) {
   const [diff, setDiff] = useState<number | null>(null);
@@ -205,6 +235,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const createVnpayCheckoutMutation = useCreateVnpayCheckout();
   const updateBookingStaffMutation = useUpdateCustomerBookingStaff(bookingId);
   const [showCancelForm, setShowCancelForm] = useState(false);
+  const [showOnlineCancelFeeDialog, setShowOnlineCancelFeeDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showReviewPopup, setShowReviewPopup] = useState(false);
   const [autoReviewShown, setAutoReviewShown] = useState(false);
@@ -213,15 +244,12 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const submitReviewMutation = useSubmitBookingReview();
   const isCompleted = bookingQuery.data?.status === "COMPLETED" || bookingQuery.data?.washStatus === "COMPLETED";
   const reviewCheckQuery = useBookingReviewCheck(bookingId, isCompleted);
-  const loyaltyTransactionsQuery = useCustomerLoyaltyTransactions(1, 100);
-  const bookingPointsEarned = useMemo(() => {
-    const currentBookingId = bookingQuery.data?.bookingId ?? bookingId;
-    const bookingPoints = loyaltyTransactionsQuery.data?.items
-      .filter((transaction) => transaction.bookingId === currentBookingId && transaction.type === "EARN" && transaction.points > 0)
-      .reduce((sum, transaction) => sum + transaction.points, 0) ?? 0;
-    return bookingPoints > 0 ? bookingPoints : null;
-  }, [bookingId, bookingQuery.data?.bookingId, loyaltyTransactionsQuery.data]);
-  const reviewPointsEarned = bookingQuery.data?.review ? 10 : 0;
+  const bookingPointsQuery = useCustomerBookingPointBreakdown(bookingId);
+  const bookingPointsEarned =
+    (bookingPointsQuery.data?.bookingPoints ?? 0) > 0
+      ? bookingPointsQuery.data?.bookingPoints ?? null
+      : null;
+  const reviewPointsEarned = bookingPointsQuery.data?.reviewPoints ?? 0;
 
   // Auto-show review popup when booking is COMPLETED and not yet reviewed
   useEffect(() => {
@@ -266,6 +294,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const staffOptionsPayload = useMemo<BookingStaffOptionsRequest | null>(() => {
     const booking = bookingQuery.data;
     if (!booking) return null;
+    if (booking.status !== "CONFIRMED") return null;
     const packageDetail = booking.details.find((detail) => detail.itemType === "PACKAGE");
     const comboDetail = booking.details.find((detail) => detail.itemType === "COMBO");
     return {
@@ -342,9 +371,11 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const booking = bookingQuery.data;
   const bookingOptions = getBookingOptions(booking);
   const canCancelBooking = booking.status === "PENDING" || booking.status === "CONFIRMED";
+  const customerCancelLocked = isCustomerCancelLocked(booking);
   const paymentStatus = booking.payment.status?.toUpperCase() ?? "";
   const paymentMethod = booking.payment.method?.toUpperCase() ?? "";
   const isPaymentPaid = paymentStatus === "PAID";
+  const isPaidOnlineBooking = isPaymentPaid && (paymentMethod === "E_WALLET" || paymentMethod === "BANK_TRANSFER");
   const isPendingBookingHold = booking.status === "PENDING" && !isPaymentPaid;
   const canChoosePendingPaymentAction = isPendingBookingHold && !pendingHoldExpired;
   const canPayAgainWithVnpay = canChoosePendingPaymentAction && paymentMethod !== "CASH_AT_COUNTER" && booking.pricing.finalAmount > 0;
@@ -355,12 +386,14 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     ? (booking.payment.transferDescription || sepayPaymentCode)
     : null;
   const canShowAppointmentCountdown = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS"].includes(booking.status);
-  const showCashConfirmationNote = booking.status === "PENDING" && paymentMethod === "CASH_AT_COUNTER";
+  const showCashConfirmationNote = paymentMethod === "CASH_AT_COUNTER" && paymentStatus !== "PAID" && booking.pricing.finalAmount > 0;
   const isPaymentActionPending = changePaymentMethodMutation.isPending || createVnpayCheckoutMutation.isPending;
   const originalAssignedStaffIds = assignedStaffList(booking).map((staff) => staff.staffId).slice(0, 1);
   const canEditAssignedStaff = booking.status === "CONFIRMED" && originalAssignedStaffIds.length === 1 && !booking.washSessionId;
   const canSaveAssignedStaff = canEditAssignedStaff && selectedStaffIds.length === 1 && selectedStaffIds[0] !== originalAssignedStaffIds[0];
   const recommendedStaffId = staffOptions.find((staff) => staff.recommended && staff.available !== false)?.staffId ?? null;
+  const showAssignedStaffCard = canShowCustomerAssignedStaff(booking);
+  const customerNote = booking.customerNotes?.trim() || null;
   const customerName = booking.customerName || profileQuery.data?.fullName || translate(language, "Khách hàng", "Customer");
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || translate(language, "Chưa có số điện thoại", "No phone number");
   const customerEmail = booking.confirmationEmail || profileQuery.data?.email || translate(language, "email của bạn", "your email");
@@ -400,15 +433,48 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     heroIcon = <Car className="h-12 w-12" />;
   }
 
-  const handleCancelBooking = async () => {
+  const showCustomerCancelLockedWarning = () => {
+    notify.warning(
+      translate(
+        language,
+        "Lịch đặt còn dưới 2 giờ nữa sẽ đến giờ hẹn nên khách hàng không thể tự huỷ. Vui lòng liên hệ cửa hàng nếu cần hỗ trợ.",
+        "This booking is less than 2 hours from the appointment time, so customers cannot cancel it directly. Please contact the store if you need support.",
+      ),
+    );
+  };
+
+  const handleToggleCancelForm = () => {
+    if (isCustomerCancelLocked(booking)) {
+      setShowCancelForm(false);
+      showCustomerCancelLockedWarning();
+      return;
+    }
+    setShowCancelForm((value) => !value);
+  };
+
+  const executeCancelBooking = async () => {
     try {
       await cancelBookingMutation.mutateAsync(cancelReason.trim() || undefined);
       notify.success(translate(language, "Đã huỷ lịch đặt thành công.", "Booking cancelled successfully."));
+      setShowOnlineCancelFeeDialog(false);
       setShowCancelForm(false);
       setCancelReason("");
     } catch (error) {
       notify.error(getErrorMessage(error));
     }
+  };
+
+  const handleCancelBooking = async () => {
+    if (isCustomerCancelLocked(booking)) {
+      setShowCancelForm(false);
+      showCustomerCancelLockedWarning();
+      return;
+    }
+    if (isPaidOnlineBooking) {
+      setShowOnlineCancelFeeDialog(true);
+      return;
+    }
+    await executeCancelBooking();
   };
 
   const handlePayAgainWithVnpay = async () => {
@@ -469,6 +535,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
       comment,
       ...images,
     });
+    await Promise.all([bookingPointsQuery.refetch(), bookingQuery.refetch()]);
     notify.success(translate(language, "Đánh giá đã được gửi thành công!", "Review submitted successfully!"));
   };
 
@@ -550,107 +617,109 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
             </Card>
           )}
 
-          <Card className="border-emerald-200 bg-emerald-50 shadow-md">
-            <CardHeader>
-              <div className="flex items-center gap-3 text-emerald-800">
-                <Users className="h-5 w-5" />
-                <CardTitle>{translate(language, "Nhân viên đã được phân công", "Assigned staff")}</CardTitle>
-              </div>
-              <CardDescription>
-                {canEditAssignedStaff
-                  ? translate(language, "Bạn có thể đổi nhân viên đang rảnh, sau đó bấm Confirm để lưu.", "You can replace the assigned staff with an available staff member, then press Confirm to save.")
-                  : translate(language, "Nhân viên phụ trách lịch đặt này.", "Staff assigned to this booking.")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {staffOptionsQuery.isPending ? (
-                <div className="h-20 animate-pulse rounded-2xl bg-white/70" />
-              ) : (
-                <div className="max-w-md rounded-2xl border border-emerald-100 bg-white/80 p-3">
-                  <span className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-700">
-                    <UserCheck className="h-3.5 w-3.5" />
-                    {translate(language, "Nhân viên phụ trách", "Assigned staff")}
-                  </span>
-                  {canEditAssignedStaff ? (
-                    <Select
-                      value={selectedStaffIds[0] || undefined}
-                      onValueChange={(staffId) => setSelectedStaffIds([staffId])}
-                    >
-                      <SelectTrigger className="h-auto min-h-12 rounded-xl bg-white px-3 py-2 text-left [&>span]:line-clamp-none">
-                        <SelectValue placeholder={translate(language, "Chọn nhân viên", "Select staff")}>
-                          {staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "") ? (
-                            <StaffSelectLabel
-                              staff={staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "")!}
-                              statusLabel={selectedStaffIds[0] === originalAssignedStaffIds[0] ? translate(language, "Đang được gán", "Current assignment") : undefined}
-                              statusTone={selectedStaffIds[0] === originalAssignedStaffIds[0] ? "locked" : undefined}
-                            />
-                          ) : null}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent
-                        position="item-aligned"
-                        className="min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)]"
+          {showAssignedStaffCard ? (
+            <Card className="border-emerald-200 bg-emerald-50 shadow-md">
+              <CardHeader>
+                <div className="flex items-center gap-3 text-emerald-800">
+                  <Users className="h-5 w-5" />
+                  <CardTitle>{translate(language, "Nhân viên đã được phân công", "Assigned staff")}</CardTitle>
+                </div>
+                <CardDescription>
+                  {canEditAssignedStaff
+                    ? translate(language, "Bạn có thể đổi nhân viên đang rảnh, sau đó bấm Confirm để lưu.", "You can replace the assigned staff with an available staff member, then press Confirm to save.")
+                    : translate(language, "Nhân viên phụ trách lịch đặt này.", "Staff assigned to this booking.")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {canEditAssignedStaff && staffOptionsQuery.isPending ? (
+                  <div className="h-20 animate-pulse rounded-2xl bg-white/70" />
+                ) : (
+                  <div className="max-w-md rounded-2xl border border-emerald-100 bg-white/80 p-3">
+                    <span className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-700">
+                      <UserCheck className="h-3.5 w-3.5" />
+                      {translate(language, "Nhân viên phụ trách", "Assigned staff")}
+                    </span>
+                    {canEditAssignedStaff ? (
+                      <Select
+                        value={selectedStaffIds[0] || undefined}
+                        onValueChange={(staffId) => setSelectedStaffIds([staffId])}
                       >
-                        {staffOptions.map((staff) => (
-                          <SelectItem
-                            key={staff.staffId}
-                            value={staff.staffId}
-                            disabled={staff.available === false && staff.staffId !== originalAssignedStaffIds[0]}
-                            className="py-2 pr-8 [&>span:last-child]:w-full"
-                          >
-                            <StaffSelectLabel
-                              staff={staff}
-                              statusLabel={
-                                staff.staffId === originalAssignedStaffIds[0]
-                                  ? translate(language, "Đang được gán", "Current assignment")
-                                  : staff.staffId === recommendedStaffId
-                                    ? translate(language, "Đề xuất", "Recommended")
-                                    : undefined
-                              }
-                              statusTone={staff.staffId === originalAssignedStaffIds[0] ? "locked" : staff.staffId === recommendedStaffId ? "available" : undefined}
-                            />
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "") ? (
-                    <div className="rounded-xl border border-emerald-100 bg-white px-3 py-2">
-                      <StaffSelectLabel
-                        staff={staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "")!}
-                        statusLabel={translate(language, "Đang được gán", "Assigned")}
-                        statusTone="available"
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-sm font-semibold text-slate-500">
-                      {translate(language, "Sẽ được phân công sau khi xác nhận.", "Will be assigned after confirmation.")}
-                    </p>
-                  )}
-                </div>
-              )}
-              {staffOptionsQuery.isError ? (
-                <p className="text-xs font-semibold text-rose-600">{getErrorMessage(staffOptionsQuery.error)}</p>
-              ) : null}
-              {canEditAssignedStaff ? (
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    type="button"
-                    onClick={() => void handleSaveAssignedStaff()}
-                    disabled={!canSaveAssignedStaff || updateBookingStaffMutation.isPending}
-                  >
-                    {updateBookingStaffMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {translate(language, "Confirm staff change", "Confirm staff change")}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => void bookingQuery.refetch()}>
-                    {translate(language, "Tải lại từ máy chủ", "Refresh from server")}
-                  </Button>
-                  <Button type="button" variant="ghost" onClick={() => setSelectedStaffIds(originalAssignedStaffIds)}>
-                    {translate(language, "Hủy đổi nhân viên", "Cancel staff change")}
-                  </Button>
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
+                        <SelectTrigger className="h-auto min-h-12 rounded-xl bg-white px-3 py-2 text-left [&>span]:line-clamp-none">
+                          <SelectValue placeholder={translate(language, "Chọn nhân viên", "Select staff")}>
+                            {staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "") ? (
+                              <StaffSelectLabel
+                                staff={staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "")!}
+                                statusLabel={selectedStaffIds[0] === originalAssignedStaffIds[0] ? translate(language, "Đang được gán", "Current assignment") : undefined}
+                                statusTone={selectedStaffIds[0] === originalAssignedStaffIds[0] ? "locked" : undefined}
+                              />
+                            ) : null}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent
+                          position="item-aligned"
+                          className="min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)]"
+                        >
+                          {staffOptions.map((staff) => (
+                            <SelectItem
+                              key={staff.staffId}
+                              value={staff.staffId}
+                              disabled={staff.available === false && staff.staffId !== originalAssignedStaffIds[0]}
+                              className="py-2 pr-8 [&>span:last-child]:w-full"
+                            >
+                              <StaffSelectLabel
+                                staff={staff}
+                                statusLabel={
+                                  staff.staffId === originalAssignedStaffIds[0]
+                                    ? translate(language, "Đang được gán", "Current assignment")
+                                    : staff.staffId === recommendedStaffId
+                                      ? translate(language, "Đề xuất", "Recommended")
+                                      : undefined
+                                }
+                                statusTone={staff.staffId === originalAssignedStaffIds[0] ? "locked" : staff.staffId === recommendedStaffId ? "available" : undefined}
+                              />
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "") ? (
+                      <div className="rounded-xl border border-emerald-100 bg-white px-3 py-2">
+                        <StaffSelectLabel
+                          staff={staffOptionById(staffOptions, booking, selectedStaffIds[0] ?? "")!}
+                          statusLabel={translate(language, "Đang được gán", "Assigned")}
+                          statusTone="available"
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-sm font-semibold text-slate-500">
+                        {translate(language, "Chưa có nhân viên phụ trách.", "No assigned staff yet.")}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {staffOptionsQuery.isError ? (
+                  <p className="text-xs font-semibold text-rose-600">{getErrorMessage(staffOptionsQuery.error)}</p>
+                ) : null}
+                {canEditAssignedStaff ? (
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      type="button"
+                      onClick={() => void handleSaveAssignedStaff()}
+                      disabled={!canSaveAssignedStaff || updateBookingStaffMutation.isPending}
+                    >
+                      {updateBookingStaffMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      {translate(language, "Confirm staff change", "Confirm staff change")}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => void bookingQuery.refetch()}>
+                      {translate(language, "Tải lại từ máy chủ", "Refresh from server")}
+                    </Button>
+                    <Button type="button" variant="ghost" onClick={() => setSelectedStaffIds(originalAssignedStaffIds)}>
+                      {translate(language, "Hủy đổi nhân viên", "Cancel staff change")}
+                    </Button>
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Card className="border-slate-200 bg-white shadow-md">
             <CardHeader>
@@ -662,6 +731,29 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
               <InfoRow icon={<Clock3 className="h-4 w-4" />} label={translate(language, "Giờ hẹn", "Expected time")} value={expectedTime} />
               <InfoRow icon={<Car className="h-4 w-4" />} label={translate(language, "Trạng thái lịch đặt", "Booking status")} value={humanizeCode(booking.status)} />
               <InfoRow icon={<FileText className="h-4 w-4" />} label={translate(language, "Xác nhận", "Confirmation")} value={humanizeCode(booking.confirmationStatus)} />
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 bg-white shadow-md">
+            <CardHeader>
+              <CardTitle>{translate(language, "Ghi chú của bạn", "Your note")}</CardTitle>
+              <CardDescription>{translate(language, "Ghi chú đã gửi khi tạo lịch đặt.", "The note you submitted with this booking.")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {customerNote ? (
+                <div className="rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3">
+                  <div className="flex items-start gap-3">
+                    <FileText className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" />
+                    <p className="whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-slate-800">
+                      {customerNote}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-500">
+                  {translate(language, "Bạn chưa thêm ghi chú cho lịch đặt này.", "No note was added to this booking.")}
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -908,10 +1000,19 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                     type="button"
                     variant="outline"
                     className="w-full border-rose-200 text-rose-700 hover:bg-rose-50"
-                    onClick={() => setShowCancelForm((value) => !value)}
+                    onClick={handleToggleCancelForm}
                   >
                     {translate(language, "Huỷ lịch đặt", "Cancel booking")}
                   </Button>
+                  {customerCancelLocked ? (
+                    <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-900">
+                      {translate(
+                        language,
+                        "Không thể tự huỷ trong 2 giờ cuối trước lịch hẹn. Nếu có việc gấp, vui lòng liên hệ cửa hàng để được hỗ trợ.",
+                        "You cannot cancel directly within the final 2 hours before the appointment. Please contact the store if urgent support is needed.",
+                      )}
+                    </div>
+                  ) : null}
                   {showCancelForm ? (
                     <div className="space-y-3 rounded-2xl border border-rose-100 bg-rose-50 p-3">
                       <textarea
@@ -954,8 +1055,8 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
                   {translate(
                     language,
-                    "Đơn trả tại quầy đang chờ Manager/Admin xác nhận.",
-                    "Cash booking is waiting for Manager/Admin confirmation.",
+                    "Đơn trả tại quầy đã được giữ lịch. Manager sẽ xác nhận thu tiền khi bạn check-in.",
+                    "This cash booking is scheduled. The manager will collect and confirm payment at check-in.",
                   )}
                 </div>
               ) : null}
@@ -975,6 +1076,35 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
           )}
         </div>
       </div>
+      <AlertDialog open={showOnlineCancelFeeDialog} onOpenChange={setShowOnlineCancelFeeDialog}>
+        <AlertDialogContent className="rounded-2xl border-rose-100 bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {translate(language, "Xác nhận huỷ booking đã thanh toán", "Cancel paid online booking?")}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed text-slate-600">
+              {translate(
+                language,
+                "Booking này đã thanh toán online. Nếu bạn tiếp tục huỷ, khoản hoàn tiền có thể bị trừ phí xử lý hoặc phí huỷ theo chính sách của cửa hàng.",
+                "This booking has been paid online. If you continue cancelling, any refund may be reduced by a processing or cancellation fee under the store policy.",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelBookingMutation.isPending}>
+              {translate(language, "Quay lại", "Go back")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-rose-600 text-white hover:bg-rose-700"
+              disabled={cancelBookingMutation.isPending}
+              onClick={executeCancelBooking}
+            >
+              {cancelBookingMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {translate(language, "Vẫn huỷ booking", "Cancel anyway")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

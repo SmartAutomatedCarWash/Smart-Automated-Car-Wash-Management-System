@@ -5,7 +5,6 @@ import { createElement, useMemo, useState } from "react";
 import type { ComponentType } from "react";
 import {
   CheckCircle2,
-  ChevronRight,
   Clock3,
   Coins,
   Crown,
@@ -89,7 +88,9 @@ export function CustomerLoyaltyPageContent() {
   const redeemMutation = useCustomerRedeemPoints();
 
   const [selectedOffer, setSelectedOffer] = useState<VoucherOfferState | null>(null);
+  const [previewOffer, setPreviewOffer] = useState<VoucherOfferState | null>(null);
   const [isSuccessVoucher, setIsSuccessVoucher] = useState(false);
+  const [infoDialog, setInfoDialog] = useState<"BENEFITS" | "EARN" | null>(null);
   const [search, setSearch] = useState("");
   const [marketFilter, setMarketFilter] = useState<(typeof MARKET_FILTERS)[number]>("ALL");
   const [voucherSection, setVoucherSection] = useState<"MARKETPLACE" | "WALLET">("MARKETPLACE");
@@ -117,16 +118,30 @@ export function CustomerLoyaltyPageContent() {
     progressPercent: 0,
   };
   const heroIcon = getTierIcon(activeTier);
+  const currentBenefits = useMemo(
+    () => buildCurrentBenefits(currentTierConfig, language),
+    [currentTierConfig, language],
+  );
+  const nextTierBenefits = useMemo(
+    () => buildNextTierBenefits(nextTierConfig, language),
+    [language, nextTierConfig],
+  );
+  const pointsGuide = useMemo(
+    () => buildHowToEarnPoints(language, currentTierConfig),
+    [currentTierConfig, language],
+  );
   const tierTrackProgressPercent = useMemo(() => {
-    if (sortedTiers.length <= 1) return 0;
-    const minPoints = sortedTiers[0]?.minPoints ?? 0;
-    const maxPoints = sortedTiers[sortedTiers.length - 1]?.minPoints ?? minPoints;
-    const tierFloorPoints = currentTierConfig?.minPoints ?? minPoints;
-    const sourcePoints = Math.max(displayedLifetimePoints, tierFloorPoints);
-    const clampedPoints = Math.min(Math.max(sourcePoints, minPoints), maxPoints);
-    const span = Math.max(maxPoints - minPoints, 1);
-    return ((clampedPoints - minPoints) / span) * 100;
-  }, [currentTierConfig?.minPoints, displayedLifetimePoints, sortedTiers]);
+    if (sortedTiers.length <= 1) return 100;
+
+    const segmentCount = sortedTiers.length - 1;
+    const safeTierIndex = Math.max(currentTierIndex, 0);
+
+    if (safeTierIndex >= segmentCount) {
+      return 100;
+    }
+
+    return (safeTierIndex / segmentCount) * 100;
+  }, [currentTierIndex, sortedTiers.length]);
   const currentHex = currentTierConfig?.imageUrl || tierFallbackHex[activeTier] || tierFallbackHex.BRONZE;
   const tierMetal = generateTierMetalStyle(currentHex);
 
@@ -206,35 +221,27 @@ export function CustomerLoyaltyPageContent() {
   return (
     <div className="min-h-[calc(100vh-72px)] bg-[linear-gradient(180deg,#fffdf8_0%,#fbf8f2_35%,#f5f6fb_100%)] px-4 py-6 text-slate-950 sm:px-6 lg:px-8 font-['Be_Vietnam_Pro','Inter',sans-serif]">
       <div className="mx-auto max-w-[1320px] space-y-5">
-        <section className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-[30px] font-black tracking-tight text-slate-950">
-              {translate(language, "Loyalty & Rewards", "Loyalty & Rewards")}
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              {translate(
-                language,
-                "Earn points, unlock rewards and enjoy exclusive member benefits.",
-                "Earn points, unlock rewards and enjoy exclusive member benefits.",
-              )}
-            </p>
+        <section className="relative overflow-hidden rounded-[28px] border border-[#f0ddc4] bg-white shadow-[0_28px_60px_-40px_rgba(130,92,35,0.4)]">
+          <style dangerouslySetInnerHTML={{
+            __html: `
+            @keyframes light-sweep {
+              0% { left: -150%; }
+              50% { left: 150%; }
+              100% { left: 150%; }
+            }
+            .animate-light-sweep {
+              position: absolute;
+              top: 0;
+              height: 100%;
+              width: 250px;
+              background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.55), transparent);
+              transform: skewX(-20deg);
+              animation: light-sweep 6s infinite ease-in-out;
+            }
+          `}} />
+          <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+            <div className="animate-light-sweep" />
           </div>
-
-          <div className="flex min-w-[210px] items-center justify-between gap-4 rounded-[22px] border border-[#eadfce] bg-white px-4 py-3 shadow-[0_18px_40px_-30px_rgba(122,88,40,0.45)]">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f7ede1] text-[#9a6a1f]">
-              <Gift className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">
-                {translate(language, "Available Points", "Available Points")}
-              </div>
-              <div className="text-[28px] font-black leading-none text-slate-950">{displayedPoints.toLocaleString(locale)} pts</div>
-            </div>
-            <ChevronRight className="h-4 w-4 text-slate-400" />
-          </div>
-        </section>
-
-        <section className="overflow-hidden rounded-[28px] border border-[#f0ddc4] bg-white shadow-[0_28px_60px_-40px_rgba(130,92,35,0.4)]">
           <div
             className="relative grid gap-6 px-6 py-6 lg:grid-cols-[1.2fr_0.85fr_0.85fr]"
             style={{ background: `linear-gradient(135deg, #fff9ef 0%, ${currentHex}26 55%, #fff4df 100%)` }}
@@ -255,7 +262,7 @@ export function CustomerLoyaltyPageContent() {
                   <div className="text-[11px] font-black uppercase tracking-[0.24em]" style={{ color: tierMetal.text }}>
                     {formatTierLabel(activeTier as any, tiersQuery.data)} {translate(language, "Member", "Member")}
                   </div>
-                  <div className="mt-1 text-[44px] font-black leading-none" style={{ color: tierMetal.text }}>{displayedPoints.toLocaleString(locale)} pts</div>
+                  <div className="mt-1 text-[44px] font-black leading-none" style={{ color: tierMetal.text }}>{displayedLifetimePoints.toLocaleString(locale)} pts</div>
                   <p className="mt-2 text-sm text-slate-700">
                     {translate(language, "Welcome back, Customer User!", "Welcome back, Customer User!")}
                   </p>
@@ -277,10 +284,19 @@ export function CustomerLoyaltyPageContent() {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <Button className="h-10 rounded-xl bg-[#b97533] px-5 text-white hover:bg-[#a46528]">
+                <Button
+                  type="button"
+                  onClick={() => setInfoDialog("BENEFITS")}
+                  className="h-10 rounded-xl bg-[#b97533] px-5 text-white hover:bg-[#a46528]"
+                >
                   {translate(language, "View Benefits", "View Benefits")}
                 </Button>
-                <Button variant="outline" className="h-10 rounded-xl border-[#d8b180] bg-white/80 px-5 text-[#94612f] hover:bg-white">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setInfoDialog("EARN")}
+                  className="h-10 rounded-xl border-[#d8b180] bg-white/80 px-5 text-[#94612f] hover:bg-white"
+                >
                   {translate(language, "How to Earn Points", "How to Earn Points")}
                 </Button>
               </div>
@@ -288,7 +304,7 @@ export function CustomerLoyaltyPageContent() {
 
             <BenefitColumn
               title={translate(language, `Your Benefits (${formatTierLabel(activeTier as any, tiersQuery.data)})`, `Your Benefits (${formatTierLabel(activeTier as any, tiersQuery.data)})`)}
-              items={buildCurrentBenefits(currentTierConfig, language)}
+              items={currentBenefits}
             />
 
             <BenefitColumn
@@ -297,29 +313,87 @@ export function CustomerLoyaltyPageContent() {
                   ? translate(language, `Next Tier Benefits (${formatTierLabel(nextTierConfig.tier, tiersQuery.data)})`, `Next Tier Benefits (${formatTierLabel(nextTierConfig.tier, tiersQuery.data)})`)
                   : translate(language, "Top Tier Benefits", "Top Tier Benefits")
               }
-              items={buildNextTierBenefits(nextTierConfig, language)}
+              items={nextTierBenefits}
               faded
             />
           </div>
         </section>
 
-        <section className="rounded-[24px] border border-[#ece8df] bg-white px-4 py-4 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
+        <section className="relative rounded-[24px] border border-[#ece8df] bg-white px-4 py-4 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
+          <style dangerouslySetInnerHTML={{
+            __html: `
+            @keyframes progress-dot {
+              0% {
+                left: 0%;
+                border-radius: 50% 50% 50% 50%;
+                transform: translate(-50%, -50%) scale(0.9);
+              }
+              30% {
+                border-radius: 60% 40% 50% 50%;
+                transform: translate(-50%, -50%) scale(1.15) skewX(-6deg);
+              }
+              50% {
+                border-radius: 40% 60% 45% 55%;
+                transform: translate(-50%, -50%) scale(0.95) skewX(6deg);
+              }
+              70% {
+                border-radius: 50% 45% 55% 50%;
+                transform: translate(-50%, -50%) scale(1.1) skewX(-3deg);
+              }
+              100% {
+                left: 100%;
+                border-radius: 50% 50% 50% 50%;
+                transform: translate(-50%, -50%) scale(0.9);
+              }
+            }
+            .animate-progress-dot {
+              position: absolute;
+              top: 50%;
+              height: 8px;
+              width: 8px;
+              background: linear-gradient(135deg, #ffffff 0%, #e0f2fe 100%);
+              box-shadow: 
+                0 0 10px 2px rgba(56, 189, 248, 0.75), 
+                0 0 4px 1px rgba(255, 255, 255, 0.8),
+                inset -1px -1px 2px rgba(14, 165, 233, 0.3),
+                inset 1px 1px 2px rgba(255, 255, 255, 1);
+              animation: progress-dot 3.2s infinite ease-in-out;
+            }
+          `}} />
           <div className="relative">
-            <div className="absolute left-[22px] right-[22px] top-5 h-[2px] rounded-full bg-slate-200" />
             <div
-              className="absolute left-[22px] top-5 h-[2px] rounded-full bg-[linear-gradient(90deg,#b67a39_0%,#d9b171_40%,#8ed0ff_100%)] transition-all duration-700"
-              style={{ width: `calc((100% - 44px) * ${Math.max(0, Math.min(tierTrackProgressPercent, 100)) / 100})` }}
+              className="absolute left-[22px] top-5 hidden h-[2px] rounded-full bg-slate-200 lg:block"
+              style={{
+                width:
+                  sortedTiers.length > 0
+                    ? `${((sortedTiers.length - 1) / sortedTiers.length) * 100}%`
+                    : "0px",
+              }}
             />
-            <div className="relative grid grid-cols-2 gap-4 lg:grid-cols-5">
-            {sortedTiers.map((tier, index) => (
-              <TierStep
-                key={tier.tier}
-                tier={tier}
-                isCurrent={tier.tier === activeTier}
-                isUnlocked={index <= currentTierIndex}
-                tiers={tiersQuery.data ?? []}
-              />
-            ))}
+            <div
+              className="absolute left-[22px] top-5 hidden h-[2px] rounded-full bg-[linear-gradient(90deg,#b67a39_0%,#d9b171_40%,#8ed0ff_100%)] transition-all duration-700 lg:block"
+              style={{
+                width:
+                  sortedTiers.length > 0
+                    ? `${((sortedTiers.length - 1) / sortedTiers.length) *
+                    Math.max(0, Math.min(tierTrackProgressPercent, 100))
+                    }%`
+                    : "0px",
+              }}
+            >
+              <div className="animate-progress-dot" />
+            </div>
+            <div className="relative grid grid-cols-2 gap-4 lg:grid-cols-5 lg:gap-0">
+              {sortedTiers.map((tier, index) => (
+                <TierStep
+                  key={tier.tier}
+                  tier={tier}
+                  isCurrent={tier.tier === activeTier}
+                  isUnlocked={index <= currentTierIndex}
+                  tiers={tiersQuery.data ?? []}
+                  isLast={index === sortedTiers.length - 1}
+                />
+              ))}
             </div>
           </div>
         </section>
@@ -403,7 +477,7 @@ export function CustomerLoyaltyPageContent() {
                 )}
               </div>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {voucherSection === "MARKETPLACE" ? (
                 filteredOffers.length === 0 ? (
                   <div className="col-span-full rounded-[22px] border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center text-sm text-slate-500">
@@ -416,9 +490,9 @@ export function CustomerLoyaltyPageContent() {
                       offer={offer}
                       locale={locale}
                       language={language}
-                      availablePoints={displayedPoints}
                       isPending={redeemMutation.isPending}
                       onSelect={setSelectedOffer}
+                      onViewDetails={setPreviewOffer}
                       tierConfigs={tiersQuery.data ?? []}
                     />
                   ))
@@ -476,6 +550,127 @@ export function CustomerLoyaltyPageContent() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={Boolean(previewOffer)} onOpenChange={(open) => !open && setPreviewOffer(null)}>
+        <DialogContent className="overflow-hidden rounded-[28px] border-slate-200 p-0 sm:max-w-2xl">
+          {previewOffer ? (
+            <VoucherOfferDetails
+              offer={previewOffer}
+              locale={locale}
+              language={language}
+              tierConfigs={tiersQuery.data ?? []}
+              isPending={redeemMutation.isPending}
+              onClose={() => setPreviewOffer(null)}
+              onRedeem={() => {
+                setPreviewOffer(null);
+                setSelectedOffer(previewOffer);
+              }}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={infoDialog === "BENEFITS"} onOpenChange={(open) => !open && setInfoDialog(null)}>
+        <DialogContent className="rounded-[28px] border-[#eadfce] bg-[linear-gradient(180deg,#fffdf7_0%,#fff9f0_100%)] sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black text-slate-950">
+              {translate(language, "Membership benefits", "Membership benefits")}
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              {translate(
+                language,
+                "Thong tin quyen loi hien tai va cap ke tiep de ban de dang theo doi.",
+                "Your current tier benefits and the next tier advantages in one place.",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-[24px] border border-[#efdac0] bg-white p-5 shadow-[0_18px_40px_-35px_rgba(122,88,40,0.35)]">
+              <div className="text-[11px] font-black uppercase tracking-[0.24em] text-[#9a6a1f]">
+                {translate(language, "Current tier", "Current tier")}
+              </div>
+              <div className="mt-2 text-2xl font-black text-slate-950">
+                {formatTierLabel(activeTier as any, tiersQuery.data)}
+              </div>
+              <div className="mt-4 space-y-3">
+                {currentBenefits.map((item) => (
+                  <div key={item} className="flex items-start gap-3 text-sm text-slate-700">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#95612d]" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_18px_40px_-35px_rgba(15,23,42,0.2)]">
+              <div className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-500">
+                {nextTierConfig
+                  ? translate(language, "Next tier", "Next tier")
+                  : translate(language, "Top tier", "Top tier")}
+              </div>
+              <div className="mt-2 text-2xl font-black text-slate-950">
+                {nextTierConfig
+                  ? formatTierLabel(nextTierConfig.tier, tiersQuery.data)
+                  : translate(language, "Highest level reached", "Highest level reached")}
+              </div>
+              <div className="mt-4 space-y-3">
+                {nextTierBenefits.map((item) => (
+                  <div key={item} className="flex items-start gap-3 text-sm text-slate-700">
+                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#b97533]" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" className="bg-[#0f2342] text-white hover:bg-[#0b1b34]" onClick={() => setInfoDialog(null)}>
+              {translate(language, "Close", "Close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={infoDialog === "EARN"} onOpenChange={(open) => !open && setInfoDialog(null)}>
+        <DialogContent className="rounded-[28px] border-[#eadfce] bg-[linear-gradient(180deg,#ffffff_0%,#f9fbff_100%)] sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black text-slate-950">
+              {translate(language, "How to earn points", "How to earn points")}
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              {translate(
+                language,
+                "Day la cac cach tich diem loyalty trong he thong hien tai.",
+                "These are the available ways to collect loyalty points in the current system.",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-3">
+            {pointsGuide.map((item) => (
+              <div key={item.title} className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_16px_36px_-34px_rgba(15,23,42,0.28)]">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#eef4ff] text-[#4068b2]">
+                    {createElement(item.icon, { className: "h-5 w-5" })}
+                  </div>
+                  <div>
+                    <div className="text-base font-black text-slate-950">{item.title}</div>
+                    <div className="mt-1 text-sm text-slate-600">{item.description}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" className="bg-[#0f2342] text-white hover:bg-[#0b1b34]" onClick={() => setInfoDialog(null)}>
+              {translate(language, "Got it", "Got it")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isSuccessVoucher} onOpenChange={setIsSuccessVoucher}>
         <DialogContent className="rounded-2xl sm:max-w-md">
           <DialogHeader>
@@ -518,11 +713,13 @@ function TierStep({
   isCurrent,
   isUnlocked,
   tiers,
+  isLast,
 }: {
   tier: TierConfig;
   isCurrent: boolean;
   isUnlocked: boolean;
   tiers: TierConfig[];
+  isLast?: boolean;
 }) {
   const hex = tier.imageUrl || tierFallbackHex[tier.tier] || tierFallbackHex.BRONZE;
   const TierIcon = getTierIcon(tier.tier);
@@ -532,6 +729,7 @@ function TierStep({
         className={cn(
           "relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-xs font-black shadow-sm transition-all",
           isUnlocked ? "text-white" : "text-slate-400",
+          isLast && "ring-4 ring-cyan-100/80 shadow-[0_8px_22px_-8px_rgba(14,165,233,0.75)]",
         )}
         style={{
           background: isUnlocked ? `linear-gradient(180deg, ${hex}, ${hex}cc)` : "#f8fafc",
@@ -541,7 +739,14 @@ function TierStep({
         <TierIcon className="h-4.5 w-4.5" />
       </div>
       <div className="min-w-0">
-        <div className="text-xs font-black uppercase tracking-wide text-slate-900">{formatTierLabel(tier.tier, tiers)}</div>
+        <div
+          className={cn(
+            "text-xs font-black uppercase tracking-wide text-slate-900",
+            isLast && "text-sky-800",
+          )}
+        >
+          {formatTierLabel(tier.tier, tiers)}
+        </div>
         <div className="text-xs text-slate-500">{tier.minPoints.toLocaleString("en-US")} pts</div>
       </div>
     </div>
@@ -593,71 +798,230 @@ function RewardVoucherCard({
   offer,
   locale,
   language,
-  availablePoints,
   isPending,
   onSelect,
+  onViewDetails,
   tierConfigs,
 }: {
   offer: VoucherOfferState;
   locale: string;
   language: string;
-  availablePoints: number;
   isPending: boolean;
   onSelect: (offer: VoucherOfferState) => void;
+  onViewDetails: (offer: VoucherOfferState) => void;
   tierConfigs: TierConfig[];
 }) {
   const disabled = !offer.eligible || !offer.affordable || isPending;
   const hex = tierConfigs.find((item) => item.tier === offer.minTier)?.imageUrl || tierFallbackHex[offer.minTier] || tierFallbackHex.BRONZE;
-  const badge = generateTierBadgeStyle(hex);
-  const missingPoints = Math.max(offer.pointsCost - availablePoints, 0);
+  const availabilityLabel = !offer.eligible
+    ? translate(language, "Tier locked", "Tier locked")
+    : offer.affordable
+      ? translate(language, "Ready to redeem", "Ready to redeem")
+      : translate(language, "Not enough points", "Not enough points");
 
   return (
-    <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_18px_40px_-34px_rgba(15,23,42,0.35)] transition hover:-translate-y-1 hover:shadow-[0_26px_48px_-32px_rgba(15,23,42,0.42)]">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onViewDetails(offer)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onViewDetails(offer);
+        }
+      }}
+      className="group flex h-full min-h-[390px] flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white text-left shadow-[0_18px_40px_-34px_rgba(15,23,42,0.35)] transition duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_26px_56px_-34px_rgba(15,23,42,0.42)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16a3c9]/40 focus-visible:ring-offset-2"
+      aria-label={`${translate(language, "View detail", "View detail")}: ${offer.title}`}
+    >
       <div
-        className="relative h-[118px] overflow-hidden px-4 py-3"
+        className="relative h-[104px] overflow-hidden px-4 py-3"
         style={{ background: `linear-gradient(135deg, ${hex} 0%, ${hex}cc 48%, #0f2342 100%)` }}
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.25),transparent_35%)]" />
         <div className="absolute bottom-0 right-0 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute left-4 top-4 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-900 shadow-sm">
+          {formatTierLabel(offer.minTier, tierConfigs)}
+        </div>
       </div>
 
-      <div className="space-y-4 p-4">
-        <div>
-          <div className="text-xl font-black text-slate-950">{offer.title}</div>
-          <div className="mt-2 text-sm leading-6 text-slate-500">
+      <div className="flex flex-1 flex-col p-5">
+        <div className="min-h-[126px]">
+          <div className="line-clamp-2 text-xl font-black leading-tight text-slate-950">{offer.title}</div>
+          <div className="mt-3 line-clamp-3 text-sm leading-6 text-slate-500">
             {offer.minTier} tier voucher for members who want more premium rewards.
           </div>
         </div>
 
-        <div className="flex items-end justify-between gap-3 border-t border-slate-100 pt-4">
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Redeem points</div>
-            <div className="text-[32px] font-black leading-none text-[#16a3c9]">{offer.pointsCost.toLocaleString(locale)} pts</div>
+        <div className="mt-auto flex flex-col gap-4 border-t border-slate-100 pt-4">
+          <div className="rounded-2xl bg-slate-50 px-4 py-3">
+            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Redeem points</div>
+            <div className="mt-2 grid gap-2">
+              <div className="text-[30px] font-black leading-none text-[#16a3c9]">
+                {offer.pointsCost.toLocaleString(locale)}
+                <span className="ml-1 text-sm font-black text-[#16a3c9]/80">pts</span>
+              </div>
+              <span
+                className={cn(
+                  "inline-flex w-fit max-w-full items-center rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em]",
+                  offer.eligible && offer.affordable
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-slate-100 text-slate-500",
+                )}
+              >
+                {availabilityLabel}
+              </span>
+            </div>
           </div>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-1 gap-2">
             <Button
               type="button"
-              variant="outline"
               disabled={disabled}
-              onClick={() => onSelect(offer)}
-              className="h-10 rounded-xl border-slate-200 bg-white px-4 text-slate-700"
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelect(offer);
+              }}
+              className={cn(
+                "h-11 rounded-xl px-4 font-black",
+                disabled
+                  ? "bg-slate-100 text-slate-400 hover:bg-slate-100"
+                  : "bg-[#0f2342] text-white hover:bg-[#0b1b34]",
+              )}
             >
-              {disabled ? `Need ${missingPoints} pts` : "Redeem"}
-            </Button>
-            <Button type="button" className="h-10 rounded-xl bg-[#0f2342] px-4 text-white hover:bg-[#0b1b34]">
-              View detail
+              {translate(language, "Redeem", "Redeem")}
             </Button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
 
-        <div className="flex items-center justify-between text-xs">
-          <span className="rounded-full px-2.5 py-1 font-bold" style={{ color: badge.color, backgroundColor: badge.backgroundColor }}>
+function VoucherOfferDetails({
+  offer,
+  locale,
+  language,
+  tierConfigs,
+  isPending,
+  onClose,
+  onRedeem,
+}: {
+  offer: VoucherOfferState;
+  locale: string;
+  language: string;
+  tierConfigs: TierConfig[];
+  isPending: boolean;
+  onClose: () => void;
+  onRedeem: () => void;
+}) {
+  const hex =
+    tierConfigs.find((item) => item.tier === offer.minTier)?.imageUrl ||
+    tierFallbackHex[offer.minTier] ||
+    tierFallbackHex.BRONZE;
+  const badge = generateTierBadgeStyle(hex);
+  const canRedeem = offer.eligible && offer.affordable && !isPending;
+  const redeemStatus = !offer.eligible
+    ? translate(language, "Your tier is not eligible", "Your tier is not eligible")
+    : offer.affordable
+      ? translate(language, "Ready to redeem", "Ready to redeem")
+      : translate(language, "Not enough points", "Not enough points");
+  const voucherValue =
+    offer.discountType === "PERCENT"
+      ? `${offer.voucherValue}%`
+      : `${offer.voucherValue.toLocaleString("vi-VN")} ₫`;
+
+  return (
+    <div>
+      <div
+        className="relative overflow-hidden px-6 py-7 text-white"
+        style={{ background: `linear-gradient(135deg, ${hex} 0%, ${hex}cc 48%, #0f2342 100%)` }}
+      >
+        <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full bg-white/20 blur-3xl" />
+        <div className="relative">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-[#0f2342]">
+              AURA CARE
+            </span>
+            <span className="rounded-full border border-white/30 bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em]">
+              {offer.badge || "VOUCHER"}
+            </span>
+          </div>
+          <DialogHeader className="mt-5 text-left">
+            <DialogTitle className="text-3xl font-black text-white">{offer.title}</DialogTitle>
+            <DialogDescription className="text-sm leading-6 text-white/80">
+              {offer.description ||
+                `${formatTierLabel(offer.minTier, tierConfigs)} tier voucher for members who want more premium rewards.`}
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+      </div>
+
+      <div className="space-y-5 p-6">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <RuleRow label={translate(language, "Redeem points", "Redeem points")} value={`${offer.pointsCost.toLocaleString(locale)} pts`} />
+          <RuleRow label={translate(language, "Voucher value", "Voucher value")} value={voucherValue} />
+          <RuleRow
+            label={translate(language, "Required tier", "Required tier")}
+            value={formatTierLabel(offer.minTier, tierConfigs)}
+          />
+        </div>
+
+        <div className="grid gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm">
+          <RuleRow
+            label={translate(language, "Minimum order", "Minimum order")}
+            value={
+              (offer.minOrderAmount ?? 0) > 0
+                ? `${(offer.minOrderAmount ?? 0).toLocaleString("vi-VN")} ₫`
+                : translate(language, "No minimum", "No minimum")
+            }
+          />
+          <RuleRow
+            label={translate(language, "Maximum discount", "Maximum discount")}
+            value={
+              offer.maxDiscountAmount != null
+                ? `${offer.maxDiscountAmount.toLocaleString("vi-VN")} ₫`
+                : translate(language, "Based on voucher value", "Based on voucher value")
+            }
+          />
+          <RuleRow
+            label={translate(language, "Valid after redemption", "Valid after redemption")}
+            value={
+              offer.validDaysAfterClaim != null
+                ? `${offer.validDaysAfterClaim} ${translate(language, "days", "days")}`
+                : translate(language, "Until the campaign ends", "Until the campaign ends")
+            }
+          />
+          <RuleRow
+            label={translate(language, "New customers only", "New customers only")}
+            value={offer.newCustomerOnly ? translate(language, "Yes", "Yes") : translate(language, "No", "No")}
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span
+            className="rounded-full px-3 py-1.5 text-xs font-black"
+            style={{ color: badge.color, backgroundColor: badge.backgroundColor }}
+          >
             {formatTierLabel(offer.minTier, tierConfigs)}
           </span>
-          <span className={cn("font-bold", offer.affordable ? "text-emerald-600" : "text-rose-500")}>
-            {offer.affordable ? "Ready to redeem" : `${missingPoints} pts missing`}
+          <span className={cn("text-sm font-bold", canRedeem ? "text-emerald-600" : "text-rose-500")}>
+            {redeemStatus}
           </span>
         </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            {translate(language, "Close", "Close")}
+          </Button>
+          <Button
+            type="button"
+            disabled={!canRedeem}
+            onClick={onRedeem}
+            className="bg-[#0f2342] text-white hover:bg-[#0b1b34]"
+          >
+            <Gift className="h-4 w-4" />
+            {translate(language, "Redeem voucher", "Redeem voucher")}
+          </Button>
+        </DialogFooter>
       </div>
     </div>
   );
@@ -714,15 +1078,15 @@ function RedeemedVoucherCard({
           <div className="mt-2 text-sm leading-6 text-slate-500">
             {voucherTier
               ? `${formatTierLabel(voucherTier, tierConfigs)} ${translate(
-                  language,
-                  "tier voucher for members who want more premium rewards.",
-                  "tier voucher for members who want more premium rewards.",
-                )}`
+                language,
+                "tier voucher for members who want more premium rewards.",
+                "tier voucher for members who want more premium rewards.",
+              )}`
               : translate(
-                  language,
-                  "Voucher da duoc doi tu loyalty points va luu trong tai khoan cua ban.",
-                  "This voucher has been redeemed from loyalty points and saved in your account.",
-                )}
+                language,
+                "Voucher da duoc doi tu loyalty points va luu trong tai khoan cua ban.",
+                "This voucher has been redeemed from loyalty points and saved in your account.",
+              )}
           </div>
         </div>
 
@@ -751,7 +1115,9 @@ function RedeemedVoucherCard({
 
         <div className="flex items-center justify-end">
           <Button asChild type="button" className="h-10 rounded-xl bg-[#0f2342] px-4 text-white hover:bg-[#0b1b34]">
-            <Link href="/customer/discounts">{translate(language, "View detail", "View detail")}</Link>
+            <Link href={`/customer/discounts/${voucher.id}`}>
+              {translate(language, "View detail", "View detail")}
+            </Link>
           </Button>
         </div>
       </div>
@@ -849,6 +1215,44 @@ function buildNextTierBenefits(tier: TierConfig | null, language: string) {
     `${tier.pointMultiplier}x ${translate(language, "points for every spend", "points for every spend")}`,
     tier.priorityScore > 0 ? translate(language, "Priority booking support", "Priority booking support") : translate(language, "Standard booking support", "Standard booking support"),
     translate(language, "Exclusive tier member offers", "Exclusive tier member offers"),
+  ];
+}
+
+function buildHowToEarnPoints(language: string, tier: TierConfig | undefined) {
+  return [
+    {
+      icon: Wallet,
+      title: translate(language, "Complete a paid booking", "Complete a paid booking"),
+      description: tier
+        ? translate(
+          language,
+          `Moi giao dich hoan tat se nhan diem theo he so ${tier.pointMultiplier}x cua hang hien tai.`,
+          `Each completed purchase earns points using your current ${tier.pointMultiplier}x tier multiplier.`,
+        )
+        : translate(
+          language,
+          "Each completed purchase earns points based on your current membership tier.",
+          "Each completed purchase earns points based on your current membership tier.",
+        ),
+    },
+    {
+      icon: Star,
+      title: translate(language, "Submit a review", "Submit a review"),
+      description: translate(
+        language,
+        "Sau khi hoan tat booking, danh gia dich vu de nhan them diem thuong neu he thong co ap dung.",
+        "After a completed booking, leave a review to receive bonus points when the program applies.",
+      ),
+    },
+    {
+      icon: Sparkles,
+      title: translate(language, "Reach a higher tier", "Reach a higher tier"),
+      description: translate(
+        language,
+        "Lifetime points cang cao thi he so tich diem cang tot va quyen loi loyalty cang nhieu.",
+        "Higher lifetime points unlock better multipliers and more loyalty benefits.",
+      ),
+    },
   ];
 }
 

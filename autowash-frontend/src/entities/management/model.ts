@@ -8,6 +8,31 @@ export type AdminCatalogService = {
   imageUrls?: string[];
 };
 
+export type CatalogStatusFilter = "" | "ACTIVE" | "INACTIVE";
+export type CatalogSortBy = "name" | "price";
+export type CatalogSortDirection = "asc" | "desc";
+
+export type CatalogListParams = {
+  page?: number;
+  limit?: number;
+  status?: CatalogStatusFilter;
+  sortBy?: CatalogSortBy;
+  direction?: CatalogSortDirection;
+};
+
+export type PaginationMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+};
+
+export type CatalogPage<T> = {
+  items: T[];
+  pagination: PaginationMeta;
+};
+
 export type AdminCatalogPackage = {
   packageId: string;
   name: string;

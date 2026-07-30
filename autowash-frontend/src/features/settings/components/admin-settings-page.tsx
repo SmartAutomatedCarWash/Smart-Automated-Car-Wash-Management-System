@@ -1,18 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings2, Loader2, Save, Clock, Calendar, Coins, Trophy, ChevronDown, ChevronRight, Trash2, Medal, Crown, Diamond, Star } from "lucide-react";
+import { Settings2, Loader2, Save, Clock, Calendar, Coins, Trophy, ChevronDown, ChevronRight, Trash2, Medal, Crown, Diamond, Star, Plus } from "lucide-react";
 import { notify } from "@/shared/lib/notify";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Button } from "@/shared/ui/ui/button";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useSystemSettings, useUpdateSystemSettings } from "@/features/settings/hooks/use-admin-settings";
-import { useDeleteTierConfig, useTierConfigs, useUpdateTierConfig } from "@/features/settings/hooks/use-admin-tiers";
+import { useCreateTierConfig, useDeleteTierConfig, useTierConfigs, useUpdateTierConfig } from "@/features/settings/hooks/use-admin-tiers";
+import { getManagerSettings, updateWeeklyStaffKpiTarget } from "@/features/operations/lib/manager-settings-service";
 import type { SystemSettings } from "@/features/settings/lib/admin-settings-service";
 import { uploadTierImage, type TierConfig } from "@/features/settings/lib/admin-tiers-service";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { useLanguageStore } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 const ADMIN_SETTINGS_COPY = {
   vi: {
@@ -50,12 +52,14 @@ const ADMIN_SETTINGS_COPY = {
       threshold: "Mốc điểm (điểm)",
       multiplier: "Hệ số nhân điểm",
       priorityScore: "Mức độ ưu tiên",
+      advanceDays: "Đặt trước tối đa (ngày)",
       name: "Tên hạng",
       code: "Mã hạng",
       rank: "Cấp bậc",
       image: "Ảnh hạng",
       active: "Hoạt động",
       create: "Tạo hạng",
+      createNew: "Thêm hạng mới",
       delete: "Xoá hạng",
       priorityLevels: {
         30: "Cao",
@@ -90,6 +94,12 @@ const ADMIN_SETTINGS_COPY = {
       currency: "Currency",
       earnPerVnd: "VND per earned point",
     },
+    staffKpi: {
+      title: "Staff KPI",
+      desc: "Adjust the weekly KPI target used across manager and staff reporting.",
+      target: "Weekly completed sessions target",
+      save: "Save KPI target",
+    },
     loyaltyTiers: {
       title: "Loyalty Tiers",
       desc: "Tier thresholds (total earned points) and point multipliers for each tier.",
@@ -101,12 +111,14 @@ const ADMIN_SETTINGS_COPY = {
       threshold: "Threshold (points)",
       multiplier: "Point multiplier",
       priorityScore: "Priority level",
+      advanceDays: "Max advance booking (days)",
       name: "Tier name",
       code: "Tier code",
       rank: "Rank",
       image: "Tier image",
       active: "Active",
       create: "Create tier",
+      createNew: "Add new tier",
       delete: "Delete tier",
       priorityLevels: {
         30: "High",
@@ -137,16 +149,44 @@ function toForm(data: SystemSettings): SettingsForm {
 export function AdminSettingsPage() {
   const { language } = useLanguageStore();
   const getErrorMessage = useErrorMessage();
-  const copy = ADMIN_SETTINGS_COPY[language as keyof typeof ADMIN_SETTINGS_COPY] || ADMIN_SETTINGS_COPY.vi;
+  const copy = (ADMIN_SETTINGS_COPY[language as keyof typeof ADMIN_SETTINGS_COPY] || ADMIN_SETTINGS_COPY.vi) as any;
+  const staffKpiCopy = copy.staffKpi ?? {
+    title: "Staff KPI",
+    desc: "Adjust the weekly KPI target used across manager and staff reporting.",
+    target: "Weekly completed sessions target",
+    save: "Save KPI target",
+  };
   const settingsQuery = useSystemSettings();
   const updateMutation = useUpdateSystemSettings();
   const [form, setForm] = useState<SettingsForm | null>(null);
+  const managerSettingsQuery = useQuery({
+    queryKey: ["admin-settings", "manager-settings"],
+    queryFn: getManagerSettings,
+    refetchInterval: 30_000,
+  });
+  const [weeklyStaffKpiTarget, setWeeklyStaffKpiTarget] = useState(40);
+  const updateWeeklyKpiMutation = useMutation({
+    mutationFn: updateWeeklyStaffKpiTarget,
+    onSuccess: (data) => {
+      setWeeklyStaffKpiTarget(data.settings.weeklyStaffKpiTarget);
+      notify.success(copy.successMsg);
+    },
+    onError: (error) => {
+      notify.error(getErrorMessage(error));
+    },
+  });
 
   useEffect(() => {
     if (settingsQuery.data && !form) {
       setForm(toForm(settingsQuery.data));
     }
   }, [settingsQuery.data, form]);
+
+  useEffect(() => {
+    if (managerSettingsQuery.data?.settings) {
+      setWeeklyStaffKpiTarget(managerSettingsQuery.data.settings.weeklyStaffKpiTarget);
+    }
+  }, [managerSettingsQuery.data]);
 
   function updateField<K extends keyof SettingsForm>(field: K, value: SettingsForm[K]) {
     setForm((current) => (current ? { ...current, [field]: value } : current));
@@ -228,6 +268,34 @@ export function AdminSettingsPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FieldFormattedCurrency label={copy.currencyPoints.earnPerVnd} value={form.earnPointsUnitAmount} onChange={(v) => updateField("earnPointsUnitAmount", v)} />
                 </div>
+              </SettingsSection>
+
+              <SettingsSection icon={Trophy} title={staffKpiCopy.title} description={staffKpiCopy.desc}>
+                {managerSettingsQuery.isPending ? (
+                  <div className="flex justify-center p-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : managerSettingsQuery.isError ? (
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {getErrorMessage(managerSettingsQuery.error)}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="max-w-md">
+                      <FieldNumber
+                        label={staffKpiCopy.target}
+                        value={weeklyStaffKpiTarget}
+                        onChange={setWeeklyStaffKpiTarget}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button type="button" disabled={updateWeeklyKpiMutation.isPending} onClick={() => updateWeeklyKpiMutation.mutate({ weeklyStaffKpiTarget })}>
+                        {updateWeeklyKpiMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        {staffKpiCopy.save}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </SettingsSection>
 
               {/* Loyalty Tiers */}
@@ -444,6 +512,7 @@ function LoyaltyTiersSection({ copy }: { copy: any }) {
         </div>
       ) : (
         <div className="space-y-4">
+          <CreateTierPanel copy={copy} nextRank={(tiersQuery.data?.length ?? 0) + 1} />
           <div className="grid grid-cols-1 gap-3">
             {tiersQuery.data?.map((tier) => (
               <TierCard key={tier.tier} copy={copy} initialConfig={tier} />
@@ -452,6 +521,114 @@ function LoyaltyTiersSection({ copy }: { copy: any }) {
         </div>
       )}
     </SettingsSection>
+  );
+}
+
+function CreateTierPanel({ copy, nextRank }: { copy: any; nextRank: number }) {
+  const getErrorMessage = useErrorMessage();
+  const createMutation = useCreateTierConfig();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [threshold, setThreshold] = useState(0);
+  const [multiplier, setMultiplier] = useState(1);
+  const [priorityScore, setPriorityScore] = useState(10);
+  const [rankOrder, setRankOrder] = useState(nextRank);
+  const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
+  const [imageUrl, setImageUrl] = useState("#0f766e");
+  const [active, setActive] = useState(true);
+
+  useEffect(() => {
+    if (!isExpanded) {
+      setRankOrder(nextRank);
+    }
+  }, [isExpanded, nextRank]);
+
+  async function handleCreate() {
+    try {
+      await createMutation.mutateAsync({
+        code,
+        name,
+        minPoints: threshold,
+        pointMultiplier: multiplier,
+        priorityScore,
+        rankOrder,
+        advanceBookingDays,
+        imageUrl: imageUrl || null,
+        active,
+      });
+      setCode("");
+      setName("");
+      setThreshold(0);
+      setMultiplier(1);
+      setPriorityScore(10);
+      setRankOrder(nextRank + 1);
+      setAdvanceBookingDays(30);
+      setImageUrl("#0f766e");
+      setActive(true);
+      setIsExpanded(false);
+      notify.success(copy.successMsg);
+    } catch (error) {
+      notify.error(getErrorMessage(error));
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        onClick={() => setIsExpanded((current) => !current)}
+      >
+        <span className="flex items-center gap-2 text-sm font-bold text-foreground">
+          <Plus className="h-4 w-4" />
+          {copy.loyaltyTiers.createNew}
+        </span>
+        {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+      </button>
+
+      {isExpanded ? (
+        <div className="grid gap-4 border-t border-primary/10 p-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <FieldInput label={copy.loyaltyTiers.code} value={code} onChange={setCode} />
+            <div className="md:col-span-2">
+              <FieldInput label={copy.loyaltyTiers.name} value={name} onChange={setName} />
+            </div>
+            <FieldNumber label={copy.loyaltyTiers.threshold} value={threshold} onChange={setThreshold} />
+            <FieldNumber label={copy.loyaltyTiers.multiplier} value={multiplier} onChange={setMultiplier} />
+            <FieldNumber label={copy.loyaltyTiers.rank} value={rankOrder} onChange={setRankOrder} />
+            <FieldNumber label={copy.loyaltyTiers.advanceDays} value={advanceBookingDays} onChange={setAdvanceBookingDays} />
+            <FieldSelect
+              label={copy.loyaltyTiers.priorityScore}
+              value={priorityScore}
+              options={[
+                { label: copy.loyaltyTiers.priorityLevels[30], value: 30 },
+                { label: copy.loyaltyTiers.priorityLevels[20], value: 20 },
+                { label: copy.loyaltyTiers.priorityLevels[10], value: 10 },
+                { label: copy.loyaltyTiers.priorityLevels[0], value: 0 },
+              ]}
+              onChange={setPriorityScore}
+            />
+            <FieldColorPicker label="Tier Color Hex" value={imageUrl} onChange={setImageUrl} />
+          </div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+            <input type="checkbox" className="h-4 w-4 accent-primary" checked={active} onChange={(event) => setActive(event.target.checked)} />
+            {copy.loyaltyTiers.active}
+          </label>
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              className="h-9 text-xs font-bold"
+              disabled={createMutation.isPending || !code.trim() || !name.trim()}
+              onClick={handleCreate}
+            >
+              {createMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Plus className="mr-1.5 h-3.5 w-3.5" />}
+              {copy.loyaltyTiers.create}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -465,6 +642,7 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
   const [multiplier, setMultiplier] = useState(initialConfig.pointMultiplier);
   const [priorityScore, setPriorityScore] = useState(initialConfig.priorityScore);
   const [rankOrder, setRankOrder] = useState(initialConfig.rankOrder);
+  const [advanceBookingDays, setAdvanceBookingDays] = useState(initialConfig.advanceBookingDays);
   const defaultHex = {
     BRONZE: "#B07D4B",
     SILVER: "#94A3B8",
@@ -482,6 +660,7 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
     multiplier !== initialConfig.pointMultiplier ||
     priorityScore !== initialConfig.priorityScore ||
     rankOrder !== initialConfig.rankOrder ||
+    advanceBookingDays !== initialConfig.advanceBookingDays ||
     imageUrl !== (initialConfig.imageUrl || "") ||
     active !== initialConfig.active;
 
@@ -489,7 +668,7 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
     try {
       await updateMutation.mutateAsync({
         tier: initialConfig.tier,
-        request: { name, minPoints: threshold, pointMultiplier: multiplier, priorityScore, rankOrder, imageUrl: imageUrl || null, active },
+        request: { name, minPoints: threshold, pointMultiplier: multiplier, priorityScore, rankOrder, advanceBookingDays, imageUrl: imageUrl || null, active },
       });
       notify.success(copy.successMsg);
     } catch (error) {
@@ -554,6 +733,7 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
           <div className="hidden sm:flex items-center gap-4 text-sm font-medium text-muted-foreground">
             <span>{threshold.toLocaleString("vi-VN")} pts</span>
             <span>x{multiplier} multiplier</span>
+            <span>{advanceBookingDays} days</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -591,6 +771,11 @@ function TierCard({ copy, initialConfig }: { copy: any; initialConfig: TierConfi
               label={copy.loyaltyTiers.rank}
               value={rankOrder}
               onChange={setRankOrder}
+            />
+            <FieldNumber
+              label={copy.loyaltyTiers.advanceDays}
+              value={advanceBookingDays}
+              onChange={setAdvanceBookingDays}
             />
             <FieldSelect 
               label={copy.loyaltyTiers.priorityScore} 

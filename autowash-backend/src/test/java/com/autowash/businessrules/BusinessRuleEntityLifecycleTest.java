@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.autowash.entity.Booking;
 import com.autowash.entity.CustomerCombo;
+import com.autowash.entity.CustomerComboUsage;
+import com.autowash.entity.Payment;
 import com.autowash.entity.User;
 import com.autowash.entity.UserDiscount;
 import com.autowash.entity.UserPreference;
@@ -11,7 +13,10 @@ import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.BookingConfirmationStatus;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.CustomerComboStatus;
+import com.autowash.entity.enums.CustomerComboUsageStatus;
 import com.autowash.entity.enums.LanguagePreference;
+import com.autowash.entity.enums.PaymentMethod;
+import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.entity.enums.ThemePreference;
 import com.autowash.entity.enums.UserDiscountStatus;
 import com.autowash.entity.enums.UserRole;
@@ -97,6 +102,31 @@ class BusinessRuleEntityLifecycleTest {
     }
 
     @Test
+    void br071UsedDiscountCanBeForfeitedAfterLateCancellationOrNoShow() {
+        UserDiscount discount = UserDiscount.builder()
+                .user(customer())
+                .status(UserDiscountStatus.AVAILABLE)
+                .build();
+        Booking booking = booking();
+
+        discount.markAsUsed(booking);
+        discount.forfeit();
+
+        assertThat(discount.getStatus()).isEqualTo(UserDiscountStatus.FORFEITED);
+        assertThat(discount.getUsedInBooking()).isSameAs(booking);
+        assertThat(discount.getUsedAt()).isNotNull();
+    }
+
+    @Test
+    void br071CancelledUnpaidPaymentUsesCancelledStatusNotFailed() {
+        Payment payment = new Payment(booking(), PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, 189000);
+
+        payment.markCancelled();
+
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CANCELLED);
+    }
+
+    @Test
     void br132ComboIsMarkedUsedUpWhenRemainingUsagesReachZeroAndCanBeRestored() {
         Instant now = Instant.now();
         CustomerCombo combo = new CustomerCombo(UUID.randomUUID(), customer(), UUID.randomUUID(), 1, now, now.plusSeconds(86_400));
@@ -111,6 +141,26 @@ class BusinessRuleEntityLifecycleTest {
 
         assertThat(combo.getRemainingUsages()).isEqualTo(1);
         assertThat(combo.getStatus()).isEqualTo(CustomerComboStatus.ACTIVE);
+    }
+
+    @Test
+    void br133ComboUsageTracksReservedReleasedConsumedAndForfeitedStates() {
+        Instant now = Instant.now();
+        CustomerCombo combo = new CustomerCombo(UUID.randomUUID(), customer(), UUID.randomUUID(), 1, now, now.plusSeconds(86_400));
+        CustomerComboUsage usage = new CustomerComboUsage(combo, booking());
+
+        assertThat(usage.getStatus()).isEqualTo(CustomerComboUsageStatus.RESERVED);
+        assertThat(usage.release()).isTrue();
+        assertThat(usage.getStatus()).isEqualTo(CustomerComboUsageStatus.RELEASED);
+        assertThat(usage.release()).isFalse();
+
+        CustomerComboUsage consumedUsage = new CustomerComboUsage(combo, booking());
+        consumedUsage.markConsumed();
+        assertThat(consumedUsage.getStatus()).isEqualTo(CustomerComboUsageStatus.CONSUMED);
+
+        CustomerComboUsage forfeitedUsage = new CustomerComboUsage(combo, booking());
+        forfeitedUsage.forfeit();
+        assertThat(forfeitedUsage.getStatus()).isEqualTo(CustomerComboUsageStatus.FORFEITED);
     }
 
     private Booking booking() {

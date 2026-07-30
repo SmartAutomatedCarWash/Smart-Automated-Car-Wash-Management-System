@@ -19,7 +19,7 @@ export type BookingListFilterStatus =
 
 export type BookingConfirmationStatus = "PENDING" | "VERIFIED" | "EXPIRED" | "CANCELLED";
 
-export type PaymentMethod = "BANK_TRANSFER" | "E_WALLET" | "CASH_AT_COUNTER";
+export type PaymentMethod = "BANK_TRANSFER" | "E_WALLET" | "CASH_AT_COUNTER" | "OWNED_COMBO";
 
 export type BookingMode = "PACKAGE" | "COMBO";
 
@@ -93,6 +93,29 @@ export type CustomerCombo = {
   lastUsedAt: string | null;
 };
 
+export type CustomerComboDetail = CustomerCombo & {
+  description: string | null;
+  purchasePrice: number;
+  durationDays: number;
+  imageUrls: string[];
+  services: {
+    serviceId: string;
+    name: string;
+    description: string | null;
+    price: number;
+    durationMinutes: number;
+    quantity: number;
+    sortOrder: number;
+  }[];
+  usages: {
+    usageId: number;
+    bookingId: string;
+    bookingDate: string;
+    vehiclePlate: string;
+    usedAt: string;
+  }[];
+};
+
 export type CustomerComboPaymentStatus = {
   transactionRef: string;
   paymentStatus: string;
@@ -132,6 +155,7 @@ export type CreateBookingRequest = {
   paymentMethod: PaymentMethod;
   staffId?: string;
   staffIds?: string[];
+  note?: string;
 };
 
 export type BookingStaffOptionsRequest = {
@@ -274,6 +298,8 @@ export type BookingListItem = {
   confirmationExpiresAt: string | null;
   completedAt: string | null;
   staffName?: string | null;
+  notes?: string | null;
+  customerNotes?: string | null;
 };
 
 export type BookingDetailDto = {
@@ -341,6 +367,7 @@ export type BookingDetail = {
   assignedStaff?: BookingStaffAssignment[];
   washStatus: string | null;
   notes: string | null;
+  customerNotes?: string | null;
   createdAt: string;
   devOtp?: string;
   statusHistory?: BookingStatusHistoryItem[];
@@ -450,6 +477,7 @@ export type BookingDraft = {
   bookingTime: string;
   discountCode: string;
   confirmationEmail?: string;
+  note?: string;
   paymentMethod: PaymentMethod | null;
   staffId?: string;
   staffIds?: string[];

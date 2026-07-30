@@ -15,11 +15,14 @@ public record EligibleSessionBookingResponse(
         LocalDate bookingDate,
         LocalTime bookingTime,
         long finalAmount,
+        String paymentMethod,
+        String paymentStatus,
         int estimatedDurationMinutes,
         String assignedStaffId,
         String assignedStaffName,
         List<BookingDetailResponse.StaffAssignment> assignedStaff,
         String customerTier,
-        int customerPriorityScore
+        int customerPriorityScore,
+        String customerNotes
 ) {
 }

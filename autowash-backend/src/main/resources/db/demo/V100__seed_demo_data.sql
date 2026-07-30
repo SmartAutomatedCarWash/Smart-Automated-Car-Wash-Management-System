@@ -39,13 +39,13 @@ WHERE email IN (
 )
 ON CONFLICT (user_id) DO NOTHING;
 
-INSERT INTO tier_configs (tier, display_name, min_points, point_multiplier, priority_score, rank_order, system_tier, active, image_url)
+INSERT INTO tier_configs (tier, display_name, min_points, point_multiplier, priority_score, rank_order, advance_booking_days, system_tier, active, image_url)
 VALUES
-('BRONZE', 'Bronze', 0, 1.00, 10, 1, true, true, NULL),
-('SILVER', 'Silver', 500, 1.10, 20, 2, true, true, NULL),
-('GOLD', 'Gold', 1500, 1.25, 30, 3, true, true, NULL),
-('PLATINUM', 'Platinum', 3000, 1.50, 35, 4, true, true, NULL),
-('DIAMOND', 'Diamond', 6000, 2.00, 40, 5, true, true, NULL)
+('BRONZE', 'Bronze', 0, 1.00, 10, 1, 6, true, true, NULL),
+('SILVER', 'Silver', 500, 1.10, 20, 2, 12, true, true, NULL),
+('GOLD', 'Gold', 1500, 1.25, 30, 3, 18, true, true, NULL),
+('PLATINUM', 'Platinum', 3000, 1.50, 35, 4, 24, true, true, NULL),
+('DIAMOND', 'Diamond', 6000, 2.00, 40, 5, 30, true, true, NULL)
 ON CONFLICT (tier) DO NOTHING;
 
 INSERT INTO loyalty_accounts (id, customer_id, tier, current_points, total_earned_points)

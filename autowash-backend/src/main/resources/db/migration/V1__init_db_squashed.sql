@@ -123,12 +123,14 @@ CREATE TABLE tier_configs (
     point_multiplier    numeric(38,2) NOT NULL DEFAULT 1.0,
     priority_score      integer NOT NULL DEFAULT 0,
     rank_order          integer NOT NULL,
+    advance_booking_days integer NOT NULL DEFAULT 30,
     system_tier         boolean NOT NULL DEFAULT false,
     updated_at          timestamp(6) with time zone NOT NULL DEFAULT now(),
     tier                varchar(50) NOT NULL,
     display_name        varchar(100) NOT NULL,
     image_url           varchar(500),
-    PRIMARY KEY (tier)
+    PRIMARY KEY (tier),
+    CONSTRAINT chk_tier_advance_booking_days_positive CHECK (advance_booking_days >= 1)
 );
 
 CREATE TABLE loyalty_accounts (

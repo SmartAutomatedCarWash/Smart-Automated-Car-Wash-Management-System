@@ -20,6 +20,7 @@ public interface LoyaltyService {
     RedeemPointsResponse redeemOffer(UUID customerId, UUID offerId);
 
     TransactionPage getTransactionHistory(UUID customerId, String type, Instant dateFrom, Instant dateTo, int page, int limit);
+    TransactionPage getCustomerTransactionHistory(UUID customerId, int page, int limit);
 
     void updateCustomerTierByAdmin(UUID customerId, String newTier);
 

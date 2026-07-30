@@ -3,7 +3,7 @@
 import type { ChangeEvent, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Loader2, Plus, RefreshCcw, Search, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Plus, RefreshCcw, Search, Eye, EyeOff, ShieldCheck, UserCog, Users } from "lucide-react";
 import { notify } from "@/shared/lib/notify";
 import { Badge } from "@/shared/ui/ui/badge";
 import { Button } from "@/shared/ui/ui/button";
@@ -19,7 +19,7 @@ import {
 import { Input } from "@/shared/ui/ui/input";
 import { Label } from "@/shared/ui/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/ui/table";
-import { useAdminAccounts, useCreateAdminStaff } from "@/features/reports/hooks/use-admin-reporting";
+import { useAdminAccounts, useAdminAccountsSummary, useCreateAdminStaff } from "@/features/reports/hooks/use-admin-reporting";
 import { getFieldErrorMessage } from "@/shared/lib/api-errors";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
@@ -33,9 +33,9 @@ import type {
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 import { DynamicTierBadge } from "@/shared/ui/workspace/dynamic-tier-badge";
+import { TierIcon } from "@/shared/ui/workspace/tier-icon";
 
-const PAGE_LIMIT = 20;
-const STAFF_CLIENT_FILTER_LIMIT = 100;
+const PAGE_LIMIT = 5;
 const ROLE_OPTIONS: AdminAccountRole[] = ["CUSTOMER", "STAFF", "MANAGER", "ADMIN", "GUEST"];
 const STAFF_ROLE_OPTIONS: AdminAccountRole[] = ["STAFF", "MANAGER", "ADMIN"];
 const STATUS_OPTIONS: AdminAccountStatus[] = ["PENDING", "ACTIVE", "BLOCKED", "SUSPENDED", "INACTIVE"];
@@ -95,6 +95,7 @@ export function AdminAccountsPageContent() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateAdminStaffPayload>(EMPTY_STAFF_FORM);
   const createStaffMutation = useCreateAdminStaff();
+  const accountSummaryQuery = useAdminAccountsSummary();
 
   const handleTabChange = (tab: "customers" | "staff_admin") => {
     setActiveTab(tab);
@@ -115,6 +116,7 @@ export function AdminAccountsPageContent() {
         return {
           searchQuery: filters.searchQuery || undefined,
           role: filters.role ? (filters.role as AdminAccountRole) : undefined,
+          roleGroup: filters.role ? undefined : "STAFF_ADMIN",
           status: filters.status,
         };
       }
@@ -122,27 +124,12 @@ export function AdminAccountsPageContent() {
     [filters, activeTab],
   );
 
-  const isStaffClientFiltering = activeTab === "staff_admin" && !normalizedFilters.role;
-  const accountsQuery = useAdminAccounts(
-    normalizedFilters,
-    page,
-    isStaffClientFiltering ? STAFF_CLIENT_FILTER_LIMIT : PAGE_LIMIT,
-  );
+  const accountsQuery = useAdminAccounts(normalizedFilters, page, PAGE_LIMIT);
   
-  const rawAccounts = accountsQuery.data?.items ?? [];
-  const accounts = useMemo(() => {
-    if (activeTab === "customers") {
-      return rawAccounts;
-    } else {
-      if (!normalizedFilters.role) {
-        return rawAccounts.filter((acc) => acc.role === "STAFF" || acc.role === "ADMIN" || acc.role === "MANAGER");
-      }
-      return rawAccounts;
-    }
-  }, [rawAccounts, activeTab, normalizedFilters.role]);
+  const accounts = accountsQuery.data?.items ?? [];
 
   const pagination = accountsQuery.data?.pagination;
-  const showPagination = activeTab === "customers" || !!normalizedFilters.role;
+  const summary = accountSummaryQuery.data;
 
   const applyFilters = () => {
     setFilters({
@@ -246,6 +233,38 @@ export function AdminAccountsPageContent() {
           </div>
         </div>
 
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          {activeTab === "customers" ? (
+            <>
+              <SummaryCard
+                icon={<Users className="h-4 w-4" />}
+                label={translate(language, "Tổng tài khoản khách hàng", "Total customer accounts")}
+                value={summary?.totalCustomers}
+                isLoading={accountSummaryQuery.isPending}
+              />
+              {(summary?.customerTiers ?? []).map((tier) => (
+                <SummaryCard
+                  key={tier.tier}
+                  icon={<TierIcon tier={tier.tier} className="h-9 w-9 border-0 bg-transparent" iconClassName="h-5 w-5" />}
+                  label={translateTier(tier.tier, language as "vi" | "en")}
+                  value={tier.count}
+                  isLoading={accountSummaryQuery.isPending}
+                />
+              ))}
+            </>
+          ) : (
+            (summary?.staffRoles ?? STAFF_ROLE_OPTIONS.map((role) => ({ role, count: 0 }))).map((item) => (
+              <SummaryCard
+                key={item.role}
+                icon={item.role === "ADMIN" ? <ShieldCheck className="h-4 w-4" /> : item.role === "MANAGER" ? <UserCog className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                label={translateRole(item.role, language as "vi" | "en")}
+                value={item.count}
+                isLoading={accountSummaryQuery.isPending}
+              />
+            ))
+          )}
+        </div>
+
         <Card className="rounded-md border-slate-200 bg-white shadow-sm">
           <CardContent className="space-y-4 p-5">
             <div className={`grid gap-3 ${activeTab === "customers" ? "md:grid-cols-[minmax(0,1fr)_160px_auto_auto]" : "md:grid-cols-[minmax(0,1fr)_160px_160px_auto_auto]"} md:items-end`}>
@@ -319,9 +338,7 @@ export function AdminAccountsPageContent() {
                     : translate(language, "Danh sách Nhân sự", "Employee list")}
                 </h2>
                 <p className="text-xs text-slate-500">
-                  {isStaffClientFiltering
-                    ? `${accounts.length.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} ${translate(language, "bản ghi", "records")}`
-                    : pagination
+                  {pagination
                     ? `${pagination.total.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} ${translate(language, "bản ghi", "records")}`
                     : translate(language, "Đang tải bản ghi", "Loading records")}
                 </p>
@@ -393,7 +410,7 @@ export function AdminAccountsPageContent() {
               </div>
             </div>
 
-            {showPagination && pagination ? (
+            {pagination ? (
               <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-slate-500">
                   {translate(language, `Trang ${pagination.page} / ${Math.max(pagination.totalPages, 1)}`, `Page ${pagination.page} of ${Math.max(pagination.totalPages, 1)}`)}
@@ -538,6 +555,34 @@ function StatePanel({
       {icon}
       {message}
     </div>
+  );
+}
+
+function SummaryCard({
+  icon,
+  label,
+  value,
+  isLoading,
+}: {
+  icon: ReactNode;
+  label: string;
+  value?: number;
+  isLoading: boolean;
+}) {
+  return (
+    <Card className="rounded-md border-slate-200 bg-white shadow-sm">
+      <CardContent className="flex items-center gap-4 p-4">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
+          {icon}
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
+          <p className="mt-1 text-2xl font-black text-slate-950">
+            {isLoading ? <span className="block h-7 w-16 animate-pulse rounded-md bg-slate-100" /> : (value ?? 0).toLocaleString()}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

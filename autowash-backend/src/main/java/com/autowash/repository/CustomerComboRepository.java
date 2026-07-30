@@ -35,6 +35,8 @@ public interface CustomerComboRepository extends JpaRepository<CustomerCombo, UU
 
     Page<CustomerCombo> findByCustomer_IdOrderByCreatedAtDesc(UUID customerId, Pageable pageable);
 
+    Optional<CustomerCombo> findByIdAndCustomer_Id(UUID id, UUID customerId);
+
     List<CustomerCombo> findByTransactionRefAndPaymentStatusAndStatusOrderByCreatedAtAsc(
             String transactionRef,
             PaymentStatus paymentStatus,

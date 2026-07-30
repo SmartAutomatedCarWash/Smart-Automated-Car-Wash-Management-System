@@ -13,6 +13,8 @@ import {
   ChevronRight,
   Sparkles,
   CalendarDays,
+  StickyNote,
+  UserCheck,
 } from "lucide-react";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
@@ -232,6 +234,8 @@ function ActiveBookingCard({ booking, language }: { booking: BookingListItem; la
   const t = (vi: string, en: string) => translate(language, vi, en);
   const canShowPendingHoldCountdown = booking.status === "PENDING";
   const canShowAppointmentCountdown = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS"].includes(booking.status);
+  const staffName = booking.staffName ?? booking.assignedStaffName ?? null;
+  const bookingNote = booking.customerNotes?.trim() || booking.notes?.trim() || null;
 
   return (
     <Link href={`/customer/bookings/${booking.bookingId}`}>
@@ -264,6 +268,22 @@ function ActiveBookingCard({ booking, language }: { booking: BookingListItem; la
                   {booking.bookingDate} · {booking.bookingTime}
                 </span>
               </div>
+              {staffName || bookingNote ? (
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                  {staffName ? (
+                    <span className="flex min-w-0 items-center gap-1">
+                      <UserCheck className="h-3 w-3 shrink-0 text-emerald-600" />
+                      <span className="truncate">{staffName}</span>
+                    </span>
+                  ) : null}
+                  {bookingNote ? (
+                    <span className="flex min-w-0 items-center gap-1">
+                      <StickyNote className="h-3 w-3 shrink-0 text-sky-600" />
+                      <span className="line-clamp-1">{bookingNote}</span>
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
             <div className="shrink-0 text-right">
               <p className="text-base font-black text-slate-900">{formatBookingCurrency(booking.finalAmount)}</p>

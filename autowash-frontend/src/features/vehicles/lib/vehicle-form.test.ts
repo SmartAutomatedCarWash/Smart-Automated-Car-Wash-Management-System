@@ -76,6 +76,25 @@ test("returns explicit validation errors for create vehicle form", () => {
   );
 });
 
+test("rejects plates with province codes below 11", () => {
+  assert.deepEqual(
+    validateCustomerVehicleForm(
+      {
+        plate: "10A-123456",
+        type: "CAR",
+        brand: "Toyota",
+        model: "Camry",
+        year: "2024",
+        color: "",
+      },
+      "create",
+    ),
+    {
+      plate: "Plate must match formats like 30H-123456.",
+    },
+  );
+});
+
 test("rejects vehicle years after the current year", () => {
   assert.deepEqual(
     validateCustomerVehicleForm(

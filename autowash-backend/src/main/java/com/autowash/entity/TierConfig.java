@@ -36,6 +36,9 @@ public class TierConfig {
     @Column(name = "rank_order", nullable = false)
     private int rankOrder;
 
+    @Column(name = "advance_booking_days", nullable = false)
+    private int advanceBookingDays = 30;
+
     @Column(name = "system_tier", nullable = false)
     private boolean systemTier;
 
@@ -49,16 +52,21 @@ public class TierConfig {
     private Instant updatedAt;
 
     public TierConfig(String tier, String displayName, int minPoints, BigDecimal pointMultiplier, int priorityScore, int rankOrder, boolean systemTier, boolean active) {
-        this(tier, displayName, minPoints, pointMultiplier, priorityScore, rankOrder, systemTier, active, null);
+        this(tier, displayName, minPoints, pointMultiplier, priorityScore, rankOrder, 30, systemTier, active, null);
     }
 
     public TierConfig(String tier, String displayName, int minPoints, BigDecimal pointMultiplier, int priorityScore, int rankOrder, boolean systemTier, boolean active, String imageUrl) {
+        this(tier, displayName, minPoints, pointMultiplier, priorityScore, rankOrder, 30, systemTier, active, imageUrl);
+    }
+
+    public TierConfig(String tier, String displayName, int minPoints, BigDecimal pointMultiplier, int priorityScore, int rankOrder, int advanceBookingDays, boolean systemTier, boolean active, String imageUrl) {
         this.tier = normalizeTier(tier);
         this.displayName = displayName;
         this.minPoints = minPoints;
         this.pointMultiplier = pointMultiplier;
         this.priorityScore = priorityScore;
         this.rankOrder = rankOrder;
+        this.advanceBookingDays = advanceBookingDays;
         this.systemTier = systemTier;
         this.active = active;
         this.imageUrl = imageUrl;
@@ -66,15 +74,20 @@ public class TierConfig {
     }
 
     public void update(String displayName, int minPoints, BigDecimal pointMultiplier, int priorityScore, int rankOrder, boolean active) {
-        update(displayName, minPoints, pointMultiplier, priorityScore, rankOrder, active, imageUrl);
+        update(displayName, minPoints, pointMultiplier, priorityScore, rankOrder, advanceBookingDays, active, imageUrl);
     }
 
     public void update(String displayName, int minPoints, BigDecimal pointMultiplier, int priorityScore, int rankOrder, boolean active, String imageUrl) {
+        update(displayName, minPoints, pointMultiplier, priorityScore, rankOrder, advanceBookingDays, active, imageUrl);
+    }
+
+    public void update(String displayName, int minPoints, BigDecimal pointMultiplier, int priorityScore, int rankOrder, int advanceBookingDays, boolean active, String imageUrl) {
         this.displayName = displayName;
         this.minPoints = minPoints;
         this.pointMultiplier = pointMultiplier;
         this.priorityScore = priorityScore;
         this.rankOrder = rankOrder;
+        this.advanceBookingDays = advanceBookingDays;
         this.active = active;
         this.imageUrl = imageUrl;
         this.updatedAt = Instant.now();

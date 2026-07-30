@@ -76,6 +76,10 @@ function handleWsMessage(msg: WsMessage, queryClient: ReturnType<typeof useQuery
   }
 
   if (msg.eventType === "WASH_SESSION_UPDATE") {
+    // Admin booking status can change through manager/staff operations.
+    void queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+    void queryClient.invalidateQueries({ queryKey: ["admin-bookings-summary"] });
+
     // Staff operations queue
     void queryClient.invalidateQueries({ queryKey: ["staff-my-sessions"] });
     void queryClient.invalidateQueries({ queryKey: ["staff-operations"] });

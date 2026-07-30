@@ -21,6 +21,7 @@ class TierConfigMapperTest {
                 BigDecimal.valueOf(1.25),
                 30,
                 3,
+                18,
                 true,
                 true,
                 "https://cdn.example.com/gold.png"
@@ -34,6 +35,7 @@ class TierConfigMapperTest {
         assertThat(response.pointMultiplier()).isEqualTo(1.25);
         assertThat(response.priorityScore()).isEqualTo(30);
         assertThat(response.rankOrder()).isEqualTo(3);
+        assertThat(response.advanceBookingDays()).isEqualTo(18);
         assertThat(response.systemTier()).isTrue();
         assertThat(response.active()).isTrue();
         assertThat(response.imageUrl()).isEqualTo("https://cdn.example.com/gold.png");

@@ -15,7 +15,7 @@ import { getVoucherCodeFormatError, sanitizeVoucherCodeInput } from "../../../sh
 
 /** @deprecated Use generateTimeSlotsFromRange() with operating hours from API instead */
 export const BOOKING_TIME_SLOTS = ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"] as const;
-export const MIN_ADVANCE_BOOKING_MINUTES = 30;
+export const MIN_ADVANCE_BOOKING_MINUTES = 15;
 
 /**
  * Generate hourly time slots between openTime and closeTime (exclusive).
@@ -50,21 +50,6 @@ export function buildCreateBookingPayload(draft: BookingDraft): CreateBookingReq
     payload.comboId = draft.comboId;
   }
 
-  const staffIds = (draft.staffIds ?? [])
-    .map((staffId) => normalizeOptionalText(staffId))
-    .filter((staffId): staffId is string => Boolean(staffId))
-    .slice(0, 1);
-  if (staffIds.length > 0) {
-    payload.staffIds = staffIds;
-    payload.staffId = staffIds[0];
-  } else {
-    const staffId = normalizeOptionalText(draft.staffId ?? "");
-    if (staffId) {
-      payload.staffId = staffId;
-      payload.staffIds = [staffId];
-    }
-  }
-
   const discountCode = normalizeOptionalText(sanitizeVoucherCodeInput(draft.discountCode));
   if (discountCode) {
     payload.discountCode = discountCode;
@@ -73,6 +58,11 @@ export function buildCreateBookingPayload(draft: BookingDraft): CreateBookingReq
   const confirmationEmail = normalizeOptionalText(draft.confirmationEmail ?? "");
   if (confirmationEmail) {
     payload.confirmationEmail = confirmationEmail.toLowerCase();
+  }
+
+  const note = normalizeOptionalText(draft.note ?? "");
+  if (note) {
+    payload.note = note;
   }
 
   return payload;
@@ -169,19 +159,26 @@ export function validateBookingDraft(
   if (!draft.bookingTime) {
     errors.bookingTime = "Please choose a booking time.";
   } else if (isBeforeMinimumAdvance(draft.bookingDate, draft.bookingTime)) {
-    errors.bookingTime = "Please choose a time at least 30 minutes from now.";
+    errors.bookingTime = "Please choose a time at least 15 minutes from now.";
   }
   if (draft.confirmationEmail?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.confirmationEmail.trim())) {
     errors.confirmationEmail = "Please enter a valid confirmation email.";
+  }
+  if ((draft.note ?? "").trim().length > 500) {
+    errors.note = "Customer note must be at most 500 characters.";
   }
   if (requirePaymentMethod && !draft.paymentMethod) {
     errors.paymentMethod = "Please select a payment method.";
   }
   if (draft.discountCode.trim().length > 0) {
     const formatError = getVoucherCodeFormatError(draft.discountCode);
+    const selectedDiscountCode = summary?.selectedDiscountCode
+      ? sanitizeVoucherCodeInput(summary.selectedDiscountCode)
+      : null;
+    const draftDiscountCode = sanitizeVoucherCodeInput(draft.discountCode);
     if (formatError) {
       errors.discountCode = formatError;
-    } else if (!summary?.selectedDiscountCode) {
+    } else if (!selectedDiscountCode || selectedDiscountCode !== draftDiscountCode) {
       errors.discountCode = "Please validate the voucher before checkout.";
     }
   }
@@ -210,6 +207,8 @@ export function getPaymentMethodLabel(method: PaymentMethod | string) {
       return "VNPay";
     case "CASH_AT_COUNTER":
       return "Cash at counter";
+    case "OWNED_COMBO":
+      return "Owned combo";
     default:
       return humanizeCode(method);
   }

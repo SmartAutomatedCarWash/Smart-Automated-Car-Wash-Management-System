@@ -77,7 +77,9 @@ public class BookingResponseAssembler {
                 booking.getCreatedAt(),
                 resolveConfirmationExpiresAt(booking, null),
                 washSession == null ? null : washSession.getCompletedAt(),
-                resolveAssignedStaffName(booking, washSession)
+                resolveAssignedStaffName(booking, washSession),
+                washSession == null ? null : washSession.getNotes(),
+                booking.getNote()
         );
     }
 
@@ -126,6 +128,7 @@ public class BookingResponseAssembler {
                 resolveAssignedStaff(booking, washSession),
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
+                booking.getNote(),
                 booking.getCreatedAt(),
                 null,
                 statusHistory,

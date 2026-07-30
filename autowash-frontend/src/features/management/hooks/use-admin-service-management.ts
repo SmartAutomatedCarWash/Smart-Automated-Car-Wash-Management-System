@@ -24,6 +24,8 @@ import type {
   AdminComboForm,
   AdminPackageForm,
   AdminServiceForm,
+  CatalogListParams,
+  CatalogPage,
 } from "@/entities/management";
 
 function useAdminManagementContext() {
@@ -39,32 +41,32 @@ function adminManagementScope(userId: string | null) {
   return ["admin-service-management", userId] as const;
 }
 
-export function useAdminCatalogServices() {
+export function useAdminCatalogServices(params: CatalogListParams = {}) {
   const { userId, enabled } = useAdminManagementContext();
 
-  return useQuery<AdminCatalogService[], ApiErrorResponse>({
-    queryKey: [...adminManagementScope(userId), "services"],
-    queryFn: listAdminCatalogServices,
+  return useQuery<CatalogPage<AdminCatalogService>, ApiErrorResponse>({
+    queryKey: [...adminManagementScope(userId), "services", params],
+    queryFn: () => listAdminCatalogServices(params),
     enabled,
   });
 }
 
-export function useAdminCatalogPackages() {
+export function useAdminCatalogPackages(params: CatalogListParams = {}) {
   const { userId, enabled } = useAdminManagementContext();
 
-  return useQuery<AdminCatalogPackage[], ApiErrorResponse>({
-    queryKey: [...adminManagementScope(userId), "packages"],
-    queryFn: listAdminCatalogPackages,
+  return useQuery<CatalogPage<AdminCatalogPackage>, ApiErrorResponse>({
+    queryKey: [...adminManagementScope(userId), "packages", params],
+    queryFn: () => listAdminCatalogPackages(params),
     enabled,
   });
 }
 
-export function useAdminCombosCatalog() {
+export function useAdminCombosCatalog(params: CatalogListParams = {}) {
   const { userId, enabled } = useAdminManagementContext();
 
-  return useQuery<AdminCombo[], ApiErrorResponse>({
-    queryKey: [...adminManagementScope(userId), "combos"],
-    queryFn: listAdminCombos,
+  return useQuery<CatalogPage<AdminCombo>, ApiErrorResponse>({
+    queryKey: [...adminManagementScope(userId), "combos", params],
+    queryFn: () => listAdminCombos(params),
     enabled,
   });
 }

@@ -28,6 +28,9 @@ public record TierConfigCreateRequest(
         @Min(value = 0, message = "Rank order cannot be negative")
         int rankOrder,
 
+        @Min(value = 1, message = "Advance booking days must be at least 1")
+        Integer advanceBookingDays,
+
         @Size(max = 500)
         String imageUrl,
 

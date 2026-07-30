@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BellRing, Car, Clock, Eye, X } from "lucide-react";
+import { BellRing, Car, Clock, Eye, UserCheck, X } from "lucide-react";
 import { Booking, STATUS_STYLES, fmtBookingMoney, useBookings } from "@/features/bookings/lib/booking-store";
 import { Card } from "@/shared/ui/ui/card";
 import { Button } from "@/shared/ui/ui/button";
@@ -103,6 +103,12 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
               </div>
               <div className="mt-1.5 text-sm font-medium text-muted-foreground">
                 {booking.services.join(", ")}
+              </div>
+              <div className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                <UserCheck className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">
+                  {booking.assignedStaffName || translate(language, "Chưa gán staff", "No staff assigned")}
+                </span>
               </div>
               <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-accent/30 px-2.5 py-1 text-xs font-semibold text-muted-foreground">
                 <Clock className="h-3.5 w-3.5 text-primary" /> {booking.scheduledAt}
@@ -281,6 +287,10 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
                     label={translate(language, "Tổng chi phí", "Booking total")}
                     value={fmtBookingMoney(detailBooking.totalPrice)}
                     highlight
+                  />
+                  <Info
+                    label={translate(language, "Nhân viên phụ trách", "Assigned staff")}
+                    value={detailBooking.assignedStaffName || translate(language, "Chưa gán staff", "No staff assigned")}
                   />
                   <Info label={translate(language, "Ghi chú", "Notes")} value={detailBooking.notes || translate(language, "Không có", "None")} />
                 </section>

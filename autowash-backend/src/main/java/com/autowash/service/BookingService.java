@@ -29,6 +29,8 @@ public interface BookingService {
 
     PayBookingResponse payBooking(String bookingId, String transactionRef);
     PayBookingResponse markBookingPaidForOperations(String bookingId, String transactionRef);
+    boolean requiresCashCollectionForCheckIn(String bookingId);
+    void ensureBookingPaymentReadyForCheckIn(String bookingId);
     PayBookingResponse changeBookingPaymentMethod(String bookingId, PaymentMethod paymentMethod);
     BookingDetailResponse updateBookingStaff(String bookingId, List<String> staffIds);
     BookingDetailResponse confirmPendingBooking(String bookingId);

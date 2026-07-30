@@ -8,7 +8,6 @@ import {
   CalendarClock,
   CarFront,
   Eye,
-  Filter,
   Loader2,
   Palette,
   Plus,
@@ -20,6 +19,7 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
+import Swal from "sweetalert2";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
@@ -115,26 +115,41 @@ export function CustomerVehiclesListClientPage() {
       </div>
 
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6">
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-xl space-y-4">
-              <div className="text-xs font-black uppercase tracking-[0.18em] text-cyan-600">
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <div className="text-[11px] font-black uppercase tracking-[0.2em] text-cyan-600">
                 {translate(language, "Xe cua khach hang", "Customer vehicles")}
               </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
                   {translate(language, "Tat ca xe", "All vehicles")}
                 </h1>
-              </div>
-              <div className="grid max-w-[14rem] gap-3">
-                <VehicleStatCard icon={CarFront} value={vehicles.length} label={translate(language, "Tong so xe", "Total vehicles")} tone="sky" />
+                <div className="inline-flex h-9 items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-3 text-sm font-black text-slate-800">
+                  <CarFront className="h-4 w-4 text-sky-600" />
+                  <span>{vehicles.length}</span>
+                  <span className="font-bold text-slate-500">{translate(language, "xe", "vehicles")}</span>
+                </div>
               </div>
             </div>
 
-            <Button className="h-12 rounded-lg bg-[#06275f] px-6 text-white shadow-sm hover:bg-[#041d48]" onClick={() => setShowCreateDialog(true)}>
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
+              {vehicles.length > 0 ? (
+                <div className="relative w-full sm:w-[360px]">
+                  <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder={translate(language, "Tim xe...", "Search vehicles...")}
+                    className="h-11 rounded-xl border-slate-200 bg-slate-50 pl-10 shadow-none focus-visible:bg-white"
+                  />
+                </div>
+              ) : null}
+              <Button className="h-11 shrink-0 rounded-xl bg-[#06275f] px-5 text-white shadow-sm hover:bg-[#041d48]" onClick={() => setShowCreateDialog(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 {translate(language, "Them xe", "Add vehicle")}
-            </Button>
+              </Button>
+            </div>
           </div>
         </section>
 
@@ -142,31 +157,6 @@ export function CustomerVehiclesListClientPage() {
           <VehicleEmptyState language={language} onAddClick={() => setShowCreateDialog(true)} />
         ) : (
           <>
-            <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-              <div className="relative w-full lg:max-w-xl">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder={translate(language, "Tim theo bien so, mau xe, dong xe...", "Search vehicles by plate, model, or color...")}
-                  className="h-11 rounded-lg border-slate-200 pl-10"
-                />
-              </div>
-              <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600">
-                <Filter className="h-4 w-4 text-slate-400" />
-                <span>{translate(language, "Sap xep", "Sort by")}</span>
-                <select
-                  value={sortMode}
-                  onChange={(event) => setSortMode(event.target.value as typeof sortMode)}
-                  className="bg-transparent text-slate-950 outline-none"
-                >
-                  <option value="RECENT">{translate(language, "Moi them gan day", "Recently added")}</option>
-                  <option value="PRIMARY">{translate(language, "Xe uu tien", "Primary first")}</option>
-                  <option value="PLATE">{translate(language, "Bien so", "Plate")}</option>
-                </select>
-              </label>
-            </section>
-
             <section className="grid gap-4">
               {filteredVehicles.map((vehicle) => (
             <VehicleListCard
@@ -270,7 +260,6 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
   const vehicleQuery = useCustomerVehicleDetail(vehicleId);
   const updateMutation = useUpdateCustomerVehicle(vehicleId);
   const setPrimaryMutation = useSetPrimaryCustomerVehicle(vehicleId);
-  const deleteMutation = useDeleteCustomerVehicle(vehicleId);
   const [form, setForm] = useState<CustomerVehicleFormValues>(EMPTY_CUSTOMER_VEHICLE_FORM);
   const [showValidation, setShowValidation] = useState(false);
   const locale = language === "vi" ? "vi-VN" : "en-US";
@@ -336,24 +325,63 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
     }
 
     if (!hasChanges) {
-      toast.info(translate(language, "Chua co thay doi nao de luu.", "No changes to save."), VEHICLE_TOAST_OPTIONS);
-      router.push("/customer/vehicles");
+      return;
+    }
+
+    const confirmation = await Swal.fire({
+      title: "Are you sure you want to change the car's information?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: translate(language, "Xac nhan", "Confirm"),
+      cancelButtonText: translate(language, "Huy", "Cancel"),
+      buttonsStyling: false,
+      customClass: {
+        popup: "swal-notify-popup",
+        title: "swal-notify-title",
+        htmlContainer: "swal-notify-message",
+        confirmButton: "swal-notify-btn-warning",
+        cancelButton: "swal-notify-btn-info",
+      },
+    });
+
+    if (!confirmation.isConfirmed) {
       return;
     }
 
     try {
       await updateMutation.mutateAsync(buildUpdateCustomerVehicleRequest(form));
-      toast.success(translate(language, "Xe da duoc cap nhat thanh cong.", "Vehicle updated successfully."), VEHICLE_TOAST_OPTIONS);
+      await Swal.fire({
+        icon: "success",
+        title: translate(language, "Cap nhat thanh cong!", "Vehicle updated successfully!"),
+        text: translate(language, "Thong tin xe da duoc luu.", "The vehicle information has been saved."),
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        customClass: {
+          popup: "swal-notify-popup",
+          title: "swal-notify-title",
+          htmlContainer: "swal-notify-message",
+          confirmButton: "swal-notify-btn-success",
+        },
+      });
       router.push("/customer/vehicles");
     } catch (error) {
-      toast.error(
-        getVehicleToastErrorMessage(
+      await Swal.fire({
+        icon: "error",
+        title: translate(language, "Khong the cap nhat xe.", "Unable to update vehicle."),
+        text: getVehicleToastErrorMessage(
           error,
           translate(language, "Khong the cap nhat xe.", "Unable to update vehicle."),
           getErrorMessage,
         ),
-        VEHICLE_TOAST_OPTIONS,
-      );
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        customClass: {
+          popup: "swal-notify-popup",
+          title: "swal-notify-title",
+          htmlContainer: "swal-notify-message",
+          confirmButton: "swal-notify-btn-error",
+        },
+      });
     }
   };
 
@@ -366,23 +394,6 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
         getVehicleToastErrorMessage(
           error,
           translate(language, "Khong the dat xe chinh.", "Unable to set primary vehicle."),
-          getErrorMessage,
-        ),
-        VEHICLE_TOAST_OPTIONS,
-      );
-    }
-  };
-
-  const handleDelete = async () => {
-    try {
-      await deleteMutation.mutateAsync();
-      toast.success(translate(language, "Xe da duoc xoa.", "Vehicle removed."), VEHICLE_TOAST_OPTIONS);
-      router.push("/customer/vehicles");
-    } catch (error) {
-      toast.error(
-        getVehicleToastErrorMessage(
-          error,
-          translate(language, "Khong the xoa xe.", "Unable to delete vehicle."),
           getErrorMessage,
         ),
         VEHICLE_TOAST_OPTIONS,
@@ -439,9 +450,7 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
             vehicle={vehicle}
             language={language}
             onSetPrimary={handleSetPrimary}
-            onDelete={handleDelete}
             isSettingPrimary={setPrimaryMutation.isPending}
-            isDeleting={deleteMutation.isPending}
           />
         </div>
       </section>
@@ -524,36 +533,6 @@ function VehicleCreateDialog({
         />
       </DialogContent>
     </Dialog>
-  );
-}
-
-function VehicleStatCard({
-  icon: Icon,
-  value,
-  label,
-  tone,
-}: {
-  icon: typeof CarFront;
-  value: number;
-  label: string;
-  tone: "sky" | "emerald" | "amber";
-}) {
-  const styles = {
-    sky: "bg-sky-50 text-sky-700",
-    emerald: "bg-emerald-50 text-emerald-700",
-    amber: "bg-amber-50 text-amber-700",
-  }[tone];
-
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-      <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${styles}`}>
-        <Icon className="h-5 w-5" />
-      </span>
-      <span>
-        <span className="block text-lg font-black text-slate-950">{value}</span>
-        <span className="block text-xs font-semibold text-slate-500">{label}</span>
-      </span>
-    </div>
   );
 }
 
@@ -769,32 +748,21 @@ function VehicleQuickActionsCard({
   vehicle,
   language,
   onSetPrimary,
-  onDelete,
   isSettingPrimary,
-  isDeleting,
 }: {
   vehicle: CustomerVehicleDetail;
   language: "vi" | "en";
   onSetPrimary: () => Promise<void>;
-  onDelete: () => Promise<void>;
   isSettingPrimary: boolean;
-  isDeleting: boolean;
 }) {
   return (
     <Card className="border-slate-200/80 bg-white/95 shadow-[0_18px_44px_rgba(15,23,42,0.08)]">
       <CardHeader className="border-b border-slate-200/70 bg-slate-50/70">
-        <div className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">
-          <Sparkles className="h-3.5 w-3.5" />
-          {translate(language, "Tac vu nhanh", "Quick actions")}
-        </div>
-        <CardTitle className="text-lg font-black text-slate-900">
-          {translate(language, "Quan ly vai tro cua xe", "Manage vehicle role")}
-        </CardTitle>
         <CardDescription>
           {translate(
             language,
-            "Dat xe nay lam mac dinh cho booking moi hoac xoa xe khoi tai khoan neu khong con su dung.",
-            "Set this vehicle as the default for new bookings or remove it from the account if it is no longer used.",
+            "Dat xe nay lam mac dinh cho cac booking moi.",
+            "Set this vehicle as the default for new bookings.",
           )}
         </CardDescription>
       </CardHeader>
@@ -819,27 +787,11 @@ function VehicleQuickActionsCard({
               </>
             )}
           </Button>
-        ) : null}
-
-        <Button
-          type="button"
-          variant="destructive"
-          className="h-11 w-full rounded-xl"
-          onClick={onDelete}
-          disabled={isDeleting}
-        >
-          {isDeleting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {translate(language, "Dang xoa...", "Removing...")}
-            </>
-          ) : (
-            <>
-              <Trash2 className="mr-2 h-4 w-4" />
-              {translate(language, "Xoa xe nay", "Delete this vehicle")}
-            </>
-          )}
-        </Button>
+        ) : (
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-center text-sm font-semibold text-emerald-700">
+            {translate(language, "Day la xe chinh hien tai.", "This is your current primary vehicle.")}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -47,7 +47,7 @@ import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { OperationsQueueSession, WashSessionStatus } from "@/entities/operations";
 import type { AdminBooking, PaginationMeta } from "@/entities/reports";
 
-type PeriodMode = "day" | "month" | "year" | "all";
+type PeriodMode = "day" | "week" | "month" | "year" | "all";
 type TrendRow = { key: string; label: string; revenue: number; bookings: number; completed: number };
 type StaffRow = {
   staffId: string;
@@ -225,6 +225,17 @@ export function ManagerReportsPage() {
       setToDate(today);
       return;
     }
+    if (mode === "week") {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const startOfWeek = new Date(d.setDate(diff));
+      const endOfWeek = new Date(d);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      setFromDate(startOfWeek.toISOString().slice(0, 10));
+      setToDate(endOfWeek.toISOString().slice(0, 10));
+      return;
+    }
     if (mode === "month") {
       setFromDate(`${today.slice(0, 8)}01`);
       setToDate(new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().slice(0, 10));
@@ -244,20 +255,11 @@ export function ManagerReportsPage() {
       <Card className="rounded-2xl border-slate-200 bg-white px-3 py-3 shadow-sm">
         <div className="grid items-end gap-3 xl:grid-cols-[330px_160px_160px_130px_minmax(145px,1fr)_minmax(145px,1fr)_minmax(145px,1fr)]">
           <FilterBlock label={t("Khoảng thời gian", "Period")}>
-            <div className="flex flex-wrap gap-2">
-              {periodOptions(language).map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => applyPeriod(option.value)}
-                  className={`h-9 rounded-xl px-4 text-xs font-black transition ${
-                    periodMode === option.value ? "bg-[#00236f] text-white shadow-sm" : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+            <ReportSelect 
+              value={periodMode} 
+              onChange={(val) => applyPeriod(val as PeriodMode)} 
+              options={periodOptions(language).map(opt => [opt.value, opt.label])} 
+            />
           </FilterBlock>
           <FilterBlock label={t("Từ ngày", "From")}>
             <DateInput value={fromDate} onChange={setFromDate} />
@@ -719,6 +721,7 @@ function RevenueTooltip({ active, payload, label, language, locale }: { active?:
 function periodOptions(language: Language): Array<{ value: PeriodMode; label: string }> {
   return [
     { value: "day", label: translate(language, "Theo ngày", "By day") },
+    { value: "week", label: translate(language, "Theo tuần", "By week") },
     { value: "month", label: translate(language, "Theo tháng", "By month") },
     { value: "year", label: translate(language, "Theo năm", "By year") },
     { value: "all", label: translate(language, "Tất cả", "All") },
@@ -729,6 +732,8 @@ function mapPeriodModeToBackendRange(mode: PeriodMode) {
   switch (mode) {
     case "day":
       return "TODAY";
+    case "week":
+      return "WEEK";
     case "month":
       return "MONTH";
     case "year":
@@ -853,6 +858,15 @@ function getTrendKeys(mode: PeriodMode, fromDate: string, toDate: string, sessio
     return Array.from({ length: 15 }, (_, index) => {
       const hour = String(index + 7).padStart(2, "0");
       return { key: hour, label: `${hour}:00` };
+    });
+  }
+  if (mode === "week") {
+    return Array.from({ length: 7 }, (_, index) => {
+      const d = new Date(`${fromDate}T00:00:00`);
+      d.setDate(d.getDate() + index);
+      const dateStr = d.toISOString().slice(0, 10);
+      const label = d.toLocaleDateString("en-US", { weekday: "short" });
+      return { key: dateStr, label };
     });
   }
   if (mode === "month") {

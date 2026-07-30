@@ -27,18 +27,26 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SlotHoldServiceImpl implements SlotHoldService {
-    private static final long MIN_ADVANCE_BOOKING_MINUTES = 30;
+    private static final long MIN_ADVANCE_BOOKING_MINUTES = 15;
 
     private final SlotHoldRepository slotHoldRepository;
     private final BookingRepository bookingRepository;
     private final SystemSettingsRepository systemSettingsRepository;
     private final UserRepository userRepository;
+    private final BookingAdvanceWindowPolicy bookingAdvanceWindowPolicy;
 
-    public SlotHoldServiceImpl(SlotHoldRepository slotHoldRepository, BookingRepository bookingRepository, SystemSettingsRepository systemSettingsRepository, UserRepository userRepository) {
+    public SlotHoldServiceImpl(
+            SlotHoldRepository slotHoldRepository,
+            BookingRepository bookingRepository,
+            SystemSettingsRepository systemSettingsRepository,
+            UserRepository userRepository,
+            BookingAdvanceWindowPolicy bookingAdvanceWindowPolicy
+    ) {
         this.slotHoldRepository = slotHoldRepository;
         this.bookingRepository = bookingRepository;
         this.systemSettingsRepository = systemSettingsRepository;
         this.userRepository = userRepository;
+        this.bookingAdvanceWindowPolicy = bookingAdvanceWindowPolicy;
     }
 
     @Override
@@ -49,6 +57,13 @@ public class SlotHoldServiceImpl implements SlotHoldService {
 
         Instant now = Instant.now();
         validateMinimumAdvance(slotTime, now);
+        SystemSettings settings = systemSettingsRepository.findById(1)
+                .orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "System settings not found", ErrorCode.SYSTEM_ERROR));
+        bookingAdvanceWindowPolicy.validateWithinAdvanceWindow(
+                customer,
+                slotTime.atZone(ZoneId.systemDefault()).toLocalDate(),
+                settings
+        );
         var existingHold = slotHoldRepository.findByCustomerAndSlotTime(customer, slotTime);
         if (existingHold.isPresent()) {
             SlotHold hold = existingHold.get();
@@ -57,9 +72,6 @@ public class SlotHoldServiceImpl implements SlotHoldService {
             }
             slotHoldRepository.delete(hold);
         }
-
-        SystemSettings settings = systemSettingsRepository.findById(1)
-                .orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "System settings not found", ErrorCode.SYSTEM_ERROR));
 
         validateSlotCapacity(slotTime, settings.getMaxBookingsPerTimeSlot());
 
@@ -91,10 +103,11 @@ public class SlotHoldServiceImpl implements SlotHoldService {
         LocalTime operatingStart = LocalTime.parse(settings.getOperatingStartTime());
         LocalTime operatingEnd = LocalTime.parse(settings.getOperatingEndTime());
         Instant now = Instant.now();
+        boolean withinAdvanceWindow = bookingAdvanceWindowPolicy.isWithinAdvanceWindow(customer, bookingDate, settings);
 
         return bookingTimes.stream()
                 .distinct()
-                .map(time -> toAvailability(bookingDate, time, customer, capacity, operatingStart, operatingEnd, now))
+                .map(time -> toAvailability(bookingDate, time, customer, capacity, operatingStart, operatingEnd, now, withinAdvanceWindow))
                 .toList();
     }
 
@@ -126,7 +139,8 @@ public class SlotHoldServiceImpl implements SlotHoldService {
             int capacity,
             LocalTime operatingStart,
             LocalTime operatingEnd,
-            Instant now
+            Instant now,
+            boolean withinAdvanceWindow
     ) {
         LocalTime localTime = LocalTime.parse(bookingTime);
         LocalDateTime scheduledLocal = bookingDate.atTime(localTime);
@@ -147,7 +161,7 @@ public class SlotHoldServiceImpl implements SlotHoldService {
                 .atZone(ZoneId.systemDefault())
                 .toInstant()
                 .isBefore(now.plus(MIN_ADVANCE_BOOKING_MINUTES, ChronoUnit.MINUTES));
-        boolean available = withinOperatingHours && meetsMinimumAdvance && remaining > 0;
+        boolean available = withinAdvanceWindow && withinOperatingHours && meetsMinimumAdvance && remaining > 0;
 
         return new SlotAvailabilityResponse(
                 bookingDate,
@@ -165,7 +179,7 @@ public class SlotHoldServiceImpl implements SlotHoldService {
         if (slotTime.isBefore(now.plus(MIN_ADVANCE_BOOKING_MINUTES, ChronoUnit.MINUTES))) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Booking time must be at least 30 minutes from now",
+                    "Booking time must be at least 15 minutes from now",
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }

@@ -1,6 +1,7 @@
 package com.autowash.controller;
 
 import com.autowash.dto.LoyaltyAccountResponse;
+import com.autowash.dto.BookingPointBreakdownResponse;
 import com.autowash.dto.LoyaltyTransactionResponse;
 import com.autowash.dto.WashHistoryItemResponse;
 import com.autowash.service.CustomerLoyaltyService;
@@ -14,6 +15,7 @@ import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -44,6 +46,17 @@ public class CustomerLoyaltyController {
     ) {
         CustomerLoyaltyService.LoyaltyTransactionPage transactionPage = customerLoyaltyService.listTransactions(page, limit);
         return ApiResponse.ok("Loyalty transactions retrieved", transactionPage.items(), transactionPage.pagination());
+    }
+
+    @GetMapping("/api/v1/loyalty/bookings/{bookingId}/points")
+    @Operation(summary = "Get booking and review point breakdown")
+    public ApiResponse<BookingPointBreakdownResponse> getBookingPointBreakdown(
+            @PathVariable String bookingId
+    ) {
+        return ApiResponse.ok(
+                "Booking point breakdown retrieved",
+                customerLoyaltyService.getBookingPointBreakdown(bookingId)
+        );
     }
 
     @GetMapping("/api/v1/customers/wash-history")

@@ -13,11 +13,11 @@ import type { TierConfig } from "@/features/settings/lib/admin-tiers-service";
 import type { TierVoucherOffer } from "@/entities/loyalty";
 
 const MOCK_CONFIGS: TierConfig[] = [
-  { tier: "MEMBER", name: "Member", minPoints: 0, pointMultiplier: 1.0, priorityScore: 0, rankOrder: 1, systemTier: true, active: true, updatedAt: "" },
-  { tier: "SILVER", name: "Silver", minPoints: 500, pointMultiplier: 1.2, priorityScore: 0, rankOrder: 2, systemTier: true, active: true, updatedAt: "" },
-  { tier: "GOLD", name: "Gold", minPoints: 1500, pointMultiplier: 1.5, priorityScore: 0, rankOrder: 3, systemTier: true, active: true, updatedAt: "" },
-  { tier: "PLATINUM", name: "Platinum", minPoints: 4000, pointMultiplier: 2.0, priorityScore: 80, rankOrder: 4, systemTier: true, active: true, updatedAt: "" },
-  { tier: "DIAMOND", name: "Diamond", minPoints: 10000, pointMultiplier: 2.5, priorityScore: 100, rankOrder: 5, systemTier: true, active: true, updatedAt: "" },
+  { tier: "MEMBER", name: "Member", minPoints: 0, pointMultiplier: 1.0, priorityScore: 0, rankOrder: 1, advanceBookingDays: 6, systemTier: true, active: true, updatedAt: "" },
+  { tier: "SILVER", name: "Silver", minPoints: 500, pointMultiplier: 1.2, priorityScore: 0, rankOrder: 2, advanceBookingDays: 12, systemTier: true, active: true, updatedAt: "" },
+  { tier: "GOLD", name: "Gold", minPoints: 1500, pointMultiplier: 1.5, priorityScore: 0, rankOrder: 3, advanceBookingDays: 18, systemTier: true, active: true, updatedAt: "" },
+  { tier: "PLATINUM", name: "Platinum", minPoints: 4000, pointMultiplier: 2.0, priorityScore: 80, rankOrder: 4, advanceBookingDays: 24, systemTier: true, active: true, updatedAt: "" },
+  { tier: "DIAMOND", name: "Diamond", minPoints: 10000, pointMultiplier: 2.5, priorityScore: 100, rankOrder: 5, advanceBookingDays: 30, systemTier: true, active: true, updatedAt: "" },
 ];
 
 const MOCK_OFFERS: TierVoucherOffer[] = [
@@ -34,6 +34,17 @@ test("computes loyalty tier progress against the next threshold", () => {
     nextThreshold: 500,
     pointsToNextTier: 180,
     progressPercent: 64,
+  });
+});
+
+test("computes loyalty progress within the current tier range", () => {
+  assert.deepEqual(getTierProgress("SILVER", 770, MOCK_CONFIGS), {
+    currentTier: "SILVER",
+    nextTier: "GOLD",
+    currentPoints: 770,
+    nextThreshold: 1500,
+    pointsToNextTier: 730,
+    progressPercent: 27,
   });
 });
 

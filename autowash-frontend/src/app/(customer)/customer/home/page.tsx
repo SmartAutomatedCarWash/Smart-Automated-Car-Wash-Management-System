@@ -165,6 +165,7 @@ export default function CustomerHomePage() {
     };
   }, [activeWash]);
 
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const { data: articles = [] } = useBlogArticles();
@@ -319,7 +320,15 @@ export default function CustomerHomePage() {
         </div>
 
         {/* Luminous Welcome Section */}
-        <section className="overflow-hidden rounded-3xl border border-border/50 bg-card p-6 shadow-sm sm:p-8">
+        {showWelcomeBanner && (
+        <section className="relative overflow-hidden rounded-3xl border border-border/50 bg-card p-6 shadow-sm sm:p-8">
+          <button
+            onClick={() => setShowWelcomeBanner(false)}
+            className="absolute top-4 right-4 p-1 text-muted-foreground hover:bg-accent hover:text-foreground rounded-full transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full bg-[#EAF6FD] px-3.5 py-1 text-xs font-bold uppercase tracking-[0.15em] text-[#0566D9]">
@@ -354,6 +363,7 @@ export default function CustomerHomePage() {
             </div>
           </div>
         </section>
+        )}
 
         {/* Hero Slider & Info */}
         <section className="relative mt-2 overflow-hidden rounded-3xl border border-[#BDEEFF] bg-[#F5FBFF] shadow-[0_18px_48px_rgba(47,128,237,0.12)]">

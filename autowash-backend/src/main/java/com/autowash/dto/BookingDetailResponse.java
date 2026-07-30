@@ -28,6 +28,7 @@ public record BookingDetailResponse(
         List<StaffAssignment> assignedStaff,
         String washStatus,
         String notes,
+        String customerNotes,
         Instant createdAt,
         String devOtp,
         List<BookingStatusHistoryItem> statusHistory,

@@ -84,6 +84,7 @@ function translatePaymentMethod(method: string, lang: "vi" | "en") {
   const map: Record<string, { vi: string; en: string }> = {
     E_WALLET: { vi: "VNPay", en: "VNPay" },
     CASH_AT_COUNTER: { vi: "Tiền mặt tại quầy", en: "Cash at counter" },
+    OWNED_COMBO: { vi: "Combo đã sở hữu", en: "Owned combo" },
     BANK_TRANSFER: { vi: "SePay", en: "SePay" },
     VNPAY: { vi: "Cổng thanh toán VNPAY", en: "VNPAY Gate" },
     CASH: { vi: "Tiền mặt", en: "Cash" },
@@ -230,6 +231,25 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
         return "bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-100";
       default:
         return "bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-100";
+    }
+  };
+
+  const statusDotColor = (status: string) => {
+    switch (status) {
+      case "COMPLETED":
+        return "bg-emerald-500";
+      case "CONFIRMED":
+        return "bg-blue-500";
+      case "CHECKED_IN":
+        return "bg-indigo-500";
+      case "IN_PROGRESS":
+        return "bg-amber-500";
+      case "CANCELLED":
+        return "bg-rose-500";
+      case "NO_SHOW":
+        return "bg-slate-500";
+      default:
+        return "bg-slate-400";
     }
   };
 
@@ -530,7 +550,7 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
                   </h4>
                 </div>
                 <p className="text-sm text-slate-600 leading-relaxed italic bg-white p-4 rounded-2xl border border-slate-100 min-h-[80px]">
-                  {booking.notes || translate(language, "Không có ghi chú nào.", "No specific notes provided.")}
+                  {booking.customerNotes || translate(language, "Không có ghi chú nào.", "No specific notes provided.")}
                 </p>
                 <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
                   {new Date(booking.createdAt).toLocaleDateString(language === "vi" ? "vi-VN" : "en-US")}
@@ -870,23 +890,57 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
                   {translate(language, "Chọn trạng thái tiếp theo", "Select status")}
                 </label>
+                <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 px-3.5 py-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {translate(language, "Hiện tại", "Current")}
+                    </p>
+                    <p className="mt-1 text-xs font-black text-slate-900">
+                      {translateStatus(booking.status, language as "vi" | "en")}
+                    </p>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={cn("rounded-full border px-3 py-1 text-[10px] font-black", statusColor(booking.status))}
+                  >
+                    {booking.status.replace(/_/g, " ")}
+                  </Badge>
+                </div>
                 <Select
                   value={selectedStatus || undefined}
                   onValueChange={(value) => setSelectedStatus(value as BookingStatus)}
                   disabled={updateStatusMutation.isPending || availableStatuses.length === 0}
                 >
-                  <SelectTrigger className={`w-full rounded-2xl h-10 border border-slate-200 text-xs font-bold ${statusColor(selectedStatus || booking.status)}`}>
-                    <SelectValue placeholder={translateStatus(booking.status, language as "vi" | "en")} />
+                  <SelectTrigger
+                    className={cn(
+                      "h-11 w-full rounded-2xl border border-slate-200 bg-white text-left text-xs font-black text-slate-900 shadow-sm",
+                      "focus:ring-2 focus:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-100 disabled:text-slate-600",
+                    )}
+                  >
+                    <SelectValue
+                      placeholder={
+                        availableStatuses.length > 0
+                          ? translate(language, "Chọn trạng thái mới", "Select new status")
+                          : translate(language, "Không còn trạng thái để chuyển", "No available next status")
+                      }
+                    />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-2xl border-slate-200 bg-white p-1 shadow-xl">
                     {availableStatuses.length > 0 ? (
                       availableStatuses.map((st) => (
-                        <SelectItem key={st} value={st} className="text-xs font-semibold">
-                          {translateStatus(st, language as "vi" | "en")}
+                        <SelectItem
+                          key={st}
+                          value={st}
+                          className="rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:bg-cyan-50 focus:text-cyan-900"
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className={cn("h-2 w-2 rounded-full", statusDotColor(st))} />
+                            {translateStatus(st, language as "vi" | "en")}
+                          </span>
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="__LOCKED__" disabled className="text-xs font-semibold">
+                      <SelectItem value="__LOCKED__" disabled className="rounded-xl px-3 py-2 text-xs font-bold text-slate-500">
                         {translate(language, "Trạng thái đã khóa", "Status locked")}
                       </SelectItem>
                     )}
@@ -899,7 +953,12 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
                   type="button"
                   variant={statusDirty ? "default" : "outline"}
                   onClick={handleSaveStatus}
-                  className="w-full rounded-2xl h-10 font-bold text-xs"
+                  className={cn(
+                    "h-11 w-full rounded-2xl text-xs font-black",
+                    statusDirty
+                      ? "bg-cyan-600 text-white hover:bg-cyan-700 disabled:bg-cyan-300 disabled:text-white"
+                      : "border-slate-200 bg-white text-slate-600 disabled:bg-slate-50 disabled:text-slate-500 disabled:opacity-100",
+                  )}
                   disabled={!statusDirty || updateStatusMutation.isPending}
                 >
                   {updateStatusMutation.isPending && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}

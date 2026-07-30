@@ -38,6 +38,7 @@ public record OperationsQueueResponse(
             String bookingId,
             String customerName,
             String customerPhone,
+            String customerTier,
             String vehiclePlate,
             String packageId,
             String servicePackage,
@@ -50,13 +51,16 @@ public record OperationsQueueResponse(
             Integer estimatedDurationMinutes,
             Long feeAmount,
             String feeCurrency,
+            String paymentMethod,
+            String paymentStatus,
             Integer projectedLoyaltyPoints,
             Integer awardedLoyaltyPoints,
             Instant queuedAt,
             Instant checkedInAt,
             Instant startedAt,
             Instant completedAt,
-            String notes
+            String notes,
+            String customerNotes
     ) {
     }
 }

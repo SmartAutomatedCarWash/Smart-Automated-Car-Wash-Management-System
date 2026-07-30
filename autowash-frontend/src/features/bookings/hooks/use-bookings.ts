@@ -9,6 +9,7 @@ import {
   createComboVnpayCheckout,
   createVnpayCheckout,
   getCustomerComboPaymentStatus,
+  getCustomerComboDetail,
   getActiveWashTracking,
   getCustomerBookingDetail,
   getWashTrackingDetail,
@@ -62,6 +63,7 @@ import type {
   BookingStaffOption,
   BookingStaffOptionsRequest,
   CustomerCombo,
+  CustomerComboDetail,
   CustomerComboPaymentStatus,
   ExtraServiceRecommendation,
   SlotAvailability,
@@ -168,6 +170,17 @@ export function useCustomerComboHistory(page = 1, limit = 20) {
   });
 }
 
+export function useCustomerComboDetail(customerComboId: string) {
+  const { enabled, userId } = useBookingQueryContext();
+
+  return useQuery<CustomerComboDetail, ApiErrorResponse>({
+    queryKey: ["booking-catalog", "customer-combos", "detail", userId, customerComboId],
+    queryFn: () => getCustomerComboDetail(customerComboId),
+    enabled: enabled && customerComboId.length > 0,
+    refetchOnMount: "always",
+  });
+}
+
 export function useCustomerComboPaymentStatus(transactionRef: string | null | undefined, enabled = true) {
   const context = useBookingQueryContext();
 
@@ -259,7 +272,7 @@ export function useCreateCustomerBooking() {
 
   return useMutation<CreateBookingResponse, ApiErrorResponse, BookingDraft>({
     mutationFn: createCustomerBooking,
-    onSuccess: (createdBooking) => {
+    onSuccess: (createdBooking, draft) => {
       const newListItem: BookingListItem = {
         bookingId: createdBooking.bookingId,
         vehiclePlate: createdBooking.vehiclePlate,
@@ -269,6 +282,10 @@ export function useCreateCustomerBooking() {
         finalAmount: createdBooking.pricing.finalAmount,
         status: createdBooking.status,
         washStatus: null,
+        assignedStaffName: createdBooking.assignedStaffName,
+        staffName: createdBooking.assignedStaffName,
+        notes: null,
+        customerNotes: draft.note?.trim() || null,
         createdAt: createdBooking.createdAt,
         confirmationExpiresAt: new Date(new Date(createdBooking.createdAt).getTime() + PENDING_BOOKING_HOLD_MS).toISOString(),
         completedAt: null,

@@ -9,16 +9,21 @@ import java.util.ArrayList;
 import java.util.UUID;
 import com.autowash.entity.User;
 import com.autowash.dto.CustomerComboResponse;
+import com.autowash.dto.ComboServiceItem;
+import com.autowash.dto.CustomerComboDetailResponse;
+import com.autowash.dto.CustomerComboUsageResponse;
 import com.autowash.dto.CustomerComboPaymentStatusResponse;
 import com.autowash.dto.PurchaseCustomerComboRequest;
 import com.autowash.dto.PurchaseCustomerComboResponse;
 import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.enums.CustomerComboStatus;
+import com.autowash.entity.enums.CustomerComboUsageStatus;
 import com.autowash.entity.CustomerComboUsage;
 import com.autowash.repository.CustomerComboRepository;
 import com.autowash.repository.CustomerComboUsageRepository;
 import com.autowash.entity.Combo;
 import com.autowash.repository.ComboRepository;
+import com.autowash.repository.ComboServiceRepository;
 import com.autowash.repository.BookingRepository;
 import com.autowash.service.CustomerComboService;
 import com.autowash.entity.enums.PaymentMethod;
@@ -40,6 +45,7 @@ public class CustomerComboServiceImpl implements CustomerComboService {
     private final CustomerComboRepository customerComboRepository;
     private final CustomerComboUsageRepository customerComboUsageRepository;
     private final ComboRepository ComboRepository;
+    private final ComboServiceRepository comboServiceRepository;
     private final BookingRepository bookingRepository;
     private final String sepayBankCode;
     private final String sepayAccountNumber;
@@ -52,6 +58,7 @@ public class CustomerComboServiceImpl implements CustomerComboService {
             CustomerComboRepository customerComboRepository,
             CustomerComboUsageRepository customerComboUsageRepository,
             ComboRepository ComboRepository,
+            ComboServiceRepository comboServiceRepository,
             BookingRepository bookingRepository,
             @Value("${autowash.payment.sepay.bank-code:TPBank}") String sepayBankCode,
             @Value("${autowash.payment.sepay.account-number:}") String sepayAccountNumber,
@@ -63,6 +70,7 @@ public class CustomerComboServiceImpl implements CustomerComboService {
         this.customerComboRepository = customerComboRepository;
         this.customerComboUsageRepository = customerComboUsageRepository;
         this.ComboRepository = ComboRepository;
+        this.comboServiceRepository = comboServiceRepository;
         this.bookingRepository = bookingRepository;
         this.sepayBankCode = sepayBankCode;
         this.sepayAccountNumber = sepayAccountNumber;
@@ -100,6 +108,80 @@ public class CustomerComboServiceImpl implements CustomerComboService {
                 combos.hasNext()
         );
         return new CustomerComboService.CustomerComboPage(items, pagination);
+    }
+
+    @Transactional(readOnly = true)
+    public CustomerComboDetailResponse getCustomerCombo(User customer, String customerComboId) {
+        UUID ownedComboId;
+        try {
+            ownedComboId = UUID.fromString(customerComboId);
+        } catch (IllegalArgumentException exception) {
+            throw new ApiException(
+                    HttpStatus.NOT_FOUND,
+                    "Customer combo not found",
+                    ErrorCode.RESOURCE_NOT_FOUND
+            );
+        }
+
+        CustomerCombo ownedCombo = customerComboRepository
+                .findByIdAndCustomer_Id(ownedComboId, customer.getId())
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "Customer combo not found",
+                        ErrorCode.RESOURCE_NOT_FOUND
+                ));
+        Combo catalogCombo = ComboRepository.findById(ownedCombo.getComboId())
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "Combo catalog information not found",
+                        ErrorCode.RESOURCE_NOT_FOUND
+                ));
+
+        List<ComboServiceItem> services = comboServiceRepository
+                .findByComboIdOrderBySortOrderAsc(catalogCombo.getId())
+                .stream()
+                .map(service -> new ComboServiceItem(
+                        service.getOptionId().toString(),
+                        service.getOptionName(),
+                        service.getOptionDescription(),
+                        service.getOptionPrice(),
+                        service.getOptionDurationMinutes(),
+                        service.getQuantity(),
+                        service.getSortOrder()
+                ))
+                .toList();
+        List<CustomerComboUsageResponse> usages = customerComboUsageRepository
+                .findByCustomerComboIdOrderByUsedAtDesc(ownedCombo.getId())
+                .stream()
+                .map(usage -> new CustomerComboUsageResponse(
+                        usage.getId(),
+                        usage.getBooking().getId().toString(),
+                        usage.getBooking().getBookingDate(),
+                        usage.getBooking().getVehicle().getPlate(),
+                        usage.getUsedAt()
+                ))
+                .toList();
+
+        return new CustomerComboDetailResponse(
+                ownedCombo.getId().toString(),
+                catalogCombo.getId().toString(),
+                catalogCombo.getName(),
+                catalogCombo.getDescription(),
+                catalogCombo.getPrice(),
+                catalogCombo.getDurationDays() == null ? 0 : catalogCombo.getDurationDays(),
+                ownedCombo.getStatus().name(),
+                ownedCombo.getTotalUsages(),
+                ownedCombo.getRemainingUsages(),
+                ownedCombo.getPaymentStatus() == null ? null : ownedCombo.getPaymentStatus().name(),
+                ownedCombo.getTransactionRef(),
+                ownedCombo.getActivatedAt(),
+                ownedCombo.getCreatedAt(),
+                ownedCombo.getExpiresAt(),
+                usages.isEmpty() ? null : usages.get(0).usedAt(),
+                splitImages(catalogCombo.getImageUrl()),
+                services,
+                usages
+        );
     }
 
     @Transactional
@@ -140,7 +222,7 @@ public class CustomerComboServiceImpl implements CustomerComboService {
 
     @Transactional
     public PurchaseCustomerComboResponse purchaseCombo(User customer, PurchaseCustomerComboRequest request) {
-        if (request.paymentMethod() == PaymentMethod.CASH_AT_COUNTER) {
+        if (request.paymentMethod() == PaymentMethod.CASH_AT_COUNTER || request.paymentMethod() == PaymentMethod.OWNED_COMBO) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Combo purchases require online payment confirmation",
@@ -261,9 +343,22 @@ public class CustomerComboServiceImpl implements CustomerComboService {
     public void releaseUsageForBooking(String bookingId) {
         UUID parsedBookingId = UUID.fromString(bookingId);
         customerComboUsageRepository.findByBookingId(parsedBookingId).ifPresent(usage -> {
-            customerComboRepository.findById(usage.getCustomerCombo().getId()).ifPresent(CustomerCombo::restoreUsage);
-            customerComboUsageRepository.delete(usage);
+            if (usage.release()) {
+                customerComboRepository.findById(usage.getCustomerCombo().getId()).ifPresent(CustomerCombo::restoreUsage);
+            }
         });
+    }
+
+    @Transactional
+    public void markUsageConsumedForBooking(String bookingId) {
+        UUID parsedBookingId = UUID.fromString(bookingId);
+        customerComboUsageRepository.findByBookingId(parsedBookingId).ifPresent(CustomerComboUsage::markConsumed);
+    }
+
+    @Transactional
+    public void forfeitUsageForBooking(String bookingId) {
+        UUID parsedBookingId = UUID.fromString(bookingId);
+        customerComboUsageRepository.findByBookingId(parsedBookingId).ifPresent(CustomerComboUsage::forfeit);
     }
 
     @Transactional
@@ -328,10 +423,23 @@ public class CustomerComboServiceImpl implements CustomerComboService {
                 combo.getActivatedAt(),
                 combo.getCreatedAt(),
                 combo.getExpiresAt(),
-                customerComboUsageRepository.findFirstByCustomerComboIdOrderByUsedAtDesc(combo.getId())
+                customerComboUsageRepository.findFirstByCustomerComboIdAndStatusInOrderByUsedAtDesc(
+                                combo.getId(),
+                                List.of(CustomerComboUsageStatus.CONSUMED, CustomerComboUsageStatus.FORFEITED)
+                        )
                         .map(CustomerComboUsage::getUsedAt)
                         .orElse(null)
         );
+    }
+
+    private List<String> splitImages(String imageUrls) {
+        if (imageUrls == null || imageUrls.isBlank()) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(imageUrls.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .toList();
     }
 
     private Instant expiresAt(Instant activatedAt, Combo combo) {
