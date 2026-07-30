@@ -8,7 +8,7 @@ import {
   type UpdateCustomerVehicleRequest,
 } from "../../../entities/vehicles/index.ts";
 
-export const customerVehiclePlatePattern = /^[0-9]{2}[A-Z]-[0-9]{6}$/;
+export const customerVehiclePlatePattern = /^(?:1[1-9]|[2-9][0-9])[A-Z]-[0-9]{6}$/;
 export const CURRENT_VEHICLE_YEAR = new Date().getFullYear();
 
 export const EMPTY_CUSTOMER_VEHICLE_FORM: CustomerVehicleFormValues = {

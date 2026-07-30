@@ -93,6 +93,22 @@ class BusinessRuleValidationTest {
     }
 
     @Test
+    void br028VehiclePlateRejectsProvinceCodesBelow11() {
+        Set<String> invalidProperties = validator.validate(new CreateVehicleRequest(
+                        "10A-123456",
+                        VehicleType.CAR,
+                        "Toyota",
+                        "Camry",
+                        2024,
+                        null
+                )).stream()
+                .map(violation -> violation.getPropertyPath().toString())
+                .collect(java.util.stream.Collectors.toSet());
+
+        assertThat(invalidProperties).contains("plate");
+    }
+
+    @Test
     void br032VehicleYearCannotBeInTheFuture() {
         Set<String> invalidProperties = validator.validate(new CreateVehicleRequest(
                         "30H-123456",

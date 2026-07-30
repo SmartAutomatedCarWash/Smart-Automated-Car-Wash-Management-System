@@ -5,7 +5,6 @@ import { createElement, useMemo, useState } from "react";
 import type { ComponentType } from "react";
 import {
   CheckCircle2,
-  ChevronRight,
   Clock3,
   Coins,
   Crown,
@@ -222,35 +221,27 @@ export function CustomerLoyaltyPageContent() {
   return (
     <div className="min-h-[calc(100vh-72px)] bg-[linear-gradient(180deg,#fffdf8_0%,#fbf8f2_35%,#f5f6fb_100%)] px-4 py-6 text-slate-950 sm:px-6 lg:px-8 font-['Be_Vietnam_Pro','Inter',sans-serif]">
       <div className="mx-auto max-w-[1320px] space-y-5">
-        <section className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-[30px] font-black tracking-tight text-slate-950">
-              {translate(language, "Loyalty & Rewards", "Loyalty & Rewards")}
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              {translate(
-                language,
-                "Earn points, unlock rewards and enjoy exclusive member benefits.",
-                "Earn points, unlock rewards and enjoy exclusive member benefits.",
-              )}
-            </p>
+        <section className="relative overflow-hidden rounded-[28px] border border-[#f0ddc4] bg-white shadow-[0_28px_60px_-40px_rgba(130,92,35,0.4)]">
+          <style dangerouslySetInnerHTML={{
+            __html: `
+            @keyframes light-sweep {
+              0% { left: -150%; }
+              50% { left: 150%; }
+              100% { left: 150%; }
+            }
+            .animate-light-sweep {
+              position: absolute;
+              top: 0;
+              height: 100%;
+              width: 250px;
+              background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.55), transparent);
+              transform: skewX(-20deg);
+              animation: light-sweep 6s infinite ease-in-out;
+            }
+          `}} />
+          <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+            <div className="animate-light-sweep" />
           </div>
-
-          <div className="flex min-w-[210px] items-center justify-between gap-4 rounded-[22px] border border-[#eadfce] bg-white px-4 py-3 shadow-[0_18px_40px_-30px_rgba(122,88,40,0.45)]">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f7ede1] text-[#9a6a1f]">
-              <Gift className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">
-                {translate(language, "Available Points", "Available Points")}
-              </div>
-              <div className="text-[28px] font-black leading-none text-slate-950">{displayedPoints.toLocaleString(locale)} pts</div>
-            </div>
-            <ChevronRight className="h-4 w-4 text-slate-400" />
-          </div>
-        </section>
-
-        <section className="overflow-hidden rounded-[28px] border border-[#f0ddc4] bg-white shadow-[0_28px_60px_-40px_rgba(130,92,35,0.4)]">
           <div
             className="relative grid gap-6 px-6 py-6 lg:grid-cols-[1.2fr_0.85fr_0.85fr]"
             style={{ background: `linear-gradient(135deg, #fff9ef 0%, ${currentHex}26 55%, #fff4df 100%)` }}
@@ -328,7 +319,47 @@ export function CustomerLoyaltyPageContent() {
           </div>
         </section>
 
-        <section className="rounded-[24px] border border-[#ece8df] bg-white px-4 py-4 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
+        <section className="relative rounded-[24px] border border-[#ece8df] bg-white px-4 py-4 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
+          <style dangerouslySetInnerHTML={{
+            __html: `
+            @keyframes progress-dot {
+              0% {
+                left: 0%;
+                border-radius: 50% 50% 50% 50%;
+                transform: translate(-50%, -50%) scale(0.9);
+              }
+              30% {
+                border-radius: 60% 40% 50% 50%;
+                transform: translate(-50%, -50%) scale(1.15) skewX(-6deg);
+              }
+              50% {
+                border-radius: 40% 60% 45% 55%;
+                transform: translate(-50%, -50%) scale(0.95) skewX(6deg);
+              }
+              70% {
+                border-radius: 50% 45% 55% 50%;
+                transform: translate(-50%, -50%) scale(1.1) skewX(-3deg);
+              }
+              100% {
+                left: 100%;
+                border-radius: 50% 50% 50% 50%;
+                transform: translate(-50%, -50%) scale(0.9);
+              }
+            }
+            .animate-progress-dot {
+              position: absolute;
+              top: 50%;
+              height: 8px;
+              width: 8px;
+              background: linear-gradient(135deg, #ffffff 0%, #e0f2fe 100%);
+              box-shadow: 
+                0 0 10px 2px rgba(56, 189, 248, 0.75), 
+                0 0 4px 1px rgba(255, 255, 255, 0.8),
+                inset -1px -1px 2px rgba(14, 165, 233, 0.3),
+                inset 1px 1px 2px rgba(255, 255, 255, 1);
+              animation: progress-dot 3.2s infinite ease-in-out;
+            }
+          `}} />
           <div className="relative">
             <div
               className="absolute left-[22px] top-5 hidden h-[2px] rounded-full bg-slate-200 lg:block"
@@ -344,24 +375,25 @@ export function CustomerLoyaltyPageContent() {
               style={{
                 width:
                   sortedTiers.length > 0
-                    ? `${
-                        ((sortedTiers.length - 1) / sortedTiers.length) *
-                        Math.max(0, Math.min(tierTrackProgressPercent, 100))
-                      }%`
+                    ? `${((sortedTiers.length - 1) / sortedTiers.length) *
+                    Math.max(0, Math.min(tierTrackProgressPercent, 100))
+                    }%`
                     : "0px",
               }}
-            />
+            >
+              <div className="animate-progress-dot" />
+            </div>
             <div className="relative grid grid-cols-2 gap-4 lg:grid-cols-5 lg:gap-0">
-            {sortedTiers.map((tier, index) => (
-              <TierStep
-                key={tier.tier}
-                tier={tier}
-                isCurrent={tier.tier === activeTier}
-                isUnlocked={index <= currentTierIndex}
-                tiers={tiersQuery.data ?? []}
-                isLast={index === sortedTiers.length - 1}
-              />
-            ))}
+              {sortedTiers.map((tier, index) => (
+                <TierStep
+                  key={tier.tier}
+                  tier={tier}
+                  isCurrent={tier.tier === activeTier}
+                  isUnlocked={index <= currentTierIndex}
+                  tiers={tiersQuery.data ?? []}
+                  isLast={index === sortedTiers.length - 1}
+                />
+              ))}
             </div>
           </div>
         </section>
@@ -458,7 +490,6 @@ export function CustomerLoyaltyPageContent() {
                       offer={offer}
                       locale={locale}
                       language={language}
-                      availablePoints={displayedPoints}
                       isPending={redeemMutation.isPending}
                       onSelect={setSelectedOffer}
                       onViewDetails={setPreviewOffer}
@@ -524,7 +555,6 @@ export function CustomerLoyaltyPageContent() {
           {previewOffer ? (
             <VoucherOfferDetails
               offer={previewOffer}
-              availablePoints={displayedPoints}
               locale={locale}
               language={language}
               tierConfigs={tiersQuery.data ?? []}
@@ -768,7 +798,6 @@ function RewardVoucherCard({
   offer,
   locale,
   language,
-  availablePoints,
   isPending,
   onSelect,
   onViewDetails,
@@ -777,7 +806,6 @@ function RewardVoucherCard({
   offer: VoucherOfferState;
   locale: string;
   language: string;
-  availablePoints: number;
   isPending: boolean;
   onSelect: (offer: VoucherOfferState) => void;
   onViewDetails: (offer: VoucherOfferState) => void;
@@ -785,63 +813,83 @@ function RewardVoucherCard({
 }) {
   const disabled = !offer.eligible || !offer.affordable || isPending;
   const hex = tierConfigs.find((item) => item.tier === offer.minTier)?.imageUrl || tierFallbackHex[offer.minTier] || tierFallbackHex.BRONZE;
-  const badge = generateTierBadgeStyle(hex);
-  const missingPoints = Math.max(offer.pointsCost - availablePoints, 0);
+  const availabilityLabel = !offer.eligible
+    ? translate(language, "Tier locked", "Tier locked")
+    : offer.affordable
+      ? translate(language, "Ready to redeem", "Ready to redeem")
+      : translate(language, "Not enough points", "Not enough points");
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_18px_40px_-34px_rgba(15,23,42,0.35)] transition hover:-translate-y-1 hover:shadow-[0_26px_48px_-32px_rgba(15,23,42,0.42)]">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onViewDetails(offer)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onViewDetails(offer);
+        }
+      }}
+      className="group flex h-full min-h-[390px] flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white text-left shadow-[0_18px_40px_-34px_rgba(15,23,42,0.35)] transition duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_26px_56px_-34px_rgba(15,23,42,0.42)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16a3c9]/40 focus-visible:ring-offset-2"
+      aria-label={`${translate(language, "View detail", "View detail")}: ${offer.title}`}
+    >
       <div
-        className="relative h-[118px] overflow-hidden px-4 py-3"
+        className="relative h-[104px] overflow-hidden px-4 py-3"
         style={{ background: `linear-gradient(135deg, ${hex} 0%, ${hex}cc 48%, #0f2342 100%)` }}
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.25),transparent_35%)]" />
         <div className="absolute bottom-0 right-0 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute left-4 top-4 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-900 shadow-sm">
+          {formatTierLabel(offer.minTier, tierConfigs)}
+        </div>
       </div>
 
-      <div className="flex flex-1 flex-col space-y-4 p-4">
-        <div>
-          <div className="text-xl font-black text-slate-950">{offer.title}</div>
-          <div className="mt-2 text-sm leading-6 text-slate-500">
+      <div className="flex flex-1 flex-col p-5">
+        <div className="min-h-[126px]">
+          <div className="line-clamp-2 text-xl font-black leading-tight text-slate-950">{offer.title}</div>
+          <div className="mt-3 line-clamp-3 text-sm leading-6 text-slate-500">
             {offer.minTier} tier voucher for members who want more premium rewards.
           </div>
         </div>
 
-        <div className="mt-auto flex flex-col gap-3 border-t border-slate-100 pt-4">
-          <div className="flex items-end justify-between gap-3">
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Redeem points</div>
-            <div className="text-[32px] font-black leading-none text-[#16a3c9]">{offer.pointsCost.toLocaleString(locale)} pts</div>
+        <div className="mt-auto flex flex-col gap-4 border-t border-slate-100 pt-4">
+          <div className="rounded-2xl bg-slate-50 px-4 py-3">
+            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Redeem points</div>
+            <div className="mt-2 grid gap-2">
+              <div className="text-[30px] font-black leading-none text-[#16a3c9]">
+                {offer.pointsCost.toLocaleString(locale)}
+                <span className="ml-1 text-sm font-black text-[#16a3c9]/80">pts</span>
+              </div>
+              <span
+                className={cn(
+                  "inline-flex w-fit max-w-full items-center rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em]",
+                  offer.eligible && offer.affordable
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-slate-100 text-slate-500",
+                )}
+              >
+                {availabilityLabel}
+              </span>
+            </div>
           </div>
-          <div className="min-w-0 text-right text-xs">
-            <span className={cn("font-bold", offer.affordable ? "text-emerald-600" : "text-rose-500")}>
-              {offer.affordable ? "Ready to redeem" : `${missingPoints} pts missing`}
-            </span>
-          </div>
-          </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2">
             <Button
               type="button"
-              variant="outline"
               disabled={disabled}
-              onClick={() => onSelect(offer)}
-              className="h-10 rounded-xl border-slate-200 bg-white px-4 text-slate-700"
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelect(offer);
+              }}
+              className={cn(
+                "h-11 rounded-xl px-4 font-black",
+                disabled
+                  ? "bg-slate-100 text-slate-400 hover:bg-slate-100"
+                  : "bg-[#0f2342] text-white hover:bg-[#0b1b34]",
+              )}
             >
-              {disabled ? `Need ${missingPoints} pts` : "Redeem"}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => onViewDetails(offer)}
-              className="h-10 rounded-xl bg-[#0f2342] px-4 text-white hover:bg-[#0b1b34]"
-            >
-              View detail
+              {translate(language, "Redeem", "Redeem")}
             </Button>
           </div>
-        </div>
-
-        <div className="flex items-center justify-between text-xs">
-          <span className="rounded-full px-2.5 py-1 font-bold" style={{ color: badge.color, backgroundColor: badge.backgroundColor }}>
-            {formatTierLabel(offer.minTier, tierConfigs)}
-          </span>
         </div>
       </div>
     </div>
@@ -850,7 +898,6 @@ function RewardVoucherCard({
 
 function VoucherOfferDetails({
   offer,
-  availablePoints,
   locale,
   language,
   tierConfigs,
@@ -859,7 +906,6 @@ function VoucherOfferDetails({
   onRedeem,
 }: {
   offer: VoucherOfferState;
-  availablePoints: number;
   locale: string;
   language: string;
   tierConfigs: TierConfig[];
@@ -872,8 +918,12 @@ function VoucherOfferDetails({
     tierFallbackHex[offer.minTier] ||
     tierFallbackHex.BRONZE;
   const badge = generateTierBadgeStyle(hex);
-  const missingPoints = Math.max(offer.pointsCost - availablePoints, 0);
   const canRedeem = offer.eligible && offer.affordable && !isPending;
+  const redeemStatus = !offer.eligible
+    ? translate(language, "Your tier is not eligible", "Your tier is not eligible")
+    : offer.affordable
+      ? translate(language, "Ready to redeem", "Ready to redeem")
+      : translate(language, "Not enough points", "Not enough points");
   const voucherValue =
     offer.discountType === "PERCENT"
       ? `${offer.voucherValue}%`
@@ -954,11 +1004,7 @@ function VoucherOfferDetails({
             {formatTierLabel(offer.minTier, tierConfigs)}
           </span>
           <span className={cn("text-sm font-bold", canRedeem ? "text-emerald-600" : "text-rose-500")}>
-            {!offer.eligible
-              ? translate(language, "Your tier is not eligible", "Your tier is not eligible")
-              : offer.affordable
-                ? translate(language, "Ready to redeem", "Ready to redeem")
-                : `${missingPoints.toLocaleString(locale)} ${translate(language, "pts missing", "pts missing")}`}
+            {redeemStatus}
           </span>
         </div>
 
@@ -1032,15 +1078,15 @@ function RedeemedVoucherCard({
           <div className="mt-2 text-sm leading-6 text-slate-500">
             {voucherTier
               ? `${formatTierLabel(voucherTier, tierConfigs)} ${translate(
-                  language,
-                  "tier voucher for members who want more premium rewards.",
-                  "tier voucher for members who want more premium rewards.",
-                )}`
+                language,
+                "tier voucher for members who want more premium rewards.",
+                "tier voucher for members who want more premium rewards.",
+              )}`
               : translate(
-                  language,
-                  "Voucher da duoc doi tu loyalty points va luu trong tai khoan cua ban.",
-                  "This voucher has been redeemed from loyalty points and saved in your account.",
-                )}
+                language,
+                "Voucher da duoc doi tu loyalty points va luu trong tai khoan cua ban.",
+                "This voucher has been redeemed from loyalty points and saved in your account.",
+              )}
           </div>
         </div>
 
@@ -1179,15 +1225,15 @@ function buildHowToEarnPoints(language: string, tier: TierConfig | undefined) {
       title: translate(language, "Complete a paid booking", "Complete a paid booking"),
       description: tier
         ? translate(
-            language,
-            `Moi giao dich hoan tat se nhan diem theo he so ${tier.pointMultiplier}x cua hang hien tai.`,
-            `Each completed purchase earns points using your current ${tier.pointMultiplier}x tier multiplier.`,
-          )
+          language,
+          `Moi giao dich hoan tat se nhan diem theo he so ${tier.pointMultiplier}x cua hang hien tai.`,
+          `Each completed purchase earns points using your current ${tier.pointMultiplier}x tier multiplier.`,
+        )
         : translate(
-            language,
-            "Each completed purchase earns points based on your current membership tier.",
-            "Each completed purchase earns points based on your current membership tier.",
-          ),
+          language,
+          "Each completed purchase earns points based on your current membership tier.",
+          "Each completed purchase earns points based on your current membership tier.",
+        ),
     },
     {
       icon: Star,

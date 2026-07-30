@@ -11,7 +11,7 @@ import java.time.Year;
 
 public record CreateVehicleRequest(
         @NotBlank(message = "Plate is required")
-        @Pattern(regexp = "^[0-9]{2}[A-Z]-[0-9]{6}$", message = "Plate must match formats like 30H-123456")
+        @Pattern(regexp = "^(?:1[1-9]|[2-9][0-9])[A-Z]-[0-9]{6}$", message = "Plate must match formats like 30H-123456")
         String plate,
 
         @NotNull(message = "Vehicle type is required")

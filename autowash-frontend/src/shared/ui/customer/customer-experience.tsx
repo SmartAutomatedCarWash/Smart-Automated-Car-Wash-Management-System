@@ -88,11 +88,20 @@ function formatCountdown(milliseconds: number, language: Language) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-export function TierBadge({ tier }: { tier?: string | null }) {
+export function TierBadge({
+  tier,
+  className,
+}: {
+  tier?: string | null;
+  className?: string;
+}) {
   const { gradient } = useTierStyle(tier);
   return (
-    <span 
-      className="inline-flex items-center rounded-full px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-white shadow-md"
+    <span
+      className={cn(
+        "inline-flex max-w-full items-center overflow-hidden rounded-full px-2 py-0.5 text-[9.5px] font-bold uppercase leading-none tracking-[0.18em] text-white shadow-md whitespace-nowrap text-ellipsis",
+        className,
+      )}
       style={gradient}
     >
       {tier || "MEMBER"}
