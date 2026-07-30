@@ -207,6 +207,8 @@ export function getPaymentMethodLabel(method: PaymentMethod | string) {
       return "VNPay";
     case "CASH_AT_COUNTER":
       return "Cash at counter";
+    case "OWNED_COMBO":
+      return "Owned combo";
     default:
       return humanizeCode(method);
   }

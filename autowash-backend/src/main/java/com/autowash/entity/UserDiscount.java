@@ -90,4 +90,10 @@ public class UserDiscount {
             this.usedInBooking = null;
         }
     }
+
+    public void forfeit() {
+        if (this.status == UserDiscountStatus.USED) {
+            this.status = UserDiscountStatus.FORFEITED;
+        }
+    }
 }

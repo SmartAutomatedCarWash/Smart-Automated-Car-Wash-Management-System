@@ -93,6 +93,21 @@ function getStepIndex(status: string) {
 
 // ── Countdown to appointment ─────────────────────────────────────────────────
 const HOLD_DURATION_MS = 15 * 60 * 1000;
+const CUSTOMER_CANCEL_LOCK_MS = 2 * 60 * 60 * 1000;
+
+function getScheduledAtMs(bookingDate: string, bookingTime: string) {
+  const normalizedTime = bookingTime.length === 5 ? `${bookingTime}:00` : bookingTime;
+  const scheduledAtMs = new Date(`${bookingDate}T${normalizedTime}`).getTime();
+  return Number.isFinite(scheduledAtMs) ? scheduledAtMs : null;
+}
+
+function isCustomerCancelLocked(booking: BookingDetail) {
+  if (booking.status !== "CONFIRMED") {
+    return false;
+  }
+  const scheduledAtMs = getScheduledAtMs(booking.scheduling.bookingDate, booking.scheduling.bookingTime);
+  return scheduledAtMs !== null && scheduledAtMs - Date.now() <= CUSTOMER_CANCEL_LOCK_MS;
+}
 
 function useCountdownUntil(expiresAtMs: number | null) {
   const [diff, setDiff] = useState<number | null>(null);
@@ -339,6 +354,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const booking = bookingQuery.data;
   const bookingOptions = getBookingOptions(booking);
   const canCancelBooking = booking.status === "PENDING" || booking.status === "CONFIRMED";
+  const customerCancelLocked = isCustomerCancelLocked(booking);
   const paymentStatus = booking.payment.status?.toUpperCase() ?? "";
   const paymentMethod = booking.payment.method?.toUpperCase() ?? "";
   const isPaymentPaid = paymentStatus === "PAID";
@@ -352,7 +368,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     ? (booking.payment.transferDescription || sepayPaymentCode)
     : null;
   const canShowAppointmentCountdown = ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS"].includes(booking.status);
-  const showCashConfirmationNote = booking.status === "PENDING" && paymentMethod === "CASH_AT_COUNTER";
+  const showCashConfirmationNote = paymentMethod === "CASH_AT_COUNTER" && paymentStatus !== "PAID" && booking.pricing.finalAmount > 0;
   const isPaymentActionPending = changePaymentMethodMutation.isPending || createVnpayCheckoutMutation.isPending;
   const originalAssignedStaffIds = assignedStaffList(booking).map((staff) => staff.staffId).slice(0, 1);
   const canEditAssignedStaff = booking.status === "CONFIRMED" && originalAssignedStaffIds.length === 1 && !booking.washSessionId;
@@ -398,7 +414,31 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     heroIcon = <Car className="h-12 w-12" />;
   }
 
+  const showCustomerCancelLockedWarning = () => {
+    notify.warning(
+      translate(
+        language,
+        "Lịch đặt còn dưới 2 giờ nữa sẽ đến giờ hẹn nên khách hàng không thể tự huỷ. Vui lòng liên hệ cửa hàng nếu cần hỗ trợ.",
+        "This booking is less than 2 hours from the appointment time, so customers cannot cancel it directly. Please contact the store if you need support.",
+      ),
+    );
+  };
+
+  const handleToggleCancelForm = () => {
+    if (isCustomerCancelLocked(booking)) {
+      setShowCancelForm(false);
+      showCustomerCancelLockedWarning();
+      return;
+    }
+    setShowCancelForm((value) => !value);
+  };
+
   const handleCancelBooking = async () => {
+    if (isCustomerCancelLocked(booking)) {
+      setShowCancelForm(false);
+      showCustomerCancelLockedWarning();
+      return;
+    }
     try {
       await cancelBookingMutation.mutateAsync(cancelReason.trim() || undefined);
       notify.success(translate(language, "Đã huỷ lịch đặt thành công.", "Booking cancelled successfully."));
@@ -930,10 +970,19 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                     type="button"
                     variant="outline"
                     className="w-full border-rose-200 text-rose-700 hover:bg-rose-50"
-                    onClick={() => setShowCancelForm((value) => !value)}
+                    onClick={handleToggleCancelForm}
                   >
                     {translate(language, "Huỷ lịch đặt", "Cancel booking")}
                   </Button>
+                  {customerCancelLocked ? (
+                    <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-900">
+                      {translate(
+                        language,
+                        "Không thể tự huỷ trong 2 giờ cuối trước lịch hẹn. Nếu có việc gấp, vui lòng liên hệ cửa hàng để được hỗ trợ.",
+                        "You cannot cancel directly within the final 2 hours before the appointment. Please contact the store if urgent support is needed.",
+                      )}
+                    </div>
+                  ) : null}
                   {showCancelForm ? (
                     <div className="space-y-3 rounded-2xl border border-rose-100 bg-rose-50 p-3">
                       <textarea
@@ -976,8 +1025,8 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
                 <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
                   {translate(
                     language,
-                    "Đơn trả tại quầy đang chờ Manager/Admin xác nhận.",
-                    "Cash booking is waiting for Manager/Admin confirmation.",
+                    "Đơn trả tại quầy đã được giữ lịch. Manager sẽ xác nhận thu tiền khi bạn check-in.",
+                    "This cash booking is scheduled. The manager will collect and confirm payment at check-in.",
                   )}
                 </div>
               ) : null}

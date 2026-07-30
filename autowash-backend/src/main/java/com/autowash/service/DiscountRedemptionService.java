@@ -9,4 +9,5 @@ public interface DiscountRedemptionService {
     void redeemDiscount(Booking booking, Discount discount);
     void redeemUserDiscount(Booking booking, UserDiscount userDiscount);
     void revertRedemption(Booking booking);
+    void forfeitRedemption(Booking booking);
 }

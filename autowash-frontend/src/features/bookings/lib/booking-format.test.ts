@@ -252,4 +252,5 @@ test("requires the draft voucher to match the validated voucher", () => {
 test("labels backend statuses and payment methods for customer pages", () => {
   assert.equal(getBookingStatusLabel("CHECKED_IN"), "Checked in");
   assert.equal(getPaymentMethodLabel("CASH_AT_COUNTER"), "Cash at counter");
+  assert.equal(getPaymentMethodLabel("OWNED_COMBO"), "Owned combo");
 });

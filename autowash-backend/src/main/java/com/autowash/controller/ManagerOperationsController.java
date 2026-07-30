@@ -14,6 +14,7 @@ import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.WashSessionRepository;
+import com.autowash.service.BookingService;
 import com.autowash.service.ManagerSettingsService;
 import com.autowash.service.OperationsService;
 import com.autowash.shared.dto.ApiResponse;
@@ -54,6 +55,7 @@ public class ManagerOperationsController {
 
     private static final int PAGE_SIZE = 5;
 
+    private final BookingService bookingService;
     private final OperationsService operationsService;
     private final ManagerSettingsService managerSettingsService;
     private final WashSessionRepository washSessionRepository;
@@ -61,12 +63,14 @@ public class ManagerOperationsController {
     private final com.autowash.repository.NotificationRepository notificationRepository;
 
     public ManagerOperationsController(
+            BookingService bookingService,
             OperationsService operationsService,
             ManagerSettingsService managerSettingsService,
             WashSessionRepository washSessionRepository,
             UserRepository userRepository,
             com.autowash.repository.NotificationRepository notificationRepository
     ) {
+        this.bookingService = bookingService;
         this.operationsService = operationsService;
         this.managerSettingsService = managerSettingsService;
         this.washSessionRepository = washSessionRepository;
@@ -203,6 +207,16 @@ public class ManagerOperationsController {
             @PathVariable String bookingId,
             @RequestBody(required = false) ManagerBookingCheckInRequest request
     ) {
+        if (bookingService.requiresCashCollectionForCheckIn(bookingId)) {
+            if (request == null || !Boolean.TRUE.equals(request.cashCollected())) {
+                throw new ApiException(
+                        org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Cash payment must be collected before check-in",
+                        com.autowash.shared.exception.ErrorCode.BUSINESS_RULE_VIOLATION
+                );
+            }
+            bookingService.markBookingPaidForOperations(bookingId, "CASH_AT_COUNTER");
+        }
         CreateWashSessionResponse created = operationsService.createSession(new CreateWashSessionRequest(
                 bookingId,
                 "Manager check-in",
@@ -449,7 +463,7 @@ public class ManagerOperationsController {
     public record TimelineItemResponse(String step, String label, String status, LocalTime time, String date, String note) {}
     public record TransferOptionResponse(UUID staffId, String fullName, String status, int todayKpiCompleted, int todayKpiTarget, double rating, String recommendationLevel, String reason, boolean selectable) {}
     public record BookingCheckInResponse(String bookingId, UUID sessionId, String status, UUID assignedStaffId, String assignedStaffName, String assignedBay, Instant checkedInAt) {}
-    public record ManagerBookingCheckInRequest(UUID preferredStaffId) {}
+    public record ManagerBookingCheckInRequest(UUID preferredStaffId, Boolean cashCollected) {}
     public record TransferSessionRequest(UUID toStaffId, String reason) {}
     public record TransferSessionResponse(UUID auditId, UUID sessionId, String bookingId, UUID fromStaffId, String fromStaffName, UUID toStaffId, String toStaffName, String reason, Instant transferredAt) {}
 

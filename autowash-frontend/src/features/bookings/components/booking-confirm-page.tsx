@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  Banknote,
   Building2,
   CalendarDays,
   Car,
@@ -75,6 +76,13 @@ const PAYMENT_OPTIONS: {
     icon: Wallet,
     badge: "Online",
   },
+  {
+    method: "CASH_AT_COUNTER",
+    label: "Cash at counter",
+    description: "Pay at the store when you arrive for check-in.",
+    icon: Banknote,
+    badge: "Store",
+  },
 ];
 
 // ─── Main component ──────────────────────────────────────────────────────────
@@ -98,13 +106,8 @@ export function BookingConfirmPage() {
   const [sepayPaymentBooking, setSepayPaymentBooking] = useState<BookingDetail | null>(null);
 
   useEffect(() => {
-    if (draft.paymentMethod === "CASH_AT_COUNTER") {
-      setPaymentMethod(null);
-      updateDraft({ paymentMethod: null });
-      return;
-    }
     setPaymentMethod(draft.paymentMethod);
-  }, [draft.paymentMethod, updateDraft]);
+  }, [draft.paymentMethod]);
 
   const vehiclesQuery = useCustomerVehicles();
   const packagesQuery = useBookingPackages();
@@ -291,10 +294,11 @@ export function BookingConfirmPage() {
   const isComboBooking = draft.mode === "COMBO" && Boolean(selectedCustomerCombo);
   const handleConfirm = async () => {
     setShowPaymentError(true);
-    const selectedPaymentMethod = paymentMethod ?? draft.paymentMethod;
+    const rawSelectedPaymentMethod = paymentMethod ?? draft.paymentMethod;
+    const selectedPaymentMethod = rawSelectedPaymentMethod === "OWNED_COMBO" ? null : rawSelectedPaymentMethod;
     if (!isComboBooking && !selectedPaymentMethod) return;
     if (!expiresAt || expiresAt <= Date.now()) { handleExpired(); return; }
-    const effectivePaymentMethod = isComboBooking ? ("CASH_AT_COUNTER" as PaymentMethod) : selectedPaymentMethod!;
+    const effectivePaymentMethod = isComboBooking ? ("OWNED_COMBO" as PaymentMethod) : selectedPaymentMethod!;
     const nextDraft = { ...sanitizedDraft, paymentMethod: effectivePaymentMethod, discountCode: isComboBooking ? "" : sanitizedDraft.discountCode, staffId: "", staffIds: [] };
     const errors = validateBookingDraft(nextDraft, summary, { requirePaymentMethod: !isComboBooking });
     if (Object.keys(errors).length > 0) {
@@ -354,7 +358,9 @@ export function BookingConfirmPage() {
       clearCustomerCart();
       toast.success(
         booking.paymentMethod === "CASH_AT_COUNTER"
-          ? "Booking created. Waiting for manager confirmation."
+          ? "Booking confirmed. Please pay at the counter when you arrive."
+          : booking.paymentMethod === "OWNED_COMBO"
+            ? "Booking confirmed with your owned combo."
           : "Booking confirmed.",
       );
       window.location.href = `/customer/bookings/success?bookingId=${booking.bookingId}`;

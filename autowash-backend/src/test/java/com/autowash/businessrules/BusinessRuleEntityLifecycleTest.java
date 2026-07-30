@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.autowash.entity.Booking;
 import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.CustomerComboUsage;
+import com.autowash.entity.Payment;
 import com.autowash.entity.User;
 import com.autowash.entity.UserDiscount;
 import com.autowash.entity.UserPreference;
@@ -14,6 +15,8 @@ import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.CustomerComboStatus;
 import com.autowash.entity.enums.CustomerComboUsageStatus;
 import com.autowash.entity.enums.LanguagePreference;
+import com.autowash.entity.enums.PaymentMethod;
+import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.entity.enums.ThemePreference;
 import com.autowash.entity.enums.UserDiscountStatus;
 import com.autowash.entity.enums.UserRole;
@@ -96,6 +99,31 @@ class BusinessRuleEntityLifecycleTest {
         assertThat(discount.getStatus()).isEqualTo(UserDiscountStatus.AVAILABLE);
         assertThat(discount.getUsedInBooking()).isNull();
         assertThat(discount.getUsedAt()).isNull();
+    }
+
+    @Test
+    void br071UsedDiscountCanBeForfeitedAfterLateCancellationOrNoShow() {
+        UserDiscount discount = UserDiscount.builder()
+                .user(customer())
+                .status(UserDiscountStatus.AVAILABLE)
+                .build();
+        Booking booking = booking();
+
+        discount.markAsUsed(booking);
+        discount.forfeit();
+
+        assertThat(discount.getStatus()).isEqualTo(UserDiscountStatus.FORFEITED);
+        assertThat(discount.getUsedInBooking()).isSameAs(booking);
+        assertThat(discount.getUsedAt()).isNotNull();
+    }
+
+    @Test
+    void br071CancelledUnpaidPaymentUsesCancelledStatusNotFailed() {
+        Payment payment = new Payment(booking(), PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, 189000);
+
+        payment.markCancelled();
+
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CANCELLED);
     }
 
     @Test

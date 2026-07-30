@@ -19,7 +19,7 @@ export type BookingListFilterStatus =
 
 export type BookingConfirmationStatus = "PENDING" | "VERIFIED" | "EXPIRED" | "CANCELLED";
 
-export type PaymentMethod = "BANK_TRANSFER" | "E_WALLET" | "CASH_AT_COUNTER";
+export type PaymentMethod = "BANK_TRANSFER" | "E_WALLET" | "CASH_AT_COUNTER" | "OWNED_COMBO";
 
 export type BookingMode = "PACKAGE" | "COMBO";
 

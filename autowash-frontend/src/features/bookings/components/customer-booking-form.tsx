@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ElementType, ReactNode } from "react";
 import {
   Building2,
+  Banknote,
   CheckCircle2,
   ChevronDown,
   Clock,
@@ -178,6 +179,13 @@ const PAYMENT_OPTIONS: {
     description: "Pay online through VNPay.",
     icon: Wallet,
     badge: "Online",
+  },
+  {
+    method: "CASH_AT_COUNTER",
+    label: "Cash at counter",
+    description: "Pay at the store when you arrive for check-in.",
+    icon: Banknote,
+    badge: "Store",
   },
 ];
 
@@ -868,7 +876,7 @@ export function CustomerBookingForm() {
   const [showPaymentError, setShowPaymentError] = useState(false);
 
   useEffect(() => {
-    if (draft.paymentMethod === "CASH_AT_COUNTER") {
+    if (draft.paymentMethod === "OWNED_COMBO") {
       setSelectedPaymentMethod(null);
       updateDraft({ paymentMethod: null });
       return;

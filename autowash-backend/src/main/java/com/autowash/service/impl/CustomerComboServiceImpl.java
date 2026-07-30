@@ -222,7 +222,7 @@ public class CustomerComboServiceImpl implements CustomerComboService {
 
     @Transactional
     public PurchaseCustomerComboResponse purchaseCombo(User customer, PurchaseCustomerComboRequest request) {
-        if (request.paymentMethod() == PaymentMethod.CASH_AT_COUNTER) {
+        if (request.paymentMethod() == PaymentMethod.CASH_AT_COUNTER || request.paymentMethod() == PaymentMethod.OWNED_COMBO) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Combo purchases require online payment confirmation",
