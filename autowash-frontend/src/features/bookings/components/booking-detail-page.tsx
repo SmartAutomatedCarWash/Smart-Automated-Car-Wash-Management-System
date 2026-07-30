@@ -37,6 +37,7 @@ import {
   AlertDialogTitle,
 } from "@/shared/ui/ui/alert-dialog";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
+import { useWebSocket } from "@/shared/hooks/use-web-socket";
 import {
   formatBookingCurrency,
   getPaymentMethodLabel,
@@ -226,6 +227,7 @@ function CountdownBadge({ bookingDate, bookingTime, language }: { bookingDate: s
 }
 
 export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) {
+  useWebSocket();
   const getErrorMessage = useErrorMessage();
   const { language } = useLanguageStore();
   const bookingQuery = useCustomerBookingDetail(bookingId);
@@ -310,15 +312,18 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   }, [bookingQuery.data]);
   const staffOptionsQuery = useBookingStaffOptions(staffOptionsPayload);
   const staffOptions = staffOptionsQuery.data ?? [];
+  const assignedStaffIds = useMemo(
+    () => bookingQuery.data
+      ? assignedStaffList(bookingQuery.data).map((staff) => staff.staffId).filter(Boolean).slice(0, 1)
+      : [],
+    [bookingQuery.data],
+  );
 
   useEffect(() => {
     const booking = bookingQuery.data;
     if (!booking) return;
-    const assignedIds = assignedStaffList(booking)
-      .map((staff) => staff.staffId)
-      .filter(Boolean);
-    if (assignedIds.length > 0) {
-      setSelectedStaffIds(assignedIds.slice(0, 1));
+    if (assignedStaffIds.length > 0) {
+      setSelectedStaffIds((current) => current.length > 0 ? current : assignedStaffIds);
       return;
     }
     if (booking.status !== "CONFIRMED") {
@@ -329,9 +334,33 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     const fallbackStaff = (staffOptionsQuery.data ?? []).find((staff) => staff.available !== false);
     const nextStaff = recommendedStaff ?? fallbackStaff;
     if (nextStaff) {
-      setSelectedStaffIds([nextStaff.staffId]);
+      setSelectedStaffIds((current) => current.length > 0 ? current : [nextStaff.staffId]);
     }
-  }, [bookingQuery.data, staffOptionsQuery.data]);
+  }, [assignedStaffIds, bookingQuery.data, staffOptionsQuery.data]);
+
+  useEffect(() => {
+    const selectedStaffId = selectedStaffIds[0];
+    if (!selectedStaffId || staffOptionsQuery.isFetching) {
+      return;
+    }
+    const selectedStaff = staffOptions.find((staff) => staff.staffId === selectedStaffId);
+    if (selectedStaff?.available === false && !assignedStaffIds.includes(selectedStaffId)) {
+      setSelectedStaffIds([]);
+      void notify.warning(
+        translate(
+          language,
+          "Nhân viên này vừa được khách hàng khác chọn và hiện đang bận. Vui lòng chọn nhân viên khác.",
+          "This staff member was just selected by another customer and is now busy. Please choose another staff member.",
+        ),
+      );
+    }
+  }, [
+    assignedStaffIds,
+    language,
+    selectedStaffIds,
+    staffOptions,
+    staffOptionsQuery.isFetching,
+  ]);
 
   if (bookingQuery.isPending) {
     return (

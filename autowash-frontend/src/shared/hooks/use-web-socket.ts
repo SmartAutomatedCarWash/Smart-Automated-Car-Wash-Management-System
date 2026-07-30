@@ -12,7 +12,8 @@ type WsMessage = {
   bookingId?: string;
   sessionId?: string;
   status: string;
-  timestamp: string;
+  changeType?: "BOOKING_CHANGED" | "STAFF_ASSIGNMENT_CHANGED";
+  timestamp: string | number;
 };
 
 /**
@@ -68,6 +69,11 @@ function handleWsMessage(msg: WsMessage, queryClient: ReturnType<typeof useQuery
     // Admin / Manager booking lists
     void queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
     void queryClient.invalidateQueries({ queryKey: ["admin-bookings-summary"] });
+    void queryClient.invalidateQueries({ queryKey: ["booking-staff-options"] });
+    void queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
+    if (msg.bookingId) {
+      void queryClient.invalidateQueries({ queryKey: ["admin-booking-detail", msg.bookingId] });
+    }
 
     // Manager operations & dashboard
     void queryClient.invalidateQueries({ queryKey: ["manager-operations"] });
