@@ -27,6 +27,7 @@ import { WorkspaceEmptyState, WorkspacePage } from "@/shared/ui/workspace/worksp
 import { useWorkspaceHeader } from "@/shared/ui/workspace/workspace-header-context";
 import { TierIcon } from "@/shared/ui/workspace/tier-icon";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
+import { getPaymentMethodLabel, getPaymentStatusLabel } from "@/features/bookings/lib/booking-format";
 import {
   cancelWashSession,
   checkInWashSession,
@@ -456,7 +457,7 @@ export function ManagerOperationsPage() {
 
   const runPrimaryAction = (row: OperationRow) => {
     if (row.type === "booking") {
-      if (row.status !== "CONFIRMED") return;
+      if (!canCheckInBooking(row)) return;
       setCheckInPreviewRow(row);
       setCheckInPreview(null);
       setCheckInPreferredStaffId(null);
@@ -478,7 +479,7 @@ export function ManagerOperationsPage() {
     }
     const bookingId = checkInPreviewRow.bookingId;
     const preferredStaffId = checkInPreferredStaffId;
-    const cashCollected = requiresCashCollection(checkInPreviewRow);
+    const cashCollected = requiresCashCollection(checkInPreviewRow) ? checkInCashCollected : false;
     setCheckInPreviewRow(null);
     setCheckInPreview(null);
     setCheckInPreferredStaffId(null);
@@ -965,7 +966,7 @@ function getCheckInDisplay(row: OperationRow, index: number) {
       tone: "danger" as const,
     };
   }
-  if (row.type === "booking" && row.status === "CONFIRMED") {
+  if (canCheckInBooking(row)) {
     return {
       statusLabel: index === 0 ? "Ready now" : "Ready",
       actionLabel: "Check-in",
@@ -1177,6 +1178,10 @@ function BoardCard({
       </div>
       <p className="font-mono text-sm font-black text-slate-950">{row.vehiclePlate}</p>
       <p className="mt-0.5 truncate text-xs font-bold text-slate-600">{row.customerName}</p>
+      <div className="mt-1 flex items-center gap-1.5">
+        <span className="truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-black text-slate-600">{formatPaymentMethod(row.paymentMethod)}</span>
+        {row.paymentStatus ? <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${getPaymentStatusClass(row.paymentStatus)}`}>{getPaymentStatusLabel(row.paymentStatus)}</span> : null}
+      </div>
       <div className="mt-1 min-h-[24px]">
         <VipTierBadge tier={row.customerTier} />
       </div>
@@ -1325,7 +1330,9 @@ function SessionDetailPanel({
             <MiniInfo label="Status" value={getStatusLabel(row.status)} />
             <MiniInfo label="ETA" value={row.estimatedDurationMinutes ? `${row.estimatedDurationMinutes} min` : "—"} />
             <MiniInfo label="Schedule" value={formatBookingTime(row.bookingTime)} />
-            <MiniInfo label="Payment" value={row.amount ? formatCurrency(row.amount) : "Not calculated"} />
+            <MiniInfo label="Amount" value={row.amount ? formatCurrency(row.amount) : "Not calculated"} />
+            <MiniInfo label="Payment method" value={formatPaymentMethod(row.paymentMethod)} />
+            <MiniInfo label="Payment status" value={formatPaymentStatus(row.paymentStatus)} />
           </div>
 
           <div className="rounded-xl bg-slate-50 p-3">
@@ -1635,6 +1642,10 @@ function requiresCashCollection(row: OperationRow) {
   return row.paymentMethod === "CASH_AT_COUNTER" && row.paymentStatus !== "PAID" && (row.amount ?? 0) > 0;
 }
 
+function canCheckInBooking(row: OperationRow) {
+  return row.type === "booking" && (row.status === "CONFIRMED" || (row.status === "PENDING" && row.paymentMethod === "CASH_AT_COUNTER"));
+}
+
 function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueueSession[]): OperationRow[] {
   const sessionBookingIds = new Set(sessions.map((session) => session.bookingId));
   const bookingRows: OperationRow[] = bookings
@@ -1686,8 +1697,8 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
     assignedStaffName: session.assignedStaffName ?? null,
     assignedStaff: normalizeAssignedStaff(session.assignedStaff, session.assignedStaffId, session.assignedStaffName),
     amount: session.feeAmount ?? null,
-    paymentMethod: null,
-    paymentStatus: null,
+    paymentMethod: session.paymentMethod ?? null,
+    paymentStatus: session.paymentStatus ?? null,
     estimatedDurationMinutes: session.estimatedDurationMinutes ?? null,
     notes: session.notes ?? null,
     customerNotes: session.customerNotes ?? null,
@@ -1868,7 +1879,7 @@ function getStatusLabel(status: BookingStatus | WashSessionStatus) {
 }
 
 function getPrimaryAction(row: OperationRow) {
-  if (row.type === "booking") return row.status === "CONFIRMED" ? "Check-in" : "Await payment";
+  if (row.type === "booking") return canCheckInBooking(row) ? "Check-in" : "Await payment";
   if (row.status === "PENDING" || row.status === "QUEUED") return "Check-in";
   if (row.status === "CHECKED_IN") return "Start";
   if (row.status === "IN_PROGRESS") return "Complete";
@@ -1878,7 +1889,7 @@ function getPrimaryAction(row: OperationRow) {
 
 function canRunPrimaryAction(row: OperationRow) {
   if (row.type === "booking") {
-    return row.status === "CONFIRMED";
+    return canCheckInBooking(row);
   }
   return row.status === "PENDING" || row.status === "QUEUED" || row.status === "CHECKED_IN" || row.status === "IN_PROGRESS";
 }
@@ -2003,6 +2014,21 @@ function formatCurrency(value: number) {
     currency: "VND",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function formatPaymentMethod(method: string | null | undefined) {
+  return method ? getPaymentMethodLabel(method) : "No payment info";
+}
+
+function formatPaymentStatus(status: string | null | undefined) {
+  return status ? getPaymentStatusLabel(status) : "No status";
+}
+
+function getPaymentStatusClass(status: string) {
+  if (status === "PAID") return "bg-emerald-50 text-emerald-700";
+  if (status === "UNPAID" || status === "PENDING" || status === "PENDING_PAYMENT") return "bg-amber-50 text-amber-700";
+  if (status === "FAILED" || status === "CANCELLED" || status === "REFUND_FAILED") return "bg-rose-50 text-rose-700";
+  return "bg-slate-100 text-slate-600";
 }
 
 function formatDate(value: string) {

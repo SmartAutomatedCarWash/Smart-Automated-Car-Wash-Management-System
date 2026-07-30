@@ -63,6 +63,8 @@ export type OperationsQueueSession = {
   estimatedDurationMinutes?: number | null;
   feeAmount?: number | null;
   feeCurrency?: string | null;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
   projectedLoyaltyPoints?: number | null;
   awardedLoyaltyPoints?: number | null;
   queuedAt?: string | null;

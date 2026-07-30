@@ -51,6 +51,8 @@ public record OperationsQueueResponse(
             Integer estimatedDurationMinutes,
             Long feeAmount,
             String feeCurrency,
+            String paymentMethod,
+            String paymentStatus,
             Integer projectedLoyaltyPoints,
             Integer awardedLoyaltyPoints,
             Instant queuedAt,

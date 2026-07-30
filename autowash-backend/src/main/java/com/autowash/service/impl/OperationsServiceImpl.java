@@ -30,6 +30,8 @@ import com.autowash.entity.enums.BookingItemType;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.CancelFaultType;
 import com.autowash.entity.enums.NotificationType;
+import com.autowash.entity.enums.PaymentMethod;
+import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.entity.enums.WashSessionStatus;
@@ -260,10 +262,10 @@ public class OperationsServiceImpl implements OperationsService {
     @Transactional(readOnly = true)
     public ManagerCheckInRecommendationResponse previewManagerCheckInRecommendation(String bookingId) {
         Booking booking = bookingService.requireBookingForOperations(bookingId);
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+        if (booking.getStatus() != BookingStatus.CONFIRMED && !canCollectCashAtCounterForCheckIn(booking)) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Booking must be CONFIRMED to check in",
+                    "Booking must be CONFIRMED or cash-at-counter pending to check in",
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
@@ -289,6 +291,17 @@ public class OperationsServiceImpl implements OperationsService {
                         : "Assigned staff is available for this booking time.",
                 candidates
         );
+    }
+
+    private boolean canCollectCashAtCounterForCheckIn(Booking booking) {
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            return false;
+        }
+        return paymentRepository.findFirstByBookingOrderByCreatedAtDesc(booking)
+                .map(payment -> payment.getMethod() == PaymentMethod.CASH_AT_COUNTER
+                        && payment.getStatus() != PaymentStatus.PAID
+                        && payment.getAmount() > 0)
+                .orElse(false);
     }
 
     @Transactional
@@ -1098,6 +1111,7 @@ public class OperationsServiceImpl implements OperationsService {
         List<BookingDetailResponse.StaffAssignment> assignedStaffList = sessionStaffAssignments(session);
         UUID packageId = resolveBookingDetailRefId(booking, BookingItemType.PACKAGE);
         String customerTier = loyaltyService.getAccount(booking.getCustomer().getId()).tier();
+        PaymentRepository.PaymentSummary payment = paymentRepository.findLatestSummaryByBookingId(booking.getId()).orElse(null);
         return OperationsQueueResponse.WashSessionCard.builder()
                 .sessionId(session.getId())
                 .bookingId(booking.getId().toString())
@@ -1116,6 +1130,8 @@ public class OperationsServiceImpl implements OperationsService {
                 .estimatedDurationMinutes(resolveEstimatedDurationMinutes(booking))
                 .feeAmount(session.getFeeAmount())
                 .feeCurrency(session.getFeeAmount() == null ? null : currency)
+                .paymentMethod(payment == null ? null : payment.getMethod())
+                .paymentStatus(payment == null ? null : payment.getStatus())
                 .projectedLoyaltyPoints(session.getProjectedLoyaltyPoints())
                 .awardedLoyaltyPoints(session.getAwardedLoyaltyPoints())
                 .queuedAt(session.getStatus() == WashSessionStatus.QUEUED ? session.getCreatedAt() : null)
