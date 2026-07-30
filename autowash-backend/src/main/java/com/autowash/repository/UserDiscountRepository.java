@@ -52,6 +52,18 @@ public interface UserDiscountRepository extends JpaRepository<UserDiscount, UUID
             @Param("userId") UUID userId,
             @Param("code") String code
     );
+
+    @Query(
+            value = """
+            select userDiscount
+            from UserDiscount userDiscount
+            join fetch userDiscount.user user
+            join fetch userDiscount.discount discount
+            order by userDiscount.claimedAt desc
+            """,
+            countQuery = "select count(userDiscount) from UserDiscount userDiscount"
+    )
+    Page<UserDiscount> findDashboardVoucherUsage(Pageable pageable);
     
     long countByStatus(UserDiscountStatus status);
 }

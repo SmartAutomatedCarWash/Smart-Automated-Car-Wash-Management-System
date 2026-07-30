@@ -2,6 +2,7 @@ package com.autowash.dto;
 
 import java.util.List;
 import java.util.Map;
+import com.autowash.shared.dto.PaginationMeta;
 
 /**
  * Full admin dashboard response — tổng hợp tất cả sections cho dashboard overview.
@@ -16,10 +17,16 @@ public record AdminDashboardFullResponse(
         VoucherStats voucherStats,
         TopServices topServices,
         CustomerInsights customerInsights,
-        List<NoShowAlert> noShowAlerts,
-        List<RecentBooking> recentBookings,
+        DashboardPage<NoShowAlert> noShowAlerts,
+        DashboardPage<RecentBooking> recentBookings,
+        DashboardPage<VoucherUsageItem> voucherUsageStats,
+        DashboardPage<PointRedemptionItem> pointRedemptionHistory,
         ReviewSummary reviewSummary
 ) {
+    public record DashboardPage<T>(
+            List<T> items,
+            PaginationMeta pagination
+    ) {}
 
     /** Section 1 — 6 KPI cards */
     public record Kpis(
@@ -106,6 +113,32 @@ public record AdminDashboardFullResponse(
             String scheduledAt,
             String status,
             String tier
+    ) {}
+
+    /** Voucher usage list, paginated from backend */
+    public record VoucherUsageItem(
+            String userDiscountId,
+            String customerId,
+            String customerName,
+            String customerPhone,
+            String discountCode,
+            String voucherCode,
+            String status,
+            int pointsSpent,
+            String claimedAt,
+            String usedAt
+    ) {}
+
+    /** Point redemption history, paginated from backend */
+    public record PointRedemptionItem(
+            String transactionId,
+            String customerId,
+            String customerName,
+            String customerPhone,
+            String discountCode,
+            int pointsRedeemed,
+            int balanceAfter,
+            String redeemedAt
     ) {}
 
     /** Review summary widget */

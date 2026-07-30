@@ -7,4 +7,11 @@ import com.autowash.dto.AdminDashboardFullResponse;
  */
 public interface AdminDashboardFullService {
     AdminDashboardFullResponse getDashboardFull();
+    AdminDashboardFullResponse getDashboardFull(
+            int noShowPage,
+            int recentBookingPage,
+            int voucherUsagePage,
+            int pointRedemptionPage,
+            int limit
+    );
 }

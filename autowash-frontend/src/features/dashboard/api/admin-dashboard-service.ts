@@ -1,5 +1,6 @@
 import { apiClient } from "@/shared/lib/api";
 import type { ApiSuccessResponse } from "@/shared/types/api.types";
+import type { PaginationMeta } from "@/entities/reports";
 
 export type DashboardMetrics = {
   totalBookings: number;
@@ -49,6 +50,7 @@ export type TierBucket = { tier: string; displayName: string; count: number; per
 export type LoyaltyTierDist = { tiers: TierBucket[] };
 
 export type VoucherStats = { issued: number; redeemed: number; expired: number; revoked: number };
+export type DashboardPage<T> = { items: T[]; pagination: PaginationMeta };
 
 export type ServiceItem = { serviceId: string | null; serviceName: string; bookingCount: number; percentage: number };
 export type TopServices = { items: ServiceItem[] };
@@ -72,6 +74,30 @@ export type RecentBooking = {
   tier: string;
 };
 
+export type VoucherUsageItem = {
+  userDiscountId: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  discountCode: string;
+  voucherCode: string | null;
+  status: string;
+  pointsSpent: number;
+  claimedAt: string;
+  usedAt: string | null;
+};
+
+export type PointRedemptionItem = {
+  transactionId: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  discountCode: string;
+  pointsRedeemed: number;
+  balanceAfter: number;
+  redeemedAt: string;
+};
+
 export type ReviewSummary = {
   averageRating: number;
   totalReviews: number;
@@ -91,9 +117,19 @@ export type AdminDashboardFull = {
   voucherStats: VoucherStats;
   topServices: TopServices;
   customerInsights: CustomerInsights;
-  noShowAlerts: NoShowAlert[];
-  recentBookings: RecentBooking[];
+  noShowAlerts: DashboardPage<NoShowAlert>;
+  recentBookings: DashboardPage<RecentBooking>;
+  voucherUsageStats: DashboardPage<VoucherUsageItem>;
+  pointRedemptionHistory: DashboardPage<PointRedemptionItem>;
   reviewSummary: ReviewSummary;
+};
+
+export type AdminDashboardFullParams = {
+  noShowPage?: number;
+  recentBookingPage?: number;
+  voucherUsagePage?: number;
+  pointRedemptionPage?: number;
+  limit?: number;
 };
 
 // ── Fetch functions ───────────────────────────────────────────────────────────
@@ -105,9 +141,10 @@ export async function fetchAdminDashboardMetrics(): Promise<DashboardMetrics> {
   return response.data.data;
 }
 
-export async function fetchAdminDashboardFull(): Promise<AdminDashboardFull> {
+export async function fetchAdminDashboardFull(params?: AdminDashboardFullParams): Promise<AdminDashboardFull> {
   const response = await apiClient.get<ApiSuccessResponse<AdminDashboardFull>>(
-    "/admin/dashboard/full"
+    "/admin/dashboard/full",
+    { params }
   );
   return response.data.data;
 }
@@ -129,20 +166,22 @@ export type StaffKpiItem = {
   isOnline: boolean;
 };
 
-type StaffKpiPageResponse = {
-  items?: StaffKpiItem[];
+export type StaffKpiPageResponse = {
+  items: StaffKpiItem[];
+  pagination: PaginationMeta;
 };
 
-function normalizeStaffKpi(data: StaffKpiItem[] | StaffKpiPageResponse | null | undefined): StaffKpiItem[] {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  return [];
+function normalizeStaffKpi(data: StaffKpiItem[] | StaffKpiPageResponse | null | undefined): StaffKpiPageResponse {
+  const fallbackPagination: PaginationMeta = { page: 1, limit: 5, total: 0, totalPages: 0, hasMore: false };
+  if (Array.isArray(data)) return { items: data, pagination: { ...fallbackPagination, total: data.length, totalPages: data.length > 0 ? 1 : 0 } };
+  if (Array.isArray(data?.items)) return data;
+  return { items: [], pagination: fallbackPagination };
 }
 
-export async function fetchStaffKpi(range: StaffKpiRange = "TODAY"): Promise<StaffKpiItem[]> {
+export async function fetchStaffKpi(range: StaffKpiRange = "TODAY", page = 1, limit = 5): Promise<StaffKpiPageResponse> {
   const response = await apiClient.get<ApiSuccessResponse<StaffKpiItem[] | StaffKpiPageResponse>>(
     "/admin/staff/kpi",
-    { params: { range, page: 1, limit: 100 } }
+    { params: { range, page, limit } }
   );
   return normalizeStaffKpi(response.data.data);
 }

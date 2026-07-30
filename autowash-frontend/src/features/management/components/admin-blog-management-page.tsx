@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import {
   useAdminArticles,
@@ -293,6 +294,7 @@ function RichTextArea({ value, onChange }: { value: string; onChange: (v: string
 export function AdminBlogManagementPage() {
   const { language } = useLanguageStore();
   const t = (vi: string, en: string) => translate(language, vi, en);
+  const searchParams = useSearchParams();
 
   const { data: articles = [], isLoading: loadingArticles } = useAdminArticles();
   const { data: categories = [], isLoading: loadingCategories } = useAdminCategories();
@@ -467,6 +469,13 @@ export function AdminBlogManagementPage() {
 
   // Active tab — articles, announcements, reviews, campaigns
   const [activeTab, setActiveTab] = useState<"articles" | "announcements" | "reviews" | "campaigns">("articles");
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "articles" || tab === "announcements" || tab === "reviews" || tab === "campaigns") {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   // Category filter for articles list
   const [articleCategoryFilter, setArticleCategoryFilter] = useState<string>("all");

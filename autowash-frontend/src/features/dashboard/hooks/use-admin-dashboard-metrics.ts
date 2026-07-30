@@ -6,7 +6,13 @@ import {
   fetchAdminDashboardFull,
   fetchStaffKpi,
 } from "@/features/dashboard/api/admin-dashboard-service";
-import type { DashboardMetrics, AdminDashboardFull, StaffKpiItem, StaffKpiRange } from "@/features/dashboard/api/admin-dashboard-service";
+import type {
+  AdminDashboardFullParams,
+  DashboardMetrics,
+  AdminDashboardFull,
+  StaffKpiPageResponse,
+  StaffKpiRange,
+} from "@/features/dashboard/api/admin-dashboard-service";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 
@@ -24,14 +30,14 @@ export function useAdminDashboardMetrics() {
   });
 }
 
-export function useAdminDashboardFull() {
+export function useAdminDashboardFull(params?: AdminDashboardFullParams) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
   const enabled = Boolean(accessToken && user?.role === "ADMIN");
 
   return useQuery<AdminDashboardFull, ApiErrorResponse>({
-    queryKey: ["admin-dashboard", "full"],
-    queryFn: fetchAdminDashboardFull,
+    queryKey: ["admin-dashboard", "full", params],
+    queryFn: () => fetchAdminDashboardFull(params),
     enabled,
     staleTime: 0,
     gcTime: 0,
@@ -41,14 +47,14 @@ export function useAdminDashboardFull() {
   });
 }
 
-export function useStaffKpi(range: StaffKpiRange) {
+export function useStaffKpi(range: StaffKpiRange, page = 1, limit = 5) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
   const enabled = Boolean(accessToken && user?.role === "ADMIN");
 
-  return useQuery<StaffKpiItem[], ApiErrorResponse>({
-    queryKey: ["admin-staff-kpi", range],
-    queryFn: () => fetchStaffKpi(range),
+  return useQuery<StaffKpiPageResponse, ApiErrorResponse>({
+    queryKey: ["admin-staff-kpi", range, page, limit],
+    queryFn: () => fetchStaffKpi(range, page, limit),
     enabled,
     staleTime: 30_000,
     refetchInterval: 60_000,

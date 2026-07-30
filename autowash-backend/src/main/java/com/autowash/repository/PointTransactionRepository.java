@@ -86,6 +86,19 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
             Pageable pageable
     );
 
+    @Query(
+            value = """
+            select pt
+            from PointTransaction pt
+            join fetch pt.loyaltyAccount loyaltyAccount
+            join fetch loyaltyAccount.customer customer
+            where pt.type = :type
+            order by pt.createdAt desc
+            """,
+            countQuery = "select count(pt) from PointTransaction pt where pt.type = :type"
+    )
+    Page<PointTransaction> findDashboardByType(@Param("type") PointTransactionType type, Pageable pageable);
+
     private static Optional<UUID> parseUuid(String id) {
         try {
             return id == null || id.isBlank() ? Optional.empty() : Optional.of(UUID.fromString(id));

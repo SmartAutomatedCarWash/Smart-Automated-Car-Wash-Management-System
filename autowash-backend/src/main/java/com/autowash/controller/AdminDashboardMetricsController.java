@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -37,7 +38,19 @@ public class AdminDashboardMetricsController {
 
     @GetMapping("/full")
     @Operation(summary = "Get full admin dashboard data", description = "Trả về toàn bộ dữ liệu dashboard: KPIs, charts, analytics, alerts, recent activities.")
-    public ApiResponse<AdminDashboardFullResponse> getFullDashboard() {
-        return ApiResponse.ok("Full dashboard retrieved", fullService.getDashboardFull());
+    public ApiResponse<AdminDashboardFullResponse> getFullDashboard(
+            @RequestParam(defaultValue = "1") int noShowPage,
+            @RequestParam(defaultValue = "1") int recentBookingPage,
+            @RequestParam(defaultValue = "1") int voucherUsagePage,
+            @RequestParam(defaultValue = "1") int pointRedemptionPage,
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        return ApiResponse.ok("Full dashboard retrieved", fullService.getDashboardFull(
+                noShowPage,
+                recentBookingPage,
+                voucherUsagePage,
+                pointRedemptionPage,
+                limit
+        ));
     }
 }

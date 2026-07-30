@@ -10,14 +10,13 @@ import {
   CalendarDays, Users, Award, TrendingUp, TrendingDown,
   Droplets, Star, AlertTriangle, Clock, BadgePercent,
   Ticket, BarChart3, Settings2, Activity, Zap,
-  ChevronRight, RefreshCw, History, ArrowRightLeft, Coins,
+  ChevronLeft, ChevronRight, RefreshCw, History, ArrowRightLeft, Coins,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Badge } from "@/shared/ui/ui/badge";
 import { Button } from "@/shared/ui/ui/button";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useAdminDashboardFull, useStaffKpi } from "@/features/dashboard/hooks/use-admin-dashboard-metrics";
-import { useAdminDiscountRedemptions } from "@/features/discounts/hooks/use-admin-discount-redemptions";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
 import { formatIntegerRating } from "@/shared/lib/rating-format";
@@ -25,6 +24,7 @@ import type {
   NoShowAlert, RecentBooking, TierBucket, ServiceItem,
 } from "@/features/dashboard/api/admin-dashboard-service";
 import type { StaffKpiRange } from "@/features/dashboard/api/admin-dashboard-service";
+import type { PaginationMeta } from "@/entities/reports";
 
 // ── Tier badge colours ────────────────────────────────────────────────────────
 const TIER_STYLE: Record<string, string> = {
@@ -76,6 +76,48 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
     <h2 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-400">
       {children}
     </h2>
+  );
+}
+
+function PaginationControls({
+  pagination,
+  onPageChange,
+  labels,
+}: {
+  pagination?: PaginationMeta;
+  onPageChange: (page: number) => void;
+  labels: { previous: string; next: string; page: string; of: string };
+}) {
+  if (!pagination || pagination.totalPages <= 1) return null;
+
+  return (
+    <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-3">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-8 rounded-xl px-2"
+        disabled={pagination.page <= 1}
+        onClick={() => onPageChange(Math.max(1, pagination.page - 1))}
+      >
+        <ChevronLeft className="h-3.5 w-3.5" />
+        <span className="sr-only">{labels.previous}</span>
+      </Button>
+      <span className="text-[11px] font-bold text-slate-500">
+        {labels.page} {pagination.page} {labels.of} {pagination.totalPages}
+      </span>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-8 rounded-xl px-2"
+        disabled={!pagination.hasMore}
+        onClick={() => onPageChange(Math.min(pagination.totalPages, pagination.page + 1))}
+      >
+        <ChevronRight className="h-3.5 w-3.5" />
+        <span className="sr-only">{labels.next}</span>
+      </Button>
+    </div>
   );
 }
 
@@ -133,13 +175,29 @@ function KpiCard({
 export function AdminDashboardView() {
   const { language } = useLanguageStore();
   const t = (vi: string, en: string) => translate(language, vi, en);
-  const { data, isLoading, isError, refetch, isFetching } = useAdminDashboardFull();
+  const [noShowPage, setNoShowPage] = useState(1);
+  const [recentBookingPage, setRecentBookingPage] = useState(1);
+  const [voucherUsagePage, setVoucherUsagePage] = useState(1);
+  const [pointRedemptionPage, setPointRedemptionPage] = useState(1);
+  const [staffKpiPage, setStaffKpiPage] = useState(1);
+  const pageLabels = {
+    previous: t("Trang trước", "Previous page"),
+    next: t("Trang sau", "Next page"),
+    page: t("Trang", "Page"),
+    of: t("trên", "of"),
+  };
+  const { data, isLoading, isError, refetch, isFetching } = useAdminDashboardFull({
+    noShowPage,
+    recentBookingPage,
+    voucherUsagePage,
+    pointRedemptionPage,
+    limit: 5,
+  });
 
   // Section 7: switch between voucher usage stats and point redemption history
   const [redeemView, setRedeemView] = useState<"voucher" | "history">("voucher");
   const [staffKpiRange, setStaffKpiRange] = useState<StaffKpiRange>("TODAY");
-  const staffKpiQuery = useStaffKpi(staffKpiRange);
-  const redemptionsQuery = useAdminDiscountRedemptions(1, 15);
+  const staffKpiQuery = useStaffKpi(staffKpiRange, staffKpiPage, 5);
 
   const kpis = data?.kpis;
   const trend = data?.bookingTrend?.points ?? [];
@@ -150,8 +208,10 @@ export function AdminDashboardView() {
   const vouchers = data?.voucherStats;
   const topServices = data?.topServices?.items ?? [];
   const insights = data?.customerInsights;
-  const noShows = data?.noShowAlerts ?? [];
-  const recentBookings = data?.recentBookings ?? [];
+  const noShows = data?.noShowAlerts?.items ?? [];
+  const recentBookings = data?.recentBookings?.items ?? [];
+  const voucherUsageStats = data?.voucherUsageStats?.items ?? [];
+  const pointRedemptionHistory = data?.pointRedemptionHistory?.items ?? [];
   const reviews = data?.reviewSummary;
 
   // Booking status chart data
@@ -176,12 +236,7 @@ export function AdminDashboardView() {
     <WorkspacePage className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900">{t("Tổng quan hệ thống", "System Overview")}</h1>
-          <p className="text-sm text-slate-500 font-semibold mt-0.5">
-            {t("Dữ liệu vận hành theo thời gian thực", "Real-time operational data")}
-          </p>
-        </div>
+        <div />
         <Button variant="outline" size="sm" className="gap-2 rounded-xl text-xs font-bold"
           onClick={() => refetch()} disabled={isFetching}>
           <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
@@ -539,7 +594,7 @@ export function AdminDashboardView() {
                 <CardTitle className="text-sm font-black text-slate-800">
                   {t("Đánh giá khách hàng", "Customer Reviews")}
                 </CardTitle>
-                <Link href="/admin/reviews" className="flex items-center gap-0.5 text-[11px] font-bold text-cyan-600 hover:text-cyan-700">
+                <Link href="/admin/blog?tab=reviews" className="flex items-center gap-0.5 text-[11px] font-bold text-cyan-600 hover:text-cyan-700">
                   {t("Xem tất cả", "See all")} <ChevronRight className="h-3 w-3" />
                 </Link>
               </div>
@@ -615,7 +670,7 @@ export function AdminDashboardView() {
                 </div>
               ) : (
                 <div className="divide-y divide-slate-50">
-                  {noShows.slice(0, 6).map((alert: NoShowAlert) => (
+                  {noShows.map((alert: NoShowAlert) => (
                     <Link
                       key={alert.customerId}
                       href={`/admin/accounts/${alert.customerId}`}
@@ -639,6 +694,11 @@ export function AdminDashboardView() {
                   ))}
                 </div>
               )}
+              <PaginationControls
+                pagination={data?.noShowAlerts?.pagination}
+                onPageChange={setNoShowPage}
+                labels={pageLabels}
+              />
             </CardContent>
           </Card>
 
@@ -691,6 +751,11 @@ export function AdminDashboardView() {
                   ))}
                 </div>
               )}
+              <PaginationControls
+                pagination={data?.recentBookings?.pagination}
+                onPageChange={setRecentBookingPage}
+                labels={pageLabels}
+              />
             </CardContent>
           </Card>
         </div>
@@ -791,35 +856,40 @@ export function AdminDashboardView() {
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">
                     {t("Đổi điểm lấy voucher gần đây", "Recent point redemptions")}
                   </p>
-                  {redemptionsQuery.isLoading ? (
+                  {isLoading ? (
                     <div className="space-y-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-9" />)}</div>
-                  ) : redemptionsQuery.data?.items?.length === 0 ? (
-                    <p className="py-4 text-center text-sm text-slate-400">{t("Chưa có lịch sử đổi voucher", "No redemption history yet")}</p>
+                  ) : voucherUsageStats.length === 0 ? (
+                    <p className="py-4 text-center text-sm text-slate-400">{t("Chưa có dữ liệu voucher", "No voucher usage data yet")}</p>
                   ) : (
                     <div className="space-y-1.5">
-                      {redemptionsQuery.data?.items?.slice(0, 5).map((item) => (
-                        <div key={item.transactionId} className="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2">
+                      {voucherUsageStats.map((item) => (
+                        <div key={item.userDiscountId} className="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2">
                           <Ticket className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
                           <div className="flex-1 min-w-0">
                             <span className="text-xs font-bold text-slate-800 truncate">{item.customerName}</span>
                             <span className="text-[11px] text-slate-400 ml-2">{item.customerPhone}</span>
                           </div>
                           <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[11px] font-black text-emerald-700">
-                            {item.discountCode}
+                            {item.voucherCode ?? item.discountCode}
                           </span>
-                          <span className="text-[11px] font-black text-rose-600">−{item.pointsRedeemed} pts</span>
+                          <span className="text-[11px] font-black text-slate-600">{item.status}</span>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
+                <PaginationControls
+                  pagination={data?.voucherUsageStats?.pagination}
+                  onPageChange={setVoucherUsagePage}
+                  labels={pageLabels}
+                />
               </div>
             ) : (
               /* ── Point redemption history view ── */
               <div>
-                {redemptionsQuery.isLoading ? (
+                {isLoading ? (
                   <div className="p-5 space-y-2">{[...Array(6)].map((_, i) => <Skeleton key={i} className="h-10" />)}</div>
-                ) : redemptionsQuery.data?.items?.length === 0 ? (
+                ) : pointRedemptionHistory.length === 0 ? (
                   <div className="py-12 text-center">
                     <Coins className="mx-auto h-10 w-10 text-slate-200 mb-3" />
                     <p className="text-sm text-slate-400 font-semibold">{t("Chưa có lịch sử đổi điểm", "No point redemption history")}</p>
@@ -836,10 +906,10 @@ export function AdminDashboardView() {
                         t("Thời gian", "Time"),
                       ].map((h) => (
                         <span key={h} className="text-[10px] font-black uppercase tracking-wider text-slate-400">{h}</span>
-                      ))}
-                    </div>
-                    <div className="divide-y divide-slate-50">
-                      {redemptionsQuery.data?.items?.map((item) => (
+                    ))}
+                  </div>
+                  <div className="divide-y divide-slate-50">
+                      {pointRedemptionHistory.map((item) => (
                         <div
                           key={item.transactionId}
                           className="grid grid-cols-5 gap-2 items-center px-5 py-3 hover:bg-slate-50/50 transition-colors"
@@ -881,6 +951,11 @@ export function AdminDashboardView() {
                         </div>
                       ))}
                     </div>
+                    <PaginationControls
+                      pagination={data?.pointRedemptionHistory?.pagination}
+                      onPageChange={setPointRedemptionPage}
+                      labels={pageLabels}
+                    />
                     {/* Footer link */}
                     <div className="border-t border-slate-100 px-5 py-3 flex justify-end">
                       <Link
@@ -915,7 +990,10 @@ export function AdminDashboardView() {
                   {(["TODAY", "WEEK", "MONTH"] as StaffKpiRange[]).map((r) => (
                     <button
                       key={r}
-                      onClick={() => setStaffKpiRange(r)}
+                      onClick={() => {
+                        setStaffKpiRange(r);
+                        setStaffKpiPage(1);
+                      }}
                       className={cn(
                         "rounded-lg px-3 py-1.5 text-[11px] font-bold transition-all",
                         staffKpiRange === r
@@ -946,7 +1024,7 @@ export function AdminDashboardView() {
                 <AlertTriangle className="h-4 w-4 shrink-0" />
                 {t("Không thể tải dữ liệu KPI nhân viên.", "Failed to load staff KPI.")}
               </div>
-            ) : !staffKpiQuery.data || staffKpiQuery.data.length === 0 ? (
+            ) : !staffKpiQuery.data || staffKpiQuery.data.items.length === 0 ? (
               <div className="py-10 text-center text-sm text-slate-400 font-semibold">
                 {t("Chưa có nhân viên nào.", "No staff found.")}
               </div>
@@ -967,7 +1045,7 @@ export function AdminDashboardView() {
                 </div>
 
                 <div className="divide-y divide-slate-50">
-                  {staffKpiQuery.data.map((staff, idx) => {
+                  {staffKpiQuery.data.items.map((staff, idx) => {
                     const isTopThree = idx < 3;
                     const MEDALS = ["🥇", "🥈", "🥉"];
                     const isOverloaded = staff.activeSessions >= 2;
@@ -1082,25 +1160,30 @@ export function AdminDashboardView() {
                 <div className="border-t border-slate-100 bg-slate-50/50 px-5 py-3 flex flex-wrap items-center gap-4 text-xs text-slate-500">
                   <span className="flex items-center gap-1.5 font-semibold">
                     <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                    {staffKpiQuery.data.filter(s => s.isOnline).length} {t("đang làm việc", "on duty")}
+                    {staffKpiQuery.data.items.filter(s => s.isOnline).length} {t("đang làm việc", "on duty")}
                   </span>
                   <span className="font-semibold">
                     {t("Tổng hoàn thành:", "Total completed:")} <span className="font-black text-slate-800">
-                      {staffKpiQuery.data.reduce((sum, s) => sum + s.completedBookings, 0)}
+                      {staffKpiQuery.data.items.reduce((sum, s) => sum + s.completedBookings, 0)}
                     </span>
                   </span>
                   <span className="font-semibold">
                     {t("Tổng doanh thu:", "Total revenue:")} <span className="font-black text-emerald-700">
-                      {formatVND(staffKpiQuery.data.reduce((sum, s) => sum + s.completedRevenue, 0))}
+                      {formatVND(staffKpiQuery.data.items.reduce((sum, s) => sum + s.completedRevenue, 0))}
                     </span>
                   </span>
-                  {staffKpiQuery.data.some(s => s.activeSessions >= 2) && (
+                  {staffKpiQuery.data.items.some(s => s.activeSessions >= 2) && (
                     <span className="flex items-center gap-1 font-bold text-rose-500">
                       <AlertTriangle className="h-3.5 w-3.5" />
                       {t("Có nhân viên đang quá tải", "Staff overload detected")}
                     </span>
                   )}
                 </div>
+                <PaginationControls
+                  pagination={staffKpiQuery.data.pagination}
+                  onPageChange={setStaffKpiPage}
+                  labels={pageLabels}
+                />
               </>
             )}
           </CardContent>
@@ -1117,7 +1200,7 @@ export function AdminDashboardView() {
             { href: "/admin/services", label: t("Dịch vụ", "Services"), icon: Zap, color: "text-violet-700 bg-violet-50 border-violet-200" },
             { href: "/admin/promotions", label: t("Khuyến mãi", "Promotions"), icon: BadgePercent, color: "text-amber-700 bg-amber-50 border-amber-200" },
             { href: "/admin/tier-voucher-offers", label: t("Đổi voucher", "Voucher Offers"), icon: Ticket, color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
-            { href: "/admin/reviews", label: t("Đánh giá", "Reviews"), icon: Star, color: "text-rose-700 bg-rose-50 border-rose-200" },
+            { href: "/admin/blog?tab=reviews", label: t("Đánh giá", "Reviews"), icon: Star, color: "text-rose-700 bg-rose-50 border-rose-200" },
             { href: "/admin/reports", label: t("Báo cáo", "Reports"), icon: BarChart3, color: "text-blue-700 bg-blue-50 border-blue-200" },
             { href: "/admin/settings", label: t("Cài đặt", "Settings"), icon: Settings2, color: "text-slate-600 bg-slate-100 border-slate-200" },
           ].map(({ href, label, icon: Icon, color }) => (

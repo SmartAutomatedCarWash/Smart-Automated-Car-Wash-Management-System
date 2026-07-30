@@ -6,18 +6,24 @@ import com.autowash.dto.AdminDashboardFullResponse;
 import com.autowash.dto.AdminDashboardFullResponse.BookingTrend;
 import com.autowash.dto.AdminDashboardFullResponse.BookingStatusDist;
 import com.autowash.dto.AdminDashboardFullResponse.CustomerInsights;
+import com.autowash.dto.AdminDashboardFullResponse.DashboardPage;
 import com.autowash.dto.AdminDashboardFullResponse.Kpis;
 import com.autowash.dto.AdminDashboardFullResponse.LoyaltyTierDist;
 import com.autowash.dto.AdminDashboardFullResponse.NoShowAlert;
 import com.autowash.dto.AdminDashboardFullResponse.PeakHourData;
+import com.autowash.dto.AdminDashboardFullResponse.PointRedemptionItem;
 import com.autowash.dto.AdminDashboardFullResponse.RealTimeOps;
 import com.autowash.dto.AdminDashboardFullResponse.RecentBooking;
 import com.autowash.dto.AdminDashboardFullResponse.ReviewSummary;
 import com.autowash.dto.AdminDashboardFullResponse.TopServices;
+import com.autowash.dto.AdminDashboardFullResponse.VoucherUsageItem;
 import com.autowash.dto.AdminDashboardFullResponse.VoucherStats;
 import com.autowash.entity.Booking;
 import com.autowash.entity.BookingDetail;
+import com.autowash.entity.PointTransaction;
+import com.autowash.entity.UserDiscount;
 import com.autowash.entity.enums.BookingStatus;
+import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.entity.enums.UserDiscountStatus;
@@ -26,6 +32,7 @@ import com.autowash.repository.BookingRepository;
 import com.autowash.repository.ComboRepository;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PackageRepository;
+import com.autowash.repository.PointTransactionRepository;
 import com.autowash.repository.SlotHoldRepository;
 import com.autowash.repository.TierConfigRepository;
 import com.autowash.repository.UserRepository;
@@ -33,6 +40,7 @@ import com.autowash.repository.UserDiscountRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.AdminDashboardFullService;
 import com.autowash.service.ReviewService;
+import com.autowash.shared.dto.PaginationMeta;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -44,7 +52,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +72,7 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
     private final TierConfigRepository tierConfigRepository;
     private final PackageRepository packageRepository;
     private final ComboRepository comboRepository;
+    private final PointTransactionRepository pointTransactionRepository;
     private final ReviewService reviewService;
 
     public AdminDashboardFullServiceImpl(
@@ -73,6 +85,7 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
             TierConfigRepository tierConfigRepository,
             PackageRepository packageRepository,
             ComboRepository comboRepository,
+            PointTransactionRepository pointTransactionRepository,
             ReviewService reviewService
     ) {
         this.bookingRepository = bookingRepository;
@@ -84,17 +97,29 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
         this.tierConfigRepository = tierConfigRepository;
         this.packageRepository = packageRepository;
         this.comboRepository = comboRepository;
+        this.pointTransactionRepository = pointTransactionRepository;
         this.reviewService = reviewService;
     }
 
     @Override
     public AdminDashboardFullResponse getDashboardFull() {
+        return getDashboardFull(1, 1, 1, 1, 5);
+    }
+
+    @Override
+    public AdminDashboardFullResponse getDashboardFull(
+            int noShowPage,
+            int recentBookingPage,
+            int voucherUsagePage,
+            int pointRedemptionPage,
+            int limit
+    ) {
+        int safeLimit = normalizeLimit(limit);
         // Tier map: only used for recentBookings, noShowAlerts, customerInsights (VIP calc via SQL now)
         Map<String, String> tierByCustomerId = buildTierByCustomerIdMap();
 
-        // Recent bookings: fetches only 10 rows with necessary joins
-        List<Booking> recentBookings = bookingRepository.findTop10ByOrderByCreatedAtDesc(PageRequest.of(0, 10));
-        Map<UUID, String> serviceNameMap = buildServiceNameMapFromBookings(recentBookings);
+        Page<Booking> recentBookings = bookingRepository.findAllByOrderByCreatedAtDesc(pageable(recentBookingPage, safeLimit, Sort.by(Sort.Direction.DESC, "createdAt")));
+        Map<UUID, String> serviceNameMap = buildServiceNameMapFromBookings(recentBookings.getContent());
 
         return new AdminDashboardFullResponse(
                 buildKpis(),
@@ -106,8 +131,10 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
                 buildVoucherStats(),
                 buildTopServices(),
                 buildCustomerInsights(tierByCustomerId),
-                buildNoShowAlerts(tierByCustomerId),
+                buildNoShowAlerts(tierByCustomerId, noShowPage, safeLimit),
                 buildRecentBookings(recentBookings, serviceNameMap, tierByCustomerId),
+                buildVoucherUsageStats(voucherUsagePage, safeLimit),
+                buildPointRedemptionHistory(pointRedemptionPage, safeLimit),
                 buildReviewSummary()
         );
     }
@@ -126,6 +153,24 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
         if (!packageIds.isEmpty()) packageRepository.findAllById(packageIds).forEach(p -> names.put(p.getId(), p.getName()));
         if (!comboIds.isEmpty()) comboRepository.findAllById(comboIds).forEach(c -> names.put(c.getId(), c.getName()));
         return names;
+    }
+
+    private Pageable pageable(int oneBasedPage, int limit, Sort sort) {
+        return PageRequest.of(Math.max(oneBasedPage, 1) - 1, normalizeLimit(limit), sort);
+    }
+
+    private int normalizeLimit(int limit) {
+        return Math.min(Math.max(limit, 1), 50);
+    }
+
+    private PaginationMeta pagination(Page<?> page) {
+        return new PaginationMeta(
+                page.getNumber() + 1,
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.hasNext()
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -361,26 +406,27 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
     // -------------------------------------------------------------------------
     // Section 6 — No-show alerts (SQL GROUP BY, fetch only top 10)
     // -------------------------------------------------------------------------
-    private List<NoShowAlert> buildNoShowAlerts(Map<String, String> tierByCustomerId) {
-        List<Object[]> topRows = bookingRepository.findTopNoShowCustomers();
-        return topRows.stream()
+    private DashboardPage<NoShowAlert> buildNoShowAlerts(Map<String, String> tierByCustomerId, int page, int limit) {
+        Page<Object[]> topRows = bookingRepository.findNoShowCustomers(pageable(page, limit, Sort.unsorted()));
+        List<NoShowAlert> items = topRows.getContent().stream()
                 .map(row -> {
                     UUID customerId = (UUID) row[0];
                     String fullName = (String) row[1];
                     String phone = (String) row[2];
-                    Long count = (Long) row[3];
+                    long count = ((Number) row[3]).longValue();
                     String tier = tierByCustomerId.getOrDefault(customerId.toString(), "BRONZE");
                     return new NoShowAlert(customerId.toString(), fullName, phone, count, tier);
                 })
                 .collect(Collectors.toList());
+        return new DashboardPage<>(items, pagination(topRows));
     }
 
     // -------------------------------------------------------------------------
     // Section 6 — Recent bookings (latest 10 via indexed query)
     // -------------------------------------------------------------------------
-    private List<RecentBooking> buildRecentBookings(
-            List<Booking> recentBookings, Map<UUID, String> serviceNameMap, Map<String, String> tierByCustomerId) {
-        return recentBookings.stream()
+    private DashboardPage<RecentBooking> buildRecentBookings(
+            Page<Booking> recentBookings, Map<UUID, String> serviceNameMap, Map<String, String> tierByCustomerId) {
+        List<RecentBooking> items = recentBookings.getContent().stream()
                 .map(b -> {
                     UUID sid = serviceId(b);
                     String serviceName = sid != null ? serviceNameMap.getOrDefault(sid, "Unknown") : "Unknown";
@@ -394,6 +440,56 @@ public class AdminDashboardFullServiceImpl implements AdminDashboardFullService 
                     );
                 })
                 .collect(Collectors.toList());
+        return new DashboardPage<>(items, pagination(recentBookings));
+    }
+
+    private DashboardPage<VoucherUsageItem> buildVoucherUsageStats(int page, int limit) {
+        Page<UserDiscount> userDiscounts = userDiscountRepository.findDashboardVoucherUsage(pageable(page, limit, Sort.unsorted()));
+        List<VoucherUsageItem> items = userDiscounts.getContent().stream()
+                .map(userDiscount -> new VoucherUsageItem(
+                        userDiscount.getId().toString(),
+                        userDiscount.getUser().getId().toString(),
+                        userDiscount.getUser().getFullName(),
+                        userDiscount.getUser().getPhone(),
+                        userDiscount.getDiscount().getCode(),
+                        userDiscount.getVoucherCode(),
+                        userDiscount.getStatus().name(),
+                        userDiscount.getPointsSpent(),
+                        userDiscount.getClaimedAt().toString(),
+                        userDiscount.getUsedAt() != null ? userDiscount.getUsedAt().toString() : null
+                ))
+                .toList();
+        return new DashboardPage<>(items, pagination(userDiscounts));
+    }
+
+    private DashboardPage<PointRedemptionItem> buildPointRedemptionHistory(int page, int limit) {
+        Page<PointTransaction> transactions = pointTransactionRepository.findDashboardByType(
+                PointTransactionType.REDEEM,
+                pageable(page, limit, Sort.unsorted())
+        );
+        List<PointRedemptionItem> items = transactions.getContent().stream()
+                .map(transaction -> new PointRedemptionItem(
+                        transaction.getId().toString(),
+                        transaction.getLoyaltyAccount().getCustomer().getId().toString(),
+                        transaction.getLoyaltyAccount().getCustomer().getFullName(),
+                        transaction.getLoyaltyAccount().getCustomer().getPhone(),
+                        resolveRedeemedVoucherLabel(transaction),
+                        Math.abs(transaction.getPoints()),
+                        transaction.getBalanceAfter(),
+                        transaction.getCreatedAt().toString()
+                ))
+                .toList();
+        return new DashboardPage<>(items, pagination(transactions));
+    }
+
+    private String resolveRedeemedVoucherLabel(PointTransaction transaction) {
+        String reason = transaction.getReason();
+        if (reason == null || reason.isBlank()) return "Voucher";
+        String marker = "Voucher offer redemption:";
+        if (reason.startsWith(marker)) {
+            return reason.substring(marker.length()).trim();
+        }
+        return reason;
     }
 
     // -------------------------------------------------------------------------
