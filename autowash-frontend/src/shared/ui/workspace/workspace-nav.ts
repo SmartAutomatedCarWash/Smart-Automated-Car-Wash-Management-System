@@ -79,13 +79,13 @@ export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
 };
 
 const CUSTOMER_NAV: WorkspaceNavItem[] = [
-  { href: "/customer/home", label: "Home Feed", labelVi: "Ban tin", icon: LayoutDashboard, exact: true },
+  { href: "/customer/home", label: "Home", labelVi: "Trang chu", icon: LayoutDashboard, exact: true },
   { href: "/customer/guides", label: "Guides", labelVi: "Bai viet", icon: BookOpen },
   { href: "/customer/services", label: "Catalog", labelVi: "Danh muc dich vu", icon: Wrench },
   { href: "/customer/bookings", label: "Bookings", labelVi: "Đặt lịch", icon: ClipboardList },
   { href: "/customer/history", label: "History", labelVi: "Lich su", icon: History },
-  { href: "/customer/vehicles", label: "All vehicles", labelVi: "Tat ca xe", icon: CarFront },
-  { href: "/customer/loyalty", label: "Member Lounge", labelVi: "Phong cho thanh vien", icon: Gift },
+  { href: "/customer/vehicles", label: "Vehicles", labelVi: "Them xe", icon: CarFront },
+  { href: "/customer/loyalty", label: "Member", labelVi: "Thanh vien", icon: Gift },
 ];
 
 const STAFF_NAV: WorkspaceNavItem[] = [

@@ -1,6 +1,8 @@
 import { getApiFieldErrors } from "@/shared/lib/api-errors";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
 import type { ExternalToast } from "sonner";
+import Swal, { type SweetAlertIcon, type SweetAlertOptions } from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
 
 export const VEHICLE_TOAST_OPTIONS = {
   position: "bottom-right",
@@ -12,6 +14,48 @@ export const VEHICLE_TOAST_OPTIONS = {
     closeButton: "group-[.toast]:left-auto group-[.toast]:right-3 group-[.toast]:top-3",
   },
 } satisfies ExternalToast;
+
+const VEHICLE_ALERT_BASE: SweetAlertOptions = {
+  confirmButtonText: "OK",
+  timer: 10000,
+  timerProgressBar: true,
+  buttonsStyling: false,
+  customClass: {
+    popup: "swal-notify-popup",
+    title: "swal-notify-title",
+    htmlContainer: "swal-notify-message",
+  },
+};
+
+export function showVehicleAlert({
+  icon,
+  title,
+  message,
+}: {
+  icon: SweetAlertIcon;
+  title: string;
+  message: string;
+}) {
+  const confirmButtonClass =
+    icon === "success"
+      ? "swal-notify-btn-success"
+      : icon === "error"
+        ? "swal-notify-btn-error"
+        : icon === "warning"
+          ? "swal-notify-btn-warning"
+          : "swal-notify-btn-info";
+
+  return Swal.fire({
+    ...VEHICLE_ALERT_BASE,
+    icon,
+    title,
+    text: message,
+    customClass: {
+      ...VEHICLE_ALERT_BASE.customClass,
+      confirmButton: confirmButtonClass,
+    },
+  });
+}
 
 export function getVehicleToastErrorMessage(
   error: unknown,

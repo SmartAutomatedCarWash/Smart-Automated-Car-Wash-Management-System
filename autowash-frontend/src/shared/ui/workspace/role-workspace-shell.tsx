@@ -14,10 +14,10 @@ import {
   ClipboardList,
   Droplets,
   History,
+  Languages,
   LayoutDashboard,
   LogOut,
   Menu,
-  Moon,
   PanelLeftClose,
   PanelLeftOpen,
   Phone,
@@ -25,7 +25,6 @@ import {
   Settings2,
   ShieldCheck,
   Sparkles,
-  Sun,
   UserCog,
   Wrench,
   X,
@@ -69,6 +68,7 @@ import { MembershipTierUpgradePopup } from "@/features/loyalty/components/member
 import { useCustomerLoyaltyAccount } from "@/features/loyalty/hooks/use-customer-loyalty";
 import { useTierStore } from "@/shared/store/tier.store";
 import { useTierStyle } from "@/shared/lib/tier-styles";
+import { TierIcon } from "@/shared/ui/workspace/tier-icon";
 import { WorkspaceHeaderProvider, type WorkspaceHeaderConfig } from "@/shared/ui/workspace/workspace-header-context";
 
 type RoleWorkspaceShellProps = {
@@ -136,7 +136,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const [headerConfig, setHeaderConfig] = useState<WorkspaceHeaderConfig | null>(null);
 
   const { language, setLanguage, hydrateLanguage } = useLanguageStore();
-  const { theme, setTheme } = useTheme();
+  const { setTheme } = useTheme();
 
   const t = (vi: string, en: string) => translate(language, vi, en);
 
@@ -513,6 +513,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 activeClassName={workspaceTheme.activeNav}
                 language={language}
                 tierStyle={isCustomer ? tierStyle : null}
+                customerTier={isCustomer ? effectiveCustomerTier : null}
               />
             ))}
           </ul>
@@ -587,47 +588,20 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
             {/* Right: actions */}
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               {/* Language switcher */}
-              <div className="inline-flex items-center rounded-full border border-cyan-900/10 bg-white/90 p-0.5 shadow-sm backdrop-blur-sm">
-                <button
-                  type="button"
-                  onClick={() => setLanguage("en")}
-                  className={cn(
-                    "rounded-md px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-bold transition-all",
-                    language === "en"
-                      ? "bg-primary text-primary-foreground shadow-sm font-black"
-                      : "text-muted-foreground hover:text-foreground font-semibold",
-                  )}
-                >
-                  EN
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLanguage("vi")}
-                  className={cn(
-                    "rounded-md px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-bold transition-all",
-                    language === "vi"
-                      ? "bg-primary text-primary-foreground shadow-sm font-black"
-                      : "text-muted-foreground hover:text-foreground font-semibold",
-                  )}
-                >
-                  VN
-                </button>
-              </div>
-
-              {/* Dark / light toggle */}
               <button
                 type="button"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-cyan-900/10 bg-white/90 transition hover:border-cyan-300/50 hover:bg-cyan-50"
-                aria-label={t("Chuyển chế độ sáng/tối", "Toggle dark/light mode")}
+                onClick={() => setLanguage(language === "en" ? "vi" : "en")}
+                className="group inline-flex h-10 items-center gap-2 rounded-full border border-cyan-900/10 bg-white/92 px-2.5 pr-3 text-slate-700 shadow-[0_10px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition hover:border-cyan-300/60 hover:bg-cyan-50/70 hover:text-slate-950"
+                aria-label={language === "en" ? "Switch language to Vietnamese" : "Switch language to English"}
+                title={language === "en" ? "Switch to Vietnamese" : "Switch to English"}
               >
-                {theme === "dark" ? (
-                  <Sun className="h-4 w-4 text-yellow-400" />
-                ) : (
-                  <Moon className="h-4 w-4 text-muted-foreground" />
-                )}
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-[#0f2342] text-white shadow-[0_8px_18px_rgba(15,35,66,0.22)] transition group-hover:scale-105">
+                  <Languages className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-[11px] font-black uppercase tracking-[0.12em]">
+                  {language === "en" ? "EN" : "VN"}
+                </span>
               </button>
-
               {/* Customer cart drawer */}
               {isCustomer && <CartDrawer />}
 
@@ -1019,22 +993,105 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <button
                     type="button"
                     className={cn(
-                      "group flex h-10 w-auto items-center gap-2 rounded-sm border px-3 py-1.5 text-left transition sm:px-3",
+                      "group relative inline-flex h-12 w-[260px] shrink-0 items-center justify-start gap-3 rounded-2xl border px-3.5 py-2 text-left transition-all duration-300",
                       customerTierMetal
-                        ? "relative overflow-hidden border-transparent shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_4px_14px_rgba(0,0,0,0.15)] [&>*]:relative [&>*]:z-10"
+                        ? "overflow-hidden border-transparent shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_10px_28px_rgba(15,23,42,0.16)] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_16px_34px_rgba(15,23,42,0.2)]"
                         : "border-border/70 bg-card/90 hover:border-primary/30 hover:bg-card",
                     )}
-                    style={customerTierMetal ? { background: customerTierMetal.surface, borderColor: customerTierMetal.border } : {}}
+                    style={customerTierMetal ? getTierNavCardStyle(customerTierMetal, effectiveCustomerTier) : {}}
                     aria-label={t("Mở menu hồ sơ", "Open profile menu")}
                   >
                     {customerTierMetal ? (
                       <>
-                        <span className="absolute inset-0 rounded-sm bg-[linear-gradient(135deg,rgba(255,255,255,0.30)_0%,rgba(255,255,255,0.05)_42%,rgba(0,0,0,0.12)_100%)]" />
-                        <span className="absolute inset-x-3 top-px h-px bg-white/40" />
+                        <span
+                          className="pointer-events-none absolute -inset-2 z-0 rounded-[22px] opacity-70 blur-md animate-[pulse_2.2s_ease-in-out_infinite]"
+                          style={getTierNavHaloStyle(customerTierMetal, effectiveCustomerTier)}
+                        />
+                        <span
+                          className="pointer-events-none absolute -inset-4 z-0 rounded-[26px] opacity-35 blur-2xl animate-[pulse_3.4s_ease-in-out_infinite]"
+                          style={getTierNavHaloStyle(customerTierMetal, effectiveCustomerTier, true)}
+                        />
+                        <span
+                          className="pointer-events-none absolute -inset-px z-0 rounded-2xl opacity-95 blur-[0.2px] animate-[spin_3.2s_linear_infinite]"
+                          style={getTierNavTraceStyle(customerTierMetal, effectiveCustomerTier)}
+                        />
+                        <span
+                          className="pointer-events-none absolute -inset-[3px] z-0 rounded-[18px] opacity-60 blur-[1.5px] animate-[spin_6.4s_linear_infinite_reverse]"
+                          style={getTierNavAuraStyle(customerTierMetal, effectiveCustomerTier)}
+                        />
+                        <span className="pointer-events-none absolute -inset-[7px] z-0 animate-[spin_2.8s_cubic-bezier(0.45,0,0.55,1)_infinite] rounded-[22px]">
+                          <span
+                            className="absolute right-1 top-1/2 h-1.5 w-12 -translate-y-1/2 rounded-full blur-[2px]"
+                            style={{
+                              background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.96), ${customerTierMetal.glowVar}cc, transparent)`,
+                            }}
+                          />
+                        </span>
+                        <span
+                          className="pointer-events-none absolute inset-[2px] z-0 rounded-[14px]"
+                          style={getTierNavInnerSurfaceStyle(customerTierMetal, effectiveCustomerTier)}
+                        />
+                        <span
+                          className="pointer-events-none absolute inset-0 z-10 rounded-2xl p-[2px] animate-[spin_2.4s_linear_infinite]"
+                          style={getTierNavVisibleBorderStyle(customerTierMetal, effectiveCustomerTier)}
+                        />
+                        <span
+                          className="pointer-events-none absolute inset-0 z-10 rounded-2xl p-[2px] opacity-60 animate-[spin_4.8s_linear_infinite_reverse]"
+                          style={getTierNavVisibleBorderStyle(customerTierMetal, effectiveCustomerTier, true)}
+                        />
+                        <span
+                          className={cn(
+                            "pointer-events-none absolute -right-8 -top-8 z-0 h-20 w-20 rounded-full blur-2xl",
+                            getTierNavMotionClass(effectiveCustomerTier),
+                          )}
+                          style={{
+                            background: customerTierMetal.progress,
+                            opacity: getTierNavGlowOpacity(effectiveCustomerTier),
+                          }}
+                        />
+                        <span
+                          className={cn(
+                            "pointer-events-none absolute -left-8 bottom-[-2.25rem] z-0 h-16 w-16 rounded-full blur-xl",
+                            getTierNavMotionClass(effectiveCustomerTier),
+                          )}
+                          style={{
+                            background: customerTierMetal.surface,
+                            opacity: Math.max(getTierNavGlowOpacity(effectiveCustomerTier) - 0.08, 0.08),
+                          }}
+                        />
+                        <span className="absolute inset-0 z-0 rounded-2xl bg-[linear-gradient(135deg,rgba(255,255,255,0.30)_0%,rgba(255,255,255,0.06)_42%,rgba(0,0,0,0.12)_100%)]" />
+                        <span
+                          className="pointer-events-none absolute inset-y-0 left-[-36%] z-0 w-[42%] skew-x-[-20deg] animate-[shimmer_3.8s_linear_infinite]"
+                          style={{
+                            background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%)",
+                            opacity: getTierNavShimmerOpacity(effectiveCustomerTier),
+                          }}
+                        />
+                        <span className="absolute inset-x-3 top-px z-0 h-px bg-white/40" />
                       </>
                     ) : null}
+                    <div className="relative z-20 min-w-0 flex-1 overflow-hidden">
+                      <div
+                        className={cn("truncate text-[13px] font-black leading-tight")}
+                        style={customerTierMetal ? { color: "#0f172a" } : {}}
+                      >
+                        {user.fullName}
+                      </div>
+                      <div className="mt-0.5 flex min-w-0 items-center gap-1.5 overflow-hidden">
+                        {requiredRole === "CUSTOMER" ? (
+                          <TierBadge tier={effectiveCustomerTier} className="max-w-[110px] min-w-0 shrink px-1.5 text-[8px] tracking-[0.12em]" />
+                        ) : (
+                          <span
+                            className={cn("truncate text-[9px] font-black uppercase tracking-[0.14em]", customerTierMetal ? "" : "text-muted-foreground")}
+                            style={customerTierMetal ? { color: customerTierMetal.softText } : {}}
+                          >
+                            {user.role}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                     <Avatar
-                      className={cn("h-7 w-7 border shadow-sm", customerTierMetal ? "" : workspaceTheme.accentSoft)}
+                      className={cn("relative z-20 h-9 w-9 shrink-0 border shadow-sm ring-1 ring-white/30", customerTierMetal ? "" : workspaceTheme.accentSoft)}
                       style={customerTierMetal ? { background: customerTierMetal.progress, borderColor: customerTierMetal.border } : {}}
                     >
                       <AvatarImage src={user.avatarUrl ?? undefined} alt={user.fullName} className="object-cover" />
@@ -1045,19 +1102,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                         {getUserInitials(user.fullName)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="hidden min-w-0 sm:block">
-                      <div className={cn("truncate text-[13px] font-black leading-tight")} style={customerTierMetal ? { color: customerTierMetal.text } : {}}>{user.fullName}</div>
-                      {requiredRole === "CUSTOMER" ? (
-                        <div className="mt-0.5">
-                          <TierBadge tier={effectiveCustomerTier} />
-                        </div>
-                      ) : (
-                        <div className={cn("truncate text-[10px] font-black uppercase tracking-wide")} style={customerTierMetal ? { color: customerTierMetal.softText } : {}}>
-                          {user.role}
-                        </div>
-                      )}
-                    </div>
-                    <ChevronDown className={cn("hidden h-3.5 w-3.5 transition group-data-[state=open]:rotate-180 sm:block", customerTierMetal ? "" : "text-muted-foreground")} style={customerTierMetal ? { color: customerTierMetal.softText } : {}} />
+                    <ChevronDown className={cn("relative z-20 h-3.5 w-3.5 shrink-0 transition group-data-[state=open]:rotate-180", customerTierMetal ? "" : "text-muted-foreground")} style={customerTierMetal ? { color: "#94a3b8" } : {}} />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -1593,6 +1638,7 @@ function SidebarNavLink({
   activeClassName,
   language,
   tierStyle,
+  customerTier,
   onNavigate,
 }: {
   item: WorkspaceNavItem;
@@ -1601,6 +1647,7 @@ function SidebarNavLink({
   activeClassName: string;
   language: "vi" | "en";
   tierStyle?: ReturnType<typeof useTierStyle> | null;
+  customerTier?: string | null;
   onNavigate?: () => void;
 }) {
   const active = isNavActive(pathname, item);
@@ -1620,16 +1667,292 @@ function SidebarNavLink({
           active ? activeClassName : "text-muted-foreground hover:bg-accent hover:text-foreground",
         )}
       >
-        <Icon 
-          className={cn(
-            "h-4 w-4 shrink-0"
-          )}
-          style={isLoyaltyItem && tierStyle && !active ? { color: tierStyle.hex } : undefined}
-        />
+        {isLoyaltyItem && tierStyle ? (
+          <TierNavIcon tier={customerTier} active={active} tierStyle={tierStyle} />
+        ) : (
+          <Icon className="h-4 w-4 shrink-0" />
+        )}
         {!collapsed && <span>{displayLabel}</span>}
       </Link>
     </li>
   );
+}
+
+function TierNavIcon({
+  tier,
+  active,
+  tierStyle,
+}: {
+  tier?: string | null;
+  active: boolean;
+  tierStyle: ReturnType<typeof useTierStyle>;
+}) {
+  const metal = tierStyle.metal;
+  const ringOpacity = active ? 0.28 : 0.18;
+
+  return (
+    <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center">
+      <span
+        className="absolute inset-[-3px] rounded-full blur-[6px] animate-pulse"
+        style={{
+          background: metal.progress,
+          opacity: ringOpacity,
+        }}
+      />
+      <TierIcon
+        tier={tier}
+        className="relative z-10 h-5 w-5 border border-current/10 shadow-sm"
+        iconClassName="h-3 w-3"
+        style={{
+          background: metal.surface,
+          color: metal.text,
+          borderColor: metal.border,
+          boxShadow: active
+            ? `0 0 0 1px ${metal.border}, 0 0 18px ${metal.glowVar}66`
+            : `0 0 0 1px ${metal.border}88, 0 0 14px ${metal.glowVar}44`,
+          animation: "pulse 2.6s ease-in-out infinite",
+        }}
+      />
+    </span>
+  );
+}
+
+function getTierNavCardStyle(
+  metal: ReturnType<typeof useTierStyle>["metal"],
+  tier?: string | null,
+): React.CSSProperties {
+  const glowOpacity = getTierNavGlowOpacity(tier);
+
+  return {
+    background: `
+      radial-gradient(circle at top right, ${metal.glowVar}${getTierNavGlowHex(tier)} 0%, transparent 42%),
+      ${metal.surface}
+    `,
+    borderColor: metal.border,
+    boxShadow: `0 10px 28px rgba(15,23,42,0.16), 0 0 0 1px ${metal.border}, 0 0 24px ${metal.glowVar}${Math.round(glowOpacity * 255).toString(16).padStart(2, "0")}`,
+  };
+}
+
+function getTierNavTraceStyle(
+  metal: ReturnType<typeof useTierStyle>["metal"],
+  tier?: string | null,
+): React.CSSProperties {
+  const traceAlpha = getTierNavTraceAlpha(tier);
+
+  return {
+    background: `conic-gradient(
+      from 0deg,
+      ${metal.glowVar}${traceAlpha} 0deg,
+      rgba(255,255,255,0.98) 34deg,
+      ${metal.glowVar}${traceAlpha} 72deg,
+      transparent 118deg,
+      transparent 228deg,
+      ${metal.glowVar}88 292deg,
+      rgba(255,255,255,0.86) 326deg,
+      ${metal.glowVar}${traceAlpha} 360deg
+    )`,
+    boxShadow: `0 0 18px ${metal.glowVar}66, 0 0 32px ${metal.glowVar}33`,
+  };
+}
+
+function getTierNavAuraStyle(
+  metal: ReturnType<typeof useTierStyle>["metal"],
+  tier?: string | null,
+): React.CSSProperties {
+  const traceAlpha = getTierNavTraceAlpha(tier);
+
+  return {
+    background: `conic-gradient(
+      from 180deg,
+      transparent 0deg,
+      ${metal.glowVar}66 58deg,
+      rgba(255,255,255,0.82) 96deg,
+      ${metal.glowVar}${traceAlpha} 126deg,
+      transparent 176deg,
+      transparent 260deg,
+      rgba(255,255,255,0.5) 312deg,
+      transparent 360deg
+    )`,
+  };
+}
+
+function getTierNavVisibleBorderStyle(
+  metal: ReturnType<typeof useTierStyle>["metal"],
+  tier?: string | null,
+  reverse = false,
+): React.CSSProperties {
+  const traceAlpha = getTierNavTraceAlpha(tier);
+
+  return {
+    background: reverse
+      ? `conic-gradient(from 180deg, transparent 0deg, ${metal.glowVar}aa 44deg, rgba(255,255,255,0.95) 70deg, transparent 112deg, transparent 250deg, ${metal.glowVar}${traceAlpha} 306deg, transparent 360deg)`
+      : `conic-gradient(from 0deg, ${metal.glowVar}${traceAlpha} 0deg, rgba(255,255,255,1) 34deg, ${metal.glowVar}${traceAlpha} 66deg, transparent 104deg, transparent 214deg, ${metal.glowVar}bb 290deg, rgba(255,255,255,0.9) 326deg, ${metal.glowVar}${traceAlpha} 360deg)`,
+    WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+    WebkitMaskComposite: "xor",
+    maskComposite: "exclude",
+    filter: `drop-shadow(0 0 6px ${metal.glowVar}88)`,
+  };
+}
+
+function getTierNavHaloStyle(
+  metal: ReturnType<typeof useTierStyle>["metal"],
+  tier?: string | null,
+  wide = false,
+): React.CSSProperties {
+  const glowHex = wide ? getTierNavWideHaloHex(tier) : getTierNavHaloHex(tier);
+
+  return {
+    background: `
+      radial-gradient(circle at 18% 50%, ${metal.glowVar}${glowHex} 0%, transparent 34%),
+      radial-gradient(circle at 82% 50%, rgba(255,255,255,0.7) 0%, transparent 26%),
+      linear-gradient(90deg, transparent 0%, ${metal.glowVar}${glowHex} 45%, transparent 100%)
+    `,
+    boxShadow: `0 0 ${wide ? 34 : 20}px ${metal.glowVar}${glowHex}`,
+  };
+}
+
+function getTierNavInnerSurfaceStyle(
+  metal: ReturnType<typeof useTierStyle>["metal"],
+  tier?: string | null,
+): React.CSSProperties {
+  return {
+    background: `
+      radial-gradient(circle at top right, ${metal.glowVar}${getTierNavGlowHex(tier)} 0%, transparent 44%),
+      ${metal.surface}
+    `,
+  };
+}
+
+function getTierNavGlowOpacity(tier?: string | null) {
+  switch ((tier ?? "MEMBER").toUpperCase()) {
+    case "DIAMOND":
+      return 0.34;
+    case "PLATINUM":
+      return 0.28;
+    case "GOLD":
+      return 0.24;
+    case "SILVER":
+      return 0.18;
+    case "BRONZE":
+      return 0.15;
+    default:
+      return 0.12;
+  }
+}
+
+function getTierNavTraceAlpha(tier?: string | null) {
+  switch ((tier ?? "MEMBER").toUpperCase()) {
+    case "DIAMOND":
+      return "dd";
+    case "PLATINUM":
+      return "cc";
+    case "GOLD":
+      return "bb";
+    case "SILVER":
+      return "aa";
+    case "BRONZE":
+      return "99";
+    default:
+      return "88";
+  }
+}
+
+function getTierNavHaloHex(tier?: string | null) {
+  switch ((tier ?? "MEMBER").toUpperCase()) {
+    case "DIAMOND":
+      return "88";
+    case "PLATINUM":
+      return "78";
+    case "GOLD":
+      return "72";
+    case "SILVER":
+      return "5f";
+    case "BRONZE":
+      return "56";
+    default:
+      return "4d";
+  }
+}
+
+function getTierNavWideHaloHex(tier?: string | null) {
+  switch ((tier ?? "MEMBER").toUpperCase()) {
+    case "DIAMOND":
+      return "55";
+    case "PLATINUM":
+      return "4c";
+    case "GOLD":
+      return "46";
+    case "SILVER":
+      return "3d";
+    case "BRONZE":
+      return "38";
+    default:
+      return "30";
+  }
+}
+
+function getTierNavGlowHex(tier?: string | null) {
+  switch ((tier ?? "MEMBER").toUpperCase()) {
+    case "DIAMOND":
+      return "88";
+    case "PLATINUM":
+      return "72";
+    case "GOLD":
+      return "66";
+    case "SILVER":
+      return "55";
+    case "BRONZE":
+      return "4a";
+    default:
+      return "40";
+  }
+}
+
+function getTierNavShimmerOpacity(tier?: string | null) {
+  switch ((tier ?? "MEMBER").toUpperCase()) {
+    case "DIAMOND":
+      return 0.3;
+    case "PLATINUM":
+      return 0.24;
+    case "GOLD":
+      return 0.2;
+    case "SILVER":
+      return 0.16;
+    case "BRONZE":
+      return 0.14;
+    default:
+      return 0.1;
+  }
+}
+
+function getTierNavMotionClass(tier?: string | null) {
+  switch ((tier ?? "MEMBER").toUpperCase()) {
+    case "DIAMOND":
+      return "animate-[pulse_1.8s_ease-in-out_infinite]";
+    case "PLATINUM":
+      return "animate-[pulse_2.1s_ease-in-out_infinite]";
+    case "GOLD":
+      return "animate-[pulse_2.4s_ease-in-out_infinite]";
+    default:
+      return "animate-[pulse_2.9s_ease-in-out_infinite]";
+  }
+}
+
+function getTierNavAccentLabel(tier?: string | null) {
+  switch ((tier ?? "MEMBER").toUpperCase()) {
+    case "DIAMOND":
+      return "Elite";
+    case "PLATINUM":
+      return "Premium";
+    case "GOLD":
+      return "Priority";
+    case "SILVER":
+      return "Plus";
+    case "BRONZE":
+      return "Core";
+    default:
+      return "Member";
+  }
 }
 
 function isNavActive(pathname: string, item: WorkspaceNavItem) {

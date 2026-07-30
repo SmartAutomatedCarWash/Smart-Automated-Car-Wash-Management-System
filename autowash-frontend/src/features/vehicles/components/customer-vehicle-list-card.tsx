@@ -1,16 +1,23 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { CarFront, Loader2, Star, Trash2 } from "lucide-react";
+import { CarFront, Loader2, MoreHorizontal, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent } from "@/shared/ui/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/ui/ui/dropdown-menu";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import type { CustomerVehicleListItem } from "@/entities/vehicles";
 import { useDeleteCustomerVehicle, useSetPrimaryCustomerVehicle } from "@/features/vehicles/hooks/use-customer-vehicles";
 import { getVehicleDisplayColor, getVehicleDisplayName } from "@/features/vehicles/lib/vehicle-display";
-import { getVehicleToastErrorMessage, VEHICLE_TOAST_OPTIONS } from "@/features/vehicles/lib/vehicle-toast";
+import { getVehicleToastErrorMessage, showVehicleAlert, VEHICLE_TOAST_OPTIONS } from "@/features/vehicles/lib/vehicle-toast";
 import { translate } from "@/shared/store/language.store";
+import { cn } from "@/shared/lib/utils";
 
 export function CustomerVehicleListCard({
   vehicle,
@@ -29,19 +36,28 @@ export function CustomerVehicleListCard({
   const deleteMutation = useDeleteCustomerVehicle(vehicle.vehicleId);
   const vehicleDisplayName = getVehicleDisplayName(vehicle, language);
 
+  const handleOpenVehicleDetail = () => {
+    router.push(`/customer/vehicles/${vehicle.vehicleId}`);
+  };
+
   const handleSetPrimary = async () => {
     try {
       await setPrimaryMutation.mutateAsync();
-      toast.success(translate(language, "Xe chinh da duoc cap nhat.", "Primary vehicle updated."), VEHICLE_TOAST_OPTIONS);
+      await showVehicleAlert({
+        icon: "success",
+        title: translate(language, "Da cap nhat xe chinh!", "Primary vehicle updated!"),
+        message: translate(language, "Xe uu tien cua ban da duoc thay doi.", "Your primary vehicle has been updated."),
+      });
     } catch (error) {
-      toast.error(
-        getVehicleToastErrorMessage(
+      await showVehicleAlert({
+        icon: "error",
+        title: translate(language, "Khong the cap nhat xe chinh.", "Unable to update primary vehicle."),
+        message: getVehicleToastErrorMessage(
           error,
           translate(language, "Khong the cap nhat xe chinh.", "Unable to update primary vehicle."),
           getErrorMessage,
         ),
-        VEHICLE_TOAST_OPTIONS,
-      );
+      });
     }
   };
 
@@ -63,7 +79,21 @@ export function CustomerVehicleListCard({
   };
 
   return (
-    <Card className="border-slate-200/80 bg-white/90 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+    <Card
+      role="link"
+      tabIndex={0}
+      className={cn(
+        "border-slate-200/80 bg-white/90 shadow-[0_18px_50px_rgba(15,23,42,0.08)] transition",
+        "hover:border-cyan-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60",
+      )}
+      onClick={handleOpenVehicleDetail}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleOpenVehicleDetail();
+        }
+      }}
+    >
       <CardContent className="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-md">
@@ -96,79 +126,83 @@ export function CustomerVehicleListCard({
 
         <div className="flex flex-col items-start gap-3 lg:items-end">
           <div className="flex flex-wrap items-start gap-2 lg:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => router.push(`/customer/vehicles/${vehicle.vehicleId}`)}
-            >
-              {translate(language, "Xem chi tiet", "View details")}
-            </Button>
-            <div className="flex flex-col items-start gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-xl"
-                onClick={handleSetPrimary}
-                disabled={vehicle.isPrimary || setPrimaryMutation.isPending}
-              >
-                {setPrimaryMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {translate(language, "Dang cap nhat...", "Updating...")}
-                  </>
-              ) : (
-                  <>
-                    <Star className="mr-2 h-4 w-4" />
-                    {vehicle.isPrimary ? translate(language, "Xe chinh", "Primary") : translate(language, "Dat lam xe chinh", "Set primary")}
-                  </>
-                )}
-              </Button>
-            </div>
             {isDeleting ? (
               <>
-                <div className="flex flex-col items-start gap-2">
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    className="rounded-xl"
-                    onClick={handleDelete}
-                    disabled={deleteMutation.isPending}
-                  >
-                    {deleteMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {translate(language, "Dang xoa...", "Removing...")}
-                      </>
-                    ) : (
-                      translate(language, "Xac nhan xoa", "Confirm delete")
-                    )}
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="rounded-xl"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void handleDelete();
+                  }}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {translate(language, "Dang xoa...", "Removing...")}
+                    </>
+                  ) : (
+                    translate(language, "Xac nhan xoa", "Confirm delete")
+                  )}
+                </Button>
                 <Button
                   type="button"
                   variant="outline"
                   className="rounded-xl"
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation();
                     onDeleteChange(null);
                   }}
                 >
                   {translate(language, "Huy", "Cancel")}
                 </Button>
               </>
-            ) : (
-              <Button
-                type="button"
-                variant="destructive"
-                className="rounded-xl"
-                onClick={() => {
-                  onDeleteChange(vehicle.vehicleId);
-                }}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                {translate(language, "Xoa", "Delete")}
-              </Button>
-            )}
+            ) : null}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                  }}
+                >
+                  <MoreHorizontal className="mr-2 h-4 w-4" />
+                  {translate(language, "Tuy chon", "More")}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  disabled={vehicle.isPrimary || setPrimaryMutation.isPending}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void handleSetPrimary();
+                  }}
+                >
+                  <Star className="mr-2 h-4 w-4" />
+                  {setPrimaryMutation.isPending
+                    ? translate(language, "Dang cap nhat...", "Updating...")
+                    : vehicle.isPrimary
+                      ? translate(language, "Xe chinh", "Primary")
+                      : translate(language, "Dat lam xe chinh", "Set primary")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer text-rose-600 focus:text-rose-600"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDeleteChange(vehicle.vehicleId);
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {translate(language, "Xoa", "Delete")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </CardContent>
