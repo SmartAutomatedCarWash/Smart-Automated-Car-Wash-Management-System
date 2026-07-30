@@ -53,7 +53,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
     private final BookingRepository bookingRepository;
     private final WashSessionRepository washSessionRepository;
     private final BookingStatusHistoryRepository bookingStatusHistoryRepository;
-    private final DiscountRedemptionService DiscountRedemptionService;
+    private final DiscountRedemptionService discountRedemptionService;
     private final ViolationRecordRepository violationRecordRepository;
     private final NotificationRepository notificationRepository;
     private final LoyaltyService loyaltyService;
@@ -64,7 +64,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
             BookingRepository bookingRepository,
             WashSessionRepository washSessionRepository,
             BookingStatusHistoryRepository bookingStatusHistoryRepository,
-            DiscountRedemptionService DiscountRedemptionService,
+            DiscountRedemptionService discountRedemptionService,
             ViolationRecordRepository violationRecordRepository,
             NotificationRepository notificationRepository,
             LoyaltyService loyaltyService,
@@ -74,7 +74,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
         this.bookingRepository = bookingRepository;
         this.washSessionRepository = washSessionRepository;
         this.bookingStatusHistoryRepository = bookingStatusHistoryRepository;
-        this.DiscountRedemptionService = DiscountRedemptionService;
+        this.discountRedemptionService = discountRedemptionService;
         this.violationRecordRepository = violationRecordRepository;
         this.notificationRepository = notificationRepository;
         this.loyaltyService = loyaltyService;
@@ -102,7 +102,7 @@ public class BookingNoShowServiceImpl implements BookingNoShowService {
                 cancelNotCheckedInSessions(booking, now);
                 int deductedPoints = applyNoShowPenalty(booking, now);
                 if (hasDiscountPricing(booking)) {
-                    DiscountRedemptionService.revertRedemption(booking);
+                    discountRedemptionService.forfeitRedemption(booking);
                 }
                 notificationRepository.save(Notification.builder()
                         .id(UUID.randomUUID())

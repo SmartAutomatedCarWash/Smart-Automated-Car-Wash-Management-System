@@ -64,6 +64,8 @@ type OperationRow = {
   assignedStaffName: string | null;
   assignedStaff: OperationStaffAssignment[];
   amount: number | null;
+  paymentMethod: string | null;
+  paymentStatus: string | null;
   estimatedDurationMinutes: number | null;
   notes: string | null;
   customerNotes: string | null;
@@ -143,6 +145,7 @@ export function ManagerOperationsPage() {
   const [checkInPreviewRow, setCheckInPreviewRow] = useState<OperationRow | null>(null);
   const [checkInPreview, setCheckInPreview] = useState<ManagerCheckInRecommendation | null>(null);
   const [checkInPreferredStaffId, setCheckInPreferredStaffId] = useState<string | null>(null);
+  const [checkInCashCollected, setCheckInCashCollected] = useState(false);
 
   const handleSelectRow = (id: string | null) => {
     setSelectedRowId(id);
@@ -312,12 +315,14 @@ export function ManagerOperationsPage() {
       setCheckInPreviewRow(null);
       setCheckInPreview(null);
       setCheckInPreferredStaffId(null);
+      setCheckInCashCollected(false);
       handleActionError("Unable to preview check-in", actionError);
     },
   });
 
   const createMutation = useMutation({
-    mutationFn: ({ bookingId, preferredStaffId }: { bookingId: string; preferredStaffId?: string | null }) => managerCheckInBooking(bookingId, preferredStaffId),
+    mutationFn: ({ bookingId, preferredStaffId, cashCollected }: { bookingId: string; preferredStaffId?: string | null; cashCollected?: boolean }) =>
+      managerCheckInBooking(bookingId, preferredStaffId, cashCollected),
     onMutate: ({ bookingId }) => {
       const booking = eligibleBookings.find((item) => item.bookingId === bookingId);
       if (booking) {
@@ -455,6 +460,7 @@ export function ManagerOperationsPage() {
       setCheckInPreviewRow(row);
       setCheckInPreview(null);
       setCheckInPreferredStaffId(null);
+      setCheckInCashCollected(false);
       previewCheckInMutation.mutate(row.bookingId);
       return;
     }
@@ -466,12 +472,18 @@ export function ManagerOperationsPage() {
 
   const confirmPreviewCheckIn = () => {
     if (!checkInPreviewRow) return;
+    if (requiresCashCollection(checkInPreviewRow) && !checkInCashCollected) {
+      toast.warning("Confirm cash collection before check-in.");
+      return;
+    }
     const bookingId = checkInPreviewRow.bookingId;
     const preferredStaffId = checkInPreferredStaffId;
+    const cashCollected = requiresCashCollection(checkInPreviewRow);
     setCheckInPreviewRow(null);
     setCheckInPreview(null);
     setCheckInPreferredStaffId(null);
-    createMutation.mutate({ bookingId, preferredStaffId });
+    setCheckInCashCollected(false);
+    createMutation.mutate({ bookingId, preferredStaffId, cashCollected });
   };
 
   const transferSelectedRow = (toStaffId: string) => {
@@ -722,11 +734,14 @@ export function ManagerOperationsPage() {
         loading={previewCheckInMutation.isPending}
         submitting={createMutation.isPending}
         selectedStaffId={checkInPreferredStaffId}
+        cashCollected={checkInCashCollected}
         onSelectStaff={setCheckInPreferredStaffId}
+        onCashCollectedChange={setCheckInCashCollected}
         onClose={() => {
           setCheckInPreviewRow(null);
           setCheckInPreview(null);
           setCheckInPreferredStaffId(null);
+          setCheckInCashCollected(false);
         }}
         onConfirm={confirmPreviewCheckIn}
       />
@@ -740,7 +755,9 @@ function CheckInPreviewDialog({
   loading,
   submitting,
   selectedStaffId,
+  cashCollected,
   onSelectStaff,
+  onCashCollectedChange,
   onClose,
   onConfirm,
 }: {
@@ -749,11 +766,14 @@ function CheckInPreviewDialog({
   loading: boolean;
   submitting: boolean;
   selectedStaffId: string | null;
+  cashCollected: boolean;
   onSelectStaff: (staffId: string | null) => void;
+  onCashCollectedChange: (collected: boolean) => void;
   onClose: () => void;
   onConfirm: () => void;
 }) {
   if (!row) return null;
+  const mustCollectCash = requiresCashCollection(row);
   const availableCandidates = preview?.candidates.filter((item) => item.selectable) ?? [];
   const topCandidates = availableCandidates.length > 0 ? availableCandidates.slice(0, 4) : preview?.candidates.slice(0, 4) ?? [];
 
@@ -821,6 +841,23 @@ function CheckInPreviewDialog({
                   <p className="rounded-xl bg-slate-50 p-3 text-xs font-bold text-slate-500">No staff recommendation available.</p>
                 )}
               </div>
+
+              {mustCollectCash ? (
+                <label className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={cashCollected}
+                    onChange={(event) => onCashCollectedChange(event.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-amber-300 text-[#00236f]"
+                  />
+                  <span>
+                    <span className="block text-sm font-black text-amber-900">Cash payment collected</span>
+                    <span className="mt-1 block text-xs font-semibold leading-5 text-amber-800">
+                      This booking is cash at counter and still unpaid. Confirm that the customer paid before check-in.
+                    </span>
+                  </span>
+                </label>
+              ) : null}
             </>
           )}
         </div>
@@ -829,7 +866,7 @@ function CheckInPreviewDialog({
           <Button type="button" variant="outline" className="rounded-xl" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button type="button" className="rounded-xl bg-[#00236f] text-white hover:bg-[#001b55]" onClick={onConfirm} disabled={loading || !preview || submitting}>
+          <Button type="button" className="rounded-xl bg-[#00236f] text-white hover:bg-[#001b55]" onClick={onConfirm} disabled={loading || !preview || submitting || (mustCollectCash && !cashCollected)}>
             {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Confirm check-in
           </Button>
@@ -1467,6 +1504,8 @@ function buildOptimisticSessionRowFromBooking(
     assignedStaffName: booking.assignedStaffName,
     assignedStaff,
     amount: booking.finalAmount,
+    paymentMethod: booking.paymentMethod ?? null,
+    paymentStatus: booking.paymentStatus ?? null,
     estimatedDurationMinutes: booking.estimatedDurationMinutes,
     notes: patch.notes ?? null,
     customerNotes: booking.customerNotes ?? null,
@@ -1482,6 +1521,10 @@ function removeOptimisticSessionRow(current: Record<string, OperationRow>, booki
   const next = { ...current };
   delete next[bookingId];
   return next;
+}
+
+function requiresCashCollection(row: OperationRow) {
+  return row.paymentMethod === "CASH_AT_COUNTER" && row.paymentStatus !== "PAID" && (row.amount ?? 0) > 0;
 }
 
 function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueueSession[]): OperationRow[] {
@@ -1506,6 +1549,8 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
         assignedStaffName: booking.assignedStaffName,
         assignedStaff,
         amount: booking.finalAmount,
+        paymentMethod: booking.paymentMethod ?? null,
+        paymentStatus: booking.paymentStatus ?? null,
         estimatedDurationMinutes: booking.estimatedDurationMinutes,
         notes: null,
         customerNotes: booking.customerNotes ?? null,
@@ -1533,6 +1578,8 @@ function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueue
     assignedStaffName: session.assignedStaffName ?? null,
     assignedStaff: normalizeAssignedStaff(session.assignedStaff, session.assignedStaffId, session.assignedStaffName),
     amount: session.feeAmount ?? null,
+    paymentMethod: null,
+    paymentStatus: null,
     estimatedDurationMinutes: session.estimatedDurationMinutes ?? null,
     notes: session.notes ?? null,
     customerNotes: session.customerNotes ?? null,

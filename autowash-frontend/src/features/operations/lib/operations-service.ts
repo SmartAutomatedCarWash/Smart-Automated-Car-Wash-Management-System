@@ -35,11 +35,11 @@ export function createWashSession(bookingId: string, notes?: string) {
   });
 }
 
-export function managerCheckInBooking(bookingId: string, preferredStaffId?: string | null) {
-  return apiRequest<{ bookingId: string; sessionId: string; status: string; assignedStaffId: string | null; assignedStaffName: string | null; assignedBay: string | null; checkedInAt: string | null }, { preferredStaffId?: string }>({
+export function managerCheckInBooking(bookingId: string, preferredStaffId?: string | null, cashCollected?: boolean) {
+  return apiRequest<{ bookingId: string; sessionId: string; status: string; assignedStaffId: string | null; assignedStaffName: string | null; assignedBay: string | null; checkedInAt: string | null }, { preferredStaffId?: string; cashCollected?: boolean }>({
     method: "POST",
     url: `/manager/operations/bookings/${bookingId}/check-in`,
-    data: preferredStaffId ? { preferredStaffId } : {},
+    data: { ...(preferredStaffId ? { preferredStaffId } : {}), ...(cashCollected ? { cashCollected } : {}) },
   });
 }
 

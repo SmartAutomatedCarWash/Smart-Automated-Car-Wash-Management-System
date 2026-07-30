@@ -131,6 +131,8 @@ export type EligibleSessionBooking = {
   bookingDate: string;
   bookingTime: string;
   finalAmount: number;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
   estimatedDurationMinutes: number;
   assignedStaffId: string | null;
   assignedStaffName: string | null;

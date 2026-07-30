@@ -36,6 +36,7 @@ import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.BookingStaffAssignmentRepository;
 import com.autowash.repository.NotificationRepository;
+import com.autowash.repository.PaymentRepository;
 import com.autowash.repository.ReviewRepository;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.WashSessionStaffAssignmentRepository;
@@ -98,6 +99,7 @@ public class OperationsServiceImpl implements OperationsService {
     private final StaffAssignmentService staffAssignmentService;
     private final TierConfigService tierConfigService;
     private final NotificationRepository notificationRepository;
+    private final PaymentRepository paymentRepository;
     private final ReviewRepository reviewRepository;
     private final WebSocketEventPublisher webSocketEventPublisher;
     private final String currency;
@@ -114,6 +116,7 @@ public class OperationsServiceImpl implements OperationsService {
             StaffAssignmentService staffAssignmentService,
             TierConfigService tierConfigService,
             NotificationRepository notificationRepository,
+            PaymentRepository paymentRepository,
             ReviewRepository reviewRepository,
             WebSocketEventPublisher webSocketEventPublisher,
             @Value("${autowash.currency}") String currency
@@ -129,6 +132,7 @@ public class OperationsServiceImpl implements OperationsService {
         this.staffAssignmentService = staffAssignmentService;
         this.tierConfigService = tierConfigService;
         this.notificationRepository = notificationRepository;
+        this.paymentRepository = paymentRepository;
         this.reviewRepository = reviewRepository;
         this.webSocketEventPublisher = webSocketEventPublisher;
         this.currency = currency;
@@ -305,6 +309,7 @@ public class OperationsServiceImpl implements OperationsService {
         WashSession session = requireSessionForCurrentUser(sessionId);
         Booking booking = session.getBooking();
         ensureSessionAssigneeForCheckIn(session);
+        bookingService.ensureBookingPaymentReadyForCheckIn(booking.getId().toString());
         int projectedPoints = loyaltyService.calculateEarnPoints(sessionId);
 
         Instant checkedInAt = Instant.now();
@@ -409,6 +414,7 @@ public class OperationsServiceImpl implements OperationsService {
 
         Booking booking = session.getBooking();
         if (targetBookingStatus == BookingStatus.CANCELLED) {
+            bookingService.updateStatus(booking, targetBookingStatus);
             booking.cancel(normalizedReason);
         } else {
             bookingService.updateStatus(booking, targetBookingStatus);
@@ -1127,6 +1133,7 @@ public class OperationsServiceImpl implements OperationsService {
         int customerPriorityScore = tierConfigService.getConfig(customerTier).priorityScore();
         UUID packageId = resolveBookingDetailRefId(booking, BookingItemType.PACKAGE);
         UUID comboId = resolveBookingDetailRefId(booking, BookingItemType.COMBO);
+        PaymentRepository.PaymentSummary payment = paymentRepository.findLatestSummaryByBookingId(booking.getId()).orElse(null);
         return new EligibleSessionBookingResponse(
                 booking.getId().toString(),
                 booking.getStatus().name(),
@@ -1138,6 +1145,8 @@ public class OperationsServiceImpl implements OperationsService {
                 booking.getBookingDate(),
                 booking.getBookingTime(),
                 (booking.getPricing() != null ? booking.getPricing().getFinalAmount() : 0L),
+                payment == null ? null : payment.getMethod(),
+                payment == null ? null : payment.getStatus(),
                 resolveEstimatedDurationMinutes(booking),
                 primaryStaffId(assignedStaffList, assignedStaff) == null ? null : primaryStaffId(assignedStaffList, assignedStaff).toString(),
                 primaryStaffName(assignedStaffList, assignedStaff),

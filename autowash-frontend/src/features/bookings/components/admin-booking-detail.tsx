@@ -84,6 +84,7 @@ function translatePaymentMethod(method: string, lang: "vi" | "en") {
   const map: Record<string, { vi: string; en: string }> = {
     E_WALLET: { vi: "VNPay", en: "VNPay" },
     CASH_AT_COUNTER: { vi: "Tiền mặt tại quầy", en: "Cash at counter" },
+    OWNED_COMBO: { vi: "Combo đã sở hữu", en: "Owned combo" },
     BANK_TRANSFER: { vi: "SePay", en: "SePay" },
     VNPAY: { vi: "Cổng thanh toán VNPAY", en: "VNPAY Gate" },
     CASH: { vi: "Tiền mặt", en: "Cash" },

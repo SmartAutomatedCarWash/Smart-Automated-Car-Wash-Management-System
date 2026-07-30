@@ -180,4 +180,19 @@ public class DiscountRedemptionServiceImpl implements DiscountRedemptionService 
         pricing.setFinalAmount(pricing.getSubtotal());
         bookingPricingRepository.save(pricing);
     }
+
+    @Override
+    @Transactional
+    public void forfeitRedemption(Booking booking) {
+        BookingPricing pricing = booking.getPricing();
+        if (pricing == null || pricing.getDiscountType() == null) {
+            return;
+        }
+
+        UserDiscount usedDiscount = userDiscountRepository.findByUsedInBookingId(booking.getId()).orElse(null);
+        if (usedDiscount != null) {
+            usedDiscount.forfeit();
+            userDiscountRepository.save(usedDiscount);
+        }
+    }
 }

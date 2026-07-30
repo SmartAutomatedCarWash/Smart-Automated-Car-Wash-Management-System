@@ -27,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SlotHoldServiceImpl implements SlotHoldService {
-    private static final long MIN_ADVANCE_BOOKING_MINUTES = 30;
+    private static final long MIN_ADVANCE_BOOKING_MINUTES = 15;
 
     private final SlotHoldRepository slotHoldRepository;
     private final BookingRepository bookingRepository;
@@ -165,7 +165,7 @@ public class SlotHoldServiceImpl implements SlotHoldService {
         if (slotTime.isBefore(now.plus(MIN_ADVANCE_BOOKING_MINUTES, ChronoUnit.MINUTES))) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Booking time must be at least 30 minutes from now",
+                    "Booking time must be at least 15 minutes from now",
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }

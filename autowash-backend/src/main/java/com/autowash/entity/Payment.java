@@ -96,7 +96,7 @@ public class Payment {
         if (this.status == PaymentStatus.PAID) {
             return;
         }
-        this.status = PaymentStatus.FAILED;
+        this.status = PaymentStatus.CANCELLED;
     }
 
     public void markPaid(String transactionRef) {
@@ -105,6 +105,14 @@ public class Payment {
         }
         this.status = PaymentStatus.PAID;
         this.transactionRef = transactionRef;
+        this.paidAt = Instant.now();
+    }
+
+    public void coverWithOwnedCombo() {
+        this.method = PaymentMethod.OWNED_COMBO;
+        this.status = PaymentStatus.PAID;
+        this.amount = 0;
+        this.transactionRef = "OWNED_COMBO";
         this.paidAt = Instant.now();
     }
 }

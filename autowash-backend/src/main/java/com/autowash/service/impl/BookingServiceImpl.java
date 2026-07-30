@@ -101,7 +101,7 @@ public class BookingServiceImpl implements BookingService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BookingServiceImpl.class);
     private static final Duration PENDING_BOOKING_HOLD_DURATION = Duration.ofMinutes(15);
-    private static final Duration MIN_ADVANCE_BOOKING_DURATION = Duration.ofMinutes(30);
+    private static final Duration MIN_ADVANCE_BOOKING_DURATION = Duration.ofMinutes(15);
 
     private static final Set<BookingStatus> ACTIVE_BOOKING_STATUSES = Set.of(
             BookingStatus.CONFIRMED,
@@ -464,7 +464,15 @@ public class BookingServiceImpl implements BookingService {
         }
 
         BookingRepository.saveAndFlush(booking);
-        if (ownedCombo != null) {
+        PaymentMethod effectivePaymentMethod = ownedCombo != null ? PaymentMethod.OWNED_COMBO : request.paymentMethod();
+        if (effectivePaymentMethod == PaymentMethod.OWNED_COMBO && ownedCombo == null) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Owned combo payment is only available when using an owned combo",
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
+        if (ownedCombo != null || effectivePaymentMethod == PaymentMethod.CASH_AT_COUNTER) {
             booking.updateStatus(BookingStatus.CONFIRMED);
             assignSingleStaffOnConfirmation(booking);
         }
@@ -482,15 +490,15 @@ public class BookingServiceImpl implements BookingService {
 
         Payment payment = new Payment(
                 booking,
-                request.paymentMethod(),
-                initialPaymentStatus(request.paymentMethod()),
+                effectivePaymentMethod,
+                initialPaymentStatus(effectivePaymentMethod),
                 booking.getPricing().getFinalAmount()
         );
-        if (request.paymentMethod() == PaymentMethod.BANK_TRANSFER) {
+        if (effectivePaymentMethod == PaymentMethod.BANK_TRANSFER) {
             payment.prepareSepayPayment(booking.getPricing().getFinalAmount(), generateSepayTransferCode());
         }
         if (ownedCombo != null && booking.getPricing().getFinalAmount() == 0) {
-            payment.markPaid("OWNED_COMBO");
+            payment.coverWithOwnedCombo();
         }
         payment = paymentRepository.save(payment);
         
@@ -502,7 +510,11 @@ public class BookingServiceImpl implements BookingService {
                 null,
                 booking.getStatus(),
                 user,
-                ownedCombo != null ? "Booking created from owned combo" : "Booking created"
+                ownedCombo != null
+                        ? "Booking created from owned combo"
+                        : effectivePaymentMethod == PaymentMethod.CASH_AT_COUNTER
+                        ? "Cash booking confirmed"
+                        : "Booking created"
         );
 
         notificationRepository.save(Notification.builder()
@@ -649,11 +661,9 @@ public class BookingServiceImpl implements BookingService {
             );
         }
         Payment payment = paymentRepository.findByBooking(booking).orElse(null);
-        if (booking.getStatus() == BookingStatus.PENDING && payment != null && payment.getStatus() != PaymentStatus.PAID) {
-            payment.markCancelled();
-        }
         BookingStatus oldStatus = booking.getStatus();
         booking.cancel(cancelReason);
+        cancelUnpaidPayment(payment);
 
         long hoursUntilScheduled = timeUntilScheduled.toHours();
         boolean shouldApplyVoucherPolicy = oldStatus == BookingStatus.CONFIRMED;
@@ -665,12 +675,15 @@ public class BookingServiceImpl implements BookingService {
             }
         } else if (shouldApplyVoucherPolicy && hoursUntilScheduled >= 6) {
             customerComboService.forfeitUsageForBooking(booking.getId().toString());
+            discountRedemptionService.forfeitRedemption(booking);
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled between 6 and 24 hours"));
         } else if (shouldApplyVoucherPolicy && hoursUntilScheduled >= 1) {
             customerComboService.forfeitUsageForBooking(booking.getId().toString());
+            discountRedemptionService.forfeitRedemption(booking);
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled between 1 and 6 hours"));
         } else if (shouldApplyVoucherPolicy) {
             customerComboService.forfeitUsageForBooking(booking.getId().toString());
+            discountRedemptionService.forfeitRedemption(booking);
             violationRecordRepository.save(new ViolationRecord(booking.getCustomer(), booking, "LATE_CANCEL", 0, "Cancelled under 1 hour"));
         }
 
@@ -747,6 +760,31 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean requiresCashCollectionForCheckIn(String bookingId) {
+        Booking booking = requireBookingForOperations(bookingId);
+        Payment payment = paymentRepository.findFirstByBookingOrderByCreatedAtDesc(booking).orElse(null);
+        if (payment == null) {
+            return booking.getPricing() != null && booking.getPricing().getFinalAmount() > 0;
+        }
+        return payment.getMethod() == PaymentMethod.CASH_AT_COUNTER
+                && payment.getStatus() != PaymentStatus.PAID
+                && payment.getAmount() > 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void ensureBookingPaymentReadyForCheckIn(String bookingId) {
+        if (requiresCashCollectionForCheckIn(bookingId)) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Cash payment must be collected before check-in",
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
+    }
+
+    @Override
     @Transactional
     public PayBookingResponse changeBookingPaymentMethod(String bookingId, PaymentMethod paymentMethod) {
         Booking booking = findOwnedBooking(bookingId);
@@ -761,6 +799,10 @@ public class BookingServiceImpl implements BookingService {
         }
         if (payment.getMethod() == PaymentMethod.CASH_AT_COUNTER && paymentMethod != PaymentMethod.CASH_AT_COUNTER) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Cash at counter bookings cannot switch to another payment method", ErrorCode.BUSINESS_RULE_VIOLATION);
+        }
+
+        if (paymentMethod == PaymentMethod.OWNED_COMBO) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Owned combo payment method cannot be selected manually", ErrorCode.INVALID_INPUT);
         }
 
         if (paymentMethod == PaymentMethod.CASH_AT_COUNTER) {
@@ -937,10 +979,19 @@ public class BookingServiceImpl implements BookingService {
         }
         if (newStatus == BookingStatus.NO_SHOW) {
             customerComboService.forfeitUsageForBooking(booking.getId().toString());
+            discountRedemptionService.forfeitRedemption(booking);
             return;
         }
         if (newStatus == BookingStatus.CANCELLED && oldStatus != BookingStatus.CHECKED_IN && oldStatus != BookingStatus.IN_PROGRESS) {
+            cancelUnpaidPayment(booking);
             customerComboService.releaseUsageForBooking(booking.getId().toString());
+            discountRedemptionService.revertRedemption(booking);
+            return;
+        }
+        if (newStatus == BookingStatus.CANCELLED) {
+            cancelUnpaidPayment(booking);
+            customerComboService.forfeitUsageForBooking(booking.getId().toString());
+            discountRedemptionService.forfeitRedemption(booking);
         }
     }
 
@@ -965,7 +1016,7 @@ public class BookingServiceImpl implements BookingService {
         if (bookingDate.atTime(bookingTime).isBefore(LocalDateTime.now().plus(MIN_ADVANCE_BOOKING_DURATION))) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Booking time must be at least 30 minutes from now",
+                    "Booking time must be at least 15 minutes from now",
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
@@ -1160,7 +1211,20 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private PaymentStatus initialPaymentStatus(PaymentMethod method) {
+        if (method == PaymentMethod.OWNED_COMBO) {
+            return PaymentStatus.PAID;
+        }
         return method == PaymentMethod.CASH_AT_COUNTER ? PaymentStatus.UNPAID : PaymentStatus.PENDING_PAYMENT;
+    }
+
+    private void cancelUnpaidPayment(Booking booking) {
+        paymentRepository.findFirstByBookingOrderByCreatedAtDesc(booking).ifPresent(this::cancelUnpaidPayment);
+    }
+
+    private void cancelUnpaidPayment(Payment payment) {
+        if (payment != null && payment.getStatus() != PaymentStatus.PAID) {
+            payment.markCancelled();
+        }
     }
 
     private UUID parseRequestUuid(String value, String message) {
