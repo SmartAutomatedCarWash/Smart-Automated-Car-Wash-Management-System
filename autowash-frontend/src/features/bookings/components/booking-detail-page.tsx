@@ -26,6 +26,16 @@ import { notify } from "@/shared/lib/notify";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/ui/ui/alert-dialog";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
   formatBookingCurrency,
@@ -220,6 +230,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const createVnpayCheckoutMutation = useCreateVnpayCheckout();
   const updateBookingStaffMutation = useUpdateCustomerBookingStaff(bookingId);
   const [showCancelForm, setShowCancelForm] = useState(false);
+  const [showOnlineCancelFeeDialog, setShowOnlineCancelFeeDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showReviewPopup, setShowReviewPopup] = useState(false);
   const [autoReviewShown, setAutoReviewShown] = useState(false);
@@ -358,6 +369,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const paymentStatus = booking.payment.status?.toUpperCase() ?? "";
   const paymentMethod = booking.payment.method?.toUpperCase() ?? "";
   const isPaymentPaid = paymentStatus === "PAID";
+  const isPaidOnlineBooking = isPaymentPaid && (paymentMethod === "E_WALLET" || paymentMethod === "BANK_TRANSFER");
   const isPendingBookingHold = booking.status === "PENDING" && !isPaymentPaid;
   const canChoosePendingPaymentAction = isPendingBookingHold && !pendingHoldExpired;
   const canPayAgainWithVnpay = canChoosePendingPaymentAction && paymentMethod !== "CASH_AT_COUNTER" && booking.pricing.finalAmount > 0;
@@ -433,20 +445,29 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     setShowCancelForm((value) => !value);
   };
 
+  const executeCancelBooking = async () => {
+    try {
+      await cancelBookingMutation.mutateAsync(cancelReason.trim() || undefined);
+      notify.success(translate(language, "Đã huỷ lịch đặt thành công.", "Booking cancelled successfully."));
+      setShowOnlineCancelFeeDialog(false);
+      setShowCancelForm(false);
+      setCancelReason("");
+    } catch (error) {
+      notify.error(getErrorMessage(error));
+    }
+  };
+
   const handleCancelBooking = async () => {
     if (isCustomerCancelLocked(booking)) {
       setShowCancelForm(false);
       showCustomerCancelLockedWarning();
       return;
     }
-    try {
-      await cancelBookingMutation.mutateAsync(cancelReason.trim() || undefined);
-      notify.success(translate(language, "Đã huỷ lịch đặt thành công.", "Booking cancelled successfully."));
-      setShowCancelForm(false);
-      setCancelReason("");
-    } catch (error) {
-      notify.error(getErrorMessage(error));
+    if (isPaidOnlineBooking) {
+      setShowOnlineCancelFeeDialog(true);
+      return;
     }
+    await executeCancelBooking();
   };
 
   const handlePayAgainWithVnpay = async () => {
@@ -1046,6 +1067,35 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
           )}
         </div>
       </div>
+      <AlertDialog open={showOnlineCancelFeeDialog} onOpenChange={setShowOnlineCancelFeeDialog}>
+        <AlertDialogContent className="rounded-2xl border-rose-100 bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {translate(language, "Xác nhận huỷ booking đã thanh toán", "Cancel paid online booking?")}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed text-slate-600">
+              {translate(
+                language,
+                "Booking này đã thanh toán online. Nếu bạn tiếp tục huỷ, khoản hoàn tiền có thể bị trừ phí xử lý hoặc phí huỷ theo chính sách của cửa hàng.",
+                "This booking has been paid online. If you continue cancelling, any refund may be reduced by a processing or cancellation fee under the store policy.",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelBookingMutation.isPending}>
+              {translate(language, "Quay lại", "Go back")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-rose-600 text-white hover:bg-rose-700"
+              disabled={cancelBookingMutation.isPending}
+              onClick={executeCancelBooking}
+            >
+              {cancelBookingMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {translate(language, "Vẫn huỷ booking", "Cancel anyway")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
