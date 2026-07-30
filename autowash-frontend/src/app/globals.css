@@ -139,6 +139,15 @@
     }
   }
 
+  @keyframes tierNavTextShimmer {
+    0% {
+      background-position: 180% 50%;
+    }
+    100% {
+      background-position: -80% 50%;
+    }
+  }
+
   .tier-metal-surface {
     background-size: 100% 100%;
   }
@@ -169,6 +178,11 @@
     mix-blend-mode: screen;
     opacity: 0.48;
     animation: tierSubtleSparkle 5.6s ease-in-out infinite;
+  }
+
+  .tier-nav-label {
+    animation: tierNavTextShimmer 4.2s linear infinite;
+    will-change: background-position, filter;
   }
 
   ::-webkit-scrollbar {
@@ -723,7 +737,8 @@
   .tier-upgrade-arrow,
   .tier-upgrade-benefit-card,
   .tier-upgrade-tier-highlight,
-  .tier-upgrade-btn-shimmer {
+  .tier-upgrade-btn-shimmer,
+  .tier-nav-label {
     animation: none !important;
     transform: none !important;
     opacity: 1 !important;

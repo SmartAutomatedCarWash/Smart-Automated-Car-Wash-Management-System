@@ -993,7 +993,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <button
                     type="button"
                     className={cn(
-                      "group relative inline-flex h-12 w-[260px] shrink-0 items-center justify-start gap-3 rounded-2xl border px-3.5 py-2 text-left transition-all duration-300",
+                      "group relative inline-flex h-12 w-[210px] shrink-0 items-center justify-start gap-2.5 rounded-2xl border pl-3 pr-2 py-2 text-left transition-all duration-300",
                       customerTierMetal
                         ? "overflow-hidden border-transparent shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_10px_28px_rgba(15,23,42,0.16)] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_16px_34px_rgba(15,23,42,0.2)]"
                         : "border-border/70 bg-card/90 hover:border-primary/30 hover:bg-card",
@@ -1090,19 +1090,46 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                         )}
                       </div>
                     </div>
-                    <Avatar
-                      className={cn("relative z-20 h-9 w-9 shrink-0 border shadow-sm ring-1 ring-white/30", customerTierMetal ? "" : workspaceTheme.accentSoft)}
-                      style={customerTierMetal ? { background: customerTierMetal.progress, borderColor: customerTierMetal.border } : {}}
-                    >
-                      <AvatarImage src={user.avatarUrl ?? undefined} alt={user.fullName} className="object-cover" />
-                      <AvatarFallback
-                        className={cn("text-[10px] font-black", customerTierMetal ? "" : workspaceTheme.accentSoft)}
-                        style={customerTierMetal ? { background: customerTierMetal.progress, color: "#ffffff" } : {}}
+                    <div className="relative z-20">
+                      {customerTierMetal && (
+                        <span
+                          className="pointer-events-none absolute inset-[-2px] rounded-full blur-[4px] opacity-35 animate-[pulse_2.2s_ease-in-out_infinite]"
+                          style={{
+                            background: customerTierMetal.progress,
+                          }}
+                        />
+                      )}
+                      <div
+                        className={cn(
+                          "relative flex items-center gap-1.5 rounded-full pl-1 pr-2.5 py-1 transition-all duration-300",
+                          customerTierMetal
+                            ? "border border-white/20 hover:border-white/40"
+                            : "bg-slate-900/5 dark:bg-white/5 border border-transparent hover:bg-slate-900/10 dark:hover:bg-white/10",
+                        )}
+                        style={
+                          customerTierMetal
+                            ? {
+                                backgroundColor: `${customerTierMetal.text}16`, // ~8.5% opacity of the tier color
+                                borderColor: `${customerTierMetal.text}28`,    // subtle border matching the tier
+                              }
+                            : {}
+                        }
                       >
-                        {getUserInitials(user.fullName)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <ChevronDown className={cn("relative z-20 h-3.5 w-3.5 shrink-0 transition group-data-[state=open]:rotate-180", customerTierMetal ? "" : "text-muted-foreground")} style={customerTierMetal ? { color: "#94a3b8" } : {}} />
+                        <Avatar
+                          className={cn("h-8 w-8 shrink-0 border shadow-sm ring-1 ring-white/30", customerTierMetal ? "" : workspaceTheme.accentSoft)}
+                          style={customerTierMetal ? { background: customerTierMetal.progress, borderColor: customerTierMetal.border } : {}}
+                        >
+                          <AvatarImage src={user.avatarUrl ?? undefined} alt={user.fullName} className="object-cover" />
+                          <AvatarFallback
+                            className={cn("text-[10px] font-black", customerTierMetal ? "" : workspaceTheme.accentSoft)}
+                            style={customerTierMetal ? { background: customerTierMetal.progress, color: "#ffffff" } : {}}
+                          >
+                            {getUserInitials(user.fullName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 transition group-data-[state=open]:rotate-180", customerTierMetal ? "" : "text-muted-foreground")} style={customerTierMetal ? { color: "#94a3b8" } : {}} />
+                      </div>
+                    </div>
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -1654,6 +1681,8 @@ function SidebarNavLink({
   const Icon = item.icon;
   const displayLabel = language === "vi" && item.labelVi ? item.labelVi : item.label;
   const isLoyaltyItem = item.href === "/customer/loyalty";
+  const loyaltyLabelStyle = isLoyaltyItem && tierStyle ? getTierNavLabelStyle(tierStyle.metal, customerTier) : undefined;
+  const loyaltyLabelClassName = isLoyaltyItem && tierStyle ? getTierNavMotionClass(customerTier) : undefined;
 
   return (
     <li>
@@ -1672,7 +1701,17 @@ function SidebarNavLink({
         ) : (
           <Icon className="h-4 w-4 shrink-0" />
         )}
-        {!collapsed && <span>{displayLabel}</span>}
+        {!collapsed && (
+          <span
+            className={cn(
+              isLoyaltyItem && tierStyle && "tier-nav-label relative inline-block font-semibold tracking-[0.01em]",
+              loyaltyLabelClassName,
+            )}
+            style={loyaltyLabelStyle}
+          >
+            {displayLabel}
+          </span>
+        )}
       </Link>
     </li>
   );
@@ -1725,11 +1764,11 @@ function getTierNavCardStyle(
 
   return {
     background: `
-      radial-gradient(circle at top right, ${metal.glowVar}${getTierNavGlowHex(tier)} 0%, transparent 42%),
+      radial-gradient(circle at top right, ${metal.text}${getTierNavGlowHex(tier)} 0%, transparent 42%),
       ${metal.surface}
     `,
     borderColor: metal.border,
-    boxShadow: `0 10px 28px rgba(15,23,42,0.16), 0 0 0 1px ${metal.border}, 0 0 24px ${metal.glowVar}${Math.round(glowOpacity * 255).toString(16).padStart(2, "0")}`,
+    boxShadow: `0 10px 28px rgba(15,23,42,0.16), 0 0 0 1px ${metal.border}, 0 0 24px ${metal.text}${Math.round(glowOpacity * 255).toString(16).padStart(2, "0")}`,
   };
 }
 
@@ -1817,9 +1856,35 @@ function getTierNavInnerSurfaceStyle(
 ): React.CSSProperties {
   return {
     background: `
-      radial-gradient(circle at top right, ${metal.glowVar}${getTierNavGlowHex(tier)} 0%, transparent 44%),
+      radial-gradient(circle at top right, ${metal.text}${getTierNavGlowHex(tier)} 0%, transparent 44%),
       ${metal.surface}
     `,
+  };
+}
+
+function getTierNavLabelStyle(
+  metal: ReturnType<typeof useTierStyle>["metal"],
+  tier?: string | null,
+): React.CSSProperties {
+  const shimmerOpacity = getTierNavShimmerOpacity(tier);
+
+  return {
+    color: metal.text,
+    textShadow: `0 0 10px ${metal.glowVar}${getTierNavHaloHex(tier)}, 0 1px 0 rgba(255,255,255,0.18)`,
+    backgroundImage: `linear-gradient(
+      110deg,
+      ${metal.text} 0%,
+      ${metal.text} 34%,
+      rgba(255,255,255,${Math.min(shimmerOpacity + 0.42, 0.72)}) 48%,
+      ${metal.text} 62%,
+      ${metal.text} 100%
+    )`,
+    backgroundSize: "220% 100%",
+    backgroundPosition: "180% 50%",
+    WebkitBackgroundClip: "text",
+    backgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    filter: `drop-shadow(0 0 8px ${metal.glowVar}${getTierNavGlowHex(tier)})`,
   };
 }
 
