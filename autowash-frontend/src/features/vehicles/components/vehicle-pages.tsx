@@ -9,6 +9,7 @@ import {
   CarFront,
   Eye,
   Loader2,
+  MoreHorizontal,
   Palette,
   Plus,
   RefreshCcw,
@@ -20,7 +21,6 @@ import {
   Trash2,
 } from "lucide-react";
 import Swal from "sweetalert2";
-import { toast } from "sonner";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import {
@@ -29,6 +29,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/ui/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/ui/ui/dropdown-menu";
 import { Input } from "@/shared/ui/ui/input";
 import { getApiErrorCode, getFieldErrorMessage } from "@/shared/lib/api-errors";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
@@ -63,6 +69,19 @@ import type {
 import { CustomerVehicleFormCard } from "@/features/vehicles/components/vehicle-form";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { getVehicleColorOption } from "@/features/vehicles/lib/vehicle-colors";
+
+const SWAL_BASE_CUSTOM_CLASS = {
+  popup: "swal-notify-popup",
+  title: "swal-notify-title",
+  htmlContainer: "swal-notify-message",
+} as const;
+
+const SWAL_BUTTON_CLASS = {
+  success: "swal-notify-btn-success",
+  warning: "swal-notify-btn-warning",
+  error: "swal-notify-btn-error",
+  info: "swal-notify-btn-info",
+} as const;
 
 export function CustomerVehiclesListClientPage() {
   const { language } = useLanguageStore();
@@ -180,9 +199,9 @@ export function CustomerVehiclesListClientPage() {
       <VehicleCreateDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onCreated={(vehicleId) => {
+        onCreated={() => {
           setShowCreateDialog(false);
-          router.push(`/customer/vehicles/${vehicleId}`);
+          router.push("/customer/vehicles");
         }}
       />
     </div>
@@ -208,18 +227,35 @@ export function CustomerVehicleCreateClientPage() {
     }
 
     try {
-      const createdVehicle = await createVehicleMutation.mutateAsync(buildCreateCustomerVehicleRequest(form));
-      toast.success(translate(language, "Xe da duoc tao thanh cong.", "Vehicle created successfully."), VEHICLE_TOAST_OPTIONS);
-      router.push(`/customer/vehicles/${createdVehicle.vehicleId}`);
+      await createVehicleMutation.mutateAsync(buildCreateCustomerVehicleRequest(form));
+      await Swal.fire({
+        icon: "success",
+        title: translate(language, "Them xe thanh cong!", "Vehicle created successfully!"),
+        text: translate(language, "Xe moi da duoc luu vao tai khoan cua ban.", "The new vehicle has been saved to your account."),
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        customClass: {
+          ...SWAL_BASE_CUSTOM_CLASS,
+          confirmButton: SWAL_BUTTON_CLASS.success,
+        },
+      });
+      router.push("/customer/vehicles");
     } catch (error) {
-      toast.error(
-        getVehicleToastErrorMessage(
+      await Swal.fire({
+        icon: "error",
+        title: translate(language, "Khong the tao xe.", "Unable to create vehicle."),
+        text: getVehicleToastErrorMessage(
           error,
           translate(language, "Khong the tao xe.", "Unable to create vehicle."),
           getErrorMessage,
         ),
-        VEHICLE_TOAST_OPTIONS,
-      );
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        customClass: {
+          ...SWAL_BASE_CUSTOM_CLASS,
+          confirmButton: SWAL_BUTTON_CLASS.error,
+        },
+      });
     }
   };
 
@@ -336,9 +372,7 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
       cancelButtonText: translate(language, "Huy", "Cancel"),
       buttonsStyling: false,
       customClass: {
-        popup: "swal-notify-popup",
-        title: "swal-notify-title",
-        htmlContainer: "swal-notify-message",
+        ...SWAL_BASE_CUSTOM_CLASS,
         confirmButton: "swal-notify-btn-warning",
         cancelButton: "swal-notify-btn-info",
       },
@@ -357,10 +391,8 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
         confirmButtonText: "OK",
         buttonsStyling: false,
         customClass: {
-          popup: "swal-notify-popup",
-          title: "swal-notify-title",
-          htmlContainer: "swal-notify-message",
-          confirmButton: "swal-notify-btn-success",
+          ...SWAL_BASE_CUSTOM_CLASS,
+          confirmButton: SWAL_BUTTON_CLASS.success,
         },
       });
       router.push("/customer/vehicles");
@@ -376,10 +408,8 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
         confirmButtonText: "OK",
         buttonsStyling: false,
         customClass: {
-          popup: "swal-notify-popup",
-          title: "swal-notify-title",
-          htmlContainer: "swal-notify-message",
-          confirmButton: "swal-notify-btn-error",
+          ...SWAL_BASE_CUSTOM_CLASS,
+          confirmButton: SWAL_BUTTON_CLASS.error,
         },
       });
     }
@@ -388,16 +418,33 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
   const handleSetPrimary = async () => {
     try {
       await setPrimaryMutation.mutateAsync();
-      toast.success(translate(language, "Xe chinh da duoc cap nhat.", "Primary vehicle updated."), VEHICLE_TOAST_OPTIONS);
+      await Swal.fire({
+        icon: "success",
+        title: translate(language, "Cap nhat xe uu tien thanh cong!", "Primary vehicle updated successfully!"),
+        text: translate(language, "Xe nay se duoc uu tien cho cac booking moi.", "This vehicle will now be preferred for new bookings."),
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        customClass: {
+          ...SWAL_BASE_CUSTOM_CLASS,
+          confirmButton: SWAL_BUTTON_CLASS.success,
+        },
+      });
     } catch (error) {
-      toast.error(
-        getVehicleToastErrorMessage(
+      await Swal.fire({
+        icon: "error",
+        title: translate(language, "Khong the dat xe chinh.", "Unable to set primary vehicle."),
+        text: getVehicleToastErrorMessage(
           error,
           translate(language, "Khong the dat xe chinh.", "Unable to set primary vehicle."),
           getErrorMessage,
         ),
-        VEHICLE_TOAST_OPTIONS,
-      );
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        customClass: {
+          ...SWAL_BASE_CUSTOM_CLASS,
+          confirmButton: SWAL_BUTTON_CLASS.error,
+        },
+      });
     }
   };
 
@@ -465,7 +512,7 @@ function VehicleCreateDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreated: (vehicleId: string) => void;
+  onCreated: () => void;
 }) {
   const { language } = useLanguageStore();
   const getErrorMessage = useErrorMessage();
@@ -483,20 +530,37 @@ function VehicleCreateDialog({
     }
 
     try {
-      const createdVehicle = await createVehicleMutation.mutateAsync(buildCreateCustomerVehicleRequest(form));
-      toast.success(translate(language, "Xe da duoc tao thanh cong.", "Vehicle created successfully."), VEHICLE_TOAST_OPTIONS);
+      await createVehicleMutation.mutateAsync(buildCreateCustomerVehicleRequest(form));
+      await Swal.fire({
+        icon: "success",
+        title: translate(language, "Them xe thanh cong!", "Vehicle created successfully!"),
+        text: translate(language, "Xe moi da duoc luu vao tai khoan cua ban.", "The new vehicle has been saved to your account."),
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        customClass: {
+          ...SWAL_BASE_CUSTOM_CLASS,
+          confirmButton: SWAL_BUTTON_CLASS.success,
+        },
+      });
       setForm(EMPTY_CUSTOMER_VEHICLE_FORM);
       setShowValidation(false);
-      onCreated(createdVehicle.vehicleId);
+      onCreated();
     } catch (error) {
-      toast.error(
-        getVehicleToastErrorMessage(
+      await Swal.fire({
+        icon: "error",
+        title: translate(language, "Khong the tao xe.", "Unable to create vehicle."),
+        text: getVehicleToastErrorMessage(
           error,
           translate(language, "Khong the tao xe.", "Unable to create vehicle."),
           getErrorMessage,
         ),
-        VEHICLE_TOAST_OPTIONS,
-      );
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        customClass: {
+          ...SWAL_BASE_CUSTOM_CLASS,
+          confirmButton: SWAL_BUTTON_CLASS.error,
+        },
+      });
     }
   };
 
@@ -817,35 +881,91 @@ function VehicleListCard({
   const handleSetPrimary = async () => {
     try {
       await setPrimaryMutation.mutateAsync();
-      toast.success(translate(language, "Xe chinh da duoc cap nhat.", "Primary vehicle updated."), VEHICLE_TOAST_OPTIONS);
+      await Swal.fire({
+        icon: "success",
+        title: translate(language, "Cap nhat xe uu tien thanh cong!", "Primary vehicle updated successfully!"),
+        text: translate(language, "Xe nay se duoc uu tien cho cac booking moi.", "This vehicle will now be preferred for new bookings."),
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        customClass: {
+          ...SWAL_BASE_CUSTOM_CLASS,
+          confirmButton: SWAL_BUTTON_CLASS.success,
+        },
+      });
     } catch (error) {
-      toast.error(
-        getVehicleToastErrorMessage(
+      await Swal.fire({
+        icon: "error",
+        title: translate(language, "Khong the cap nhat xe chinh.", "Unable to update primary vehicle."),
+        text: getVehicleToastErrorMessage(
           error,
           translate(language, "Khong the cap nhat xe chinh.", "Unable to update primary vehicle."),
           getErrorMessage,
         ),
-        VEHICLE_TOAST_OPTIONS,
-      );
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        customClass: {
+          ...SWAL_BASE_CUSTOM_CLASS,
+          confirmButton: SWAL_BUTTON_CLASS.error,
+        },
+      });
     }
   };
 
   const handleDelete = async () => {
+    const confirmation = await Swal.fire({
+      title: translate(language, "Ban co chac muon xoa xe nay?", "Are you sure you want to delete this vehicle?"),
+      text: translate(language, "Hanh dong nay khong the hoan tac.", "This action cannot be undone."),
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: translate(language, "Xoa", "Delete"),
+      cancelButtonText: translate(language, "Huy", "Cancel"),
+      buttonsStyling: false,
+      customClass: {
+        ...SWAL_BASE_CUSTOM_CLASS,
+        confirmButton: SWAL_BUTTON_CLASS.warning,
+        cancelButton: SWAL_BUTTON_CLASS.info,
+      },
+    });
+
+    if (!confirmation.isConfirmed) {
+      onDeleteChange(null);
+      return;
+    }
+
     try {
       await deleteMutation.mutateAsync();
-      toast.success(translate(language, "Xe da duoc xoa.", "Vehicle removed."), VEHICLE_TOAST_OPTIONS);
       onDeleteChange(null);
+      await Swal.fire({
+        icon: "success",
+        title: translate(language, "Xoa xe thanh cong!", "Vehicle removed successfully!"),
+        text: translate(language, "Xe da duoc xoa khoi tai khoan cua ban.", "The vehicle has been removed from your account."),
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        customClass: {
+          ...SWAL_BASE_CUSTOM_CLASS,
+          confirmButton: SWAL_BUTTON_CLASS.success,
+        },
+      });
     } catch (error) {
-      toast.error(
-        getVehicleToastErrorMessage(
+      await Swal.fire({
+        icon: "error",
+        title: translate(language, "Khong the xoa xe.", "Unable to delete vehicle."),
+        text: getVehicleToastErrorMessage(
           error,
           translate(language, "Khong the xoa xe.", "Unable to delete vehicle."),
           getErrorMessage,
         ),
-        VEHICLE_TOAST_OPTIONS,
-      );
+        confirmButtonText: "OK",
+        buttonsStyling: false,
+        customClass: {
+          ...SWAL_BASE_CUSTOM_CLASS,
+          confirmButton: SWAL_BUTTON_CLASS.error,
+        },
+      });
     }
   };
+
+  const showDeleteConfirm = isDeleting && deleteMutation.isPending;
 
   return (
     <Card className="rounded-2xl border-slate-200 bg-white shadow-sm transition hover:border-cyan-200 hover:shadow-md">
@@ -888,73 +1008,60 @@ function VehicleListCard({
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-10 rounded-lg border-slate-200"
-            onClick={() => router.push(`/customer/vehicles/${vehicle.vehicleId}`)}
-          >
-            <Eye className="mr-2 h-4 w-4" />
-            {translate(language, "Xem chi tiet", "View details")}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-10 rounded-lg border-slate-200"
-            onClick={handleSetPrimary}
-            disabled={vehicle.isPrimary || setPrimaryMutation.isPending}
-          >
-            {setPrimaryMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {translate(language, "Dang cap nhat...", "Updating...")}
-              </>
-            ) : (
-              <>
-                <Star className="mr-2 h-4 w-4" />
-                {vehicle.isPrimary
-                  ? translate(language, "Xe chinh", "Primary")
-                  : translate(language, "Dat lam xe chinh", "Set primary")}
-              </>
-            )}
-          </Button>
-          {isDeleting ? (
-            <>
-              <Button
-                type="button"
-                variant="destructive"
-                className="h-10 rounded-lg"
-                onClick={handleDelete}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {translate(language, "Dang xoa...", "Removing...")}
-                  </>
-                ) : (
-                  translate(language, "Xac nhan xoa", "Confirm delete")
-                )}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 rounded-lg border-slate-200"
-                onClick={() => onDeleteChange(null)}
-              >
-                {translate(language, "Huy", "Cancel")}
-              </Button>
-            </>
-          ) : (
-            <Button
-              type="button"
-              variant="destructive"
-              className="h-10 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100"
-              onClick={() => onDeleteChange(vehicle.vehicleId)}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              {translate(language, "Xoa", "Delete")}
+          {showDeleteConfirm ? (
+            <Button type="button" variant="outline" className="h-10 rounded-lg border-slate-200" disabled>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {translate(language, "Dang xoa...", "Removing...")}
             </Button>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 rounded-lg border-slate-200"
+                  aria-label={translate(language, "Mo tuy chon xe", "Open vehicle actions")}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem
+                  onClick={() => router.push(`/customer/vehicles/${vehicle.vehicleId}`)}
+                  className="cursor-pointer"
+                >
+                  <Eye className="h-4 w-4" />
+                  {translate(language, "Xem chi tiet", "View details")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (!vehicle.isPrimary && !setPrimaryMutation.isPending) {
+                      void handleSetPrimary();
+                    }
+                  }}
+                  disabled={vehicle.isPrimary || setPrimaryMutation.isPending}
+                  className="cursor-pointer"
+                >
+                  {setPrimaryMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Star className="h-4 w-4" />
+                  )}
+                  {translate(language, "Xe chinh", "Primary")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    onDeleteChange(vehicle.vehicleId);
+                    void handleDelete();
+                  }}
+                  className="cursor-pointer text-rose-600 focus:text-rose-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {translate(language, "Xoa", "Delete")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </CardContent>
