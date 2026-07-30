@@ -298,6 +298,8 @@ export type BookingListItem = {
   confirmationExpiresAt: string | null;
   completedAt: string | null;
   staffName?: string | null;
+  notes?: string | null;
+  customerNotes?: string | null;
 };
 
 export type BookingDetailDto = {

@@ -775,16 +775,17 @@ function CheckInPreviewDialog({
   if (!row) return null;
   const mustCollectCash = requiresCashCollection(row);
   const availableCandidates = preview?.candidates.filter((item) => item.selectable) ?? [];
-  const topCandidates = availableCandidates.length > 0 ? availableCandidates.slice(0, 4) : preview?.candidates.slice(0, 4) ?? [];
+  const unavailableCandidates = preview?.candidates.filter((item) => !item.selectable) ?? [];
+  const visibleCandidates = [...availableCandidates, ...unavailableCandidates];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
-      <div role="dialog" aria-modal="true" aria-labelledby="check-in-preview-title" className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
+      <div role="dialog" aria-modal="true" aria-labelledby="check-in-preview-title" className="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col rounded-2xl border border-slate-200 bg-white shadow-xl">
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 p-4">
           <div>
-            <h2 id="check-in-preview-title" className="text-base font-black text-slate-950">Check-in staff preview</h2>
+            <h2 id="check-in-preview-title" className="text-base font-black text-slate-950">Assign staff for check-in</h2>
             <p className="mt-1 text-xs font-bold text-slate-500">
-              {row.vehiclePlate} · {formatBookingTime(row.bookingTime)} · {row.customerName}
+              {row.vehiclePlate} · {row.customerName}
             </p>
           </div>
           <button type="button" onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
@@ -792,29 +793,42 @@ function CheckInPreviewDialog({
           </button>
         </div>
 
-        <div className="space-y-3 p-4">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+          <div className="grid gap-2 sm:grid-cols-3">
+            <MiniInfo label="Schedule" value={formatBookingTime(row.bookingTime)} />
+            <MiniInfo label="Service" value={row.servicePackage} />
+            <MiniInfo label="Current staff" value={row.assignedStaffName ?? "Unassigned"} />
+          </div>
+
           {loading || !preview ? (
-            <div className="flex min-h-36 items-center justify-center rounded-xl bg-slate-50 text-sm font-bold text-slate-500">
+            <div className="flex min-h-48 items-center justify-center rounded-xl bg-slate-50 text-sm font-bold text-slate-500">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Loading staff recommendation...
             </div>
           ) : (
             <>
               <div className={`rounded-xl border p-3 ${preview.needsReassignment ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"}`}>
-                <div className="flex items-center gap-2">
-                  {preview.needsReassignment ? <AlertTriangle className="h-4 w-4 text-amber-600" /> : <Check className="h-4 w-4 text-emerald-600" />}
-                  <p className={`text-sm font-black ${preview.needsReassignment ? "text-amber-800" : "text-emerald-800"}`}>
-                    {preview.currentStaffName ?? "No assigned staff"} · {preview.currentStaffStatus}
-                  </p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    {preview.needsReassignment ? <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" /> : <Check className="h-4 w-4 shrink-0 text-emerald-600" />}
+                    <p className={`truncate text-sm font-black ${preview.needsReassignment ? "text-amber-800" : "text-emerald-800"}`}>
+                      {preview.currentStaffName ?? "No assigned staff"}
+                    </p>
+                  </div>
+                  <StaffStatusPill status={preview.currentStaffStatus} selectable={!preview.needsReassignment} />
                 </div>
                 <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">{preview.message}</p>
               </div>
 
               <div className="space-y-2">
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Recommended staff</p>
-                {topCandidates.length > 0 ? (
-                  topCandidates.map((staff) => (
-                    <button
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Available staff</p>
+                  <span className="text-[10px] font-black text-slate-400">{availableCandidates.length}/{preview.candidates.length} selectable</span>
+                </div>
+                {visibleCandidates.length > 0 ? (
+                  <div className="space-y-2">
+                    {visibleCandidates.map((staff) => (
+                      <button
                       key={staff.staffId}
                       type="button"
                       disabled={!staff.selectable}
@@ -827,16 +841,30 @@ function CheckInPreviewDialog({
                             : "border-slate-100 bg-slate-50 opacity-70"
                       }`}
                     >
-                      <Avatar name={staff.staffName} />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-black text-slate-950">{staff.staffName}</p>
-                        <p className="text-xs font-semibold text-slate-500">{staff.reason}</p>
-                      </div>
-                      <span className={`rounded-full px-2 py-1 text-[10px] font-black ${staff.selectable ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
-                        {staff.status}
+                      <span className="relative shrink-0">
+                        <Avatar name={staff.staffName} />
+                        {selectedStaffId === staff.staffId ? (
+                          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#00236f] text-white shadow-sm">
+                            <Check className="h-3 w-3" />
+                          </span>
+                        ) : null}
                       </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="truncate text-sm font-black text-slate-950">{staff.staffName}</p>
+                          <StaffStatusPill status={staff.status} selectable={staff.selectable} />
+                        </div>
+                        <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">{staff.reason}</p>
+                        <div className="mt-2 grid grid-cols-4 gap-1.5">
+                          <StaffMetric label="Waiting" value={staff.waitingCount} />
+                          <StaffMetric label="Washing" value={staff.activeCount} tone={staff.activeCount > 0 ? "amber" : "slate"} />
+                          <StaffMetric label="Open" value={staff.openCount} />
+                          <StaffMetric label="Delayed" value={staff.delayedCount} tone={staff.delayedCount > 0 ? "rose" : "slate"} />
+                        </div>
+                      </div>
                     </button>
-                  ))
+                    ))}
+                  </div>
                 ) : (
                   <p className="rounded-xl bg-slate-50 p-3 text-xs font-bold text-slate-500">No staff recommendation available.</p>
                 )}
@@ -1226,6 +1254,10 @@ function SessionDetailPanel({
   const panelRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    setSelectedStaffId("");
+  }, [row?.id]);
+
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (document.querySelector('[role="dialog"], [data-radix-popper-content-wrapper]')?.contains(event.target as Node)) {
         return;
@@ -1336,41 +1368,64 @@ function SessionDetailPanel({
 
           {canTransfer ? (
             <div>
-              <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">Staff assignment suggestions</p>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-xs font-black uppercase tracking-wide text-slate-400">Assign staff</p>
+                <span className="text-[10px] font-black text-slate-400">
+                  {transferOptions.filter((staff) => {
+                    const workload = staffWorkload.find((item) => item.staffId === staff.staffId);
+                    return !workload || workload.status === "AVAILABLE";
+                  }).length} available
+                </span>
+              </div>
               <div className="space-y-2">
-                {transferOptions.slice(0, 4).map((staff) => {
+                {transferOptions.map((staff) => {
                   const workload = staffWorkload.find((item) => item.staffId === staff.staffId);
-                  const recommended = workload?.status === "AVAILABLE";
+                  const canSelectStaff = !workload || workload.status === "AVAILABLE";
                   const workloadSummary = workload
                     ? `${workload.waitingCount} waiting · ${workload.activeCount} washing${workload.delayedCount > 0 ? ` · ${workload.delayedCount} delayed` : ""}`
                     : "No workload data";
                   return (
-                    <label
+                    <button
                       key={staff.staffId}
-                      className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-2.5 transition ${
-                        selectedStaffId === staff.staffId ? "border-[#00236f] bg-blue-50/40" : "border-slate-100 hover:bg-slate-50"
+                      type="button"
+                      disabled={!canSelectStaff}
+                      onClick={() => {
+                        if (canSelectStaff) setSelectedStaffId(staff.staffId);
+                      }}
+                      className={`flex w-full items-center gap-3 rounded-2xl border p-2.5 text-left transition ${
+                        selectedStaffId === staff.staffId
+                          ? "border-[#00236f] bg-blue-50/40 ring-1 ring-[#00236f]/20"
+                          : canSelectStaff
+                            ? "border-slate-100 bg-white hover:border-[#00236f]/30 hover:bg-blue-50/20"
+                            : "cursor-not-allowed border-slate-100 bg-slate-50 opacity-70"
                       }`}
                     >
-                      <input
-                        type="radio"
-                        name="assign-staff"
-                        checked={selectedStaffId === staff.staffId}
-                        onChange={() => setSelectedStaffId(staff.staffId)}
-                        className="h-4 w-4 accent-[#00236f]"
-                      />
-                      <Avatar name={staff.staffName} />
+                      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                        selectedStaffId === staff.staffId ? "border-[#00236f] bg-[#00236f] text-white" : "border-slate-300 bg-white text-transparent"
+                      }`}>
+                        <Check className="h-3 w-3" />
+                      </span>
+                      <span className="shrink-0">
+                        <Avatar name={staff.staffName} />
+                      </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-black text-slate-950">{staff.staffName}</p>
+                        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                          <p className="truncate text-xs font-black text-slate-950">{staff.staffName}</p>
+                          <StaffStatusPill status={workload?.status ?? "UNKNOWN"} selectable={Boolean(canSelectStaff)} />
+                        </div>
                         <p className="truncate text-[11px] font-semibold text-slate-500">{workloadSummary}</p>
                       </div>
-                      {recommended ? (
-                        <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">Best match</span>
+                      {canSelectStaff ? (
+                        <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">Ready</span>
                       ) : (
-                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-black text-amber-700">Busy</span>
                       )}
-                    </label>
+                    </button>
                   );
                 })}
+                {transferOptions.length === 0 ? (
+                  <p className="rounded-xl bg-slate-50 p-3 text-xs font-bold text-slate-500">No other active staff available.</p>
+                ) : null}
               </div>
             </div>
           ) : (
@@ -1455,9 +1510,62 @@ function MiniInfo({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-slate-50 p-3">
       <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 text-sm font-black text-slate-950">{value}</p>
+      <p className="mt-1 truncate text-sm font-black text-slate-950">{value}</p>
     </div>
   );
+}
+
+function StaffStatusPill({ status, selectable }: { status: string; selectable: boolean }) {
+  const normalizedStatus = status.toUpperCase();
+  const tone =
+    normalizedStatus === "AVAILABLE"
+      ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+      : normalizedStatus === "OVERLOADED"
+        ? "bg-rose-50 text-rose-700 ring-rose-100"
+        : normalizedStatus === "BUSY"
+          ? "bg-amber-50 text-amber-700 ring-amber-100"
+          : selectable
+            ? "bg-blue-50 text-blue-700 ring-blue-100"
+            : "bg-slate-100 text-slate-500 ring-slate-200";
+
+  return (
+    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase ring-1 ${tone}`}>
+      {humanizeStatusText(status)}
+    </span>
+  );
+}
+
+function StaffMetric({
+  label,
+  value,
+  tone = "slate",
+}: {
+  label: string;
+  value: number;
+  tone?: "slate" | "amber" | "rose";
+}) {
+  const toneClass =
+    tone === "rose"
+      ? "bg-rose-50 text-rose-700"
+      : tone === "amber"
+        ? "bg-amber-50 text-amber-700"
+        : "bg-slate-50 text-slate-600";
+
+  return (
+    <span className={`min-w-0 rounded-lg px-2 py-1 text-center ${toneClass}`}>
+      <span className="block text-[11px] font-black leading-none">{value}</span>
+      <span className="mt-0.5 block truncate text-[9px] font-bold leading-none">{label}</span>
+    </span>
+  );
+}
+
+function humanizeStatusText(status: string) {
+  return status
+    .toLowerCase()
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 function applyOptimisticSessionRows(rows: OperationRow[], optimisticSessionRows: Record<string, OperationRow>) {

@@ -39,6 +39,8 @@ export interface Booking {
   timeSlot: string;
   status: BookingStatus;
   notes?: string;
+  assignedStaffId?: string;
+  assignedStaffName?: string;
   reminderMinutesBefore?: number;
   isWalkIn?: boolean;
   checkInAt?: string;
@@ -82,6 +84,8 @@ export function useBookings() {
       timeSlot: booking.timeSlot,
       status: booking.status,
       notes: booking.notes,
+      assignedStaffId: booking.assignedStaffId,
+      assignedStaffName: booking.assignedStaffName,
       reminderMinutesBefore: booking.reminderMinutesBefore,
       isWalkIn: booking.isWalkIn,
       checkInAt: booking.checkInAt,

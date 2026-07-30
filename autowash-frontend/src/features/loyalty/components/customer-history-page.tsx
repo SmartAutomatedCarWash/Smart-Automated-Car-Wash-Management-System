@@ -3,7 +3,7 @@
 import NextLink from "next/link";
 import { useMemo, type ReactNode } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { ArrowRight, CalendarDays, Crown, History, Star } from "lucide-react";
+import { ArrowRight, CalendarDays, Crown, History, Star, StickyNote, UserCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { buildLoyaltySummary, formatLoyaltyTransactionType } from "@/features/loyalty/lib/customer-loyalty";
 import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
@@ -338,6 +338,8 @@ function cnPointValue(points: number, linked: boolean) {
 
 function BookingRow({ booking, language, locale }: { booking: BookingListItem; language: string; locale: string }) {
   const statusBadge = resolveStatusBadge(booking.status, language);
+  const staffName = booking.staffName ?? booking.assignedStaffName ?? null;
+  const bookingNote = booking.customerNotes?.trim() || booking.notes?.trim() || null;
 
   const [year, month, day] = booking.bookingDate.split("-");
   const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -369,7 +371,7 @@ function BookingRow({ booking, language, locale }: { booking: BookingListItem; l
           </div>
         </div>
 
-        <div className="flex w-[160px] items-center gap-2 text-slate-500">
+        <div className="flex w-[170px] items-center gap-2 text-slate-500">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"
@@ -389,10 +391,23 @@ function BookingRow({ booking, language, locale }: { booking: BookingListItem; l
           </svg>
           <div>
             <div className="truncate text-xs font-medium text-slate-900">{booking.vehiclePlate}</div>
-            <div className="truncate text-xs">
-              {booking.staffName ?? booking.assignedStaffName ?? translate(language, "Chưa gán staff", "No staff assigned")}
-            </div>
+            <div className="truncate text-xs">{booking.primaryItemName ?? translate(language, "Booking", "Booking")}</div>
           </div>
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col gap-1 text-slate-500">
+          <div className="flex min-w-0 items-center gap-2">
+            <UserCheck className="h-4 w-4 shrink-0" />
+            <span className="truncate text-xs font-medium text-slate-900">
+              {staffName ?? translate(language, "Chưa gán staff", "No staff assigned")}
+            </span>
+          </div>
+          {bookingNote ? (
+            <div className="flex min-w-0 items-start gap-2">
+              <StickyNote className="mt-0.5 h-4 w-4 shrink-0" />
+              <span className="line-clamp-2 text-xs leading-5 text-slate-500">{bookingNote}</span>
+            </div>
+          ) : null}
         </div>
       </div>
 

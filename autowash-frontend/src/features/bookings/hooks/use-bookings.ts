@@ -272,7 +272,7 @@ export function useCreateCustomerBooking() {
 
   return useMutation<CreateBookingResponse, ApiErrorResponse, BookingDraft>({
     mutationFn: createCustomerBooking,
-    onSuccess: (createdBooking) => {
+    onSuccess: (createdBooking, draft) => {
       const newListItem: BookingListItem = {
         bookingId: createdBooking.bookingId,
         vehiclePlate: createdBooking.vehiclePlate,
@@ -282,6 +282,10 @@ export function useCreateCustomerBooking() {
         finalAmount: createdBooking.pricing.finalAmount,
         status: createdBooking.status,
         washStatus: null,
+        assignedStaffName: createdBooking.assignedStaffName,
+        staffName: createdBooking.assignedStaffName,
+        notes: null,
+        customerNotes: draft.note?.trim() || null,
         createdAt: createdBooking.createdAt,
         confirmationExpiresAt: new Date(new Date(createdBooking.createdAt).getTime() + PENDING_BOOKING_HOLD_MS).toISOString(),
         completedAt: null,
