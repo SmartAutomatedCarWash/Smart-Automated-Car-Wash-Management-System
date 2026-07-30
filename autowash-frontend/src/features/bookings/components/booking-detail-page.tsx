@@ -358,6 +358,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const canEditAssignedStaff = booking.status === "CONFIRMED" && originalAssignedStaffIds.length === 1 && !booking.washSessionId;
   const canSaveAssignedStaff = canEditAssignedStaff && selectedStaffIds.length === 1 && selectedStaffIds[0] !== originalAssignedStaffIds[0];
   const recommendedStaffId = staffOptions.find((staff) => staff.recommended && staff.available !== false)?.staffId ?? null;
+  const customerNote = booking.customerNotes?.trim() || null;
   const customerName = booking.customerName || profileQuery.data?.fullName || translate(language, "Khách hàng", "Customer");
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || translate(language, "Chưa có số điện thoại", "No phone number");
   const customerEmail = booking.confirmationEmail || profileQuery.data?.email || translate(language, "email của bạn", "your email");
@@ -660,6 +661,29 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
               <InfoRow icon={<Clock3 className="h-4 w-4" />} label={translate(language, "Giờ hẹn", "Expected time")} value={expectedTime} />
               <InfoRow icon={<Car className="h-4 w-4" />} label={translate(language, "Trạng thái lịch đặt", "Booking status")} value={humanizeCode(booking.status)} />
               <InfoRow icon={<FileText className="h-4 w-4" />} label={translate(language, "Xác nhận", "Confirmation")} value={humanizeCode(booking.confirmationStatus)} />
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 bg-white shadow-md">
+            <CardHeader>
+              <CardTitle>{translate(language, "Ghi chú của bạn", "Your note")}</CardTitle>
+              <CardDescription>{translate(language, "Ghi chú đã gửi khi tạo lịch đặt.", "The note you submitted with this booking.")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {customerNote ? (
+                <div className="rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3">
+                  <div className="flex items-start gap-3">
+                    <FileText className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" />
+                    <p className="whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-slate-800">
+                      {customerNote}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-500">
+                  {translate(language, "Bạn chưa thêm ghi chú cho lịch đặt này.", "No note was added to this booking.")}
+                </p>
+              )}
             </CardContent>
           </Card>
 
