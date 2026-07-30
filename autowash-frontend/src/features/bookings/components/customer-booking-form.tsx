@@ -22,6 +22,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { Button } from "@/shared/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import {
@@ -117,11 +118,10 @@ function optionCardClass(active: boolean, disabled = false) {
 function SelectionMark({ active }: { active: boolean }) {
   return (
     <span
-      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all ${
-        active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-muted/50 text-transparent group-hover:border-primary/40"
-      }`}
+      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all ${active
+        ? "border-primary bg-primary text-primary-foreground"
+        : "border-border bg-muted/50 text-transparent group-hover:border-primary/40"
+        }`}
       aria-hidden="true"
     >
       <CheckCircle2 className="h-3 w-3" />
@@ -182,28 +182,28 @@ const PAYMENT_OPTIONS: {
   icon: ElementType;
   badge?: string;
 }[] = [
-  {
-    method: "BANK_TRANSFER",
-    label: "SePay",
-    description: "Transfer with an AU payment code.",
-    icon: Building2,
-    badge: "QR",
-  },
-  {
-    method: "E_WALLET",
-    label: "VNPay",
-    description: "Pay online through VNPay.",
-    icon: Wallet,
-    badge: "Online",
-  },
-  {
-    method: "CASH_AT_COUNTER",
-    label: "Cash at counter",
-    description: "Pay at the store when you arrive for check-in.",
-    icon: Banknote,
-    badge: "Store",
-  },
-];
+    {
+      method: "BANK_TRANSFER",
+      label: "SePay",
+      description: "Transfer with an AU payment code.",
+      icon: Building2,
+      badge: "QR",
+    },
+    {
+      method: "E_WALLET",
+      label: "VNPay",
+      description: "Pay online through VNPay.",
+      icon: Wallet,
+      badge: "Online",
+    },
+    {
+      method: "CASH_AT_COUNTER",
+      label: "Cash at counter",
+      description: "Pay at the store when you arrive for check-in.",
+      icon: Banknote,
+      badge: "Store",
+    },
+  ];
 
 function AddVehicleModal({
   open,
@@ -751,7 +751,7 @@ function TimeSlotGrid({
       const availability = availabilityByTime?.get(t);
       const remaining = availability?.remaining;
       const isAvailable = !isPast && !isTooSoon && (availability ? availability.available : true);
-      
+
       return {
         id: idx + 1,
         timeStart: t,
@@ -793,7 +793,7 @@ function TimeSlotGrid({
               )}
             >
               <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Lượt {slot.id}
+                Slot {slot.id}
               </div>
               <div className={cn("mt-1 text-xs font-bold tabular-nums", slot.isAvailable ? "text-foreground" : "text-muted-foreground")}>
                 {slot.timeStart} - {slot.timeEnd}
@@ -801,11 +801,11 @@ function TimeSlotGrid({
               <div className="mt-2">
                 {slot.isAvailable ? (
                   <span className="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
-                    {typeof slot.remaining === "number" ? `${slot.remaining} chỗ` : "Còn trống"}
+                    {typeof slot.remaining === "number" ? `${slot.remaining} slots` : "Available"}
                   </span>
                 ) : (
                   <span className="inline-flex items-center rounded-full border border-rose-500/20 bg-rose-500/10 px-2 py-0.5 text-[9px] font-bold text-rose-600 dark:text-rose-400">
-                    {slot.isTooSoon ? "Cần đặt trước 30p" : slot.isFull ? "Đã full" : "Không khả dụng"}
+                    {slot.isTooSoon ? "Book 30m ahead" : slot.isFull ? "Full" : "Unavailable"}
                   </span>
                 )}
               </div>
@@ -960,7 +960,7 @@ export function CustomerBookingForm() {
     const slot = availabilityByTime.get(draft.bookingTime);
     if (slot && !slot.available) {
       updateDraft({ bookingTime: "", staffId: "", staffIds: [] });
-      toast.error("Booking slot is full");
+      notify.error("Booking slot is full");
     }
   }, [availabilityByTime, draft.bookingTime, updateDraft]);
 
@@ -1173,7 +1173,7 @@ export function CustomerBookingForm() {
     }
 
     resetValidatedDiscount();
-      updateDraft({ addonIds: validAddonIds, discountCode: "", staffId: "", staffIds: [] });
+    updateDraft({ addonIds: validAddonIds, discountCode: "", staffId: "", staffIds: [] });
   }, [addons, draft.addonIds, draft.mode, selectedCombo, selectedComboServiceIds, selectedPackageServiceIds, updateDraft]);
 
   const vehicleOptions = [
@@ -1341,7 +1341,7 @@ export function CustomerBookingForm() {
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-72px)] overflow-x-hidden bg-background px-4 py-6 sm:px-6 lg:px-8">
+    <div className="relative min-h-[calc(100vh-72px)] bg-background px-4 py-6 sm:px-6 lg:px-8">
       {/* Sticky horizontal progress bar */}
       <div className="sticky top-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 mb-6 h-1.5 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)] lg:w-[calc(100%+4rem)] bg-border/20 backdrop-blur-md">
         <div
@@ -1572,13 +1572,13 @@ export function CustomerBookingForm() {
                           </div>
                           {ownedCombo && (
                             <span className="mt-1.5 inline-flex items-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                              Owned · {ownedCombo.remainingUsages} left · expires {new Date(ownedCombo.expiresAt).toLocaleDateString("vi-VN")}
+                              Owned · {ownedCombo.remainingUsages} left · expires {new Date(ownedCombo.expiresAt).toLocaleDateString("en-US")}
                             </span>
                           )}
                           {active && item.services && item.services.length > 0 && (
                             <div className="mt-3 rounded-xl border border-border bg-muted/30 p-2.5">
                               <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                Dịch vụ trong combo
+                                Services in combo
                               </div>
                               <div className="space-y-1.5">
                                 {item.services.map((service) => (
@@ -1616,7 +1616,7 @@ export function CustomerBookingForm() {
                   <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3 dark:border-sky-900/60 dark:bg-sky-950/30">
                     <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-sky-700 dark:text-sky-300">
                       <Sparkles className="h-3.5 w-3.5" />
-                      Đề xuất phù hợp
+                      Recommended
                     </div>
                     <div className="grid gap-2 sm:grid-cols-3">
                       {visibleSmartExtraServiceRecommendations.map((service) => (
@@ -1702,7 +1702,7 @@ export function CustomerBookingForm() {
 
               <div>
                 <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Khung giờ khả dụng (Lượt)
+                  Available time slots
                 </label>
                 <TimeSlotGrid
                   timeSlots={timeSlots}
@@ -1727,7 +1727,7 @@ export function CustomerBookingForm() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="booking-confirmation-email" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Gmail / Email nhận xác nhận (không bắt buộc)
+                  Confirmation email (optional)
                 </Label>
                 <div className="relative">
                   <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -1736,34 +1736,27 @@ export function CustomerBookingForm() {
                     type="email"
                     inputMode="email"
                     autoComplete="email"
-                    placeholder="example@gmail.com"
+                    placeholder="Enter email"
                     value={draft.confirmationEmail ?? ""}
                     onChange={(event) => updateDraft({ confirmationEmail: event.target.value })}
                     className="h-12 rounded-xl pl-10"
                   />
                 </div>
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  Nếu để trống, email xác nhận booking sẽ gửi về email tài khoản đăng ký.
-                </p>
                 <FieldError message={showValidation ? errors.confirmationEmail : null} />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="booking-customer-note" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Ghi chú cho manager / staff (không bắt buộc)
+                  Note (optional)
                 </Label>
                 <textarea
                   id="booking-customer-note"
                   value={draft.note ?? ""}
                   maxLength={500}
                   onChange={(event) => updateDraft({ note: event.target.value })}
-                  placeholder="Ví dụ: xe có vết xước bên phải, xin kiểm tra kỹ nội thất..."
+                  placeholder="Example: car has a scratch on the right, please check interior carefully..."
                   className="min-h-24 w-full resize-none rounded-xl border border-input bg-background px-3 py-3 text-sm outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 />
-                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span>Manager và staff sẽ thấy ghi chú này trong luồng check-in/rửa xe.</span>
-                  <span className="shrink-0">{(draft.note ?? "").length}/500</span>
-                </div>
                 <FieldError message={showValidation ? errors.note : null} />
               </div>
             </div>
@@ -1822,21 +1815,6 @@ export function CustomerBookingForm() {
                     <SummaryItem label="Total" value={formatBookingCurrency(summary.finalAmount)} emphasize />
                   </div>
 
-                  <BookingButton
-                    onClick={() => void handleSubmit()}
-                    isLoading={isHolding || createBookingMutation.isPending}
-                    errors={errors}
-                    showValidation={showValidation}
-                    summary={summary}
-                  />
-
-                  <div className="mt-4 rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
-                    <div className="flex items-center gap-2 font-bold">
-                      <Phone className="h-4 w-4" />
-                      Liên hệ hỗ trợ: 1900 5566
-                    </div>
-                    
-                  </div>
                 </>
               ) : (
                 <div className="rounded-xl border border-dashed border-border bg-muted/40 p-5 text-center">
