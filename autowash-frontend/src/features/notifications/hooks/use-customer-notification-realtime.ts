@@ -22,6 +22,12 @@ type NotificationSocketMessage = {
 };
 
 type CustomerNotificationRealtimeOptions = {
+  onNotification?: (payload: {
+    notificationId: string;
+    type: string;
+    title: string;
+    message: string;
+  }) => void;
   onTierUpgrade?: (payload: {
     notificationId: string;
     title: string;
@@ -73,13 +79,22 @@ export function useCustomerNotificationRealtime(
             }
 
             if (message.notificationId && message.title && message.message) {
-              optionsRef.current?.onTierUpgrade?.({
-                notificationId: message.notificationId,
-                title: message.title,
-                message: message.message,
-                oldTier: message.oldTier || null,
-                newTier: message.newTier || null,
-              });
+              if (message.newTier) {
+                optionsRef.current?.onTierUpgrade?.({
+                  notificationId: message.notificationId,
+                  title: message.title,
+                  message: message.message,
+                  oldTier: message.oldTier || null,
+                  newTier: message.newTier,
+                });
+              } else {
+                optionsRef.current?.onNotification?.({
+                  notificationId: message.notificationId,
+                  type: message.type || "SYSTEM",
+                  title: message.title,
+                  message: message.message,
+                });
+              }
             }
           } catch {
             // even if payload parsing fails, still refresh customer data as a safe fallback
@@ -87,6 +102,16 @@ export function useCustomerNotificationRealtime(
 
           void queryClient.invalidateQueries({ queryKey: customerNotificationsQueryKey(userId) });
           void queryClient.invalidateQueries({ queryKey: customerLoyaltyScope(userId) });
+        });
+
+        stompClient.subscribe("/topic/announcements", (frame) => {
+          try {
+            const message = JSON.parse(frame.body) as NotificationSocketMessage;
+            if (message.eventType !== "ANNOUNCEMENT_CHANGED") return;
+            void queryClient.invalidateQueries({ queryKey: ["announcements", "active"] });
+          } catch {
+            // The regular announcement refetch interval remains the fallback.
+          }
         });
       },
       onStompError: () => {

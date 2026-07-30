@@ -459,7 +459,10 @@ export function AdminBlogManagementPage() {
       "This action cannot be undone.",
       () => {
         deleteAnnouncementMutation.mutate(id, {
-          onSuccess: () => swalSuccess("Announcement deleted."),
+          onSuccess: () => {
+            setLocalAnnouncements((current) => current.filter((announcement) => announcement.id !== id));
+            swalSuccess("Announcement deleted.");
+          },
           onError: () => swalError("Failed to delete announcement."),
         });
         closeConfirm();
@@ -1152,12 +1155,27 @@ export function AdminBlogManagementPage() {
                               })}
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => handleOpenAnnouncementEdit(ann)} className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-slate-100 rounded-lg transition">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAnnouncementEdit(ann)}
+                                  className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-slate-100 rounded-lg transition"
+                                  title="Edit announcement"
+                                  aria-label={`Edit announcement: ${ann.title}`}
+                                >
                                   <Edit2 className="h-4 w-4" />
                                 </button>
-                                <button onClick={() => handleDeleteAnnouncement(ann.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition">
-                                  <Trash2 className="h-4 w-4" />
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteAnnouncement(ann.id)}
+                                  disabled={deleteAnnouncementMutation.isPending}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition disabled:cursor-not-allowed disabled:opacity-50"
+                                  title="Delete announcement"
+                                  aria-label={`Delete announcement: ${ann.title}`}
+                                >
+                                  {deleteAnnouncementMutation.isPending && deleteAnnouncementMutation.variables === ann.id
+                                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                                    : <Trash2 className="h-4 w-4" />}
                                 </button>
                               </div>
                             </td>
