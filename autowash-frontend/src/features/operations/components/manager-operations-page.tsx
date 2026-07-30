@@ -456,7 +456,7 @@ export function ManagerOperationsPage() {
 
   const runPrimaryAction = (row: OperationRow) => {
     if (row.type === "booking") {
-      if (row.status !== "CONFIRMED") return;
+      if (!canCheckInBooking(row)) return;
       setCheckInPreviewRow(row);
       setCheckInPreview(null);
       setCheckInPreferredStaffId(null);
@@ -478,7 +478,7 @@ export function ManagerOperationsPage() {
     }
     const bookingId = checkInPreviewRow.bookingId;
     const preferredStaffId = checkInPreferredStaffId;
-    const cashCollected = requiresCashCollection(checkInPreviewRow);
+    const cashCollected = requiresCashCollection(checkInPreviewRow) ? checkInCashCollected : false;
     setCheckInPreviewRow(null);
     setCheckInPreview(null);
     setCheckInPreferredStaffId(null);
@@ -1635,6 +1635,10 @@ function requiresCashCollection(row: OperationRow) {
   return row.paymentMethod === "CASH_AT_COUNTER" && row.paymentStatus !== "PAID" && (row.amount ?? 0) > 0;
 }
 
+function canCheckInBooking(row: OperationRow) {
+  return row.type === "booking" && (row.status === "CONFIRMED" || (row.status === "PENDING" && row.paymentMethod === "CASH_AT_COUNTER"));
+}
+
 function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueueSession[]): OperationRow[] {
   const sessionBookingIds = new Set(sessions.map((session) => session.bookingId));
   const bookingRows: OperationRow[] = bookings
@@ -1868,7 +1872,7 @@ function getStatusLabel(status: BookingStatus | WashSessionStatus) {
 }
 
 function getPrimaryAction(row: OperationRow) {
-  if (row.type === "booking") return row.status === "CONFIRMED" ? "Check-in" : "Await payment";
+  if (row.type === "booking") return canCheckInBooking(row) ? "Check-in" : "Await payment";
   if (row.status === "PENDING" || row.status === "QUEUED") return "Check-in";
   if (row.status === "CHECKED_IN") return "Start";
   if (row.status === "IN_PROGRESS") return "Complete";
@@ -1878,7 +1882,7 @@ function getPrimaryAction(row: OperationRow) {
 
 function canRunPrimaryAction(row: OperationRow) {
   if (row.type === "booking") {
-    return row.status === "CONFIRMED";
+    return canCheckInBooking(row);
   }
   return row.status === "PENDING" || row.status === "QUEUED" || row.status === "CHECKED_IN" || row.status === "IN_PROGRESS";
 }

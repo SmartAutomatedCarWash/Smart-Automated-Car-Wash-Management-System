@@ -30,6 +30,8 @@ import com.autowash.entity.enums.BookingItemType;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.CancelFaultType;
 import com.autowash.entity.enums.NotificationType;
+import com.autowash.entity.enums.PaymentMethod;
+import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.entity.enums.WashSessionStatus;
@@ -260,10 +262,10 @@ public class OperationsServiceImpl implements OperationsService {
     @Transactional(readOnly = true)
     public ManagerCheckInRecommendationResponse previewManagerCheckInRecommendation(String bookingId) {
         Booking booking = bookingService.requireBookingForOperations(bookingId);
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+        if (booking.getStatus() != BookingStatus.CONFIRMED && !canCollectCashAtCounterForCheckIn(booking)) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Booking must be CONFIRMED to check in",
+                    "Booking must be CONFIRMED or cash-at-counter pending to check in",
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
@@ -289,6 +291,17 @@ public class OperationsServiceImpl implements OperationsService {
                         : "Assigned staff is available for this booking time.",
                 candidates
         );
+    }
+
+    private boolean canCollectCashAtCounterForCheckIn(Booking booking) {
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            return false;
+        }
+        return paymentRepository.findFirstByBookingOrderByCreatedAtDesc(booking)
+                .map(payment -> payment.getMethod() == PaymentMethod.CASH_AT_COUNTER
+                        && payment.getStatus() != PaymentStatus.PAID
+                        && payment.getAmount() > 0)
+                .orElse(false);
     }
 
     @Transactional
