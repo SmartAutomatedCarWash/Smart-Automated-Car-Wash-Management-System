@@ -17,12 +17,17 @@ public class WebSocketEventPublisher {
     private final SimpMessagingTemplate messagingTemplate;
 
     public void publishBookingUpdate(String bookingId, String status) {
+        publishBookingUpdate(bookingId, status, "BOOKING_CHANGED");
+    }
+
+    public void publishBookingUpdate(String bookingId, String status, String changeType) {
         try {
-            log.info("Broadcasting booking update: {} - {}", bookingId, status);
+            log.info("Broadcasting booking update: {} - {} - {}", bookingId, status, changeType);
             messagingTemplate.convertAndSend("/topic/bookings", Map.of(
                 "eventType", "BOOKING_UPDATE",
                 "bookingId", bookingId,
                 "status", status,
+                "changeType", changeType,
                 "timestamp", System.currentTimeMillis()
             ));
         } catch (Exception e) {

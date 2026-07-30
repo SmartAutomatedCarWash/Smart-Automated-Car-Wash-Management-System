@@ -50,6 +50,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
 import { Badge } from "@/shared/ui/ui/badge";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
+import { useWebSocket } from "@/shared/hooks/use-web-socket";
 import { formatIntegerRating } from "@/shared/lib/rating-format";
 import type { BookingStatus } from "@/entities/bookings";
 
@@ -106,6 +107,7 @@ function translatePaymentStatus(status: string, lang: "vi" | "en") {
 }
 
 export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
+  useWebSocket();
   const getErrorMessage = useErrorMessage();
   const router = useRouter();
   const { language } = useLanguageStore();
@@ -123,6 +125,7 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
       const packageDetail = booking?.details.find((detail: any) => detail.itemType === "PACKAGE");
       const comboDetail = booking?.details.find((detail: any) => detail.itemType === "COMBO");
       return listBookingStaffOptions({
+        bookingId,
         packageId: packageDetail?.refId,
         comboId: comboDetail?.refId,
         options: booking?.details
@@ -136,10 +139,34 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
   });
 
   const staffOptions = staffOptionsQuery.data ?? [];
+  const currentStaffId = booking?.assignedStaff?.[0]?.staffId ?? "";
+
+  useEffect(() => {
+    if (!isStaffModalOpen || !selectedStaffId || staffOptionsQuery.isFetching) {
+      return;
+    }
+    const selectedStaff = staffOptions.find((staff) => staff.staffId === selectedStaffId);
+    if (selectedStaff?.available === false && selectedStaffId !== currentStaffId) {
+      setSelectedStaffId("");
+      toast.warning(
+        translate(
+          language,
+          "Nhân viên này vừa được gán cho lịch khác và hiện đang bận.",
+          "This staff member was just assigned to another booking and is now busy.",
+        ),
+      );
+    }
+  }, [
+    currentStaffId,
+    isStaffModalOpen,
+    language,
+    selectedStaffId,
+    staffOptions,
+    staffOptionsQuery.isFetching,
+  ]);
 
   const handleOpenStaffModal = () => {
-    const currentStaff = booking?.assignedStaff?.[0]?.staffId ?? "";
-    setSelectedStaffId(currentStaff);
+    setSelectedStaffId(currentStaffId);
     setIsStaffModalOpen(true);
   };
 

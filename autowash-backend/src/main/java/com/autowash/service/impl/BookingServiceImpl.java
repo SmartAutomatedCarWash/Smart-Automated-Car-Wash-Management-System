@@ -858,6 +858,7 @@ public class BookingServiceImpl implements BookingService {
 
         normalizeSingleStaffAssignment(booking, selectedStaff);
         booking.setPreferredStaffIds(selectedStaff.getId().toString());
+        publishBookingUpdateAfterCommit(booking, "STAFF_ASSIGNMENT_CHANGED");
         return toDetailResponse(booking);
     }
 
@@ -1341,6 +1342,21 @@ public class BookingServiceImpl implements BookingService {
         } catch (ApiException exception) {
             return null;
         }
+    }
+
+    private void publishBookingUpdateAfterCommit(Booking booking, String changeType) {
+        String bookingId = booking.getId().toString();
+        String status = booking.getStatus().name();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    webSocketEventPublisher.publishBookingUpdate(bookingId, status, changeType);
+                }
+            });
+            return;
+        }
+        webSocketEventPublisher.publishBookingUpdate(bookingId, status, changeType);
     }
 
     private void sendBookingConfirmationEmailAfterCommit(Booking booking) {
