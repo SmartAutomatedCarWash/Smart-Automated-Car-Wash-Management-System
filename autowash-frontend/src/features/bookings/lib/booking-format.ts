@@ -15,7 +15,7 @@ import { getVoucherCodeFormatError, sanitizeVoucherCodeInput } from "../../../sh
 
 /** @deprecated Use generateTimeSlotsFromRange() with operating hours from API instead */
 export const BOOKING_TIME_SLOTS = ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"] as const;
-export const MIN_ADVANCE_BOOKING_MINUTES = 30;
+export const MIN_ADVANCE_BOOKING_MINUTES = 15;
 
 /**
  * Generate hourly time slots between openTime and closeTime (exclusive).
@@ -159,7 +159,7 @@ export function validateBookingDraft(
   if (!draft.bookingTime) {
     errors.bookingTime = "Please choose a booking time.";
   } else if (isBeforeMinimumAdvance(draft.bookingDate, draft.bookingTime)) {
-    errors.bookingTime = "Please choose a time at least 30 minutes from now.";
+    errors.bookingTime = "Please choose a time at least 15 minutes from now.";
   }
   if (draft.confirmationEmail?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.confirmationEmail.trim())) {
     errors.confirmationEmail = "Please enter a valid confirmation email.";

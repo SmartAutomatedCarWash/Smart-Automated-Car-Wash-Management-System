@@ -101,7 +101,7 @@ public class BookingServiceImpl implements BookingService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BookingServiceImpl.class);
     private static final Duration PENDING_BOOKING_HOLD_DURATION = Duration.ofMinutes(15);
-    private static final Duration MIN_ADVANCE_BOOKING_DURATION = Duration.ofMinutes(30);
+    private static final Duration MIN_ADVANCE_BOOKING_DURATION = Duration.ofMinutes(15);
 
     private static final Set<BookingStatus> ACTIVE_BOOKING_STATUSES = Set.of(
             BookingStatus.CONFIRMED,
@@ -1016,7 +1016,7 @@ public class BookingServiceImpl implements BookingService {
         if (bookingDate.atTime(bookingTime).isBefore(LocalDateTime.now().plus(MIN_ADVANCE_BOOKING_DURATION))) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Booking time must be at least 30 minutes from now",
+                    "Booking time must be at least 15 minutes from now",
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
