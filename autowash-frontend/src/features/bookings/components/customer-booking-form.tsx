@@ -1783,7 +1783,14 @@ export function CustomerBookingForm() {
               validatedDiscount={validatedDiscount}
               discountMutation={discountMutation}
               disabledReason={isOwnedComboBooking ? "Owned combo bookings are already covered, so vouchers cannot be applied." : null}
-              customerDiscounts={(customerDiscountsQuery.data?.items ?? []).filter((item) => Boolean(item.voucherCode)).map((item) => ({ code: item.voucherCode ?? "", name: item.discount.name, discountType: item.discount.discountType, discountValue: item.discount.discountValue }))}
+              customerDiscounts={(customerDiscountsQuery.data?.items ?? [])
+                .filter((item) => Boolean(item.voucherCode) && item.status === "AVAILABLE")
+                .map((item) => ({
+                  code: item.voucherCode ?? "",
+                  name: item.discount.name,
+                  discountType: item.discount.discountType,
+                  discountValue: item.discount.discountValue,
+                }))}
               onApply={(code) => void validateDiscount(code)}
               onClear={clearDiscount}
               onCodeChange={handleDiscountCodeChange}

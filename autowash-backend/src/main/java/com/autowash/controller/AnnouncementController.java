@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @Tag(name = "Announcements")
 public class AnnouncementController {
+    private static final Set<String> ALLOWED_ANNOUNCEMENT_TYPES = Set.of("SYSTEM", "WARNING");
 
     private final AnnouncementRepository announcementRepository;
     private final WebSocketEventPublisher webSocketEventPublisher;
@@ -76,6 +78,7 @@ public class AnnouncementController {
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<AnnouncementResponse> create(@Valid @RequestBody AnnouncementRequest request) {
+        validateAnnouncementType(request.type());
         Announcement announcement = new Announcement(
                 request.title(), request.message(), request.linkUrl(), request.linkLabel(),
                 request.type(), request.active(), request.priority(), request.expiresAt()
@@ -92,6 +95,7 @@ public class AnnouncementController {
     public ApiResponse<AnnouncementResponse> update(
             @PathVariable UUID id,
             @Valid @RequestBody AnnouncementRequest request) {
+        validateAnnouncementType(request.type());
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Announcement not found", ErrorCode.RESOURCE_NOT_FOUND));
         announcement.update(
@@ -123,5 +127,11 @@ public class AnnouncementController {
                 a.getId(), a.getTitle(), a.getMessage(), a.getLinkUrl(), a.getLinkLabel(),
                 a.getType(), a.isActive(), a.getPriority(), a.getExpiresAt(), a.getCreatedAt()
         );
+    }
+
+    private void validateAnnouncementType(String type) {
+        if (type == null || !ALLOWED_ANNOUNCEMENT_TYPES.contains(type)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Announcement type must be SYSTEM or WARNING", ErrorCode.VALIDATION_ERROR);
+        }
     }
 }

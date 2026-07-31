@@ -3,16 +3,21 @@ package com.autowash.service.impl;
 import com.autowash.dto.NotificationCampaignRequest;
 import com.autowash.dto.NotificationCampaignResponse;
 import com.autowash.entity.NotificationCampaign;
+import com.autowash.entity.enums.NotificationType;
 import com.autowash.entity.enums.CampaignStatus;
 import com.autowash.repository.NotificationCampaignRepository;
 import com.autowash.service.NotificationCampaignProcessor;
 import com.autowash.service.NotificationCampaignService;
+import com.autowash.shared.exception.ApiException;
+import com.autowash.shared.exception.ErrorCode;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +26,10 @@ import com.autowash.repository.NotificationRepository;
 @Service
 @RequiredArgsConstructor
 public class NotificationCampaignServiceImpl implements NotificationCampaignService {
+    private static final Set<NotificationType> ALLOWED_MANUAL_CAMPAIGN_TYPES = Set.of(
+            NotificationType.SYSTEM,
+            NotificationType.WARNING
+    );
 
     private final NotificationCampaignRepository campaignRepository;
     private final NotificationCampaignProcessor campaignProcessor;
@@ -29,6 +38,7 @@ public class NotificationCampaignServiceImpl implements NotificationCampaignServ
     @Override
     @Transactional
     public NotificationCampaignResponse createCampaign(NotificationCampaignRequest request) {
+        validateManualCampaignType(request.type());
         Instant now = Instant.now();
         CampaignStatus initialStatus = request.scheduledAt() != null && request.scheduledAt().isAfter(now)
                 ? CampaignStatus.SCHEDULED
@@ -62,6 +72,7 @@ public class NotificationCampaignServiceImpl implements NotificationCampaignServ
     @Override
     @Transactional
     public NotificationCampaignResponse updateCampaign(UUID id, NotificationCampaignRequest request) {
+        validateManualCampaignType(request.type());
         NotificationCampaign campaign = campaignRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Campaign not found"));
 
@@ -129,5 +140,15 @@ public class NotificationCampaignServiceImpl implements NotificationCampaignServ
                 .failedCount(campaign.getFailedCount())
                 .createdAt(campaign.getCreatedAt())
                 .build();
+    }
+
+    private void validateManualCampaignType(NotificationType type) {
+        if (!ALLOWED_MANUAL_CAMPAIGN_TYPES.contains(type)) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Campaign type must be SYSTEM or WARNING",
+                    ErrorCode.VALIDATION_ERROR
+            );
+        }
     }
 }

@@ -313,7 +313,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       : t("Có thông báo mới trên thanh tin tức.", "A new announcement is available in the news bar.");
 
     void showCustomerRealtimeNotification({
-      type: announcement.type || "INFO",
+      type: announcement.type || "SYSTEM",
       title: translateNotificationField(announcement.title, language),
       message: popupMessage,
       confirmButtonText: t("Đã hiểu", "Got it"),

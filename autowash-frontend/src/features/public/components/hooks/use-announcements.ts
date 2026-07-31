@@ -14,8 +14,9 @@ export function useActiveAnnouncements() {
   return useQuery({
     queryKey: ["announcements", "active"],
     queryFn: fetchActiveAnnouncements,
-    staleTime: 60_000,
-    refetchInterval: 300_000,
+    staleTime: 15_000,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
   });
 }
 
