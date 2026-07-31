@@ -27,9 +27,19 @@ import {
 
 type Step = "email" | "verify" | "reset" | "done";
 
+type ForgotPasswordFormProps = {
+  completionHref?: string;
+  completionLabel?: string;
+  completionMessage?: string;
+};
+
 const OTP_LENGTH = 6;
 
-export function ForgotPasswordForm() {
+export function ForgotPasswordForm({
+  completionHref = "/login",
+  completionLabel = "Sign in",
+  completionMessage = "Your password has been changed. You can sign in with the new password now.",
+}: ForgotPasswordFormProps = {}) {
   const requestMutation = useForgotPasswordRequest();
   const verifyOtpMutation = useVerifyForgotPasswordOtp();
   const resetMutation = useForgotPasswordReset();
@@ -124,7 +134,7 @@ export function ForgotPasswordForm() {
       newPassword,
       newPasswordConfirm,
     });
-    setSuccessMessage("Your password has been changed. You can sign in with the new password now.");
+    setSuccessMessage(completionMessage);
     setStep("done");
   };
 
@@ -155,31 +165,30 @@ export function ForgotPasswordForm() {
 
   if (step === "done") {
     return (
-      <div className="space-y-7 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
-          <CheckCircle2 className="h-8 w-8" />
+      <div className="space-y-7">
+        <PasswordResetProgress step={step} />
+        <div className="space-y-7 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+            <CheckCircle2 className="h-8 w-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black tracking-tight text-slate-950">Password reset complete</h2>
+            <p className="mx-auto max-w-md text-sm leading-6 text-slate-600">{successMessage}</p>
+          </div>
+          <Button asChild size="lg" className="h-12 rounded-md px-8">
+            <Link href={completionHref}>
+              {completionLabel}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
         </div>
-        <div className="space-y-2">
-          <h2 className="text-2xl font-black tracking-tight text-slate-950">Password reset complete</h2>
-          <p className="mx-auto max-w-md text-sm leading-6 text-slate-600">{successMessage}</p>
-        </div>
-        <Button asChild size="lg" className="h-12 rounded-md px-8">
-          <Link href="/login">
-            Sign in
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </Button>
       </div>
     );
   }
 
   return (
     <div className="space-y-7">
-      <div className="grid grid-cols-3 gap-2 text-xs font-bold text-slate-500">
-        <StepPill active={step === "email"} complete={step !== "email"} label="Email" />
-        <StepPill active={step === "verify"} complete={step === "reset"} label="OTP" />
-        <StepPill active={step === "reset"} complete={false} label="Done" />
-      </div>
+      <PasswordResetProgress step={step} />
 
       {step === "email" ? (
         <form onSubmit={handleRequestOtp} className="space-y-5">
@@ -393,18 +402,75 @@ export function ForgotPasswordForm() {
   );
 }
 
-function StepPill({ active, complete, label }: { active: boolean; complete: boolean; label: string }) {
+function PasswordResetProgress({ step }: { step: Step }) {
+  const currentIndex =
+    step === "email" ? 0 :
+    step === "verify" ? 1 :
+    step === "reset" ? 2 :
+    3;
+
+  return (
+    <div
+      aria-label="Password reset progress"
+      className="grid grid-cols-[4.5rem_minmax(2rem,1fr)_4.5rem_minmax(2rem,1fr)_4.5rem] items-start px-1"
+    >
+      <ProgressStep label="Email" number={1} active={currentIndex === 0} complete={currentIndex > 0} />
+      <ProgressConnector complete={currentIndex > 0} />
+      <ProgressStep label="OTP" number={2} active={currentIndex === 1} complete={currentIndex > 1} />
+      <ProgressConnector complete={currentIndex > 1} />
+      <ProgressStep label="Done" number={3} active={currentIndex === 2} complete={currentIndex > 2} />
+    </div>
+  );
+}
+
+function ProgressStep({
+  label,
+  number,
+  active,
+  complete,
+}: {
+  label: string;
+  number: number;
+  active: boolean;
+  complete: boolean;
+}) {
+  return (
+    <div
+      aria-current={active ? "step" : undefined}
+      className="flex min-w-0 flex-col items-center gap-2"
+    >
+      <div
+      className={cn(
+          "flex h-8 w-8 items-center justify-center rounded-full border text-xs font-black transition-all duration-500",
+          active && "border-sky-600 bg-sky-600 text-white shadow-sm ring-4 ring-sky-100",
+          complete && "border-emerald-500 bg-emerald-500 text-white shadow-sm",
+          !active && !complete && "border-slate-200 bg-white text-slate-400",
+        )}
+      >
+        {complete ? <CheckCircle2 className="h-4 w-4" /> : number}
+      </div>
+      <span
+        className={cn(
+          "text-center text-xs font-bold transition-colors duration-500",
+          active && "text-sky-700",
+          complete && "text-emerald-700",
+          !active && !complete && "text-slate-400",
+        )}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function ProgressConnector({ complete }: { complete: boolean }) {
   return (
     <div
       className={cn(
-        "flex h-10 items-center justify-center rounded-md border text-center transition",
-        active && "border-sky-200 bg-sky-50 text-sky-800",
-        complete && "border-emerald-200 bg-emerald-50 text-emerald-700",
-        !active && !complete && "border-slate-200 bg-white text-slate-400",
+        "mt-3.5 h-1 rounded-full transition-colors duration-500",
+        complete ? "bg-emerald-500" : "bg-slate-200",
       )}
-    >
-      {label}
-    </div>
+    />
   );
 }
 

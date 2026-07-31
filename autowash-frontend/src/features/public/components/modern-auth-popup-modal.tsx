@@ -147,9 +147,9 @@ const AUTH_COPY = {
     loginTitle: "Sign In",
     loginDescription: "Welcome back. Continue your vehicle care journey.",
     identifierLabel: "Phone number or email",
-    identifierPlaceholder: "Enter email",
+    identifierPlaceholder: "Enter gmail",
     passwordLabel: "Password",
-    passwordPlaceholder: "Enter your password",
+    passwordPlaceholder: "Enter password",
     forgotPassword: "Forgot password?",
     loginButton: "Sign In Now",
     loggingIn: "Signing in...",
@@ -162,7 +162,7 @@ const AUTH_COPY = {
     registerTitle: "Create Account",
     registerDescription: "Sign up to book faster, manage your cars, and receive exclusive offers.",
     nameLabel: "Full Name",
-    namePlaceholder: "John Doe",
+    namePlaceholder: "Enter full name",
     phoneLabel: "Phone Number",
     phonePlaceholder: "0901234567",
     emailLabel: "Email",
@@ -663,7 +663,7 @@ export function ModernAuthPopupModal({
                     onFocus={() => setLoginFieldsUnlocked(true)}
                     value={loginEmail}
                     onChange={(event) => setLoginEmail(event.target.value.replace(/\s/g, ""))}
-                    placeholder="Enter email"
+                    placeholder={copy.identifierPlaceholder}
                     className={inputCls}
                     inputMode="email"
                   />

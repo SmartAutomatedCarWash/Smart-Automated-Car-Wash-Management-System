@@ -23,7 +23,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Phone,
-  RefreshCw,
   Settings2,
   ShieldCheck,
   Sparkles,
@@ -1275,15 +1274,6 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   })}
 
                   <div className="my-1 h-px bg-border" />
-
-                  <button
-                    type="button"
-                    className="flex w-full items-center gap-2 rounded-sm px-3 py-2.5 text-left text-sm font-semibold transition hover:bg-accent"
-                    onClick={() => router.refresh()}
-                  >
-                    <RefreshCw className="h-4 w-4 text-muted-foreground" />
-                    {t("Làm mới dữ liệu", "Refresh data")}
-                  </button>
 
                   <button
                     type="button"
