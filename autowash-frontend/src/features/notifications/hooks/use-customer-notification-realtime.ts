@@ -13,6 +13,8 @@ const SockJS = require("sockjs-client") as new (url: string) => WebSocket;
 type NotificationSocketMessage = {
   eventType?: string;
   notificationId?: string;
+  announcementId?: string;
+  changeType?: string;
   type?: string;
   title?: string;
   message?: string;
@@ -34,6 +36,11 @@ type CustomerNotificationRealtimeOptions = {
     message: string;
     oldTier?: string | null;
     newTier?: string | null;
+  }) => void;
+  onAnnouncementChanged?: (payload: {
+    announcementId: string;
+    changeType: string;
+    timestamp?: number;
   }) => void;
 };
 
@@ -108,6 +115,13 @@ export function useCustomerNotificationRealtime(
           try {
             const message = JSON.parse(frame.body) as NotificationSocketMessage;
             if (message.eventType !== "ANNOUNCEMENT_CHANGED") return;
+            if (message.announcementId && message.changeType) {
+              optionsRef.current?.onAnnouncementChanged?.({
+                announcementId: message.announcementId,
+                changeType: message.changeType,
+                timestamp: message.timestamp,
+              });
+            }
             void queryClient.invalidateQueries({ queryKey: ["announcements", "active"] });
           } catch {
             // The regular announcement refetch interval remains the fallback.
