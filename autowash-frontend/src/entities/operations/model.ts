@@ -269,6 +269,7 @@ export type StaffTodaySessionItem = {
   elapsedMinutes?: number | null;
   customerNote?: string | null;
   managerNote?: string | null;
+  services?: StaffTodayServiceItem[] | null;
 };
 
 export type StaffTodayResponse = {
@@ -279,6 +280,17 @@ export type StaffTodayResponse = {
   waitingToStart: StaffTodaySessionItem[];
   inProgress: StaffTodaySessionItem[];
   todaySchedule: StaffTodaySessionItem[];
+};
+
+export type StaffTodayServiceItem = {
+  id: string;
+  itemType: "PACKAGE" | "COMBO" | "ADDON" | string;
+  refId: string;
+  snapshotName: string;
+  snapshotPrice: number;
+  quantity: number;
+  subtotal: number;
+  durationMinutes: number;
 };
 
 // ─── Staff Session History (paginated) ───────────────────────────────────────

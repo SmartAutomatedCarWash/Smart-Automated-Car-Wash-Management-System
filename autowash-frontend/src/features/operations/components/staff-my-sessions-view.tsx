@@ -30,6 +30,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/ui/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/shared/ui/ui/sheet";
 import { WorkspacePage } from "@/shared/ui/workspace/workspace-page";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import {
@@ -38,7 +45,7 @@ import {
   startStaffSession,
 } from "@/features/operations/lib/operations-service";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
-import type { StaffTodaySessionItem } from "@/entities/operations";
+import type { StaffTodayServiceItem, StaffTodaySessionItem } from "@/entities/operations";
 import { cn } from "@/shared/lib/utils";
 
 // ─── Status meta ─────────────────────────────────────────────────────────────
@@ -269,12 +276,12 @@ export function StaffMySessionsView() {
         </>
       )}
 
-      {/* ── Session Detail Dialog ── */}
-      <Dialog open={!!detailItem} onOpenChange={(open) => !open && setDetailItem(null)}>
-        <DialogContent className="max-w-lg rounded-xl p-0 overflow-hidden">
-          {detailItem && <SessionDetailPopup item={detailItem} onClose={() => setDetailItem(null)} />}
-        </DialogContent>
-      </Dialog>
+      {/* ── Session Detail Sheet ── */}
+      <Sheet open={!!detailItem} onOpenChange={(open) => !open && setDetailItem(null)}>
+        <SheetContent side="right" className="w-full max-w-3xl overflow-y-auto border-slate-200 bg-slate-50 p-0 sm:max-w-3xl">
+          {detailItem ? <SessionDetailSheet item={detailItem} /> : null}
+        </SheetContent>
+      </Sheet>
 
       {/* ── Complete Confirm Dialog ── */}
       <Dialog
@@ -456,7 +463,18 @@ function InProgressCard({
   isPending: boolean;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+    <div
+      role="button"
+      tabIndex={0}
+      className="block w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-left shadow-sm transition hover:border-cyan-300 hover:shadow-md"
+      onClick={() => onViewDetails(item)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onViewDetails(item);
+        }
+      }}
+    >
       <div className="p-3">
         {/* Top row */}
         <div className="flex items-start justify-between gap-3">
@@ -505,19 +523,16 @@ function InProgressCard({
 
         {/* Actions */}
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          {item.sessionId && (
-            <Button
-              variant="outline"
-              className="h-10 rounded-md border-cyan-600 text-sm font-bold text-cyan-700"
-              onClick={() => onViewDetails(item)}
-            >
-              Details
-            </Button>
-          )}
+          <div className="flex h-10 items-center justify-center rounded-md border border-cyan-200 bg-cyan-50 text-sm font-bold text-cyan-700">
+            View details
+          </div>
           <Button
             className="h-10 rounded-md bg-cyan-700 text-sm font-bold text-white hover:bg-cyan-800"
             disabled={isPending || !item.sessionId}
-            onClick={onComplete}
+            onClick={(event) => {
+              event.stopPropagation();
+              onComplete();
+            }}
           >
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Complete
@@ -607,15 +622,12 @@ const SESSION_STATUS_MAP: Record<string, { label: string; dotBg: string; dotColo
   PENDING:     { label: "Pending",     dotBg: "bg-slate-400",   dotColor: "text-slate-500" },
 };
 
-function SessionDetailPopup({
-  item,
-  onClose,
-}: {
-  item: StaffTodaySessionItem;
-  onClose: () => void;
-}) {
+function SessionDetailSheet({ item }: { item: StaffTodaySessionItem }) {
   const rawStatus = item.sessionStatus ?? item.bookingStatus ?? "PENDING";
   const statusCfg = SESSION_STATUS_MAP[rawStatus] ?? SESSION_STATUS_MAP.PENDING;
+  const primaryItems = (item.services ?? []).filter((service) => service.itemType === "PACKAGE" || service.itemType === "COMBO");
+  const includedServices = (item.services ?? []).filter((service) => service.itemType === "ADDON");
+  const totalDuration = item.estimatedDurationMinutes ?? includedServices.reduce((sum, service) => sum + (service.durationMinutes || 0), 0);
 
   const steps: { label: string; time?: string | null }[] = [
     { label: "Check-in", time: item.checkedInAt },
@@ -624,143 +636,126 @@ function SessionDetailPopup({
   ];
 
   return (
-    <div className="flex flex-col bg-white">
-      {/* ── Header ── */}
-      <div className="flex items-start justify-between px-6 pt-6 pb-5">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
+    <div className="min-h-full bg-slate-50">
+      <SheetHeader className="border-b border-slate-200 bg-white px-6 py-5 text-left">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
             <Car className="h-6 w-6" />
           </div>
-          <div>
-            <h2 className="text-2xl font-black tracking-tight text-slate-950">{item.vehiclePlate}</h2>
-            <div className="mt-0.5 flex items-center gap-1.5">
-              <span className={cn("h-2.5 w-2.5 rounded-full", statusCfg.dotBg)} />
-              <span className={cn("text-base font-bold", statusCfg.dotColor)}>{statusCfg.label}</span>
+          <div className="min-w-0">
+            <SheetTitle className="text-2xl font-black tracking-tight text-slate-950">{item.vehiclePlate}</SheetTitle>
+            <SheetDescription className="mt-1 text-sm font-semibold text-slate-500">
+              {item.customerName} · Booking {item.bookingTime}
+            </SheetDescription>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-black", statusCfg.dotColor === "text-cyan-600" ? "border-cyan-200 bg-cyan-50 text-cyan-700" : "border-slate-200 bg-slate-100 text-slate-700")}>
+                <span className={cn("h-2 w-2 rounded-full", statusCfg.dotBg)} />
+                {statusCfg.label}
+              </span>
+              {item.elapsedMinutes != null ? (
+                <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
+                  {item.elapsedMinutes} min elapsed
+                </span>
+              ) : null}
+              {item.bayCode ? (
+                <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
+                  Bay {item.bayCode}
+                </span>
+              ) : null}
             </div>
-            <p className="mt-0.5 text-sm text-slate-400">{item.bookingTime}</p>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition hover:bg-slate-50 hover:text-slate-600"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
+      </SheetHeader>
 
-      <div className="divide-y divide-slate-100 border-t border-slate-100">
-        {/* ── Customer & Service (2-col) ── */}
-        <div className="grid grid-cols-2 divide-x divide-slate-100">
-          <div className="px-6 py-5">
-            <p className="mb-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Customer</p>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <User className="h-5 w-5 shrink-0 text-slate-400" />
-                <span className="text-base font-semibold text-slate-800">{item.customerName}</span>
-              </div>
-              {item.customerPhone && (
-                <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 shrink-0 text-slate-400" />
-                  <span className="text-base font-semibold text-slate-800">{item.customerPhone}</span>
+      <div className="space-y-5 p-6">
+        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Service Breakdown</p>
+            <h3 className="mt-2 text-lg font-black text-slate-950">What staff needs to do</h3>
+            <p className="mt-1 text-sm font-semibold text-slate-500">
+              Show full package/combo contents instead of only the package name.
+            </p>
+
+            <div className="mt-5 space-y-4">
+              {primaryItems.length > 0 ? primaryItems.map((service) => (
+                <PrimaryServiceCard key={service.id} service={service} />
+              )) : (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600">
+                  {item.serviceName ?? "Wash service"}
                 </div>
               )}
-            </div>
-          </div>
-          <div className="px-6 py-5">
-            <p className="mb-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Service</p>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-slate-400" />
-                <span className="text-base font-semibold text-slate-800">{item.serviceName ?? "Wash service"}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <User className="h-5 w-5 shrink-0 text-slate-400" />
-                <span className="text-base font-semibold text-slate-800">{item.customerName}</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* ── Timeline stepper ── */}
-        <div className="px-6 py-5">
-          <p className="mb-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Timeline</p>
-          <div className="relative flex items-start justify-between">
-            {/* connecting line */}
-            <div className="absolute left-[20px] right-[20px] top-[20px] h-0.5 bg-emerald-200" />
-            {steps.map((step, i) => {
-              const done = Boolean(step.time);
-              return (
-                <div key={i} className="relative z-10 flex flex-1 flex-col items-center gap-2">
-                  <div className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-full shadow-sm",
-                    done
-                      ? "bg-emerald-500 text-white"
-                      : "border-2 border-slate-200 bg-white text-slate-300",
-                  )}>
-                    {done ? (
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <span className="h-2 w-2 rounded-full bg-slate-300" />
-                    )}
+              <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-700">Included Services</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-600">
+                      Staff should complete all services below for this booking.
+                    </p>
                   </div>
-                  <span className="text-xs font-semibold text-slate-500">{step.label}</span>
-                  <span className="text-xs font-semibold text-slate-700">{formatTimePopup(step.time)}</span>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-cyan-700 shadow-sm">
+                    {includedServices.length} service{includedServices.length === 1 ? "" : "s"}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
-          {item.elapsedMinutes != null && (
-            <p className="mt-4 text-right text-sm font-bold text-emerald-600">{item.elapsedMinutes} min</p>
-          )}
-        </div>
 
-        {/* ── Payment & Rating (2-col) ── */}
-        <div className="grid grid-cols-2 divide-x divide-slate-100">
-          <div className="px-6 py-5">
-            <p className="mb-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Payment</p>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Banknote className="h-5 w-5 shrink-0 text-slate-400" />
-                <span className="text-base font-bold text-slate-900">See checkout</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <CreditCard className="h-5 w-5 shrink-0 text-slate-400" />
-                <span className="text-base font-semibold text-slate-700">Cash</span>
+                <div className="mt-4 space-y-3">
+                  {includedServices.length > 0 ? includedServices.map((service, index) => (
+                    <IncludedServiceRow key={service.id} service={service} index={index} />
+                  )) : (
+                    <p className="text-sm font-semibold text-slate-500">No detailed service items were returned for this booking.</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-          <div className="px-6 py-5">
-            <p className="mb-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Rating</p>
-            <span className="inline-flex rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm font-bold text-slate-600">
-              Not rated
-            </span>
-          </div>
-        </div>
 
-        {/* ── Notes ── */}
-        <div className="px-6 py-5">
-          <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Notes</p>
-          {item.customerNote || item.managerNote ? (
-            <div className="space-y-1">
-              {item.managerNote && (
-                <div className="flex items-start gap-2">
-                  <MessageSquareText className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-                  <p className="text-sm font-semibold text-slate-700">Manager: {item.managerNote}</p>
-                </div>
-              )}
-              {item.customerNote && (
-                <div className="flex items-start gap-2">
-                  <MessageSquareText className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-                  <p className="text-sm font-semibold text-slate-700">Customer: {item.customerNote}</p>
-                </div>
-              )}
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Booking Snapshot</p>
+              <div className="mt-4 grid gap-3">
+                <DetailInfo icon={User} label="Customer" value={item.customerName} />
+                <DetailInfo icon={Phone} label="Phone" value={item.customerPhone ?? "Not available"} />
+                <DetailInfo icon={CheckCircle2} label="Primary package / combo" value={item.serviceName ?? "Wash service"} />
+                <DetailInfo icon={Droplets} label="Estimated duration" value={totalDuration ? `${totalDuration} min` : "Not available"} />
+              </div>
             </div>
-          ) : (
-            <p className="text-base text-slate-400">No notes recorded</p>
-          )}
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Timeline</p>
+              <div className="mt-4 space-y-4">
+                {steps.map((step) => {
+                  const done = Boolean(step.time);
+                  return (
+                    <div key={step.label} className="flex items-start gap-3">
+                      <div className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full", done ? "bg-emerald-500 text-white" : "border border-slate-200 bg-slate-50 text-slate-300")}>
+                        {done ? <CheckCircle2 className="h-4 w-4" /> : <span className="h-2 w-2 rounded-full bg-slate-300" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-slate-900">{step.label}</p>
+                        <p className="text-sm font-semibold text-slate-500">{formatTimePopup(step.time)}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Notes</p>
+              <div className="mt-4 space-y-3">
+                <NoteBlock
+                  tone="rose"
+                  title="Manager note"
+                  value={item.managerNote || "No manager note."}
+                />
+                <NoteBlock
+                  tone="amber"
+                  title="Customer note"
+                  value={item.customerNote || "No customer note."}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -772,6 +767,103 @@ function formatTimePopup(value?: string | null): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatCurrency(value?: number | null) {
+  return value != null
+    ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value)
+    : "--";
+}
+
+function PrimaryServiceCard({ service }: { service: StaffTodayServiceItem }) {
+  const label = service.itemType === "COMBO" ? "Combo" : "Package";
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</p>
+          <p className="mt-1 text-base font-black text-slate-950">{service.snapshotName}</p>
+        </div>
+        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-black text-slate-700">
+          x{service.quantity}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function IncludedServiceRow({ service, index }: { service: StaffTodayServiceItem; index: number }) {
+  return (
+    <div className="rounded-xl border border-white/80 bg-white px-4 py-3 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-700">Step {index + 1}</p>
+          <p className="mt-1 break-words text-sm font-black text-slate-950">{service.snapshotName}</p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-xs font-semibold text-slate-500">Qty</p>
+          <p className="text-sm font-black text-slate-900">x{service.quantity}</p>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+          {service.durationMinutes} min
+        </span>
+        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+          {formatCurrency(service.subtotal)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function DetailInfo({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof User;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</p>
+        <p className="truncate text-sm font-bold text-slate-900">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function NoteBlock({
+  tone,
+  title,
+  value,
+}: {
+  tone: "rose" | "amber";
+  title: string;
+  value: string;
+}) {
+  const tones = {
+    rose: "border-rose-200 bg-rose-50/70 text-rose-700",
+    amber: "border-amber-200 bg-amber-50/70 text-amber-700",
+  } as const;
+
+  return (
+    <div className={cn("rounded-xl border px-4 py-3", tones[tone])}>
+      <div className="flex items-start gap-3">
+        <MessageSquareText className="mt-0.5 h-4 w-4 shrink-0" />
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em]">{title}</p>
+          <p className="mt-1 text-sm font-semibold text-slate-700">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── Empty section ────────────────────────────────────────────────────────────

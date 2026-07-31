@@ -46,6 +46,7 @@ public record StaffTodayResponse(
             Integer estimatedDurationMinutes,
             Integer elapsedMinutes,
             String customerNote,
-            String managerNote
+            String managerNote,
+            List<BookingDetailDto> services
     ) {}
 }
