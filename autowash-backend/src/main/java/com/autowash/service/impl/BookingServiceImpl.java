@@ -414,6 +414,13 @@ public class BookingServiceImpl implements BookingService {
         long optionsTotal = options.stream().mapToLong(CatalogService.CatalogOption::price).sum();
         long subtotal = basePrice + optionsTotal;
         int totalDuration = baseDuration + options.stream().mapToInt(CatalogService.CatalogOption::durationMinutes).sum();
+        if (OwnedComboBookingPolicy.hasUnsupportedPayableExtras(ownedCombo != null, subtotal)) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Paid add-ons cannot be combined with an owned combo yet",
+                    ErrorCode.BUSINESS_RULE_VIOLATION
+            );
+        }
 
         Booking booking = new Booking(
                 UUID.randomUUID(),
@@ -475,7 +482,8 @@ public class BookingServiceImpl implements BookingService {
                     ErrorCode.BUSINESS_RULE_VIOLATION
             );
         }
-        if (ownedCombo != null || effectivePaymentMethod == PaymentMethod.CASH_AT_COUNTER) {
+        boolean fullyCoveredByOwnedCombo = OwnedComboBookingPolicy.isFullyCovered(ownedCombo != null, subtotal);
+        if (fullyCoveredByOwnedCombo || effectivePaymentMethod == PaymentMethod.CASH_AT_COUNTER) {
             booking.updateStatus(BookingStatus.CONFIRMED);
             assignSingleStaffOnConfirmation(booking);
         }
@@ -500,7 +508,7 @@ public class BookingServiceImpl implements BookingService {
         if (effectivePaymentMethod == PaymentMethod.BANK_TRANSFER) {
             payment.prepareSepayPayment(booking.getPricing().getFinalAmount(), generateSepayTransferCode());
         }
-        if (ownedCombo != null && booking.getPricing().getFinalAmount() == 0) {
+        if (fullyCoveredByOwnedCombo) {
             payment.coverWithOwnedCombo();
         }
         payment = paymentRepository.save(payment);
@@ -869,7 +877,9 @@ public class BookingServiceImpl implements BookingService {
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Only pending bookings can be confirmed", ErrorCode.BUSINESS_RULE_VIOLATION);
         }
-        ensurePendingBookingHoldOpen(booking);
+        if (!isPaidOwnedComboBooking(booking)) {
+            ensurePendingBookingHoldOpen(booking);
+        }
         BookingStatus oldStatus = booking.getStatus();
         booking.updateStatus(BookingStatus.CONFIRMED);
         assignSingleStaffOnConfirmation(booking);
@@ -900,7 +910,9 @@ public class BookingServiceImpl implements BookingService {
             return toDetailResponse(booking);
         }
         validateAdminBookingStatusTransition(oldStatus, status);
-        if (oldStatus == BookingStatus.PENDING && !SIDE_BOOKING_STATUSES.contains(status)) {
+        if (oldStatus == BookingStatus.PENDING
+                && !SIDE_BOOKING_STATUSES.contains(status)
+                && !isPaidOwnedComboBooking(booking)) {
             ensurePendingBookingHoldOpen(booking);
         }
         booking.updateStatus(status);
@@ -962,6 +974,27 @@ public class BookingServiceImpl implements BookingService {
     public Booking requireBookingForOperations(String bookingId) {
         return BookingRepository.findById(UUID.fromString(bookingId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", ErrorCode.RESOURCE_NOT_FOUND));
+    }
+
+    @Override
+    @Transactional
+    public Booking reconcilePaidOwnedComboBooking(String bookingId) {
+        Booking booking = requireBookingForOperations(bookingId);
+        if (booking.getStatus() != BookingStatus.PENDING || !isPaidOwnedComboBooking(booking)) {
+            return booking;
+        }
+
+        BookingStatus oldStatus = booking.getStatus();
+        booking.updateStatus(BookingStatus.CONFIRMED);
+        recordStatusHistory(
+                booking,
+                oldStatus,
+                booking.getStatus(),
+                currentActorOrNull(),
+                "Reconciled paid owned combo booking"
+        );
+        publishBookingUpdateAfterCommit(booking, "BOOKING_CHANGED");
+        return booking;
     }
 
     @Transactional
@@ -1212,6 +1245,14 @@ public class BookingServiceImpl implements BookingService {
             return PaymentStatus.PAID;
         }
         return method == PaymentMethod.CASH_AT_COUNTER ? PaymentStatus.UNPAID : PaymentStatus.PENDING_PAYMENT;
+    }
+
+    private boolean isPaidOwnedComboBooking(Booking booking) {
+        return paymentRepository.findFirstByBookingOrderByCreatedAtDesc(booking)
+                .map(payment -> payment.getMethod() == PaymentMethod.OWNED_COMBO
+                        && payment.getStatus() == PaymentStatus.PAID
+                        && payment.getAmount() == 0)
+                .orElse(false);
     }
 
     private void cancelUnpaidPayment(Booking booking) {

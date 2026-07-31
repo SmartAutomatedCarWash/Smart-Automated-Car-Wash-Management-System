@@ -143,7 +143,7 @@ public class OperationsServiceImpl implements OperationsService {
 
     @Transactional
     public CreateWashSessionResponse createSession(CreateWashSessionRequest request) {
-        Booking booking = bookingService.requireBookingForOperations(request.bookingId());
+        Booking booking = bookingService.reconcilePaidOwnedComboBooking(request.bookingId());
         if (booking.getStatus() != BookingStatus.CONFIRMED) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
@@ -259,9 +259,9 @@ public class OperationsServiceImpl implements OperationsService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ManagerCheckInRecommendationResponse previewManagerCheckInRecommendation(String bookingId) {
-        Booking booking = bookingService.requireBookingForOperations(bookingId);
+        Booking booking = bookingService.reconcilePaidOwnedComboBooking(bookingId);
         if (booking.getStatus() != BookingStatus.CONFIRMED && !canCollectCashAtCounterForCheckIn(booking)) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,

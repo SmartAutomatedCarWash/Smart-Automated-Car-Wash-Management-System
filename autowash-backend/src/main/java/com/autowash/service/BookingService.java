@@ -36,6 +36,7 @@ public interface BookingService {
     BookingDetailResponse confirmPendingBooking(String bookingId);
     BookingDetailResponse updateBookingStatus(String bookingId, BookingStatus status);
     Booking requireBookingForOperations(String bookingId);
+    Booking reconcilePaidOwnedComboBooking(String bookingId);
     void updateStatus(Booking booking, BookingStatus status);
     BookingDetailResponse toDetailResponse(Booking booking);
 

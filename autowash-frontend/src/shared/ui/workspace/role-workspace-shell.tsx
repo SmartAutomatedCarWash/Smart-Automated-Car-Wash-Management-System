@@ -31,7 +31,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { useCustomerLogout } from "@/features/auth/hooks/use-auth";
@@ -1641,7 +1641,7 @@ function WaterSpray() {
   const [isSpraying, setIsSpraying] = useState(true);
 
   useEffect(() => {
-    let timeoutId;
+    let timeoutId: ReturnType<typeof setTimeout>;
     const runCycle = () => {
       setIsSpraying(true);
       timeoutId = setTimeout(() => {
@@ -1708,7 +1708,7 @@ function WaterSpray() {
                 '--duration': duration,
                 '--scale': scale,
                 '--angle': `${angle}deg`,
-              }}
+              } as CSSProperties}
             />
           );
         })}
