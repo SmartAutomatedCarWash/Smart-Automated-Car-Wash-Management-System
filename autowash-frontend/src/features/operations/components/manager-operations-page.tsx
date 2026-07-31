@@ -1643,7 +1643,10 @@ function requiresCashCollection(row: OperationRow) {
 }
 
 function canCheckInBooking(row: OperationRow) {
-  return row.type === "booking" && (row.status === "CONFIRMED" || (row.status === "PENDING" && row.paymentMethod === "CASH_AT_COUNTER"));
+  if (row.type !== "booking") return false;
+  if (row.status === "CONFIRMED") return true;
+  if (row.status !== "PENDING") return false;
+  return row.paymentStatus === "PAID" || row.paymentMethod === "CASH_AT_COUNTER";
 }
 
 function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueueSession[]): OperationRow[] {
