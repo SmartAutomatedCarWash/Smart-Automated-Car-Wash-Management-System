@@ -211,12 +211,12 @@ public class OperationsServiceImpl implements OperationsService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public PaginatedResponse<EligibleSessionBookingResponse> listEligibleSessionBookings(int page, int limit) {
         return listEligibleSessionBookings(page, limit, null);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public PaginatedResponse<EligibleSessionBookingResponse> listEligibleSessionBookings(int page, int limit, LocalDate date) {
         int safePage = Math.max(1, page);
         int safeLimit = Math.max(1, Math.min(limit, 50));
@@ -253,6 +253,7 @@ public class OperationsServiceImpl implements OperationsService {
         }
         List<EligibleSessionBookingResponse> data = bookingsPage.getContent()
                 .stream()
+                .map(booking -> bookingService.reconcilePaidOwnedComboBooking(booking.getId().toString()))
                 .map(this::toEligibleBooking)
                 .toList();
         return new PaginatedResponse<>(data, bookingsPage.getTotalPages(), bookingsPage.getTotalElements());

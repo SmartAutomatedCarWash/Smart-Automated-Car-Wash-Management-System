@@ -986,6 +986,7 @@ public class BookingServiceImpl implements BookingService {
 
         BookingStatus oldStatus = booking.getStatus();
         booking.updateStatus(BookingStatus.CONFIRMED);
+        assignSingleStaffOnConfirmation(booking);
         recordStatusHistory(
                 booking,
                 oldStatus,

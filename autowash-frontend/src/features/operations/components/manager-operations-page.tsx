@@ -34,6 +34,7 @@ import {
   checkInWashSession,
   completeWashSession,
   assignStaffToSession,
+  confirmManagerBooking,
   getActiveStaffOptions,
   getManagerCheckInCandidates,
   getManagerCheckInRecommendation,
@@ -312,7 +313,7 @@ export function ManagerOperationsPage() {
     toast.success(message);
   };
 
-  const handleActionError = (title: string, actionError: ApiErrorResponse) => {
+  const handleActionError = (title: string, actionError: ApiErrorResponse, bookingId?: string) => {
     const message = getErrorMessage(actionError);
     toast.error(message);
     pushManagerNotification({
@@ -320,9 +321,28 @@ export function ManagerOperationsPage() {
       title,
       message,
       target: "Manager",
-      href: pathname,
+      href: bookingId ? `${pathname}?bookingId=${encodeURIComponent(bookingId)}` : pathname,
     });
   };
+
+  const confirmMutation = useMutation({
+    mutationFn: (bookingId: string) => confirmManagerBooking(bookingId),
+    onSuccess: (_data, bookingId) => {
+      handleActionSuccess("Booking confirmed and ready for check-in.");
+      const booking = eligibleBookings.find((item) => item.bookingId === bookingId);
+      pushManagerNotification({
+        kind: "success",
+        title: "Booking confirmed",
+        message: booking ? `${booking.vehiclePlate} is ready for check-in.` : "A pending booking was confirmed successfully.",
+        target: booking?.assignedStaffName ?? "Manager",
+        plate: booking?.vehiclePlate,
+        href: `${pathname}?bookingId=${encodeURIComponent(bookingId)}`,
+      });
+    },
+    onError: (actionError: ApiErrorResponse, bookingId) => {
+      handleActionError("Unable to confirm booking", actionError, bookingId);
+    },
+  });
 
   const previewCheckInMutation = useMutation({
     mutationFn: (bookingId: string) => getManagerCheckInRecommendation(bookingId),
@@ -335,7 +355,7 @@ export function ManagerOperationsPage() {
       setCheckInPreview(null);
       setCheckInPreferredStaffId(null);
       setCheckInCashCollected(false);
-      handleActionError("Unable to preview check-in", actionError);
+      handleActionError("Unable to preview check-in", actionError, checkInPreviewRow?.bookingId);
     },
   });
 
@@ -388,7 +408,7 @@ export function ManagerOperationsPage() {
     },
     onError: (actionError: ApiErrorResponse, { bookingId }) => {
       setOptimisticSessionRows((current) => removeOptimisticSessionRow(current, bookingId));
-      handleActionError("Unable to create session", actionError);
+      handleActionError("Unable to create session", actionError, bookingId);
     },
   });
 
@@ -411,7 +431,7 @@ export function ManagerOperationsPage() {
     onError: (actionError: ApiErrorResponse, sessionId) => {
       const row = rowsWithOptimisticUpdates.find((item) => item.sessionId === sessionId);
       if (row) setOptimisticSessionRows((current) => removeOptimisticSessionRow(current, row.bookingId));
-      handleActionError("Unable to check in session", actionError);
+      handleActionError("Unable to check in session", actionError, row?.bookingId);
     },
   });
 
@@ -434,7 +454,7 @@ export function ManagerOperationsPage() {
     onError: (actionError: ApiErrorResponse, sessionId) => {
       const row = rowsWithOptimisticUpdates.find((item) => item.sessionId === sessionId);
       if (row) setOptimisticSessionRows((current) => removeOptimisticSessionRow(current, row.bookingId));
-      handleActionError("Unable to start wash", actionError);
+      handleActionError("Unable to start wash", actionError, row?.bookingId);
     },
   });
 
@@ -457,7 +477,7 @@ export function ManagerOperationsPage() {
     onError: (actionError: ApiErrorResponse, sessionId) => {
       const row = rowsWithOptimisticUpdates.find((item) => item.sessionId === sessionId);
       if (row) setOptimisticSessionRows((current) => removeOptimisticSessionRow(current, row.bookingId));
-      handleActionError("Unable to complete wash", actionError);
+      handleActionError("Unable to complete wash", actionError, row?.bookingId);
     },
   });
 
@@ -475,6 +495,10 @@ export function ManagerOperationsPage() {
 
   const runPrimaryAction = (row: OperationRow) => {
     if (row.type === "booking") {
+      if (canConfirmBooking(row)) {
+        confirmMutation.mutate(row.bookingId);
+        return;
+      }
       if (!canCheckInBooking(row)) return;
       setCheckInPreviewRow(row);
       setCheckInPreview(null);
@@ -566,7 +590,7 @@ export function ManagerOperationsPage() {
                     key={row.id}
                     row={row}
                     index={(safeCheckInPage - 1) * TOP_PANEL_PAGE_SIZE + index}
-                    loading={isActionLoading(row, createMutation.variables?.bookingId, checkInMutation.variables, createMutation.isPending, checkInMutation.isPending)}
+                    loading={isActionLoading(row, confirmMutation, createMutation, checkInMutation)}
                     onSelect={() => handleSelectRow(row.id)}
                     onAction={() => runPrimaryAction(row)}
                   />
@@ -717,7 +741,7 @@ export function ManagerOperationsPage() {
                             row={row}
                             selected={selectedRow?.id === row.id}
                             rail={column.rail}
-                            loading={isMutatingRow(row, createMutation, checkInMutation, startMutation, completeMutation)}
+                            loading={isMutatingRow(row, confirmMutation, createMutation, checkInMutation, startMutation, completeMutation)}
                             onSelect={() => handleSelectRow(row.id)}
                             onAction={() => runPrimaryAction(row)}
                           />
@@ -889,34 +913,38 @@ function CheckInPreviewDialog({
                 )}
               </div>
 
-              {mustCollectCash ? (
-                <label className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-left">
-                  <input
-                    type="checkbox"
-                    checked={cashCollected}
-                    onChange={(event) => onCashCollectedChange(event.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-amber-300 text-[#00236f]"
-                  />
-                  <span>
-                    <span className="block text-sm font-black text-amber-900">Cash payment collected</span>
-                    <span className="mt-1 block text-xs font-semibold leading-5 text-amber-800">
-                      This booking is cash at counter and still unpaid. Confirm that the customer paid before check-in.
-                    </span>
-                  </span>
-                </label>
-              ) : null}
             </>
           )}
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-slate-100 p-4">
-          <Button type="button" variant="outline" className="rounded-xl" onClick={onClose} disabled={submitting}>
-            Cancel
-          </Button>
-          <Button type="button" className="rounded-xl bg-[#00236f] text-white hover:bg-[#001b55]" onClick={onConfirm} disabled={loading || !preview || submitting || (mustCollectCash && !cashCollected)}>
-            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Confirm check-in
-          </Button>
+        <div className="flex flex-col gap-3 border-t border-slate-100 p-4 md:flex-row md:items-center md:justify-between">
+          <div className="min-h-0 flex-1">
+            {mustCollectCash ? (
+              <label className="flex min-h-11 items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-left">
+                <input
+                  type="checkbox"
+                  checked={cashCollected}
+                  onChange={(event) => onCashCollectedChange(event.target.checked)}
+                  className="h-4 w-4 rounded border-amber-300 text-[#00236f]"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-black text-amber-900">Cash payment collected</span>
+                  <span className="mt-0.5 block text-xs font-semibold leading-5 text-amber-800">
+                    This booking is cash at counter and still unpaid. Confirm that the customer paid before check-in.
+                  </span>
+                </span>
+              </label>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center justify-end gap-2">
+            <Button type="button" variant="outline" className="rounded-xl" onClick={onClose} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button type="button" className="rounded-xl bg-[#00236f] text-white hover:bg-[#001b55]" onClick={onConfirm} disabled={loading || !preview || submitting || (mustCollectCash && !cashCollected)}>
+              {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Confirm check-in
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -1660,11 +1688,12 @@ function requiresCashCollection(row: OperationRow) {
   return row.paymentMethod === "CASH_AT_COUNTER" && row.paymentStatus !== "PAID" && (row.amount ?? 0) > 0;
 }
 
+function canConfirmBooking(row: OperationRow) {
+  return row.type === "booking" && row.status === "PENDING" && row.paymentStatus === "PAID";
+}
+
 function canCheckInBooking(row: OperationRow) {
-  if (row.type !== "booking") return false;
-  if (row.status === "CONFIRMED") return true;
-  if (row.status !== "PENDING") return false;
-  return row.paymentStatus === "PAID" || row.paymentMethod === "CASH_AT_COUNTER";
+  return row.type === "booking" && row.status === "CONFIRMED";
 }
 
 function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueueSession[]): OperationRow[] {
@@ -1900,7 +1929,10 @@ function getStatusLabel(status: BookingStatus | WashSessionStatus) {
 }
 
 function getPrimaryAction(row: OperationRow) {
-  if (row.type === "booking") return canCheckInBooking(row) ? "Check-in" : "Await payment";
+  if (row.type === "booking") {
+    if (canConfirmBooking(row)) return "Confirm";
+    return canCheckInBooking(row) ? "Check-in" : "Await payment";
+  }
   if (row.status === "PENDING" || row.status === "QUEUED") return "Check-in";
   if (row.status === "CHECKED_IN") return "Start";
   if (row.status === "IN_PROGRESS") return "Complete";
@@ -1910,7 +1942,7 @@ function getPrimaryAction(row: OperationRow) {
 
 function canRunPrimaryAction(row: OperationRow) {
   if (row.type === "booking") {
-    return canCheckInBooking(row);
+    return canConfirmBooking(row) || canCheckInBooking(row);
   }
   return row.status === "PENDING" || row.status === "QUEUED" || row.status === "CHECKED_IN" || row.status === "IN_PROGRESS";
 }
@@ -1941,18 +1973,29 @@ function requestCancel(row: OperationRow, mutate: (variables: { sessionId: strin
   mutate({ sessionId: row.sessionId, reason: reason.trim() });
 }
 
-function isActionLoading(row: OperationRow, creatingId: string | undefined, checkInId: string | undefined, creating: boolean, checkingIn: boolean) {
-  return (creating && creatingId === row.bookingId) || Boolean(checkingIn && row.sessionId && checkInId === row.sessionId);
+function isActionLoading(
+  row: OperationRow,
+  confirmMutation: { isPending: boolean; variables?: string },
+  createMutation: { isPending: boolean; variables?: { bookingId: string; preferredStaffId?: string | null } },
+  checkInMutation: { isPending: boolean; variables?: string },
+) {
+  return (
+    (confirmMutation.isPending && confirmMutation.variables === row.bookingId) ||
+    (createMutation.isPending && createMutation.variables?.bookingId === row.bookingId) ||
+    Boolean(checkInMutation.isPending && row.sessionId && checkInMutation.variables === row.sessionId)
+  );
 }
 
 function isMutatingRow(
   row: OperationRow,
+  confirmMutation: { isPending: boolean; variables?: string },
   createMutation: { isPending: boolean; variables?: { bookingId: string; preferredStaffId?: string | null } },
   checkInMutation: { isPending: boolean; variables?: string },
   startMutation: { isPending: boolean; variables?: string },
   completeMutation: { isPending: boolean; variables?: string },
 ) {
   return (
+    (confirmMutation.isPending && confirmMutation.variables === row.bookingId) ||
     (createMutation.isPending && createMutation.variables?.bookingId === row.bookingId) ||
     Boolean(row.sessionId && checkInMutation.isPending && checkInMutation.variables === row.sessionId) ||
     Boolean(row.sessionId && startMutation.isPending && startMutation.variables === row.sessionId) ||
