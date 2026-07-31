@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
-import { useAdminNotificationCampaigns, useCreateNotificationCampaign } from "../hooks/use-admin-notification-campaigns";
+import { useAdminNotificationCampaigns, useCreateNotificationCampaign, useUpdateNotificationCampaign } from "../hooks/use-admin-notification-campaigns";
 import { CampaignTargetAudience, NotificationType, NotificationCampaignResponse } from "../api/admin-notification-campaigns-service";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { Input } from "@/shared/ui/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/ui/table";
-import { Plus, X, Send, Clock, Users, Tag, Target, Megaphone, TrendingUp, Search, Eye, Trash2, Edit2 } from "lucide-react";
+import { Plus, X, Send, Clock, Users, Tag, Target, Megaphone, TrendingUp, Search, Eye, Edit2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 
@@ -21,6 +21,7 @@ export function AdminNotificationCampaignsPage() {
   const [limit] = useState(10);
   const { data: campaignPage, isLoading } = useAdminNotificationCampaigns(page, limit);
   const createMutation = useCreateNotificationCampaign();
+  const updateMutation = useUpdateNotificationCampaign();
 
   const [showModal, setShowModal] = useState(false);
   const [title, setTitle] = useState("");
@@ -32,34 +33,79 @@ export function AdminNotificationCampaignsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedCampaign, setSelectedCampaign] = useState<NotificationCampaignResponse | null>(null);
+  const [editingCampaign, setEditingCampaign] = useState<NotificationCampaignResponse | null>(null);
 
-  const handleCreate = (e: React.FormEvent) => {
+  const resetForm = () => {
+    setTitle("");
+    setMessage("");
+    setType("PROMOTION");
+    setTargetAudience("ALL_CUSTOMERS");
+    setTargetDetails("");
+    setScheduledAt("");
+    setError(null);
+    setEditingCampaign(null);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    resetForm();
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
+  const openEditModal = (campaign: NotificationCampaignResponse) => {
+    setEditingCampaign(campaign);
+    setTitle(campaign.title);
+    setMessage(campaign.message);
+    setType(campaign.type);
+    setTargetAudience(campaign.targetAudience);
+    setTargetDetails(campaign.targetDetails ?? "");
+    setScheduledAt(campaign.scheduledAt ? new Date(campaign.scheduledAt).toISOString().slice(0, 16) : "");
+    setError(null);
+    setShowModal(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    createMutation.mutate(
-      {
-        title,
-        message,
-        type,
-        targetAudience,
-        targetDetails: targetAudience === "INDIVIDUALS" ? targetDetails : undefined,
-        scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+    const payload = {
+      title,
+      message,
+      type,
+      targetAudience,
+      targetDetails: targetAudience === "INDIVIDUALS" ? targetDetails : undefined,
+      scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+    };
+
+    if (editingCampaign) {
+      updateMutation.mutate(
+        {
+          id: editingCampaign.id,
+          data: payload,
+        },
+        {
+          onSuccess: () => {
+            closeModal();
+          },
+          onError: (err) => {
+            setError(getErrorMessage(err));
+          },
+        }
+      );
+      return;
+    }
+
+    createMutation.mutate(payload, {
+      onSuccess: () => {
+        closeModal();
       },
-      {
-        onSuccess: () => {
-          setShowModal(false);
-          setTitle("");
-          setMessage("");
-          setType("PROMOTION");
-          setTargetAudience("ALL_CUSTOMERS");
-          setTargetDetails("");
-          setScheduledAt("");
-        },
-        onError: (err) => {
-          setError(getErrorMessage(err));
-        },
-      }
-    );
+      onError: (err) => {
+        setError(getErrorMessage(err));
+      },
+    });
   };
 
   const campaigns = campaignPage?.content ?? [];
@@ -162,7 +208,7 @@ export function AdminNotificationCampaignsPage() {
           </SelectContent>
         </Select>
 
-        <Button onClick={() => setShowModal(true)} className="rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs gap-1.5 h-11 px-5 shadow-sm">
+        <Button onClick={openCreateModal} className="rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs gap-1.5 h-11 px-5 shadow-sm">
           <Plus className="h-4 w-4" />
           {t("Soạn thông báo", "Compose Notification")}
         </Button>
@@ -177,9 +223,8 @@ export function AdminNotificationCampaignsPage() {
                 <TableHead className="font-bold text-slate-700 text-[11px] uppercase tracking-wider">{t("Loại", "Type")}</TableHead>
                 <TableHead className="font-bold text-slate-700 text-[11px] uppercase tracking-wider">{t("Đối tượng", "Audience")}</TableHead>
                 <TableHead className="font-bold text-slate-700 text-[11px] uppercase tracking-wider">{t("Trạng thái", "Status")}</TableHead>
-                <TableHead className="font-bold text-slate-700 text-[11px] uppercase tracking-wider text-center">{t("Kết quả", "Results")}</TableHead>
                 <TableHead className="font-bold text-slate-700 text-[11px] uppercase tracking-wider text-right">{t("Thời gian tạo", "Created At")}</TableHead>
-                <TableHead className="font-bold text-slate-700 text-[11px] uppercase tracking-wider text-center w-24">{t("Hành động", "Actions")}</TableHead>
+                <TableHead className="font-bold text-slate-700 text-[11px] uppercase tracking-wider text-center w-32">{t("Hành động", "Actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -232,11 +277,6 @@ export function AdminNotificationCampaignsPage() {
                         {camp.status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-center">
-                      <div className="text-[11px] font-bold text-slate-600">
-                        <span className="text-emerald-600">{camp.successCount}</span> / <span className="text-rose-600">{camp.failedCount}</span>
-                      </div>
-                    </TableCell>
                     <TableCell className="text-right text-[11px] font-semibold text-slate-500">
                       {new Date(camp.createdAt).toLocaleString()}
                     </TableCell>
@@ -249,19 +289,13 @@ export function AdminNotificationCampaignsPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </button>
-                        {camp.status === "SCHEDULED" || camp.status === "DRAFT" ? (
+                        {camp.status !== "COMPLETED" && (
                           <button
+                            onClick={() => openEditModal(camp)}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition"
                             title="Edit"
                           >
                             <Edit2 className="h-4 w-4" />
-                          </button>
-                        ) : (
-                          <button
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-4 w-4" />
                           </button>
                         )}
                       </div>
@@ -278,14 +312,14 @@ export function AdminNotificationCampaignsPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <Card className="w-full max-w-xl bg-white rounded-3xl p-6 shadow-xl relative max-h-[90vh] overflow-y-auto space-y-4">
-            <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 p-1.5 hover:bg-slate-100 rounded-full text-slate-400">
+            <button onClick={closeModal} className="absolute top-4 right-4 p-1.5 hover:bg-slate-100 rounded-full text-slate-400">
               <X className="h-4 w-4" />
             </button>
             <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
               <Send className="h-5 w-5 text-teal-600" />
-              {t("Soạn thông báo mới", "Compose Notification")}
+              {editingCampaign ? t("Chỉnh sửa thông báo", "Edit Notification") : t("Soạn thông báo mới", "Compose Notification")}
             </h2>
-            <form onSubmit={handleCreate} className="space-y-4 text-xs font-bold text-slate-600">
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs font-bold text-slate-600">
               {error && (
                 <div className="rounded-xl bg-rose-50 text-rose-600 p-3 text-xs font-semibold">
                   {error}
@@ -347,12 +381,16 @@ export function AdminNotificationCampaignsPage() {
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" onClick={() => setShowModal(false)} variant="outline" className="rounded-xl font-bold">
+                <Button type="button" onClick={closeModal} variant="outline" className="rounded-xl font-bold">
                   {t("Hủy", "Cancel")}
                 </Button>
-                <Button type="submit" disabled={createMutation.isPending} className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold gap-1.5">
+                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold gap-1.5">
                   <Send className="h-3.5 w-3.5" />
-                  {createMutation.isPending ? t("Đang gửi...", "Sending...") : t("Gửi thông báo", "Send Notification")}
+                  {createMutation.isPending || updateMutation.isPending
+                    ? t("Đang lưu...", "Saving...")
+                    : editingCampaign
+                      ? t("Lưu thay đổi", "Save Changes")
+                      : t("Gửi thông báo", "Send Notification")}
                 </Button>
               </div>
             </form>

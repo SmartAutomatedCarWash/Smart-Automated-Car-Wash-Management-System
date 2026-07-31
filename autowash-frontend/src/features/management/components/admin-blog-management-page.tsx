@@ -60,6 +60,26 @@ import { AdminNotificationCampaignsPage } from "@/features/notifications/compone
 import Swal from "sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
 
+function isAnnouncementLive(announcement: Pick<Announcement, "active" | "expiresAt">, now = Date.now()) {
+  if (!announcement.active) return false;
+  if (!announcement.expiresAt) return true;
+  const expiresAtMs = new Date(announcement.expiresAt).getTime();
+  return Number.isFinite(expiresAtMs) && expiresAtMs > now;
+}
+
+function getAnnouncementTypeLabel(type: string) {
+  switch (type) {
+    case "PROMO":
+      return "PROMOTION";
+    case "WARNING":
+      return "WARNING";
+    case "INFO":
+      return "INFO";
+    default:
+      return type;
+  }
+}
+
 // ── SweetAlert2 notification helpers ──
 const swalSuccess = (message: string) =>
   Swal.fire({
@@ -421,6 +441,11 @@ export function AdminBlogManagementPage() {
 
   const handleSaveAnnouncement = (e: React.FormEvent) => {
     e.preventDefault();
+    const expiresAtIso = annExpiresAt ? new Date(annExpiresAt).toISOString() : null;
+    if (expiresAtIso && new Date(expiresAtIso).getTime() <= Date.now()) {
+      void swalError("Expires At must be in the future for the announcement to appear on the customer announcement bar.");
+      return;
+    }
     const payload = {
       title: annTitle,
       message: null,
@@ -429,7 +454,7 @@ export function AdminBlogManagementPage() {
       type: annType,
       active: annActive,
       priority: annPriority,
-      expiresAt: annExpiresAt ? new Date(annExpiresAt).toISOString() : null,
+      expiresAt: expiresAtIso,
     };
     if (editingAnnouncementId) {
       updateAnnouncementMutation.mutate(
@@ -961,7 +986,7 @@ export function AdminBlogManagementPage() {
               <div>
                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">{t("Active Announcements", "Active Announcements")}</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-slate-800">{announcements.filter(a => a.active).length}</span>
+                  <span className="text-3xl font-black text-slate-800">{announcements.filter((announcement) => isAnnouncementLive(announcement)).length}</span>
                 </div>
                 <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{t("Currently active", "Currently active")}</p>
               </div>
@@ -1036,8 +1061,9 @@ export function AdminBlogManagementPage() {
               // Apply filters
               const filtered = localAnnouncements.filter(a => {
                 if (annTypeFilter !== "ALL" && a.type !== annTypeFilter) return false;
-                if (annStatusFilter === "ACTIVE" && !a.active) return false;
-                if (annStatusFilter === "INACTIVE" && a.active) return false;
+                const isLive = isAnnouncementLive(a);
+                if (annStatusFilter === "ACTIVE" && !isLive) return false;
+                if (annStatusFilter === "INACTIVE" && isLive) return false;
                 if (annSearch) {
                   const s = annSearch.toLowerCase();
                   return a.title.toLowerCase().includes(s) || (a.message || "").toLowerCase().includes(s);
@@ -1122,14 +1148,18 @@ export function AdminBlogManagementPage() {
                                 ann.type === "WARNING" ? "bg-amber-50 text-amber-600" :
                                 "bg-blue-50 text-blue-600"
                               }`}>
-                                {ann.type === "PROMO" ? "PROMOTION" : ann.type === "WARNING" ? "UPDATE" : "SYSTEM"}
+                                {getAnnouncementTypeLabel(ann.type)}
                               </span>
                             </td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                ann.active ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
+                                isAnnouncementLive(ann)
+                                  ? "bg-emerald-50 text-emerald-600"
+                                  : ann.active
+                                    ? "bg-amber-50 text-amber-600"
+                                    : "bg-slate-100 text-slate-500"
                               }`}>
-                                {ann.active ? "Active" : "Inactive"}
+                                {isAnnouncementLive(ann) ? "Live" : ann.active ? "Expired" : "Inactive"}
                               </span>
                             </td>
                             <td className="px-6 py-4">
