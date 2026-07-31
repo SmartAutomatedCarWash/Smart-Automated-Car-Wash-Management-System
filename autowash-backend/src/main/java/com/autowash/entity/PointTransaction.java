@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -44,6 +45,12 @@ public class PointTransaction {
     @Column(name = "balance_after", nullable = false)
     private int balanceAfter;
 
+    @Column(name = "base_points")
+    private Integer basePoints;
+
+    @Column(name = "point_multiplier", precision = 10, scale = 2)
+    private BigDecimal pointMultiplier;
+
     @Column(nullable = false, length = 255)
     private String reason;
 
@@ -51,11 +58,26 @@ public class PointTransaction {
     private Instant createdAt;
 
     public PointTransaction(LoyaltyAccount loyaltyAccount, Booking booking, PointTransactionType type, int points, int balanceAfter, String reason) {
+        this(loyaltyAccount, booking, type, points, balanceAfter, reason, null, null);
+    }
+
+    public PointTransaction(
+            LoyaltyAccount loyaltyAccount,
+            Booking booking,
+            PointTransactionType type,
+            int points,
+            int balanceAfter,
+            String reason,
+            Integer basePoints,
+            BigDecimal pointMultiplier
+    ) {
         this.loyaltyAccount = loyaltyAccount;
         this.booking = booking;
         this.type = type;
         this.points = points;
         this.balanceAfter = balanceAfter;
+        this.basePoints = basePoints;
+        this.pointMultiplier = pointMultiplier;
         this.reason = reason;
         this.createdAt = Instant.now();
     }

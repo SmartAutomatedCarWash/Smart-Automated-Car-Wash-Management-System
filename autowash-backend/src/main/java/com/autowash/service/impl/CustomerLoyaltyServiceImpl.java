@@ -28,6 +28,8 @@ import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.entity.PointTransaction;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.dto.PaginationMeta;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -124,6 +126,21 @@ public class CustomerLoyaltyServiceImpl implements CustomerLoyaltyService {
                 .mapToInt(PointTransaction::getPoints)
                 .filter(points -> points > 0)
                 .sum();
+        Optional<PointTransaction> earnTransaction = transactions.stream()
+                .filter(transaction -> transaction.getType() == PointTransactionType.EARN)
+                .filter(transaction -> transaction.getPoints() > 0)
+                .findFirst();
+        int basePoints = earnTransaction
+                .map(PointTransaction::getBasePoints)
+                .filter(points -> points > 0)
+                .orElse(bookingPoints);
+        BigDecimal pointMultiplier = earnTransaction
+                .map(PointTransaction::getPointMultiplier)
+                .filter(multiplier -> multiplier.compareTo(BigDecimal.ZERO) > 0)
+                .orElseGet(() -> basePoints > 0
+                        ? BigDecimal.valueOf(bookingPoints)
+                                .divide(BigDecimal.valueOf(basePoints), 2, RoundingMode.HALF_UP)
+                        : BigDecimal.ONE);
         int reviewPoints = transactions.stream()
                 .filter(transaction -> transaction.getType() == PointTransactionType.ADJUST)
                 .filter(transaction -> "Review bonus".equalsIgnoreCase(transaction.getReason()))
@@ -133,6 +150,8 @@ public class CustomerLoyaltyServiceImpl implements CustomerLoyaltyService {
 
         return new BookingPointBreakdownResponse(
                 booking.getId().toString(),
+                basePoints,
+                pointMultiplier,
                 bookingPoints,
                 reviewPoints,
                 bookingPoints + reviewPoints
