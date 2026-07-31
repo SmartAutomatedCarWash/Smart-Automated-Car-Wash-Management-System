@@ -172,6 +172,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const isStaff = requiredRole === "STAFF";
   const isCustomer = requiredRole === "CUSTOMER";
   const isManager = requiredRole === "MANAGER";
+  const isOperationsSupervisor = isManager || requiredRole === "ADMIN";
   const customerLoyaltyAccountQuery = useCustomerLoyaltyAccount();
   const effectiveCustomerTier = isCustomer
     ? (customerLoyaltyAccountQuery.data?.tier ?? user?.tier ?? "MEMBER")
@@ -881,7 +882,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 </Popover>
               )}
 
-              {isManager && (
+              {isOperationsSupervisor && (
                 <Popover onOpenChange={(open) => { if (!open) setSelectedManagerNotificationId(null); }}>
                   <PopoverTrigger asChild>
                     <button
@@ -1385,7 +1386,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           </div>
         </div>
       )}
-      {activeManagerPopup ? (
+      {isOperationsSupervisor && activeManagerPopup ? (
         <ManagerNotificationPopup notification={activeManagerPopup} onClose={closeManagerNotificationPopup} />
       ) : null}
       {tierUpgradePopup.show && tierUpgradePopup.newTier ? (
