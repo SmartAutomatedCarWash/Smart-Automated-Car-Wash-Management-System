@@ -33,6 +33,8 @@ export type LoyaltyTransaction = {
 
 export type BookingPointBreakdown = {
   bookingId: string;
+  basePoints: number;
+  pointMultiplier: number;
   bookingPoints: number;
   reviewPoints: number;
   totalPoints: number;

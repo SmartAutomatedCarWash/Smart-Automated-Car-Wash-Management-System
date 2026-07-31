@@ -123,12 +123,16 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         LoyaltyAccount account = loyaltyAccountRepository.findByCustomerId(session.getBooking().getCustomer().getId())
                 .orElse(null);
         String tier = account == null ? TierConfigService.BRONZE : account.getTier();
+        return calculateEarnPointBreakdown(session, tier).awardedPoints();
+    }
+
+    private EarnPointCalculation calculateEarnPointBreakdown(WashSession session, String tier) {
         long finalAmount = (session.getBooking().getPricing() != null ? session.getBooking().getPricing().getFinalAmount() : 0L);
         SystemSettings settings = systemSettingsRepository.findById(1).orElseThrow();
         long basePoints = finalAmount / settings.getEarnPointsUnitAmount();
-        return BigDecimal.valueOf(basePoints)
-                .multiply(BigDecimal.valueOf(tierConfigService.getPointMultiplier(tier)))
-                .intValue();
+        BigDecimal multiplier = BigDecimal.valueOf(tierConfigService.getPointMultiplier(tier));
+        int awardedPoints = BigDecimal.valueOf(basePoints).multiply(multiplier).intValue();
+        return new EarnPointCalculation(Math.toIntExact(basePoints), multiplier, awardedPoints);
     }
 
     @Transactional
@@ -154,7 +158,8 @@ public class LoyaltyServiceImpl implements LoyaltyService {
             return toEarnResponse(existing, account, noTierChange(account));
         }
 
-        int pointsAwarded = calculateEarnPoints(sessionId);
+        EarnPointCalculation calculation = calculateEarnPointBreakdown(session, account.getTier());
+        int pointsAwarded = calculation.awardedPoints();
         account.addPoints(pointsAwarded);
         loyaltyAccountRepository.saveAndFlush(account);
         PointTransaction transaction = new PointTransaction(
@@ -163,7 +168,9 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 PointTransactionType.EARN,
                 pointsAwarded,
                 account.getCurrentPoints(),
-                "Wash completed"
+                "Wash completed",
+                calculation.basePoints(),
+                calculation.multiplier()
         );
 
         try {
@@ -628,6 +635,13 @@ public class LoyaltyServiceImpl implements LoyaltyService {
             String newTier,
             String direction,
             String message
+    ) {
+    }
+
+    private record EarnPointCalculation(
+            int basePoints,
+            BigDecimal multiplier,
+            int awardedPoints
     ) {
     }
 

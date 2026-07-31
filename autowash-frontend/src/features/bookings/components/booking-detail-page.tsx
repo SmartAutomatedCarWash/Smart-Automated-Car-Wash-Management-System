@@ -251,6 +251,15 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
     (bookingPointsQuery.data?.bookingPoints ?? 0) > 0
       ? bookingPointsQuery.data?.bookingPoints ?? null
       : null;
+  const bookingBasePoints =
+    bookingPointsEarned === null
+      ? null
+      : Math.max(0, bookingPointsQuery.data?.basePoints ?? bookingPointsEarned);
+  const bookingPointMultiplier = Math.max(1, bookingPointsQuery.data?.pointMultiplier ?? 1);
+  const bookingTierBonus =
+    bookingPointsEarned === null || bookingBasePoints === null
+      ? 0
+      : Math.max(0, bookingPointsEarned - bookingBasePoints);
   const reviewPointsEarned = bookingPointsQuery.data?.reviewPoints ?? 0;
 
   // Auto-show review popup when booking is COMPLETED and not yet reviewed
@@ -861,13 +870,58 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
 
               {bookingPointsEarned !== null ? (
                 <SidebarBlock icon={<Star className="h-4 w-4" />} title={translate(language, "Điểm booking", "Booking points")}>
-                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                    <div className="text-2xl font-black text-emerald-700">
-                      +{bookingPointsEarned.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} pts
+                  <div
+                    data-testid="booking-points-breakdown"
+                    className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3.5"
+                  >
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-600">
+                          {translate(language, "Tổng điểm nhận được", "Total points earned")}
+                        </p>
+                        <div className="mt-0.5 text-2xl font-black text-emerald-700">
+                          +{bookingPointsEarned.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} pts
+                        </div>
+                      </div>
+                      {bookingTierBonus > 0 ? (
+                        <span className="shrink-0 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black text-white">
+                          +{bookingTierBonus.toLocaleString(language === "vi" ? "vi-VN" : "en-US")}{" "}
+                          {translate(language, "điểm thưởng", "bonus")}
+                        </span>
+                      ) : null}
                     </div>
-                    <p className="mt-1 text-xs font-semibold text-emerald-800">
-                      {translate(language, "Điểm cộng sau khi rửa xe thành công.", "Points earned after a successful wash.")}
-                    </p>
+
+                    <div className="mt-3 rounded-xl border border-emerald-100 bg-white/80 px-3 py-2.5">
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold text-slate-700">
+                        <span>
+                          {(bookingBasePoints ?? bookingPointsEarned).toLocaleString(language === "vi" ? "vi-VN" : "en-US")}{" "}
+                          {translate(language, "điểm gốc", "base pts")}
+                        </span>
+                        <span className="text-emerald-500">×</span>
+                        <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-emerald-700">
+                          {bookingPointMultiplier.toLocaleString(language === "vi" ? "vi-VN" : "en-US", {
+                            maximumFractionDigits: 2,
+                          })}x {translate(language, "hệ số tier", "tier multiplier")}
+                        </span>
+                        <span className="text-emerald-500">=</span>
+                        <span className="text-emerald-700">
+                          {bookingPointsEarned.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} pts
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-[11px] font-semibold leading-relaxed text-emerald-800">
+                        {bookingTierBonus > 0
+                          ? translate(
+                              language,
+                              `Tier của bạn cộng thêm ${bookingTierBonus.toLocaleString("vi-VN")} điểm cho booking này.`,
+                              `Your tier added ${bookingTierBonus.toLocaleString("en-US")} extra points to this booking.`,
+                            )
+                          : translate(
+                              language,
+                              "Booking này được áp dụng hệ số tier 1x.",
+                              "This booking used the 1x tier multiplier.",
+                            )}
+                      </p>
+                    </div>
                   </div>
                 </SidebarBlock>
               ) : null}
