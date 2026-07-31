@@ -45,6 +45,7 @@ import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { getAuthRedirectPath } from "@/features/auth/lib/auth-session";
 import { getLoginIdentifierValidationMessage, normalizeLoginIdentifier } from "@/features/auth/lib/login-identifier";
 import { getPasswordVisibilityState } from "@/features/auth/lib/password-visibility";
+import { RegistrationConsent } from "@/features/auth/components/registration-consent";
 import { cn } from "@/shared/lib/utils";
 import { emailPattern, otpPattern, passwordPattern } from "@/shared/lib/validators";
 import { useAuthStore } from "@/features/auth/store/auth.store";
@@ -308,6 +309,7 @@ export function ModernAuthPopupModal({
   const [regEmail, setRegEmail] = useState("");
   const [regPass, setRegPass] = useState("");
   const [regConfirmPass, setRegConfirmPass] = useState("");
+  const [hasAcceptedRegistrationTerms, setHasAcceptedRegistrationTerms] = useState(false);
   const [isRegPassVisible, setIsRegPassVisible] = useState(false);
   const [isRegConfirmVisible, setIsRegConfirmVisible] = useState(false);
   const regPassVisibility = getPasswordVisibilityState(isRegPassVisible);
@@ -322,8 +324,9 @@ export function ModernAuthPopupModal({
       emailPattern.test(regEmail) &&
       passwordPattern.test(regPass) &&
       regConfirmPass === regPass &&
+      hasAcceptedRegistrationTerms &&
       !registerMutation.isPending,
-    [regConfirmPass, regEmail, regName, regPass, registerMutation.isPending],
+    [hasAcceptedRegistrationTerms, regConfirmPass, regEmail, regName, regPass, registerMutation.isPending],
   );
   const registerErrorMessage = registerMutation.error ? getErrorMessage(registerMutation.error) : null;
 
@@ -805,6 +808,12 @@ export function ModernAuthPopupModal({
                   </Field>
                 </div>
 
+                <RegistrationConsent
+                  checked={hasAcceptedRegistrationTerms}
+                  onCheckedChange={setHasAcceptedRegistrationTerms}
+                  language={language}
+                />
+
                 <button type="submit" disabled={!canRegisterSubmit} className={primaryBtn}>
                   {registerMutation.isPending ? (
                     <>
@@ -831,7 +840,8 @@ export function ModernAuthPopupModal({
                   <button
                     type="button"
                     onClick={handleContinueWithGoogle}
-                    className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
+                    disabled={!hasAcceptedRegistrationTerms}
+                    className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-slate-200 disabled:hover:bg-white disabled:hover:shadow-sm"
                   >
                     <GoogleIcon />
                     {copy.googleRegisterButton}

@@ -7,6 +7,7 @@ import { Button } from "@/shared/ui/ui/button";
 import { getFieldErrorMessage } from "@/shared/lib/api-errors";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
 import { useCustomerRegister } from "@/features/auth/hooks/use-auth";
+import { RegistrationConsent } from "@/features/auth/components/registration-consent";
 import { emailPattern, passwordPattern } from "@/shared/lib/validators";
 
 export function RegisterForm() {
@@ -17,6 +18,7 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
 
   const fieldErrors = registerMutation.error?.fieldErrors;
   const fullNameError =
@@ -40,9 +42,10 @@ export function RegisterForm() {
       emailPattern.test(email) &&
       passwordPattern.test(password) &&
       passwordConfirm === password &&
+      hasAcceptedTerms &&
       !registerMutation.isPending
     );
-  }, [email, fullName, password, passwordConfirm, registerMutation.isPending]);
+  }, [email, fullName, hasAcceptedTerms, password, passwordConfirm, registerMutation.isPending]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -162,6 +165,12 @@ export function RegisterForm() {
           ) : null}
         </div>
       </div>
+
+      <RegistrationConsent
+        checked={hasAcceptedTerms}
+        onCheckedChange={setHasAcceptedTerms}
+        language="vi"
+      />
 
       <div className="pt-2">
         <Button
