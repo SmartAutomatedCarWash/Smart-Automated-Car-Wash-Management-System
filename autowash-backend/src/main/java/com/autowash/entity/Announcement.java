@@ -57,7 +57,7 @@ public class Announcement {
         this.message = message;
         this.linkUrl = linkUrl;
         this.linkLabel = linkLabel;
-        this.type = type != null ? type : "PROMO";
+        this.type = type != null ? type : "SYSTEM";
         this.active = active;
         this.priority = priority;
         this.expiresAt = expiresAt;
@@ -71,7 +71,7 @@ public class Announcement {
         this.message = message;
         this.linkUrl = linkUrl;
         this.linkLabel = linkLabel;
-        this.type = type != null ? type : "PROMO";
+        this.type = type != null ? type : "SYSTEM";
         this.active = active;
         this.priority = priority;
         this.expiresAt = expiresAt;

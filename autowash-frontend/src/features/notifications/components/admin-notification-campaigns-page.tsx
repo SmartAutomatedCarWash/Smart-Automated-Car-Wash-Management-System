@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
-import { useAdminNotificationCampaigns, useCreateNotificationCampaign, useUpdateNotificationCampaign } from "../hooks/use-admin-notification-campaigns";
+import { useAdminNotificationCampaigns, useCreateNotificationCampaign, useDeleteNotificationCampaign, useUpdateNotificationCampaign } from "../hooks/use-admin-notification-campaigns";
 import { CampaignTargetAudience, NotificationType, NotificationCampaignResponse } from "../api/admin-notification-campaigns-service";
 import { Button } from "@/shared/ui/ui/button";
 import { Card } from "@/shared/ui/ui/card";
 import { Input } from "@/shared/ui/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/ui/table";
-import { Plus, X, Send, Clock, Users, Tag, Target, Megaphone, TrendingUp, Search, Eye, Edit2 } from "lucide-react";
+import { Plus, X, Send, Clock, Users, Tag, Target, Megaphone, TrendingUp, Search, Eye, Edit2, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/ui/select";
 import { useErrorMessage } from "@/shared/hooks/use-error-message";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
 
 export function AdminNotificationCampaignsPage() {
   const getErrorMessage = useErrorMessage();
@@ -22,11 +24,12 @@ export function AdminNotificationCampaignsPage() {
   const { data: campaignPage, isLoading } = useAdminNotificationCampaigns(page, limit);
   const createMutation = useCreateNotificationCampaign();
   const updateMutation = useUpdateNotificationCampaign();
+  const deleteMutation = useDeleteNotificationCampaign();
 
   const [showModal, setShowModal] = useState(false);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [type, setType] = useState<NotificationType>("PROMOTION");
+  const [type, setType] = useState<NotificationType>("SYSTEM");
   const [targetAudience, setTargetAudience] = useState<CampaignTargetAudience>("ALL_CUSTOMERS");
   const [targetDetails, setTargetDetails] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
@@ -38,7 +41,7 @@ export function AdminNotificationCampaignsPage() {
   const resetForm = () => {
     setTitle("");
     setMessage("");
-    setType("PROMOTION");
+    setType("SYSTEM");
     setTargetAudience("ALL_CUSTOMERS");
     setTargetDetails("");
     setScheduledAt("");
@@ -66,6 +69,32 @@ export function AdminNotificationCampaignsPage() {
     setScheduledAt(campaign.scheduledAt ? new Date(campaign.scheduledAt).toISOString().slice(0, 16) : "");
     setError(null);
     setShowModal(true);
+  };
+
+  const handleDelete = async (campaign: NotificationCampaignResponse) => {
+    const result = await Swal.fire({
+      icon: "warning",
+      title: t("Xóa thông báo?", "Delete notification?"),
+      text: t(
+        `Bạn có chắc muốn xóa "${campaign.title}" không?`,
+        `Are you sure you want to delete "${campaign.title}"?`,
+      ),
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      cancelButtonText: "Cancel",
+      customClass: {
+        popup: "swal-blog-popup",
+        title: "swal-blog-title",
+        htmlContainer: "swal-blog-message",
+        confirmButton: "swal-blog-btn-error",
+        cancelButton: "swal-blog-btn-info",
+      },
+      buttonsStyling: false,
+    });
+
+    if (!result.isConfirmed) return;
+
+    deleteMutation.mutate(campaign.id);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -177,9 +206,8 @@ export function AdminNotificationCampaignsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All Types</SelectItem>
-            <SelectItem value="PROMOTION">Promotion</SelectItem>
             <SelectItem value="SYSTEM">System</SelectItem>
-            <SelectItem value="LOYALTY">Loyalty</SelectItem>
+            <SelectItem value="WARNING">Warning</SelectItem>
           </SelectContent>
         </Select>
 
@@ -252,14 +280,10 @@ export function AdminNotificationCampaignsPage() {
                     </TableCell>
                     <TableCell>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-black tracking-wider ${
-                        camp.type === 'PROMOTION' ? 'bg-purple-50 text-purple-700' :
-                        camp.type === 'SYSTEM' ? 'bg-teal-50 text-teal-700' :
-                        camp.type === 'BOOKING_REMINDER' ? 'bg-orange-50 text-orange-700' :
-                        'bg-slate-100 text-slate-700'
+                        camp.type === 'WARNING' ? 'bg-rose-50 text-rose-700' :
+                        'bg-teal-50 text-teal-700'
                       }`}>
-                        {camp.type === 'SYSTEM' ? 'ANNOUNCEMENT' : 
-                         camp.type === 'BOOKING_REMINDER' ? 'REMINDER' : 
-                         camp.type}
+                        {camp.type}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -298,6 +322,14 @@ export function AdminNotificationCampaignsPage() {
                             <Edit2 className="h-4 w-4" />
                           </button>
                         )}
+                        <button
+                          onClick={() => handleDelete(camp)}
+                          disabled={deleteMutation.isPending}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition disabled:cursor-not-allowed disabled:opacity-50"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -343,9 +375,8 @@ export function AdminNotificationCampaignsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PROMOTION">PROMOTION</SelectItem>
                       <SelectItem value="SYSTEM">SYSTEM</SelectItem>
-                      <SelectItem value="LOYALTY">LOYALTY</SelectItem>
+                      <SelectItem value="WARNING">WARNING</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

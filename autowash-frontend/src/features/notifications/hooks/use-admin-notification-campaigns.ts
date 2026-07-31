@@ -17,7 +17,7 @@ export function useCreateNotificationCampaign() {
   return useMutation({
     mutationFn: (data: NotificationCampaignRequest) => adminNotificationCampaignsService.createCampaign(data),
     onSuccess: () => {
-      notify.success("Chiến dịch thông báo đã được tạo!");
+      notify.success("Notification campaign created successfully.");
       queryClient.invalidateQueries({ queryKey: NOTIFICATION_CAMPAIGNS_QUERY_KEY });
     },
   });
@@ -28,7 +28,7 @@ export function useUpdateNotificationCampaign() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: NotificationCampaignRequest }) => adminNotificationCampaignsService.updateCampaign(id, data),
     onSuccess: () => {
-      notify.success("Đã cập nhật chiến dịch thông báo!");
+      notify.success("Notification campaign updated successfully.");
       queryClient.invalidateQueries({ queryKey: NOTIFICATION_CAMPAIGNS_QUERY_KEY });
     },
   });
@@ -39,7 +39,7 @@ export function useDeleteNotificationCampaign() {
   return useMutation({
     mutationFn: (id: string) => adminNotificationCampaignsService.deleteCampaign(id),
     onSuccess: () => {
-      notify.success("Đã xóa chiến dịch thông báo!");
+      notify.success("Notification campaign deleted successfully.");
       queryClient.invalidateQueries({ queryKey: NOTIFICATION_CAMPAIGNS_QUERY_KEY });
     },
   });

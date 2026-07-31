@@ -10,8 +10,14 @@ type CustomerRealtimeNotification = {
   confirmButtonText: string;
 };
 
+function normalizeNotificationType(type: string) {
+  return type.toUpperCase() === "WARNING" ? "WARNING" : "SYSTEM";
+}
+
 function getNotificationIcon(type: string): SweetAlertIcon {
   switch (type.toUpperCase()) {
+    case "WARNING":
+      return "warning";
     case "PROMOTION":
     case "LOYALTY":
     case "VOUCHER_EXPIRY":
@@ -30,8 +36,10 @@ export function showCustomerRealtimeNotification({
   type,
   confirmButtonText,
 }: CustomerRealtimeNotification) {
+  const normalizedType = normalizeNotificationType(type);
+
   return Swal.fire({
-    icon: getNotificationIcon(type),
+    icon: getNotificationIcon(normalizedType),
     titleText: title,
     text: message,
     confirmButtonText,
@@ -41,12 +49,12 @@ export function showCustomerRealtimeNotification({
     timerProgressBar: true,
     customClass: {
       container: "swal-customer-notification-container",
-      popup: "swal-customer-notification-popup",
+      popup: `swal-customer-notification-popup swal-customer-notification-popup-${normalizedType.toLowerCase()}`,
       title: "swal-customer-notification-title",
       htmlContainer: "swal-customer-notification-message",
-      confirmButton: "swal-customer-notification-confirm",
+      confirmButton: `swal-customer-notification-confirm swal-customer-notification-confirm-${normalizedType.toLowerCase()}`,
       closeButton: "swal-customer-notification-close",
-      timerProgressBar: "swal-customer-notification-progress",
+      timerProgressBar: `swal-customer-notification-progress swal-customer-notification-progress-${normalizedType.toLowerCase()}`,
     },
   });
 }

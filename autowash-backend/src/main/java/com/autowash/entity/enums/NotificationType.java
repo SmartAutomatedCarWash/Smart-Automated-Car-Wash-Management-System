@@ -10,5 +10,6 @@ public enum NotificationType {
     LOYALTY,
     VOUCHER_EXPIRY,
     SYSTEM,
+    WARNING,
     PROMOTION
 }

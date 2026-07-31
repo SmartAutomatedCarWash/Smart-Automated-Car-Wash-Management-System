@@ -2,7 +2,7 @@ import { apiRequest } from "@/shared/lib/api";
 
 export type CampaignStatus = "DRAFT" | "SCHEDULED" | "SENDING" | "COMPLETED" | "FAILED";
 export type CampaignTargetAudience = "ALL_CUSTOMERS" | "TIER_BRONZE" | "TIER_SILVER" | "TIER_GOLD" | "TIER_PLATINUM" | "TIER_DIAMOND" | "INDIVIDUALS";
-export type NotificationType = "BOOKING_CREATED" | "BOOKING_CONFIRMED" | "WASH_CHECKED_IN" | "WASH_COMPLETED" | "BOOKING_REMINDER" | "NO_SHOW" | "LOYALTY" | "VOUCHER_EXPIRY" | "SYSTEM" | "PROMOTION";
+export type NotificationType = "SYSTEM" | "WARNING";
 
 export interface NotificationCampaignResponse {
   id: string;
