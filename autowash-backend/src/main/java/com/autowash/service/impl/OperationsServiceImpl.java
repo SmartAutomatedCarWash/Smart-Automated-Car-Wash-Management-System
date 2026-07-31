@@ -919,6 +919,7 @@ public class OperationsServiceImpl implements OperationsService {
                 .elapsedMinutes(elapsed)
                 .customerNote(booking.getNote())
                 .managerNote(session.getNotes())
+                .services(toBookingDetailDtos(booking))
                 .build();
     }
 
@@ -945,6 +946,7 @@ public class OperationsServiceImpl implements OperationsService {
                 .elapsedMinutes(null)
                 .customerNote(booking.getNote())
                 .managerNote(null)
+                .services(toBookingDetailDtos(booking))
                 .build();
     }
 
@@ -1280,6 +1282,21 @@ public class OperationsServiceImpl implements OperationsService {
                 .findFirst()
                 .map(BookingDetail::getSnapshotName)
                 .orElse(null);
+    }
+
+    private List<com.autowash.dto.BookingDetailDto> toBookingDetailDtos(Booking booking) {
+        return booking.getDetails().stream()
+                .map(detail -> new com.autowash.dto.BookingDetailDto(
+                        detail.getId(),
+                        detail.getItemType().name(),
+                        detail.getRefId(),
+                        detail.getSnapshotName(),
+                        detail.getSnapshotPrice(),
+                        detail.getQuantity(),
+                        detail.getSubtotal(),
+                        detail.getDurationMinutes()
+                ))
+                .toList();
     }
 
     private UUID resolveBookingDetailRefId(Booking booking, BookingItemType itemType) {
