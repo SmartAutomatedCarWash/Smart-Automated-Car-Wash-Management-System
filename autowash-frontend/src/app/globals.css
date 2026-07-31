@@ -887,6 +887,23 @@
   font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
 
+.swal-customer-notification-popup-system {
+  border-color: rgba(14, 165, 233, 0.2) !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(14, 165, 233, 0.12), transparent 38%),
+    #ffffff !important;
+  box-shadow: 0 28px 80px -28px rgba(2, 132, 199, 0.55) !important;
+}
+
+.swal-customer-notification-popup-warning {
+  border-color: rgba(244, 63, 94, 0.22) !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(251, 146, 60, 0.18), transparent 36%),
+    radial-gradient(circle at 0% 100%, rgba(244, 63, 94, 0.12), transparent 42%),
+    #ffffff !important;
+  box-shadow: 0 28px 80px -28px rgba(244, 63, 94, 0.42) !important;
+}
+
 .swal-customer-notification-title {
   padding: 0 !important;
   color: #0f172a !important;
@@ -923,12 +940,38 @@
   box-shadow: 0 14px 28px -12px rgba(2, 132, 199, 0.9);
 }
 
+.swal-customer-notification-confirm-system {
+  background: linear-gradient(135deg, #0891b2, #0284c7);
+  box-shadow: 0 10px 24px -12px rgba(2, 132, 199, 0.8);
+}
+
+.swal-customer-notification-confirm-system:hover {
+  box-shadow: 0 14px 28px -12px rgba(2, 132, 199, 0.9);
+}
+
+.swal-customer-notification-confirm-warning {
+  background: linear-gradient(135deg, #f97316, #e11d48);
+  box-shadow: 0 10px 24px -12px rgba(225, 29, 72, 0.8);
+}
+
+.swal-customer-notification-confirm-warning:hover {
+  box-shadow: 0 14px 28px -12px rgba(225, 29, 72, 0.92);
+}
+
 .swal-customer-notification-close {
   color: #64748b !important;
 }
 
 .swal-customer-notification-progress {
   background: linear-gradient(90deg, #06b6d4, #0284c7) !important;
+}
+
+.swal-customer-notification-progress-system {
+  background: linear-gradient(90deg, #06b6d4, #0284c7) !important;
+}
+
+.swal-customer-notification-progress-warning {
+  background: linear-gradient(90deg, #fb923c, #e11d48) !important;
 }
 
 @media (max-width: 640px), (max-height: 640px) {

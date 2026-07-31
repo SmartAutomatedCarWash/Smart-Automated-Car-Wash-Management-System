@@ -1,46 +1,60 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Megaphone } from "lucide-react";
+import { AlertTriangle, Cpu, Megaphone } from "lucide-react";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
-import type { Announcement } from "@/features/public/components/api/announcements-service";
 import { useActiveAnnouncements } from "@/features/public/components/hooks/use-announcements";
+import type { Announcement } from "@/features/public/components/api/announcements-service";
 
-const FALLBACK_MESSAGES: Announcement[] = [
-  {
-    id: "1",
-    title: "🔥 Rainy season discount: Get 20% off Ceramic Coating & Undercarriage Wash combo!",
-    message: null,
-    type: "PROMO",
-    active: true,
-    priority: 1,
-    linkUrl: "/customer/bookings/new",
-    linkLabel: "Book now",
-    expiresAt: null,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    title: "📢 AutoWash is open daily from 7:00 AM to 9:00 PM.",
-    message: null,
-    type: "INFO",
-    active: true,
-    priority: 0,
-    linkUrl: null,
-    linkLabel: null,
-    expiresAt: null,
-    createdAt: new Date().toISOString(),
-  },
-];
+const PAUSE_MS = 10_000;
+const SPEED_PX_PER_MS = 0.07;
 
-const PAUSE_MS = 10_000; // pause between cycles
-const SPEED_PX_PER_MS = 0.07; // scroll speed
+function isAnnouncementVisible(announcement: Pick<Announcement, "active" | "expiresAt">, now: number) {
+  if (!announcement.active) return false;
+  if (!announcement.expiresAt) return true;
+
+  const expiresAtMs = new Date(announcement.expiresAt).getTime();
+  return Number.isFinite(expiresAtMs) && expiresAtMs > now;
+}
+
+function getAnnouncementTone(type: string) {
+  if (type === "WARNING") {
+    return {
+      labelVi: "Canh bao",
+      labelEn: "Warning",
+      Icon: AlertTriangle,
+      chipClassName: "border border-rose-400/40 bg-rose-500/18 text-rose-100",
+      titleClassName: "text-rose-50",
+      linkClassName: "border-rose-300/45 bg-rose-500/15 text-rose-100 hover:bg-rose-500/28",
+      separatorClassName: "text-rose-300/60",
+    };
+  }
+
+  return {
+    labelVi: "He thong",
+    labelEn: "System",
+    Icon: Cpu,
+    chipClassName: "border border-sky-400/35 bg-sky-500/16 text-sky-100",
+    titleClassName: "text-slate-100",
+    linkClassName: "border-sky-400/50 bg-sky-500/20 text-sky-200 hover:bg-sky-500/40",
+    separatorClassName: "text-sky-600/60",
+  };
+}
 
 export function MarqueeTicker() {
   const { language } = useLanguageStore();
-  const { data: activeAnnouncements } = useActiveAnnouncements();
-  const items = activeAnnouncements?.length ? activeAnnouncements : FALLBACK_MESSAGES;
+  const { data: activeAnnouncements, refetch } = useActiveAnnouncements();
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+  const items = useMemo(
+    () => (activeAnnouncements ?? []).filter((item) => isAnnouncementVisible(item, currentTime)),
+    [activeAnnouncements, currentTime],
+  );
+  const animationKey = useMemo(
+    () => items.map((item) => `${item.id}:${item.type}:${item.title}:${item.expiresAt ?? ""}:${item.linkUrl ?? ""}`).join("|"),
+    [items],
+  );
 
   const trackRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -49,25 +63,26 @@ export function MarqueeTicker() {
 
   const stopAnim = useCallback(() => {
     isRunning.current = false;
-    if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
-    if (pauseRef.current !== null) { clearTimeout(pauseRef.current); pauseRef.current = null; }
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (pauseRef.current !== null) {
+      clearTimeout(pauseRef.current);
+      pauseRef.current = null;
+    }
   }, []);
 
   const startCycle = useCallback(() => {
     const el = trackRef.current;
-    if (!el) return;
+    if (!el || items.length === 0) return;
 
     const trackWidth = el.scrollWidth;
     const containerWidth = el.parentElement?.offsetWidth ?? 0;
-
-    // Total travel: start fully off-screen right, end fully off-screen left
-    // startX = +containerWidth (content starts just outside right edge)
-    // endX   = -trackWidth     (content fully gone past left edge)
     const totalTravel = containerWidth + trackWidth;
 
     if (totalTravel <= 0) return;
 
-    // Start position: content just off the right edge
     let currentX = containerWidth;
     el.style.transform = `translateX(${currentX}px)`;
 
@@ -77,14 +92,15 @@ export function MarqueeTicker() {
     function step(timestamp: number) {
       if (!isRunning.current) return;
       if (lastTime === null) lastTime = timestamp;
+
       const delta = timestamp - lastTime;
       lastTime = timestamp;
-
       currentX -= delta * SPEED_PX_PER_MS;
 
       if (currentX <= -trackWidth) {
-        // Fully scrolled off left edge — pause then restart
-        if (el) el.style.transform = `translateX(-${trackWidth}px)`;
+        if (trackRef.current) {
+          trackRef.current.style.transform = `translateX(-${trackWidth}px)`;
+        }
         isRunning.current = false;
         pauseRef.current = setTimeout(() => {
           startCycle();
@@ -92,67 +108,111 @@ export function MarqueeTicker() {
         return;
       }
 
-      if (el) el.style.transform = `translateX(${currentX}px)`;
+      if (trackRef.current) {
+        trackRef.current.style.transform = `translateX(${currentX}px)`;
+      }
       rafRef.current = requestAnimationFrame(step);
     }
 
     rafRef.current = requestAnimationFrame(step);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [items.length]);
 
-  // Start animation once items are known + DOM rendered
   useEffect(() => {
-    const t = setTimeout(() => {
+    if (items.length === 0) {
+      stopAnim();
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
       stopAnim();
       startCycle();
     }, 400);
-    return () => { clearTimeout(t); stopAnim(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items]);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      stopAnim();
+    };
+  }, [animationKey, items.length, startCycle, stopAnim]);
+
+  useEffect(() => {
+    if (!activeAnnouncements?.some((item) => item.expiresAt)) return;
+
+    const intervalId = window.setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1_000);
+
+    return () => window.clearInterval(intervalId);
+  }, [activeAnnouncements]);
+
+  useEffect(() => {
+    if (!activeAnnouncements?.length) return;
+
+    const nearestExpiry = activeAnnouncements
+      .map((item) => (item.expiresAt ? new Date(item.expiresAt).getTime() : Number.POSITIVE_INFINITY))
+      .filter((value) => Number.isFinite(value) && value > Date.now())
+      .sort((left, right) => left - right)[0];
+
+    if (!nearestExpiry || !Number.isFinite(nearestExpiry)) return;
+
+    const timeoutMs = Math.max(0, nearestExpiry - Date.now()) + 250;
+    const timeoutId = window.setTimeout(() => {
+      setCurrentTime(Date.now());
+      void refetch();
+    }, timeoutMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeAnnouncements, refetch]);
 
   return (
-    <div className="relative w-full overflow-hidden bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 border-b border-sky-500/20 text-white select-none z-50">
+    <div className="relative z-50 w-full overflow-hidden border-b border-sky-500/20 bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 text-white select-none">
       <div className="flex items-center gap-3 px-4 py-2">
-
-        {/* Badge */}
-        <div className="flex items-center gap-1.5 shrink-0 bg-primary/20 border border-primary/30 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider text-sky-400">
+        <div className="flex shrink-0 items-center gap-1.5 rounded-md border border-primary/30 bg-primary/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-sky-400">
           <Megaphone className="h-3 w-3" />
-          <span>{translate(language, "Tin mới", "News")}</span>
+          <span>{translate(language, "Tin moi", "News")}</span>
         </div>
 
-        {/* Scrolling track */}
-        <div className="flex-1 min-w-0 overflow-hidden">
-          <div
-            ref={trackRef}
-            className="inline-flex items-center whitespace-nowrap will-change-transform"
-            style={{ transform: "translateX(100vw)" }}
-          >
-            {items.map((item, i) => (
-              <span key={item.id} className="inline-flex items-center gap-3">
-                {/* Message text */}
-                <span className="text-xs font-medium tracking-wide text-slate-100">
-                  {item.title}
-                </span>
+        <div className="min-w-0 flex-1 overflow-hidden">
+          {items.length > 0 ? (
+            <div
+              ref={trackRef}
+              className="inline-flex items-center whitespace-nowrap will-change-transform"
+              style={{ transform: "translateX(100vw)" }}
+            >
+              {items.map((item, index) => {
+                const tone = getAnnouncementTone(item.type);
+                const ToneIcon = tone.Icon;
 
-                {/* Inline CTA button for this announcement */}
-                {item.linkUrl && (
-                  <Link
-                    href={item.linkUrl}
-                    className="inline-flex items-center rounded-full border border-sky-400/50 bg-sky-500/20 px-3 py-0.5 text-[11px] font-bold text-sky-200 hover:bg-sky-500/40 transition-colors"
-                  >
-                    {item.linkLabel ?? translate(language, "Xem thêm", "Learn more")}
-                  </Link>
-                )}
+                return (
+                  <span key={item.id} className="inline-flex items-center gap-3">
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] ${tone.chipClassName}`}>
+                      <ToneIcon className="h-3 w-3" />
+                      <span>{translate(language, tone.labelVi, tone.labelEn)}</span>
+                    </span>
 
-                {/* Separator between announcements (not after last) */}
-                {i < items.length - 1 && (
-                  <span className="mx-10 text-sky-600/60 text-sm">✦</span>
-                )}
-              </span>
-            ))}
-          </div>
+                    <span className={`text-xs font-semibold tracking-wide ${tone.titleClassName}`}>
+                      {item.title}
+                    </span>
+
+                    {item.linkUrl && (
+                      <Link
+                        href={item.linkUrl}
+                        className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] font-bold transition-colors ${tone.linkClassName}`}
+                      >
+                        {item.linkLabel ?? translate(language, "Xem them", "Learn more")}
+                      </Link>
+                    )}
+
+                    {index < items.length - 1 && (
+                      <span className={`mx-10 text-sm ${tone.separatorClassName}`}>•</span>
+                    )}
+                  </span>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="h-5 w-full" />
+          )}
         </div>
-
       </div>
     </div>
   );

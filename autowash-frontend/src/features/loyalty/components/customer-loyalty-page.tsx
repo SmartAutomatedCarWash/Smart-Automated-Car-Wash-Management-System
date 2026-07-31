@@ -146,7 +146,28 @@ export function CustomerLoyaltyPageContent() {
   const tierMetal = generateTierMetalStyle(currentHex);
 
   const walletVouchers = useMemo(
-    () => ((discountsQuery.data?.items ?? []) as WalletVoucherItem[]).filter((item) => Boolean(item.voucherCode)),
+    () =>
+      ((discountsQuery.data?.items ?? []) as WalletVoucherItem[])
+        .filter((item) => Boolean(item.voucherCode))
+        .sort((left, right) => {
+          const statusWeight = (status: WalletVoucherItem["status"]) => {
+            switch (status) {
+              case "AVAILABLE":
+                return 0;
+              case "USED":
+                return 1;
+              case "EXPIRED":
+                return 2;
+              default:
+                return 3;
+            }
+          };
+
+          const byStatus = statusWeight(left.status) - statusWeight(right.status);
+          if (byStatus !== 0) return byStatus;
+
+          return new Date(right.claimedAt).getTime() - new Date(left.claimedAt).getTime();
+        }),
     [discountsQuery.data?.items],
   );
 
@@ -1046,6 +1067,7 @@ function RedeemedVoucherCard({
   const badge = generateTierBadgeStyle(hex);
   const voucherName = voucher.discount?.name || voucher.voucherCode || "Voucher";
   const voucherPoints = normalizeMoneyValue(voucher.pointsSpent);
+  const isAvailable = voucher.status === "AVAILABLE";
   const statusLabel =
     voucher.status === "USED"
       ? translate(language, "Used", "Used")
@@ -1054,7 +1076,14 @@ function RedeemedVoucherCard({
         : translate(language, "Available", "Available");
 
   return (
-    <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_18px_40px_-34px_rgba(15,23,42,0.35)] transition hover:-translate-y-1 hover:shadow-[0_26px_48px_-32px_rgba(15,23,42,0.42)]">
+    <div
+      className={cn(
+        "overflow-hidden rounded-[24px] border bg-white shadow-[0_18px_40px_-34px_rgba(15,23,42,0.35)] transition",
+        isAvailable
+          ? "border-slate-200 hover:-translate-y-1 hover:shadow-[0_26px_48px_-32px_rgba(15,23,42,0.42)]"
+          : "border-slate-200/80 opacity-70 saturate-[0.8]",
+      )}
+    >
       <div className="relative h-[118px] overflow-hidden bg-[linear-gradient(135deg,#0f2342_0%,#1f4b7a_55%,#5ca9d6_100%)] px-4 py-3">
         <div
           className="absolute inset-0"
@@ -1066,7 +1095,18 @@ function RedeemedVoucherCard({
           <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#0f2342]">
             AURA CARE
           </span>
-          <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-slate-700">
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-1 text-[11px] font-bold",
+              voucher.status === "USED"
+                ? "bg-slate-900/85 text-white"
+                : voucher.status === "EXPIRED"
+                  ? "bg-rose-50 text-rose-700"
+                  : voucher.status === "FORFEITED"
+                    ? "bg-slate-200 text-slate-700"
+                    : "bg-white/90 text-slate-700",
+            )}
+          >
             {statusLabel}
           </span>
         </div>
@@ -1112,6 +1152,16 @@ function RedeemedVoucherCard({
               : `${translate(language, "Claimed on", "Claimed on")} ${new Date(voucher.claimedAt).toLocaleDateString(locale)}`}
           </span>
         </div>
+
+        {!isAvailable && (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+            {voucher.status === "USED"
+              ? translate(language, "Voucher này đã được sử dụng và chỉ còn để theo dõi lịch sử.", "This voucher has already been used and is now shown for tracking only.")
+              : voucher.status === "EXPIRED"
+                ? translate(language, "Voucher này đã hết hạn và không thể áp dụng cho booking mới.", "This voucher has expired and can no longer be applied to a new booking.")
+                : translate(language, "Voucher này không còn hiệu lực sử dụng.", "This voucher is no longer valid for use.")}
+          </div>
+        )}
 
         <div className="flex items-center justify-end">
           <Button asChild type="button" className="h-10 rounded-xl bg-[#0f2342] px-4 text-white hover:bg-[#0b1b34]">

@@ -1,7 +1,6 @@
 /**
- * notify — shared SweetAlert2 notification utility
+ * Shared SweetAlert2 notification utility.
  * Replaces sonner toast. API: notify.success / error / info / warning
- * Timer: 10s auto-close, progress bar, centered modal, custom CSS classes.
  */
 import Swal, { SweetAlertOptions } from "sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
@@ -14,11 +13,11 @@ type NotifyOptions = {
 
 const BASE: SweetAlertOptions = {
   confirmButtonText: "OK",
-  timer: 10000,
+  timer: 10_000,
   timerProgressBar: true,
   customClass: {
-    popup:         "swal-notify-popup",
-    title:         "swal-notify-title",
+    popup: "swal-notify-popup",
+    title: "swal-notify-title",
     htmlContainer: "swal-notify-message",
   },
   buttonsStyling: false,
@@ -29,7 +28,7 @@ export const notify = {
     return Swal.fire({
       ...BASE,
       icon: "success",
-      title: "Thành công!",
+      title: "Success!",
       text: message,
       customClass: {
         ...BASE.customClass,
@@ -42,7 +41,7 @@ export const notify = {
     return Swal.fire({
       ...BASE,
       icon: "error",
-      title: "Có lỗi xảy ra!",
+      title: "Something went wrong!",
       text: message,
       customClass: {
         ...BASE.customClass,
@@ -55,7 +54,7 @@ export const notify = {
     return Swal.fire({
       ...BASE,
       icon: "info",
-      title: "Thông báo",
+      title: "Notice",
       text: message,
       customClass: {
         ...BASE.customClass,
@@ -68,7 +67,7 @@ export const notify = {
     return Swal.fire({
       ...BASE,
       icon: "warning",
-      title: "Cảnh báo!",
+      title: "Warning!",
       text: message,
       customClass: {
         ...BASE.customClass,

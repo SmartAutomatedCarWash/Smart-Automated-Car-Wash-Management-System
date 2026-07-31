@@ -318,6 +318,7 @@ export function useCreateCustomerBooking() {
         queryClient.invalidateQueries({ queryKey: bookingDetailQueryKey(userId, createdBooking.bookingId) }),
         queryClient.invalidateQueries({ queryKey: washTrackingActiveQueryKey(userId) }),
         queryClient.invalidateQueries({ queryKey: customerLoyaltyScope(userId) }),
+        queryClient.invalidateQueries({ queryKey: ["customer-discounts"] }),
         queryClient.refetchQueries({ queryKey: bookingQueryScope(userId), type: "active" }),
         queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId), type: "inactive" }),
       ]);

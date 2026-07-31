@@ -69,12 +69,10 @@ function isAnnouncementLive(announcement: Pick<Announcement, "active" | "expires
 
 function getAnnouncementTypeLabel(type: string) {
   switch (type) {
-    case "PROMO":
-      return "PROMOTION";
+    case "SYSTEM":
+      return "SYSTEM";
     case "WARNING":
       return "WARNING";
-    case "INFO":
-      return "INFO";
     default:
       return type;
   }
@@ -84,7 +82,7 @@ function getAnnouncementTypeLabel(type: string) {
 const swalSuccess = (message: string) =>
   Swal.fire({
     icon: "success",
-    title: "Thành công!",
+    title: "Success!",
     text: message,
     confirmButtonText: "OK",
     customClass: {
@@ -101,7 +99,7 @@ const swalSuccess = (message: string) =>
 const swalError = (message: string) =>
   Swal.fire({
     icon: "error",
-    title: "Có lỗi xảy ra!",
+    title: "Something went wrong!",
     text: message,
     confirmButtonText: "OK",
     customClass: {
@@ -118,7 +116,7 @@ const swalError = (message: string) =>
 const swalInfo = (message: string) =>
   Swal.fire({
     icon: "info",
-    title: "Thông báo",
+    title: "Notice",
     text: message,
     confirmButtonText: "OK",
     customClass: {
@@ -130,6 +128,24 @@ const swalInfo = (message: string) =>
     buttonsStyling: false,
     timer: 10000,
     timerProgressBar: true,
+  });
+
+const swalConfirm = (title: string, text: string) =>
+  Swal.fire({
+    icon: "warning",
+    title,
+    text,
+    showCancelButton: true,
+    confirmButtonText: "Delete",
+    cancelButtonText: "Cancel",
+    customClass: {
+      popup: "swal-blog-popup",
+      title: "swal-blog-title",
+      htmlContainer: "swal-blog-message",
+      confirmButton: "swal-blog-btn-error",
+      cancelButton: "swal-blog-btn-info",
+    },
+    buttonsStyling: false,
   });
 
 // ── ConfirmDialog: custom popup thay thế window.confirm ──
@@ -408,7 +424,7 @@ export function AdminBlogManagementPage() {
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
   const [annTitle, setAnnTitle] = useState("");
-  const [annType, setAnnType] = useState<"PROMO" | "INFO" | "WARNING">("PROMO");
+  const [annType, setAnnType] = useState<"SYSTEM" | "WARNING">("SYSTEM");
   const [annActive, setAnnActive] = useState(true);
   const [annPriority, setAnnPriority] = useState(0);
   const [annLinkUrl, setAnnLinkUrl] = useState("");
@@ -418,7 +434,7 @@ export function AdminBlogManagementPage() {
   const handleOpenAnnouncementCreate = () => {
     setEditingAnnouncementId(null);
     setAnnTitle("");
-    setAnnType("PROMO");
+    setAnnType("SYSTEM");
     setAnnActive(true);
     setAnnPriority(localAnnouncements.length > 0 ? localAnnouncements.length + 1 : 1);
     setAnnLinkUrl("");
@@ -430,7 +446,7 @@ export function AdminBlogManagementPage() {
   const handleOpenAnnouncementEdit = (ann: Announcement) => {
     setEditingAnnouncementId(ann.id);
     setAnnTitle(ann.title);
-    setAnnType(ann.type as "PROMO" | "INFO" | "WARNING");
+    setAnnType(ann.type as "SYSTEM" | "WARNING");
     setAnnActive(ann.active);
     setAnnPriority(ann.priority);
     setAnnLinkUrl(ann.linkUrl ?? "");
@@ -478,21 +494,17 @@ export function AdminBlogManagementPage() {
     }
   };
 
-  const handleDeleteAnnouncement = (id: string) => {
-    openConfirm(
-      "Delete announcement?",
-      "This action cannot be undone.",
-      () => {
-        deleteAnnouncementMutation.mutate(id, {
-          onSuccess: () => {
-            setLocalAnnouncements((current) => current.filter((announcement) => announcement.id !== id));
-            swalSuccess("Announcement deleted.");
-          },
-          onError: () => swalError("Failed to delete announcement."),
-        });
-        closeConfirm();
-      }
-    );
+  const handleDeleteAnnouncement = async (id: string) => {
+    const result = await swalConfirm("Delete announcement?", "This action cannot be undone.");
+    if (!result.isConfirmed) return;
+
+    deleteAnnouncementMutation.mutate(id, {
+      onSuccess: () => {
+        setLocalAnnouncements((current) => current.filter((announcement) => announcement.id !== id));
+        swalSuccess("Announcement deleted.");
+      },
+      onError: () => swalError("Failed to delete announcement."),
+    });
   };
 
   // Active tab — articles, announcements, reviews, campaigns
@@ -1023,8 +1035,7 @@ export function AdminBlogManagementPage() {
               className="bg-slate-50 border-none rounded-xl text-sm font-semibold py-2 px-3 outline-none min-w-[140px]"
             >
               <option value="ALL">{t("Tất cả loại", "All Types")}</option>
-              <option value="PROMO">PROMO</option>
-              <option value="INFO">INFO</option>
+              <option value="SYSTEM">SYSTEM</option>
               <option value="WARNING">WARNING</option>
             </select>
             <select 
@@ -1144,9 +1155,8 @@ export function AdminBlogManagementPage() {
                             </td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
-                                ann.type === "PROMO" ? "bg-purple-50 text-purple-600" :
-                                ann.type === "WARNING" ? "bg-amber-50 text-amber-600" :
-                                "bg-blue-50 text-blue-600"
+                                ann.type === "WARNING" ? "bg-rose-50 text-rose-600" :
+                                "bg-teal-50 text-teal-600"
                               }`}>
                                 {getAnnouncementTypeLabel(ann.type)}
                               </span>
@@ -1510,15 +1520,23 @@ export function AdminBlogManagementPage() {
                   value={annType} 
                   onChange={(e) => setAnnType(e.target.value as any)} 
                   className={`w-full rounded-xl border border-slate-200 p-2.5 text-sm font-bold ${
-                    annType === 'PROMO' ? 'text-amber-700' :
-                    annType === 'WARNING' ? 'text-rose-700' :
-                    'text-blue-700'
+                    annType === 'WARNING' ? 'text-rose-700' : 'text-teal-700'
                   }`}
                 >
-                  <option value="PROMO" className="text-amber-700 font-bold">PROMO — {t("Khuyến mãi / ưu đãi", "Discount / deal")}</option>
-                  <option value="INFO" className="text-blue-700 font-bold">INFO — {t("Thông tin chung", "General information")}</option>
+                  <option value="SYSTEM" className="text-teal-700 font-bold">SYSTEM — {t("Thông báo hệ thống", "System notice")}</option>
                   <option value="WARNING" className="text-rose-700 font-bold">WARNING — {t("Cảnh báo / lưu ý quan trọng", "Alert / important notice")}</option>
                 </select>
+              </div>
+              <div className="space-y-1">
+                <label>{t("Độ ưu tiên", "Priority")}</label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={annPriority}
+                  onChange={(e) => setAnnPriority(Math.max(0, Number(e.target.value) || 0))}
+                  className="rounded-xl text-sm"
+                  placeholder="0"
+                />
               </div>
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -1714,3 +1732,4 @@ export function AdminBlogManagementPage() {
     </div>
   );
 }
+
