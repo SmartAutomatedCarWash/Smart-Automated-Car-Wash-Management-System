@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef, type ComponentType } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   Car,
@@ -131,6 +132,10 @@ const VIP_TIERS = new Set(["GOLD", "PLATINUM", "DIAMOND"]);
 export function ManagerOperationsPage() {
   const getErrorMessage = useErrorMessage();
   const queryClient = useQueryClient();
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const detailsBookingId = searchParams.get("bookingId");
   // Real-time updates via WebSocket
   useWebSocket();
   const pushManagerNotification = useManagerNotificationStore((state) => state.push);
@@ -193,8 +198,8 @@ export function ManagerOperationsPage() {
   );
   const selectedRow = useMemo(() => {
     if (selectedRowId === null) return null;
-    return filteredRows.find((row) => row.id === selectedRowId) ?? filteredRows.find((row) => row.sessionId) ?? filteredRows[0] ?? null;
-  }, [filteredRows, selectedRowId]);
+    return rowsWithOptimisticUpdates.find((row) => row.id === selectedRowId) ?? null;
+  }, [rowsWithOptimisticUpdates, selectedRowId]);
   const staffWorkload = useMemo(() => buildStaffWorkload(staffOptions, rowsForOperations), [staffOptions, rowsForOperations]);
   const interventions = useMemo(() => buildInterventions(rowsForOperations, staffWorkload), [rowsForOperations, staffWorkload]);
   const filteredInterventions = useMemo(
@@ -233,6 +238,19 @@ export function ManagerOperationsPage() {
     setInterventionPage(1);
     setStaffWorkloadPage(1);
   }, [selectedDate, search, staffFilter, focusFilter]);
+
+  useEffect(() => {
+    if (!detailsBookingId) return;
+    const targetRow =
+      rowsWithOptimisticUpdates.find((row) => row.bookingId === detailsBookingId && row.type === "session") ??
+      rowsWithOptimisticUpdates.find((row) => row.bookingId === detailsBookingId);
+    if (!targetRow) return;
+
+    setSelectedDate(targetRow.bookingDate.slice(0, 10));
+    setSelectedRowId(targetRow.id);
+    setIsSidebarOpen(true);
+    router.replace(pathname, { scroll: false });
+  }, [detailsBookingId, pathname, router, rowsWithOptimisticUpdates]);
 
   useEffect(() => {
     const syncToToday = () => {
@@ -302,7 +320,7 @@ export function ManagerOperationsPage() {
       title,
       message,
       target: "Manager",
-      href: "/manager/operations",
+      href: pathname,
     });
   };
 
@@ -365,7 +383,7 @@ export function ManagerOperationsPage() {
         message: booking ? `${booking.vehiclePlate} moved to waiting start.` : "A booking was checked in successfully.",
         target: booking?.assignedStaffName ?? "Manager",
         plate: booking?.vehiclePlate,
-        href: "/manager/operations",
+        href: `${pathname}?bookingId=${encodeURIComponent(bookingId)}`,
       });
     },
     onError: (actionError: ApiErrorResponse, { bookingId }) => {
