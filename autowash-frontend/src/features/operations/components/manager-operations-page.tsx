@@ -212,7 +212,7 @@ export function ManagerOperationsPage() {
     [selectedBoardStages],
   );
   const checkInCandidates = useMemo(
-    () => filteredRows.filter((row) => row.type === "booking" && row.status === "CONFIRMED"),
+    () => filteredRows.filter((row) => row.type === "booking" && canCheckInBooking(row)),
     [filteredRows],
   );
   const checkInPageCount = Math.max(1, Math.ceil(checkInCandidates.length / TOP_PANEL_PAGE_SIZE));
@@ -1693,7 +1693,9 @@ function canConfirmBooking(row: OperationRow) {
 }
 
 function canCheckInBooking(row: OperationRow) {
-  return row.type === "booking" && row.status === "CONFIRMED";
+  if (row.type !== "booking") return false;
+  if (row.status === "CONFIRMED") return true;
+  return row.status === "PENDING" && row.paymentMethod === "CASH_AT_COUNTER";
 }
 
 function buildRows(bookings: EligibleSessionBooking[], sessions: OperationsQueueSession[]): OperationRow[] {
