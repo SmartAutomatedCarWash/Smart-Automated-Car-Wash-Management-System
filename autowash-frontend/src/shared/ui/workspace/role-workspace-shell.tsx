@@ -67,6 +67,7 @@ import { useCustomerNotifications, useMarkCustomerNotificationAsRead } from "@/f
 import { useCustomerNotificationRealtime } from "@/features/notifications/hooks/use-customer-notification-realtime";
 import { translateNotificationField } from "@/features/notifications/lib/notification-utils";
 import { showCustomerRealtimeNotification } from "@/features/notifications/lib/customer-realtime-notification-alert";
+import { useActiveAnnouncements } from "@/features/public/components/hooks/use-announcements";
 import { MembershipTierUpgradePopup } from "@/features/loyalty/components/membership-tier-upgrade-popup";
 import { useCustomerLoyaltyAccount } from "@/features/loyalty/hooks/use-customer-loyalty";
 import { useTierStore } from "@/shared/store/tier.store";
@@ -167,6 +168,12 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     oldTier?: string | null;
     newTier?: string | null;
   } | null>(null);
+  const pendingAnnouncementChange = useRef<{
+    announcementId: string;
+    changeType: string;
+    timestamp?: number;
+  } | null>(null);
+  const seenAnnouncementPopupKeys = useRef<Set<string>>(new Set());
   const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
 
   const isStaff = requiredRole === "STAFF";
@@ -224,6 +231,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   }, [markTierUpgradePopupSeen]);
 
   const customerNotificationsQuery = useCustomerNotifications();
+  const activeAnnouncementsQuery = useActiveAnnouncements();
   useCustomerNotificationRealtime(isCustomer && isMounted, {
     onNotification: ({ notificationId, type, title, message }) => {
       if (!notificationId || seenCustomerNotificationIds.current.has(notificationId)) return;
@@ -244,6 +252,14 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
         oldTier,
         newTier,
       });
+    },
+    onAnnouncementChanged: ({ announcementId, changeType, timestamp }) => {
+      pendingAnnouncementChange.current = {
+        announcementId,
+        changeType,
+        timestamp,
+      };
+      void activeAnnouncementsQuery.refetch();
     },
   });
   const markCustomerNotificationAsReadMutation = useMarkCustomerNotificationAsRead();
@@ -278,9 +294,36 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     return () => window.clearInterval(intervalId);
   }, [isCustomer, isMounted]);
 
+  useEffect(() => {
+    if (!isCustomer || !isMounted) return;
+    const pendingAnnouncement = pendingAnnouncementChange.current;
+    const activeAnnouncements = activeAnnouncementsQuery.data;
+    if (!pendingAnnouncement || !activeAnnouncements?.length) return;
+
+    const key = `${pendingAnnouncement.changeType}:${pendingAnnouncement.announcementId}:${pendingAnnouncement.timestamp ?? "no-ts"}`;
+    if (seenAnnouncementPopupKeys.current.has(key)) return;
+
+    const announcement = activeAnnouncements.find((item) => item.id === pendingAnnouncement.announcementId);
+    if (!announcement) return;
+
+    seenAnnouncementPopupKeys.current.add(key);
+    pendingAnnouncementChange.current = null;
+
+    const popupMessage = announcement.message
+      ? translateNotificationField(announcement.message, language)
+      : t("Có thông báo mới trên thanh tin tức.", "A new announcement is available in the news bar.");
+
+    void showCustomerRealtimeNotification({
+      type: announcement.type || "INFO",
+      title: translateNotificationField(announcement.title, language),
+      message: popupMessage,
+      confirmButtonText: t("Đã hiểu", "Got it"),
+    });
+  }, [activeAnnouncementsQuery.data, isCustomer, isMounted, language, t]);
+
   const [selectedManagerNotificationId, setSelectedManagerNotificationId] = useState<string | null>(null);
 
-  // Monitor customer notifications for toast alerts
+  // Monitor customer notifications and show the same SweetAlert popup even if websocket delivery falls back to query refresh.
   useEffect(() => {
     if (!isCustomer || !isMounted || !customerNotificationsQuery.data) return;
     const currentIds = seenCustomerNotificationIds.current;
@@ -327,14 +370,15 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           });
         }
       } else {
-        toast.info(title, {
-          description: message,
-          position: "bottom-right",
-          duration: 5000,
+        void showCustomerRealtimeNotification({
+          type: latestUnread.type,
+          title,
+          message,
+          confirmButtonText: t("Đã hiểu", "Got it"),
         });
       }
     }
-  }, [customerNotificationsQuery.data, isCustomer, isMounted, language, showTierUpgradeNotification]);
+  }, [customerNotificationsQuery.data, isCustomer, isMounted, language, showTierUpgradeNotification, t]);
 
   const eligibleCount = eligibleQuery.data?.length ?? 0;
   const pendingSessions = useMemo(() => {
