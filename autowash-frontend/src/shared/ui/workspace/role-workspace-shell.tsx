@@ -31,7 +31,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { useCustomerLogout } from "@/features/auth/hooks/use-auth";
@@ -1641,7 +1641,7 @@ function WaterSpray() {
   const [isSpraying, setIsSpraying] = useState(true);
 
   useEffect(() => {
-    let timeoutId;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     const runCycle = () => {
       setIsSpraying(true);
       timeoutId = setTimeout(() => {
@@ -1695,20 +1695,22 @@ function WaterSpray() {
           const height = 1.5 + (i * 11) % 2.5 + "px";
           const scale = 1 + (i * 11) % 1.5;
           
+          const dropletStyle: CSSProperties & Record<"--tx" | "--ty" | "--delay" | "--duration" | "--scale" | "--angle", string | number> = {
+            width,
+            height,
+            "--tx": `${tx}px`,
+            "--ty": `${ty}px`,
+            "--delay": delay,
+            "--duration": duration,
+            "--scale": scale,
+            "--angle": `${angle}deg`,
+          };
+
           return (
             <div
               key={i}
               className={`water-droplet shadow-[0_0_3px_rgba(14,165,233,0.8)] ${!isSpraying ? 'hidden-spray' : ''}`}
-              style={{
-                width: width,
-                height: height,
-                '--tx': `${tx}px`,
-                '--ty': `${ty}px`,
-                '--delay': delay,
-                '--duration': duration,
-                '--scale': scale,
-                '--angle': `${angle}deg`,
-              }}
+              style={dropletStyle}
             />
           );
         })}
