@@ -118,11 +118,11 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
   const expectedDate = formatDisplayDate(booking.scheduling.bookingDate, locale);
 
   const progressSteps = [
-    { number: 1, title: translate(language, "ĐẶT LỊCH THÀNH CÔNG", "BOOKING CREATED"), subtitle: translate(language, "Email đã gửi", "Email sent"), active: true },
-    { number: 2, title: translate(language, "ĐÃ NHẬN XE", "CHECKED IN"), subtitle: translate(language, "Xe tại vịnh rửa", "Vehicle at bay"), active: false },
-    { number: 3, title: translate(language, "ĐANG RỬA", "WASHING"), subtitle: translate(language, "Đang thực hiện", "In progress"), active: false },
-    { number: 4, title: translate(language, "KIỂM TRA CHẤT LƯỢNG", "QUALITY CHECK"), subtitle: translate(language, "Kiểm tra", "Inspection"), active: false },
-    { number: 5, title: translate(language, "HOÀN THÀNH", "COMPLETED"), subtitle: translate(language, "Sẵn sàng nhận xe", "Ready for pickup"), active: false },
+    { number: 1, title: translate(language, "ĐẶT LỊCH THÀNH CÔNG", "BOOKING CREATED"), active: true },
+    { number: 2, title: translate(language, "ĐÃ NHẬN XE", "CHECKED IN"), active: false },
+    { number: 3, title: translate(language, "ĐANG RỬA", "WASHING"), active: false },
+    { number: 4, title: translate(language, "KIỂM TRA CHẤT LƯỢNG", "QUALITY CHECK"), active: false },
+    { number: 5, title: translate(language, "HOÀN THÀNH", "COMPLETED"), active: false },
   ];
 
   return (
@@ -216,9 +216,6 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                         </div>
                         <div className={`mt-3 max-w-[130px] text-xs font-extrabold leading-4 ${step.active ? "text-slate-900" : "text-slate-400"}`}>
                           {step.title}
-                        </div>
-                        <div className={`mt-1 text-[11px] font-medium leading-4 ${step.active ? "text-emerald-600" : "text-slate-400"}`}>
-                          {step.subtitle}
                         </div>
                       </div>
                     ))}

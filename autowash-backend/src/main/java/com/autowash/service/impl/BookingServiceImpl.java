@@ -39,6 +39,7 @@ import com.autowash.dto.PayBookingResponse;
 import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.BookingStatus;
+import com.autowash.entity.enums.DiscountKind;
 import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.entity.Booking;
@@ -235,7 +236,7 @@ public class BookingServiceImpl implements BookingService {
         UserDiscount userDiscount = resolvedDiscount.userDiscount();
 
         Instant now = Instant.now();
-        validateBookingDiscountAvailability(discount, userDiscount, now);
+        validateBookingDiscountAvailability(user, discount, userDiscount, now);
 
         long amount = Math.max(0, request.amount());
         if (discount.getMinOrderAmount() > 0 && amount < discount.getMinOrderAmount()) {
@@ -276,7 +277,7 @@ public class BookingServiceImpl implements BookingService {
         return new ResolvedBookingDiscount(discount, null);
     }
 
-    private void validateBookingDiscountAvailability(Discount discount, UserDiscount userDiscount, Instant now) {
+    private void validateBookingDiscountAvailability(User user, Discount discount, UserDiscount userDiscount, Instant now) {
         if (discount.getStatus() != ActiveStatus.ACTIVE) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher is inactive", ErrorCode.INVALID_DISCOUNT);
         }
@@ -291,6 +292,15 @@ public class BookingServiceImpl implements BookingService {
         }
         if (userDiscount != null && userDiscount.getExpiresAt() != null && userDiscount.getExpiresAt().isBefore(now)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher has expired in your wallet", ErrorCode.INVALID_DISCOUNT);
+        }
+        if (userDiscount == null
+                && discount.getType() == DiscountKind.PROMOTION
+                && BookingRepository.existsByCustomerAndPricingDiscountRefId(user, discount.getId())) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "You have already used this promotion",
+                    ErrorCode.INVALID_DISCOUNT
+            );
         }
         if (discount.getUsageLimit() != null && discount.getUsedCount() >= discount.getUsageLimit()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher usage limit has been reached", ErrorCode.INVALID_DISCOUNT);
@@ -491,7 +501,7 @@ public class BookingServiceImpl implements BookingService {
         // Apply discount if provided
         if (request.discountCode() != null && !request.discountCode().isBlank()) {
             ResolvedBookingDiscount resolvedDiscount = resolveBookingDiscount(user, request.discountCode().trim());
-            validateBookingDiscountAvailability(resolvedDiscount.discount(), resolvedDiscount.userDiscount(), Instant.now());
+            validateBookingDiscountAvailability(user, resolvedDiscount.discount(), resolvedDiscount.userDiscount(), Instant.now());
             if (resolvedDiscount.userDiscount() != null) {
                 discountRedemptionService.redeemUserDiscount(booking, resolvedDiscount.userDiscount());
             } else {

@@ -148,7 +148,7 @@ export function CustomerLoyaltyPageContent() {
   const walletVouchers = useMemo(
     () =>
       ((discountsQuery.data?.items ?? []) as WalletVoucherItem[])
-        .filter((item) => Boolean(item.voucherCode))
+        .filter((item) => Boolean(item.voucherCode) && item.status !== "USED")
         .sort((left, right) => {
           const statusWeight = (status: WalletVoucherItem["status"]) => {
             switch (status) {
