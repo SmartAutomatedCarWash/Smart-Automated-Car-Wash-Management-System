@@ -50,6 +50,13 @@ export function getManagerCheckInRecommendation(bookingId: string) {
   });
 }
 
+export function confirmManagerBooking(bookingId: string) {
+  return apiRequest({
+    method: "POST",
+    url: `/admin/bookings/${bookingId}/confirm`,
+  });
+}
+
 export function getManagerCheckInCandidates(page: number, limit: number, date?: string, search?: string) {
   return apiRequest<PaginatedResponse<EligibleSessionBooking>>({
     method: "GET",
