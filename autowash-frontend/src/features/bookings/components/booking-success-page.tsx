@@ -1,15 +1,22 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  AlertCircle,
   ArrowRight,
   Calendar,
-  Car,
-  Check,
+   Car,
+   Check,
+  CheckCircle2,
+  ClipboardCheck,
+  Clock3,
   Download,
+  Droplets,
   FileText,
   Loader2,
   Mail,
+  PartyPopper,
   Phone,
   User,
 } from "lucide-react";
@@ -26,6 +33,7 @@ import { useCustomerBookingDetail } from "@/features/bookings/hooks/use-bookings
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
 import type { BookingAddonSelection, BookingDetail } from "@/entities/bookings";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
+import { cn } from "@/shared/lib/utils";
 
 function getBookingOptions(booking: BookingDetail): BookingAddonSelection[] {
   return (booking.details ?? [])
@@ -45,6 +53,72 @@ function formatDisplayDate(value: string, locale: string) {
     day: "numeric",
     timeZone: "UTC",
   }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+type TimelineStep = {
+  key: string;
+  labelVi: string;
+  labelEn: string;
+  icon: React.ElementType;
+};
+
+const TIMELINE_STEPS: TimelineStep[] = [
+  { key: "PENDING", labelVi: "Chờ xác nhận", labelEn: "Pending", icon: Clock3 },
+  { key: "CONFIRMED", labelVi: "Đã xác nhận", labelEn: "Confirmed", icon: ClipboardCheck },
+  { key: "CHECKED_IN", labelVi: "Đã nhận xe", labelEn: "Checked In", icon: Car },
+  { key: "IN_PROGRESS", labelVi: "Đang rửa", labelEn: "In Progress", icon: Droplets },
+  { key: "COMPLETED", labelVi: "Hoàn thành", labelEn: "Completed", icon: PartyPopper },
+];
+
+const STATUS_ORDER = ["PENDING", "CONFIRMED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED"];
+
+function getStepIndex(status: string) {
+  return STATUS_ORDER.indexOf(status.toUpperCase());
+}
+
+function useCountdown(bookingDate: string, bookingTime: string) {
+  const [diff, setDiff] = useState<number | null>(null);
+
+  useEffect(() => {
+    const target = new Date(`${bookingDate}T${bookingTime}:00`).getTime();
+    const tick = () => setDiff(target - Date.now());
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [bookingDate, bookingTime]);
+
+  return diff;
+}
+
+function CountdownBadge({ bookingDate, bookingTime, language }: { bookingDate: string; bookingTime: string; language: "vi" | "en" }) {
+  const diff = useCountdown(bookingDate, bookingTime);
+  if (diff === null) return null;
+
+  if (diff <= 0) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+        {translate(language, "Đã đến giờ hẹn", "Appointment time")}
+      </span>
+    );
+  }
+
+  const totalSec = Math.floor(diff / 1000);
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+  const label =
+    days > 0
+      ? `${days}d ${String(hours).padStart(2, "0")}h ${String(mins).padStart(2, "0")}m`
+      : `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-700">
+      <Clock3 className="h-3.5 w-3.5" />
+      {translate(language, "Còn lại", "In")} {label}
+    </span>
+  );
 }
 
 export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string }) {
@@ -116,14 +190,6 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
     day: "numeric",
   });
   const expectedDate = formatDisplayDate(booking.scheduling.bookingDate, locale);
-
-  const progressSteps = [
-    { number: 1, title: translate(language, "ĐẶT LỊCH THÀNH CÔNG", "BOOKING CREATED"), subtitle: translate(language, "Email đã gửi", "Email sent"), active: true },
-    { number: 2, title: translate(language, "ĐÃ NHẬN XE", "CHECKED IN"), subtitle: translate(language, "Xe tại vịnh rửa", "Vehicle at bay"), active: false },
-    { number: 3, title: translate(language, "ĐANG RỬA", "WASHING"), subtitle: translate(language, "Đang thực hiện", "In progress"), active: false },
-    { number: 4, title: translate(language, "KIỂM TRA CHẤT LƯỢNG", "QUALITY CHECK"), subtitle: translate(language, "Kiểm tra", "Inspection"), active: false },
-    { number: 5, title: translate(language, "HOÀN THÀNH", "COMPLETED"), subtitle: translate(language, "Sẵn sàng nhận xe", "Ready for pickup"), active: false },
-  ];
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
@@ -200,28 +266,56 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                   </span>
                 </div>
 
-                <div className="relative rounded-2xl bg-slate-50/70 px-4 py-6 sm:px-6">
-                  <div className="absolute left-[10%] right-[10%] top-12 hidden h-0.5 rounded-full bg-slate-200 md:block" />
-                  <div className="grid gap-5 md:grid-cols-5">
-                    {progressSteps.map((step) => (
-                      <div key={step.number} className="relative z-10 flex min-h-[112px] flex-col items-center text-center">
-                        <div
-                          className={`flex h-12 w-12 items-center justify-center rounded-full border-2 text-sm font-bold shadow-sm ${
-                            step.active
-                              ? "border-emerald-500 bg-emerald-500 text-white shadow-emerald-100"
-                              : "border-slate-200 bg-white text-slate-400"
-                          }`}
-                        >
-                          {step.number === 1 ? <Check className="h-5 w-5 stroke-[3]" /> : step.number}
+                <div className="space-y-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h4 className="text-2xl font-black text-slate-950">{translate(language, "Tiến trình đặt lịch", "Booking progress")}</h4>
+                    </div>
+                    <CountdownBadge
+                      bookingDate={booking.scheduling.bookingDate}
+                      bookingTime={booking.scheduling.bookingTime}
+                      language={language}
+                    />
+                  </div>
+                  <div className="relative flex items-start justify-between gap-1 overflow-x-auto pb-2">
+                    <div className="absolute left-0 right-0 top-5 mx-6 hidden h-0.5 bg-slate-200 sm:block" />
+                    {TIMELINE_STEPS.map((step, idx) => {
+                      const currentIdx = getStepIndex(booking.washStatus ?? booking.status);
+                      const isCompleted = currentIdx === STATUS_ORDER.length - 1;
+                      const isDone = isCompleted || idx < currentIdx;
+                      const isActive = !isCompleted && idx === currentIdx;
+                      const Icon = step.icon;
+
+                      return (
+                        <div key={step.key} className="relative z-10 flex min-w-[80px] flex-1 flex-col items-center gap-2 text-center">
+                          <div
+                            className={cn(
+                              "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300",
+                              isDone
+                                ? "border-emerald-500 bg-emerald-500 text-white shadow-md shadow-emerald-100"
+                                : isActive
+                                  ? "animate-pulse border-sky-500 bg-sky-500 text-white shadow-md shadow-sky-100"
+                                  : "border-slate-200 bg-white text-slate-400",
+                            )}
+                          >
+                            {isDone ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+                          </div>
+                          <span
+                            className={cn(
+                              "text-[10px] font-bold leading-tight",
+                              isDone ? "text-emerald-600" : isActive ? "text-sky-700" : "text-slate-400",
+                            )}
+                          >
+                            {language === "vi" ? step.labelVi : step.labelEn}
+                          </span>
+                          {isActive ? (
+                            <span className="text-[9px] font-semibold uppercase tracking-wider text-sky-500">
+                              {translate(language, "Hiện tại", "Current")}
+                            </span>
+                          ) : null}
                         </div>
-                        <div className={`mt-3 max-w-[130px] text-xs font-extrabold leading-4 ${step.active ? "text-slate-900" : "text-slate-400"}`}>
-                          {step.title}
-                        </div>
-                        <div className={`mt-1 text-[11px] font-medium leading-4 ${step.active ? "text-emerald-600" : "text-slate-400"}`}>
-                          {step.subtitle}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 

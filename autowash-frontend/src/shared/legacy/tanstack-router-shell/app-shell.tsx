@@ -30,7 +30,6 @@ import {
   ThemeSwitcher,
   useLanguage,
 } from "@/app/modules/public-auth/components/LanguageSwitcher";
-import { SupportChatWidget } from "@/features/support/components/support-chat-widget";
 
 type NavItem = {
   to: string;
@@ -574,7 +573,6 @@ export function AppShell({ role }: { role: Role }) {
           <Outlet />
         </main>
       </div>
-      <SupportChatWidget key={role} role={role} />
     </div>
   );
 }
