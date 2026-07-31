@@ -1564,6 +1564,7 @@ export function CustomerBookingForm() {
                         resetValidatedDiscount();
                         updateDraft({
                           comboId: active ? "" : item.comboId,
+                          addonIds: [],
                           discountCode: "",
                           staffId: "",
                           staffIds: [],
@@ -1618,7 +1619,11 @@ export function CustomerBookingForm() {
 
           {/* Step 4 — Add-ons / Extra services */}
           <StepCard step={4} title={draft.mode === "COMBO" ? "Extra services" : "Add-ons"}>
-            {draft.mode === "COMBO" ? (
+            {isOwnedComboBooking ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">
+                This booking is fully covered by your owned combo. Paid extra services are not available for this booking.
+              </div>
+            ) : draft.mode === "COMBO" ? (
               <div className="space-y-3">
                 {visibleSmartExtraServiceRecommendations.length > 0 && (
                   <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3 dark:border-sky-900/60 dark:bg-sky-950/30">
